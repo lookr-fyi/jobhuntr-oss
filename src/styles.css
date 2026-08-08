@@ -4430,6 +4430,19 @@ select:focus {
   font-size: 11px;
   white-space: nowrap;
 }
+.v2-run-selection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  color: #1e3a8a;
+  border: 1px solid #bfdbfe;
+  border-radius: 9px;
+  background: #eff6ff;
+  font-size: 12px;
+}
 .v2-run-stats span {
   color: var(--v2-secondary);
   font-size: 12px;
@@ -4445,7 +4458,7 @@ select:focus {
 .v2-table-head,
 .v2-run-row {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 120px 100px 100px 200px;
+  grid-template-columns: 24px minmax(240px, 1fr) 120px 100px 100px 200px 36px;
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
@@ -4460,7 +4473,7 @@ select:focus {
 .v2-run-row {
   border-top: 1px solid var(--v2-border);
 }
-button.v2-run-row {
+.v2-run-row {
   width: 100%;
   color: var(--v2-text);
   border-right: 0;
@@ -4471,8 +4484,36 @@ button.v2-run-row {
   text-align: left;
   box-shadow: none;
 }
-button.v2-run-row:hover {
+.v2-run-row:hover {
   background: #f8fafc;
+}
+.v2-run-link,
+.v2-run-delete {
+  padding: 0;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.v2-run-link {
+  font-weight: 700;
+  text-align: left;
+}
+.v2-run-link:hover {
+  color: var(--v2-accent);
+  background: transparent;
+  transform: none;
+}
+.v2-run-delete {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  color: #94a3b8;
+}
+.v2-run-delete:hover {
+  color: #b91c1c;
+  background: #fee2e2;
   transform: none;
 }
 .v2-run-row b,
@@ -4582,14 +4623,13 @@ button.v2-run-row:hover {
   }
   .v2-table-head,
   .v2-run-row {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 24px minmax(0, 1fr) 36px;
   }
-  .v2-table-head > :nth-child(3),
-  .v2-table-head > :nth-child(4),
-  .v2-table-head > :nth-child(5),
+  .v2-table-head > :nth-child(n + 3):nth-child(-n + 6),
   .v2-run-row > :nth-child(3),
   .v2-run-row > :nth-child(4),
-  .v2-run-row > :nth-child(5) {
+  .v2-run-row > :nth-child(5),
+  .v2-run-row > :nth-child(6) {
     display: none;
   }
 }

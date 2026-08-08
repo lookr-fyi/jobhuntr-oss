@@ -1236,6 +1236,19 @@ app.post("/api/agent-runs/start", async (req, res) => {
   });
   res.status(201).json(run);
 });
+app.delete("/api/agent-runs/:id", async (req, res) => {
+  const deleted = await mutate((db) => {
+    const index = db.agentRuns.findIndex((run) => run.id === req.params.id);
+    if (index < 0) return false;
+    const [run] = db.agentRuns.splice(index, 1);
+    auditEvent(db, "agent", `Deleted agent run ${run.search?.q || run.id}.`, {
+      runId: run.id,
+    });
+    return true;
+  });
+  if (!deleted) return res.status(404).json({ error: "Agent run not found" });
+  res.status(204).end();
+});
 app.get("/api/hunt-presets", async (_req, res) => {
   const db = await readDb();
   res.json(db.huntPresets);

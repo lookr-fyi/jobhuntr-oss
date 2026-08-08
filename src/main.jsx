@@ -600,7 +600,9 @@ function App() {
         {tab === "agent" && (
           <Agent state={state} reload={load} setTab={setTab} />
         )}{" "}
-        {tab === "runs" && <RunsPage state={state} setTab={setTab} />}
+        {tab === "runs" && (
+          <RunsPage state={state} setTab={setTab} reload={load} />
+        )}
         {tab === "cover-letter" && (
           <Resume state={state} reload={load} mode="cover-letter" />
         )}
@@ -6587,11 +6589,13 @@ function Agent({ state, reload, setTab }) {
     </section>
   );
 }
-function RunsPage({ state, setTab }) {
+function RunsPage({ state, setTab, reload }) {
   const runs = state.agentRuns || [];
   const [query, setQuery] = useState("");
   const [hideZero, setHideZero] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [selectedRun, setSelectedRun] = useState(null);
+  const [deleteIds, setDeleteIds] = useState([]);
   const runCloseRef = useRef(null);
   const visibleRuns = runs.filter((run) => {
     const matchesSearch =
@@ -6600,6 +6604,35 @@ function RunsPage({ state, setTab }) {
         .includes(query.toLowerCase());
     return matchesSearch && (!hideZero || (run.found || 0) > 0);
   });
+  const toggleRun = (id) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const toggleVisible = () => {
+    const allSelected =
+      visibleRuns.length > 0 &&
+      visibleRuns.every((run) => selectedIds.has(run.id));
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      visibleRuns.forEach((run) =>
+        allSelected ? next.delete(run.id) : next.add(run.id),
+      );
+      return next;
+    });
+  };
+  const deleteRuns = async () => {
+    await Promise.all(
+      deleteIds.map((id) => api(`/api/agent-runs/${id}`, { method: "DELETE" })),
+    );
+    setSelectedRun(null);
+    setSelectedIds(new Set());
+    setDeleteIds([]);
+    await reload();
+  };
   useEffect(() => {
     if (!selectedRun) return undefined;
     const returnFocus = document.activeElement;
@@ -6678,8 +6711,30 @@ function RunsPage({ state, setTab }) {
           Showing {visibleRuns.length} of {runs.length} runs
         </span>
       </div>
+      {selectedIds.size > 0 && (
+        <div className="v2-run-selection" role="status">
+          <strong>
+            {selectedIds.size} run{selectedIds.size === 1 ? "" : "s"} selected
+          </strong>
+          <button
+            className="danger secondary"
+            onClick={() => setDeleteIds([...selectedIds])}
+          >
+            <Trash2 size={15} /> Delete selected
+          </button>
+        </div>
+      )}
       <div className="card v2-runs-table">
         <div className="v2-table-head">
+          <input
+            aria-label="Select all visible runs"
+            type="checkbox"
+            checked={
+              visibleRuns.length > 0 &&
+              visibleRuns.every((run) => selectedIds.has(run.id))
+            }
+            onChange={toggleVisible}
+          />
           <span>Run</span>
           <span>Status</span>
           <span>Evaluated</span>
@@ -6687,13 +6742,20 @@ function RunsPage({ state, setTab }) {
           <span>Started</span>
         </div>
         {visibleRuns.map((run) => (
-          <button
-            className="v2-run-row"
-            key={run.id}
-            onClick={() => setSelectedRun(run)}
-          >
+          <div className="v2-run-row" key={run.id}>
+            <input
+              aria-label={`Select ${run.search?.q || "run"}`}
+              type="checkbox"
+              checked={selectedIds.has(run.id)}
+              onChange={() => toggleRun(run.id)}
+            />
             <span>
-              <b>{run.search?.q || "Local hunt"}</b>
+              <button
+                className="v2-run-link"
+                onClick={() => setSelectedRun(run)}
+              >
+                {run.search?.q || "Local hunt"}
+              </button>
               <small>
                 {run.search?.location || "All locations"} ·{" "}
                 {(run.workflows || []).join(", ") || "Local catalog"}
@@ -6705,7 +6767,15 @@ function RunsPage({ state, setTab }) {
             <time>
               {new Date(run.completedAt || run.createdAt).toLocaleString()}
             </time>
-          </button>
+            <button
+              className="v2-run-delete"
+              aria-label="Delete run"
+              title={`Delete ${run.search?.q || "run"}`}
+              onClick={() => setDeleteIds([run.id])}
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         ))}
         {!visibleRuns.length && (
           <div className="v2-empty">
@@ -6820,6 +6890,12 @@ function RunsPage({ state, setTab }) {
             </div>
             <div className="v2-session-actions">
               <button
+                className="danger secondary"
+                onClick={() => setDeleteIds([selectedRun.id])}
+              >
+                <Trash2 size={15} /> Delete run
+              </button>
+              <button
                 ref={runCloseRef}
                 className="secondary"
                 onClick={() => setSelectedRun(null)}
@@ -6838,6 +6914,14 @@ function RunsPage({ state, setTab }) {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={deleteIds.length > 0}
+        title={`Delete ${deleteIds.length === 1 ? "agent run" : `${deleteIds.length} agent runs`}?`}
+        description="This permanently removes the selected run history. Saved jobs and application packets are not deleted."
+        confirmLabel={deleteIds.length === 1 ? "Delete run" : "Delete runs"}
+        onClose={() => setDeleteIds([])}
+        onConfirm={deleteRuns}
+      />
     </section>
   );
 }

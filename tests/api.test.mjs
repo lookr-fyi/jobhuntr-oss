@@ -108,6 +108,29 @@ test("agent run saves matches and logs actions", async () => {
   );
 });
 
+test("agent run history can be permanently deleted without deleting saved jobs", async () => {
+  const run = await req("/api/agent-runs/start", {
+    method: "POST",
+    body: JSON.stringify({ q: "product", minFit: 0 }),
+  });
+  const jobsBefore = (await req("/api/state")).body.jobs.length;
+  const removed = await req(`/api/agent-runs/${run.body.id}`, {
+    method: "DELETE",
+  });
+  assert.equal(removed.res.status, 204);
+  const state = (await req("/api/state")).body;
+  assert.equal(
+    state.agentRuns.some((item) => item.id === run.body.id),
+    false,
+  );
+  assert.equal(state.jobs.length, jobsBefore);
+  assert.equal(
+    (await req(`/api/agent-runs/${run.body.id}`, { method: "DELETE" })).res
+      .status,
+    404,
+  );
+});
+
 test("hunt preview applies role, location, required, excluded, and fit rules truthfully", async () => {
   const preview = await req("/api/agent-runs/preview", {
     method: "POST",
