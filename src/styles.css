@@ -2817,33 +2817,39 @@ button.v2-audit-toggle:hover {
 .v2-outreach-page .v2-page-intro > .inline select {
   min-width: 230px;
 }
+.v2-outreach-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 20px 0 16px;
+}
 .v2-outreach-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 .v2-outreach-stats > div {
-  padding: 16px 18px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
 }
 .v2-outreach-stats span {
-  display: block;
   color: #64748b;
-  font-size: 12px;
+  font-size: 14px;
 }
 .v2-outreach-stats strong {
-  display: block;
-  margin-top: 5px;
-  font-size: 22px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
 }
-.v2-outreach-toolbar {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 10px;
+.v2-outreach-summary-actions {
+  display: flex;
   align-items: center;
+  gap: 16px;
+}
+.v2-outreach-search {
+  max-width: 420px;
   margin-bottom: 14px;
 }
 .v2-show-messages {
@@ -2852,7 +2858,7 @@ button.v2-audit-toggle:hover {
   color: #475569;
   font-size: 12px;
 }
-.v2-outreach-toolbar .secondary.active {
+.v2-outreach-summary-actions .secondary.active {
   color: #fff;
   background: #18181a;
   border-color: #18181a;
@@ -3118,11 +3124,21 @@ button.v2-audit-toggle:hover {
   }
 }
 @media (max-width: 700px) {
-  .v2-outreach-stats {
-    grid-template-columns: 1fr;
+  .v2-outreach-summary-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
   }
-  .v2-outreach-toolbar {
-    grid-template-columns: 1fr;
+  .v2-outreach-stats {
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .v2-outreach-summary-actions {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+  .v2-outreach-search {
+    max-width: none;
   }
   .v2-outreach-filters {
     align-items: stretch;

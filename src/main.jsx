@@ -6154,55 +6154,49 @@ function OutreachPage({ state, reload }) {
           <CheckCircle2 size={16} /> {collectFeedback}
         </div>
       )}
-      <div className="v2-outreach-stats">
-        <div>
-          <span>Collected</span>
-          <strong>{state.outreachDrafts.length}</strong>
+      <div className="v2-outreach-summary-row">
+        <div className="v2-outreach-stats" aria-label="Outreach summary">
+          <div>
+            <strong>{state.outreachDrafts.length}</strong>
+            <span>Collected</span>
+          </div>
+          <div>
+            <strong>
+              {
+                state.outreachDrafts.filter(
+                  (item) => (item.status || "draft") === "draft",
+                ).length
+              }
+            </strong>
+            <span>Listed</span>
+          </div>
+          <div>
+            <strong>
+              {
+                state.outreachDrafts.filter((item) => item.status === "sent")
+                  .length
+              }
+            </strong>
+            <span>Outreached</span>
+          </div>
         </div>
-        <div>
-          <span>Listed</span>
-          <strong>
-            {
-              state.outreachDrafts.filter(
-                (item) => (item.status || "draft") === "draft",
-              ).length
-            }
-          </strong>
+        <div className="v2-outreach-summary-actions">
+          <label className="check v2-show-messages">
+            <input
+              type="checkbox"
+              checked={showMessages}
+              onChange={(event) => setShowMessages(event.target.checked)}
+            />
+            Show Connection Messages
+          </label>
+          <button
+            className={filtersOpen ? "secondary active" : "secondary"}
+            aria-expanded={filtersOpen}
+            onClick={() => setFiltersOpen((value) => !value)}
+          >
+            <Filter size={16} /> Filters
+          </button>
         </div>
-        <div>
-          <span>Outreached</span>
-          <strong>
-            {
-              state.outreachDrafts.filter((item) => item.status === "sent")
-                .length
-            }
-          </strong>
-        </div>
-      </div>
-      <div className="v2-outreach-toolbar">
-        <div className="searchbox">
-          <Search size={16} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search contacts, companies, or roles"
-          />
-        </div>
-        <label className="check v2-show-messages">
-          <input
-            type="checkbox"
-            checked={showMessages}
-            onChange={(event) => setShowMessages(event.target.checked)}
-          />
-          Show Connection Messages
-        </label>
-        <button
-          className={filtersOpen ? "secondary active" : "secondary"}
-          aria-expanded={filtersOpen}
-          onClick={() => setFiltersOpen((value) => !value)}
-        >
-          <Filter size={16} /> Filters
-        </button>
       </div>
       {filtersOpen && (
         <div className="v2-outreach-filters">
@@ -6270,6 +6264,15 @@ function OutreachPage({ state, reload }) {
           </button>
         </div>
       )}
+      <div className="searchbox v2-outreach-search">
+        <Search size={16} />
+        <input
+          aria-label="Search outreach contacts"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search contacts, companies, or roles"
+        />
+      </div>
       <div className="v2-outreach-layout">
         <div className="card v2-contact-table">
           <div className="v2-contact-head">
