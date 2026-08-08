@@ -27,7 +27,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 - **Local job board**: seed jobs and local search without scraping or external services.
 - **Resume studio**: reusable ATS templates, named version history, keyword analysis, secure print previews, and browser-native PDF export.
 - **Cover letters**: offline generation, persistent editing/history, print previews, and PDF-ready layouts.
-- **Autonomous hunt**: deterministic, explainable workflow with thresholds, run steps, and action history.
+- **Autonomous hunt**: truthful role/location filtering, required and excluded keywords, profile-fit thresholds, previews, reusable presets, deduplication, match explanations, and run history.
 - **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.
 - **Submission queue**: assemble resume/letter packets, enforce a review checklist, and record applications without external account automation.
 - **Interview coach and outreach**: role-specific practice plans, talking points, research checklists, and editable messages generated offline.

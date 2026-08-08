@@ -17,7 +17,7 @@ test('health and initial state are local-only', async () => {
   assert.equal(body.ok, true); assert.equal(body.mode, 'local-only');
   assert.equal(body.host, '127.0.0.1'); assert.equal(res.headers.get('x-frame-options'), 'SAMEORIGIN'); assert.equal(res.headers.get('x-powered-by'), null);
   const state = (await req('/api/state')).body;
-  assert.ok(state.jobs.length >= 4); assert.ok(state.summary.totalJobs >= 4);
+  assert.ok(state.jobs.length >= 2); assert.ok(state.summary.totalJobs >= 2);
 });
 
 test('serialized local writes do not lose concurrent jobs', async () => {
@@ -40,7 +40,24 @@ test('can add and update a tracked job', async () => {
 
 test('agent run saves matches and logs actions', async () => {
   const run = await req('/api/agent-runs/start', { method: 'POST', body: JSON.stringify({ q: 'engineer', minFit: 50 }) });
-  assert.equal(run.res.status, 201); assert.equal(run.body.status, 'completed'); assert.ok(run.body.actions.length > 0); assert.equal(run.body.steps.length, 4);
+  assert.equal(run.res.status, 201); assert.equal(run.body.status, 'completed'); assert.ok(run.body.actions.length > 0); assert.equal(run.body.steps.length, 4); assert.ok(run.body.added >= 1);
+});
+
+test('hunt preview applies role, location, required, excluded, and fit rules truthfully', async () => {
+  const preview = await req('/api/agent-runs/preview', { method: 'POST', body: JSON.stringify({ q: 'product engineer', location: 'Remote', minFit: 50, requiredKeywords: ['ai'] }) });
+  assert.equal(preview.res.status, 200); assert.equal(preview.body.matches.length, 1); assert.equal(preview.body.matches[0].company, 'Acme AI'); assert.ok(preview.body.matches[0].reasons.some((x) => x.includes('required')));
+  const excluded = await req('/api/agent-runs/preview', { method: 'POST', body: JSON.stringify({ q: 'product engineer', location: 'Remote', minFit: 50, requiredKeywords: ['ai'], excludeKeywords: ['founding'] }) });
+  assert.equal(excluded.body.matches.length, 0);
+});
+
+test('hunt presets persist locally and manual URL duplicates are not re-added', async () => {
+  const preset = await req('/api/hunt-presets', { method: 'POST', body: JSON.stringify({ name: 'Remote product', q: 'product', location: 'Remote', minFit: 65 }) });
+  assert.equal(preset.res.status, 201); assert.equal(preset.body.options.location, 'Remote');
+  const presets = (await req('/api/hunt-presets')).body; assert.ok(presets.some((x) => x.id === preset.body.id));
+  const state = (await req('/api/state')).body; const original = state.jobs[0];
+  const duplicate = await req('/api/jobs', { method: 'POST', body: JSON.stringify({ company: original.company, title: original.title, url: original.url }) });
+  assert.equal(duplicate.res.status, 200); assert.equal(duplicate.body.deduplicated, true);
+  await req(`/api/hunt-presets/${preset.body.id}`, { method: 'DELETE' });
 });
 
 test('resume versions and ATS details are persisted locally', async () => {

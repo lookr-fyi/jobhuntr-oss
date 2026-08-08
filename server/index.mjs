@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
-import { readDb, mutate, auditEvent, scoreJob, summarize, seedJobs, DB_PATH } from './store.mjs';
+import { readDb, mutate, auditEvent, scoreJob, summarize, seedJobs, findLocalMatches, DB_PATH } from './store.mjs';
 import { renderResumeDocument, renderCoverLetterDocument } from './render.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,10 +45,12 @@ app.get('/api/jobs', async (_req, res) => { const db = await readDb(); res.json(
 app.post('/api/jobs', async (req, res) => {
   const parsed = JobSchema.parse(req.body);
   const job = await mutate((db) => {
+    const existing = parsed.url && db.jobs.find((item) => item.url === parsed.url);
+    if (existing) return { ...existing, deduplicated: true };
     const item = { id: nanoid(), createdAt: timestamp(), updatedAt: timestamp(), notes: [], tasks: [], contacts: [], statusHistory: [{ status: parsed.status, at: timestamp() }], fitScore: scoreJob(parsed, db.profile), ...parsed };
     db.jobs.unshift(item); auditEvent(db, 'job', `Added ${item.title} at ${item.company}.`, { jobId: item.id }); return item;
   });
-  res.status(201).json(job);
+  res.status(job.deduplicated ? 200 : 201).json(job);
 });
 app.patch('/api/jobs/:id', async (req, res) => {
   const job = await mutate((db) => {
@@ -163,23 +165,28 @@ app.post('/api/resume/score', async (req, res) => {
   res.json({ score, hits, missing, keywordHits, missingKeywords, quantifiedBullets: quantified, suggestions: [`Mirror the job title: ${job.title || 'target role'}.`, quantified < 3 ? 'Add at least three quantified outcomes.' : 'Strong use of quantified outcomes.', missingKeywords.length ? `Consider truthful evidence for: ${missingKeywords.slice(0,5).join(', ')}.` : 'Your resume covers the main job-description keywords.'] });
 });
 
+const HuntSchema = z.object({ q: z.string().max(200).optional(), location: z.string().max(200).optional(), minFit: z.coerce.number().min(0).max(100).optional(), maxResults: z.coerce.number().min(1).max(100).optional(), requiredKeywords: z.array(z.string().max(100)).max(20).optional(), excludeKeywords: z.array(z.string().max(100)).max(20).optional() });
+const huntOptions = (input, profile) => HuntSchema.parse({ q: input.q || profile.targetRoles?.[0] || 'Software Engineer', location: input.location ?? profile.preferences?.locations?.[0] ?? '', minFit: input.minFit ?? 60, maxResults: input.maxResults ?? 25, requiredKeywords: input.requiredKeywords || [], excludeKeywords: input.excludeKeywords || [] });
+
+app.post('/api/agent-runs/preview', async (req, res) => { const db = await readDb(); const options = huntOptions(req.body, db.profile); const matches = findLocalMatches(seedJobs, db.profile, options); res.json({ options, inspected: seedJobs.length, matches, alreadyTracked: matches.filter((match) => db.jobs.some((job) => job.url === match.url)).length }); });
 app.post('/api/agent-runs/start', async (req, res) => {
   const run = await mutate((db) => {
-    const search = { q: req.body.q || db.profile.targetRoles?.[0] || 'Software Engineer', location: req.body.location || db.profile.preferences?.locations?.[0] || 'Remote' };
-    const matches = seedJobs.map((j) => ({ ...j, fitScore: scoreJob(j, db.profile) })).filter((j) => j.fitScore >= Number(req.body.minFit || 60));
-    for (const m of matches) if (!db.jobs.some((j) => j.url === m.url)) db.jobs.unshift({ ...m, id: nanoid(), status: 'saved', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), notes: [], tasks: [], contacts: [] });
+    const options = huntOptions(req.body, db.profile); const matches = findLocalMatches(seedJobs, db.profile, options); let added = 0; let duplicates = 0;
+    for (const match of matches) { if (db.jobs.some((job) => job.url && job.url === match.url)) { duplicates++; continue; } const { eligible, rejectedBecause, ...job } = match; db.jobs.unshift({ ...job, id: nanoid(), status: 'saved', matchReasons: match.reasons, createdAt: timestamp(), updatedAt: timestamp(), notes: [], tasks: [], contacts: [], statusHistory: [{ status: 'saved', at: timestamp(), source: 'local-hunt' }] }); added++; }
     const steps = [
       { name: 'Read local profile', status: 'completed', detail: `${db.profile.skills.length} skills and ${db.profile.targetRoles.length} target roles loaded` },
-      { name: 'Search local sources', status: 'completed', detail: `${seedJobs.length} roles inspected` },
-      { name: 'Score matches', status: 'completed', detail: `${matches.length} roles met the ${Number(req.body.minFit || 60)}% threshold` },
-      { name: 'Save and deduplicate', status: 'completed', detail: 'Matching roles added without duplicate URLs' }
+      { name: 'Apply search rules', status: 'completed', detail: `Query “${options.q}”, location “${options.location || 'any'}”, ${options.requiredKeywords.length} required and ${options.excludeKeywords.length} excluded keywords` },
+      { name: 'Score local catalog', status: 'completed', detail: `${matches.length} of ${seedJobs.length} roles met every rule and the ${options.minFit}% threshold` },
+      { name: 'Save and deduplicate', status: 'completed', detail: `${added} saved, ${duplicates} already tracked` }
     ];
-    const item = { id: nanoid(), status: 'completed', createdAt: timestamp(), completedAt: timestamp(), search, found: matches.length, minFit: Number(req.body.minFit || 60), steps, actions: matches.map((m) => `Saved ${m.title} at ${m.company} (${m.fitScore}% fit)`) };
-    db.agentRuns.unshift(item); auditEvent(db, 'agent', `Completed local autonomous hunt: ${matches.length} matches saved.`, { runId: item.id }); return item;
+    const item = { id: nanoid(), status: 'completed', createdAt: timestamp(), completedAt: timestamp(), search: { q: options.q, location: options.location }, options, inspected: seedJobs.length, found: matches.length, added, duplicates, minFit: options.minFit, matches: matches.map((m) => ({ company: m.company, title: m.title, location: m.location, url: m.url, fitScore: m.fitScore, reasons: m.reasons })), steps, actions: matches.map((m) => `Matched ${m.title} at ${m.company} (${m.fitScore}% fit)`) };
+    db.agentRuns.unshift(item); db.agentRuns = db.agentRuns.slice(0,100); auditEvent(db, 'agent', `Local hunt inspected ${seedJobs.length} roles, matched ${matches.length}, and saved ${added}.`, { runId: item.id }); return item;
   });
   res.status(201).json(run);
 });
-
+app.get('/api/hunt-presets', async (_req, res) => { const db = await readDb(); res.json(db.huntPresets); });
+app.post('/api/hunt-presets', async (req, res) => { const preset = await mutate((db) => { const options = huntOptions(req.body, db.profile); const item = { id: nanoid(), name: safeText(req.body.name, 100) || options.q, options, createdAt: timestamp(), updatedAt: timestamp() }; db.huntPresets.unshift(item); auditEvent(db, 'agent', `Saved hunt preset “${item.name}”.`); return item; }); res.status(201).json(preset); });
+app.delete('/api/hunt-presets/:id', async (req, res) => { const removed = await mutate((db) => { const before = db.huntPresets.length; db.huntPresets = db.huntPresets.filter((x) => x.id !== req.params.id); return before !== db.huntPresets.length; }); res.status(removed ? 204 : 404).end(); });
 const csvEscape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
 app.get('/api/export/jobs.csv', async (_req, res) => { const db = await readDb(); const columns = ['company','title','status','location','salary','url','source','fitScore','tags','description']; const rows = [columns.join(','), ...db.jobs.map((j) => columns.map((c) => csvEscape(c === 'tags' ? (j.tags || []).join('|') : j[c])).join(','))]; res.type('text/csv').setHeader('Content-Disposition', 'attachment; filename="jobhuntr-jobs.csv"'); res.send(rows.join('\n')); });
 
@@ -194,7 +201,7 @@ app.post('/api/import', async (req, res) => {
   const imported = req.body;
   if (!imported || typeof imported !== 'object' || Array.isArray(imported) || !Array.isArray(imported.jobs)) return res.status(400).json({ error: 'Expected a JobHuntr export with jobs[]' });
   if (imported.jobs.length > 5000 || (imported.activities?.length || 0) > 10000) return res.status(400).json({ error: 'Backup exceeds safe local import limits' });
-  const allowed = ['meta','profile','jobs','resumes','coverLetters','templates','submissions','coachingSessions','outreachDrafts','agentRuns','activities'];
+  const allowed = ['meta','profile','jobs','resumes','coverLetters','templates','submissions','coachingSessions','outreachDrafts','huntPresets','agentRuns','activities'];
   await mutate((db) => { for (const key of allowed) if (imported[key] !== undefined) db[key] = imported[key]; auditEvent(db, 'import', 'Imported and migrated a local JobHuntr backup.'); }); res.json({ ok: true });
 });
 

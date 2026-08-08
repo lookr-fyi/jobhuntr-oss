@@ -18,7 +18,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 3, createdAt, updatedAt: createdAt },
+    meta: { version: 4, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: 'Local Job Hunter',
@@ -29,13 +29,14 @@ export function emptyDb() {
       resumeText: 'Paste your resume here. JobHuntr stores it only on this machine.',
       preferences: { remote: true, locations: ['Remote'], minSalary: 120000 }
     },
-    jobs: seedJobs.map((job, index) => ({ id: nanoid(), status: index === 0 ? 'interested' : 'saved', fitScore: 75 + index * 4, createdAt, updatedAt: createdAt, notes: [], tasks: [], contacts: [], ...job })),
+    jobs: seedJobs.slice(0, 2).map((job, index) => ({ id: nanoid(), status: index === 0 ? 'interested' : 'saved', statusHistory: [{ status: index === 0 ? 'interested' : 'saved', at: createdAt }], fitScore: scoreJob(job, { skills: ['TypeScript', 'React', 'Python', 'Automation'], targetRoles: ['Software Engineer', 'Product Engineer'], preferences: { remote: true } }), createdAt, updatedAt: createdAt, notes: [], tasks: [], contacts: [], ...job })),
     resumes: [],
     coverLetters: [],
     templates: defaultTemplates(),
     submissions: [],
     coachingSessions: [],
     outreachDrafts: [],
+    huntPresets: [],
     agentRuns: [],
     activities: [{ id: nanoid(), at: createdAt, type: 'system', message: 'Initialized local JobHuntr workspace.' }]
   };
@@ -59,13 +60,14 @@ function migrate(db) {
   db.submissions ||= [];
   db.coachingSessions ||= [];
   db.outreachDrafts ||= [];
+  db.huntPresets ||= [];
   db.agentRuns ||= [];
   db.activities ||= [];
   for (const job of db.jobs) {
     job.notes ||= []; job.tasks ||= []; job.contacts ||= []; job.tags ||= [];
     job.statusHistory ||= [{ status: job.status || 'saved', at: job.createdAt || now() }];
   }
-  db.meta.version = 3;
+  db.meta.version = 4;
   return db;
 }
 
@@ -125,6 +127,27 @@ export function scoreJob(job, profile) {
   const roleHits = roles.filter((r) => haystack.includes(String(r).toLowerCase().split(' ')[0])).length;
   const remoteBoost = profile.preferences?.remote && String(job.location || '').toLowerCase().includes('remote') ? 10 : 0;
   return Math.max(30, Math.min(99, 50 + skillHits * 8 + roleHits * 10 + remoteBoost));
+}
+
+export function findLocalMatches(catalog, profile, options = {}) {
+  const q = String(options.q || '').trim().toLowerCase();
+  const queryTokens = q.split(/\s+/).filter((token) => token.length > 1 && !['and','or','the'].includes(token));
+  const location = String(options.location || '').trim().toLowerCase();
+  const excludes = (options.excludeKeywords || []).map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+  const required = (options.requiredKeywords || []).map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+  const minFit = Math.max(0, Math.min(100, Number(options.minFit ?? 60)));
+  const maxResults = Math.max(1, Math.min(100, Number(options.maxResults ?? 25)));
+  const unique = catalog.filter((job, index, all) => all.findIndex((item) => item.url ? item.url === job.url : item.company === job.company && item.title === job.title) === index);
+  return unique.map((job) => {
+    const haystack = `${job.title || ''} ${job.company || ''} ${job.location || ''} ${job.description || ''} ${(job.tags || []).join(' ')}`.toLowerCase();
+    const fitScore = scoreJob(job, profile); const matchedTerms = queryTokens.filter((term) => haystack.includes(term));
+    const excludedTerms = excludes.filter((term) => haystack.includes(term)); const missingRequired = required.filter((term) => !haystack.includes(term));
+    const queryMatch = !queryTokens.length || matchedTerms.length > 0;
+    const locationMatch = !location || String(job.location || '').toLowerCase().includes(location) || (location === 'remote' && /remote|anywhere/.test(haystack));
+    const eligible = queryMatch && locationMatch && !excludedTerms.length && !missingRequired.length && fitScore >= minFit;
+    const reasons = [...matchedTerms.map((term) => `matches “${term}”`), ...(fitScore >= minFit ? [`${fitScore}% profile fit`] : []), ...(locationMatch && location ? [`location matches “${location}”`] : []), ...required.map((term) => `contains required “${term}”`)];
+    return { ...job, fitScore, eligible, reasons, rejectedBecause: [...(!queryMatch ? ['query mismatch'] : []), ...(!locationMatch ? ['location mismatch'] : []), ...excludedTerms.map((term) => `excluded keyword “${term}”`), ...missingRequired.map((term) => `missing required “${term}”`), ...(fitScore < minFit ? [`fit below ${minFit}%`] : [])] };
+  }).filter((job) => job.eligible).sort((a,b) => b.fitScore - a.fitScore).slice(0,maxResults);
 }
 
 export function summarize(db) {
