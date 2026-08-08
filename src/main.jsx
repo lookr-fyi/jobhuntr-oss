@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Briefcase,
@@ -68,7 +68,7 @@ function App() {
       </div>
     );
   return (
-    <div className="app">
+    <div className={sidebarHovered ? "app sidebar-open" : "app"}>
       {state.profile.onboarded === false && (
         <Onboarding profile={state.profile} reload={load} />
       )}
@@ -140,7 +140,14 @@ function App() {
       <main>
         <header
           className={
-            ["overview", "queue", "runs"].includes(tab)
+            [
+              "overview",
+              "queue",
+              "runs",
+              "resume",
+              "cover-letter",
+              "tracker",
+            ].includes(tab)
               ? "integrated-page-header"
               : ""
           }
@@ -162,7 +169,9 @@ function App() {
         {tab === "gigs" && <Gigs state={state} reload={load} />}
         {tab === "agent" && <Agent state={state} reload={load} />}{" "}
         {tab === "runs" && <RunsPage state={state} setTab={setTab} />}
-        {tab === "cover-letter" && <Resume state={state} reload={load} />}
+        {tab === "cover-letter" && (
+          <Resume state={state} reload={load} mode="cover-letter" />
+        )}
         {tab === "outreach" && <Coach state={state} reload={load} />}
         {tab === "settings" && (
           <SettingsPage state={state} reload={load} />
@@ -524,6 +533,18 @@ function Tracker({ state, reload }) {
   };
   return (
     <section className="tracker-page">
+      <div className="v2-tracker-header">
+        <h2>Job Tracker</h2>
+        <div>
+          <span>{filtered.length} applications</span>
+          <button className="secondary" onClick={() => setMode("board")}>
+            Funnel Analysis
+          </button>
+          <a className="button secondary" href="/api/export/jobs.csv">
+            <Download size={15} /> Export CSV
+          </a>
+        </div>
+      </div>
       <div className="tracker-toolbar card">
         <div className="searchbox">
           <Search size={16} />
@@ -1171,7 +1192,8 @@ function SubmissionCard({ submission: s, state, reload }) {
     </div>
   );
 }
-function Resume({ state, reload }) {
+function Resume({ state, reload, mode = "resume" }) {
+  const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
   const [name, setName] = useState("Targeted resume");
   const [templateId, setTemplateId] = useState(
@@ -1182,13 +1204,15 @@ function Resume({ state, reload }) {
   const [letter, setLetter] = useState(state.coverLetters[0] || null);
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const saveResume = async () => {
+    const content = resumeRef.current?.value ?? resume;
+    setResume(content);
     await api("/api/profile", {
       method: "PUT",
-      body: JSON.stringify({ resumeText: resume }),
+      body: JSON.stringify({ resumeText: content }),
     });
     const saved = await api("/api/resumes", {
       method: "POST",
-      body: JSON.stringify({ name, templateId, content: resume }),
+      body: JSON.stringify({ name, templateId, content }),
     });
     setPreview(saved);
     await reload();
@@ -1210,8 +1234,153 @@ function Resume({ state, reload }) {
     setLetter(saved);
     await reload();
   };
+  if (mode === "cover-letter") {
+    return (
+      <section className="v2-document-page">
+        <div className="v2-document-page-head">
+          <div>
+            <h2>Cover Letters</h2>
+            <p>
+              {state.coverLetters.length} cover letter
+              {state.coverLetters.length === 1 ? "" : "s"} available
+            </p>
+          </div>
+          <div className="v2-document-actions">
+            <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
+              {state.jobs.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.company} — {job.title}
+                </option>
+              ))}
+            </select>
+            <button onClick={generateLetter}>
+              <Plus size={16} /> Create Cover Letter
+            </button>
+          </div>
+        </div>
+        <div className="v2-cover-layout">
+          <div className="v2-template-grid">
+            {state.coverLetters.map((item) => (
+              <button
+                key={item.id}
+                className={letter?.id === item.id ? "selected" : ""}
+                onClick={() => setLetter(item)}
+              >
+                <span className="v2-file-icon">
+                  <FileText size={22} />
+                </span>
+                <span>
+                  <b>{item.title}</b>
+                  <small>
+                    Updated{" "}
+                    {new Date(
+                      item.updatedAt || item.createdAt,
+                    ).toLocaleDateString()}
+                  </small>
+                </span>
+              </button>
+            ))}
+            {!state.coverLetters.length && (
+              <div className="v2-document-empty">
+                <FileText />
+                <h3>No cover letters yet</h3>
+                <p>
+                  Select a tracked job and create your first reusable letter.
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="card v2-letter-workspace">
+            {letter ? (
+              <>
+                <div className="row">
+                  <h3>Edit Cover Letter</h3>
+                  <a
+                    href={`/print/cover-letter/${letter.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Preview PDF ↗
+                  </a>
+                </div>
+                <input
+                  value={letter.title}
+                  onChange={(e) =>
+                    setLetter({ ...letter, title: e.target.value })
+                  }
+                />
+                <textarea
+                  className="letter"
+                  value={letter.body}
+                  onChange={(e) =>
+                    setLetter({ ...letter, body: e.target.value })
+                  }
+                />
+                <div className="inline">
+                  <button onClick={saveLetter}>
+                    <Save size={16} /> Save changes
+                  </button>
+                  <button
+                    className="danger"
+                    onClick={async () => {
+                      await api(`/api/cover-letters/${letter.id}`, {
+                        method: "DELETE",
+                      });
+                      setLetter(null);
+                      reload();
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="v2-detail-empty">
+                <FileText />
+                <h3>Select a cover letter</h3>
+                <p>Choose a saved letter to preview and edit its content.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="resume-studio">
+      <div className="v2-ats-header">
+        <div>
+          <h2>ATS Resume</h2>
+          <p>
+            Create reusable templates and generate tailored resumes for each
+            application.
+          </p>
+        </div>
+        <span>
+          {state.resumes.length} generated resume
+          {state.resumes.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <div className="v2-resume-templates">
+        {state.templates.map((template) => (
+          <button
+            key={template.id}
+            className={templateId === template.id ? "selected" : ""}
+            onClick={() => setTemplateId(template.id)}
+          >
+            <span className="v2-template-preview">
+              <FileText size={26} />
+              <i />
+              <i />
+              <i />
+            </span>
+            <span>
+              <b>{template.name}</b>
+              <small>{template.description}</small>
+            </span>
+          </button>
+        ))}
+      </div>
       <div className="card resume-editor">
         <div className="row">
           <h3>Resume editor</h3>
@@ -1242,6 +1411,7 @@ function Resume({ state, reload }) {
           </select>
         </div>
         <textarea
+          ref={resumeRef}
           className="resume"
           value={resume}
           onChange={(e) => setResume(e.target.value)}
@@ -1335,24 +1505,6 @@ function Resume({ state, reload }) {
         ) : (
           <p className="empty">Save your first tailored version.</p>
         )}
-        <h3>Cover letters</h3>
-        <button onClick={generateLetter}>
-          <Sparkles size={16} /> Generate for selected role
-        </button>
-        {state.coverLetters.map((item) => (
-          <button
-            className={
-              letter?.id === item.id ? "letter-row selected" : "letter-row"
-            }
-            key={item.id}
-            onClick={() => setLetter(item)}
-          >
-            <b>{item.title}</b>
-            <small>
-              {new Date(item.updatedAt || item.createdAt).toLocaleDateString()}
-            </small>
-          </button>
-        ))}
       </div>
       {preview && (
         <div className="card document-preview">
@@ -1373,52 +1525,6 @@ function Resume({ state, reload }) {
           />
         </div>
       )}
-      <div className="card letter-editor">
-        <div className="row">
-          <h3>Cover letter editor</h3>
-          {letter && (
-            <a
-              href={`/print/cover-letter/${letter.id}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Print / PDF ↗
-            </a>
-          )}
-        </div>
-        {letter ? (
-          <>
-            <input
-              value={letter.title}
-              onChange={(e) => setLetter({ ...letter, title: e.target.value })}
-            />
-            <textarea
-              className="letter"
-              value={letter.body}
-              onChange={(e) => setLetter({ ...letter, body: e.target.value })}
-            />
-            <div className="inline">
-              <button onClick={saveLetter}>
-                <Save size={16} /> Save changes
-              </button>
-              <button
-                className="danger"
-                onClick={async () => {
-                  await api(`/api/cover-letters/${letter.id}`, {
-                    method: "DELETE",
-                  });
-                  setLetter(null);
-                  reload();
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          </>
-        ) : (
-          <p className="empty">Generate or select a cover letter to edit it.</p>
-        )}
-      </div>
     </section>
   );
 }
