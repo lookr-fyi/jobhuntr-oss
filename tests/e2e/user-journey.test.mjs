@@ -608,7 +608,23 @@ test(
         true,
         "closing a dialog should restore focus to its trigger",
       );
-      await page.getByText("E2E tracker note").waitFor();
+      await page.getByLabel("Filter by agent run").selectOption("manual");
+      await page
+        .getByRole("button", { name: /Founding Product Engineer/ })
+        .click();
+      await page.getByRole("button", { name: "Edit job" }).click();
+      const jobEditForm = page.locator(".job-edit-form");
+      await jobEditForm
+        .getByLabel("title", { exact: true })
+        .fill("Founding Principal Product Engineer");
+      await jobEditForm
+        .getByLabel("salary", { exact: true })
+        .fill("$175k-$225k");
+      await jobEditForm.getByRole("button", { name: "Save job" }).click();
+      await page
+        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .waitFor();
+      await page.getByText("$175k-$225k", { exact: false }).waitFor();
       await assertAccessible(page, "Job Tracker");
 
       await page.getByRole("button", { name: "LinkedIn Audit" }).click();
@@ -837,6 +853,13 @@ test(
           (job) =>
             job.status === "interview" &&
             job.notes.some((note) => note.text === "E2E tracker note"),
+        ),
+      );
+      assert.ok(
+        persisted.jobs.some(
+          (job) =>
+            job.title === "Founding Principal Product Engineer" &&
+            job.salary === "$175k-$225k",
         ),
       );
       assert.equal(persisted.gigs[0].title, "Review an AI resume workflow");
