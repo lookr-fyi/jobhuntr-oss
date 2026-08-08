@@ -129,6 +129,18 @@ test(
         "collapsed desktop navigation icons should remain inside the sidebar",
       );
       await assertAccessible(page, "Overview");
+      await page.getByLabel("Applications evaluated").uncheck();
+      assert.equal(
+        await page.locator(".v2-chart .line.evaluated").count(),
+        0,
+        "overview chart series controls should hide a line",
+      );
+      await page.getByLabel("Applications evaluated").check();
+      await page.locator(".v2-chart").hover({ position: { x: 320, y: 120 } });
+      await page
+        .getByRole("status")
+        .filter({ hasText: /Jobs queued/ })
+        .waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) => response.url().endsWith("/api/state") && response.ok(),

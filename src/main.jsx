@@ -335,6 +335,11 @@ function subtitle(t) {
 function Overview({ state, setTab, reload }) {
   const [refreshing, setRefreshing] = useState(false);
   const [farewellOpen, setFarewellOpen] = useState(false);
+  const [chartVisibility, setChartVisibility] = useState({
+    evaluated: true,
+    queued: true,
+  });
+  const [chartHover, setChartHover] = useState(null);
   const farewellCloseRef = useRef(null);
   useEffect(() => {
     if (!farewellOpen) return undefined;
@@ -364,13 +369,56 @@ function Overview({ state, setTab, reload }) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-  const points = [
-    Math.max(4, Math.round(collected * 0.25)),
-    Math.max(7, Math.round(collected * 0.4)),
-    Math.max(10, Math.round(collected * 0.58)),
-    Math.max(14, Math.round(collected * 0.72)),
-    Math.max(18, collected),
-  ];
+  const chartData = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(now);
+    date.setHours(23, 59, 59, 999);
+    date.setDate(date.getDate() - (6 - index));
+    const through = date.getTime();
+    const available = state.jobs.filter(
+      (job) => new Date(job.createdAt || job.updatedAt).getTime() <= through,
+    );
+    return {
+      date,
+      evaluated: available.length,
+      queued: available.filter((job) => job.status !== "rejected").length,
+    };
+  });
+  const chartWidth = 720;
+  const chartHeight = 260;
+  const chartPaddingX = 48;
+  const chartPaddingY = 32;
+  const visibleSeries = Object.keys(chartVisibility).filter(
+    (key) => chartVisibility[key],
+  );
+  const chartMax = Math.max(
+    1,
+    ...chartData.flatMap((point) => [point.evaluated, point.queued]),
+  );
+  const chartPoint = (index, value) => ({
+    x:
+      chartPaddingX +
+      (index / Math.max(chartData.length - 1, 1)) *
+        (chartWidth - chartPaddingX * 2),
+    y:
+      chartPaddingY +
+      (1 - value / chartMax) * (chartHeight - chartPaddingY * 2),
+  });
+  const chartPath = (key) =>
+    chartData
+      .map((point, index) => {
+        const coordinate = chartPoint(index, point[key]);
+        return `${index ? "L" : "M"}${coordinate.x},${coordinate.y}`;
+      })
+      .join(" ");
+  const updateChartHover = (event) => {
+    if (!visibleSeries.length) return;
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const ratio = Math.min(
+      1,
+      Math.max(0, (event.clientX - bounds.left) / bounds.width),
+    );
+    setChartHover(Math.round(ratio * (chartData.length - 1)));
+  };
   const refresh = async () => {
     setRefreshing(true);
     await reload();
@@ -447,37 +495,114 @@ function Overview({ state, setTab, reload }) {
               <h3>Pipeline over time</h3>
               <p>From your first application to today.</p>
             </div>
-            <div className="v2-chart-legend">
-              <span>
-                <i className="purple" /> Applications evaluated
-              </span>
-              <span>
-                <i className="cyan" /> Jobs queued+
-              </span>
+            <div
+              className="v2-chart-toggles"
+              role="group"
+              aria-label="Toggle chart lines"
+            >
+              {[
+                ["evaluated", "Applications evaluated", "purple"],
+                ["queued", "Jobs queued+", "cyan"],
+              ].map(([key, label, color]) => (
+                <label key={key}>
+                  <input
+                    type="checkbox"
+                    checked={chartVisibility[key]}
+                    onChange={() =>
+                      setChartVisibility((current) => ({
+                        ...current,
+                        [key]: !current[key],
+                      }))
+                    }
+                  />
+                  <i className={color} /> {label}
+                </label>
+              ))}
             </div>
           </div>
           <div
             className="v2-chart"
-            role="img"
-            aria-label="Pipeline trend visualization"
+            onPointerMove={updateChartHover}
+            onPointerLeave={() => setChartHover(null)}
           >
-            {[0, 1, 2, 3].map((i) => (
-              <i className="gridline" key={i} />
-            ))}
-            <svg viewBox="0 0 500 170" preserveAspectRatio="none">
-              <polyline
-                className="line evaluated"
-                points={points
-                  .map((v, i) => `${i * 125},${165 - v * 4}`)
-                  .join(" ")}
-              />
-              <polyline
-                className="line queued"
-                points={points
-                  .map((v, i) => `${i * 125},${170 - v * 2.8}`)
-                  .join(" ")}
-              />
+            <div className="v2-chart-y-labels" aria-hidden="true">
+              {[chartMax, Math.round(chartMax / 2), 0].map((value, index) => (
+                <span key={`${value}-${index}`}>{value}</span>
+              ))}
+            </div>
+            <svg
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="Application progress over the last seven days"
+            >
+              {[0, 1, 2, 3, 4].map((index) => {
+                const y =
+                  chartPaddingY +
+                  ((chartHeight - chartPaddingY * 2) / 4) * index;
+                return (
+                  <line
+                    className="gridline"
+                    key={index}
+                    x1={chartPaddingX}
+                    x2={chartWidth - chartPaddingX}
+                    y1={y}
+                    y2={y}
+                  />
+                );
+              })}
+              {visibleSeries.map((key) => (
+                <path className={`line ${key}`} d={chartPath(key)} key={key} />
+              ))}
+              {chartHover !== null && visibleSeries.length > 0 && (
+                <line
+                  className="hoverline"
+                  x1={chartPoint(chartHover, 0).x}
+                  x2={chartPoint(chartHover, 0).x}
+                  y1={chartPaddingY}
+                  y2={chartHeight - chartPaddingY}
+                />
+              )}
             </svg>
+            <div className="v2-chart-x-labels" aria-hidden="true">
+              <span>
+                {chartData[0].date.toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+              <span>
+                {chartData.at(-1).date.toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </span>
+            </div>
+            {chartHover !== null && (
+              <div
+                className="v2-chart-tooltip"
+                role="status"
+                style={{
+                  left: `${Math.max(8, Math.min(92, (chartHover / 6) * 100))}%`,
+                }}
+              >
+                <b>
+                  {chartData[chartHover].date.toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </b>
+                {visibleSeries.map((key) => (
+                  <span key={key}>
+                    {key === "evaluated"
+                      ? "Applications evaluated"
+                      : "Jobs queued+"}
+                    <strong>{chartData[chartHover][key]}</strong>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
