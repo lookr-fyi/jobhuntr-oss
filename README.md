@@ -5,6 +5,12 @@ A self-contained, open-source rebuild of JobHuntr inspired by JobHuntr v2: job s
 ## One-line local run
 
 ```bash
+./run.sh
+```
+
+or, equivalently:
+
+```bash
 npm run jobhuntr
 ```
 
