@@ -2858,22 +2858,59 @@ button.v2-audit-toggle:hover {
   border-color: #18181a;
 }
 .v2-outreach-filters {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 12px;
-  align-items: end;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
   margin: -4px 0 14px;
   padding: 14px;
   border: 1px solid #e2e8f0;
   border-radius: 9px;
-  background: #fff;
+  background: #f8fafc;
 }
-.v2-outreach-filters label {
+.v2-outreach-filters > label {
   display: grid;
   gap: 6px;
   color: #475569;
   font-size: 12px;
   font-weight: 700;
+}
+.v2-outreach-filters fieldset {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.v2-outreach-filters fieldset + fieldset {
+  padding-left: 24px;
+  border-left: 1px solid #e2e8f0;
+}
+.v2-outreach-filters legend {
+  float: left;
+  margin-right: 2px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.v2-outreach-filters .check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.v2-outreach-filters input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+.v2-outreach-filters > button {
+  margin-left: auto;
 }
 .v2-outreach-layout {
   display: grid;
@@ -3088,7 +3125,25 @@ button.v2-audit-toggle:hover {
     grid-template-columns: 1fr;
   }
   .v2-outreach-filters {
-    grid-template-columns: 1fr;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .v2-outreach-filters fieldset {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .v2-outreach-filters fieldset + fieldset {
+    padding-top: 14px;
+    padding-left: 0;
+    border-top: 1px solid #e2e8f0;
+    border-left: 0;
+  }
+  .v2-outreach-filters legend {
+    width: 100%;
+  }
+  .v2-outreach-filters > button {
+    margin-left: 0;
   }
   .v2-contact-head {
     display: none;

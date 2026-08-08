@@ -1017,6 +1017,12 @@ test(
 
       await page.locator('button[title="Outreach"]').click();
       await page.getByRole("button", { name: "Collect contacts" }).click();
+      assert.equal(
+        await page.getByLabel("Show Connection Messages").isChecked(),
+        false,
+        "connection messages should default hidden like v2",
+      );
+      await page.getByLabel("Show Connection Messages").check();
       const subject = page.getByLabel("Subject");
       await subject.fill("E2E persisted outreach subject");
       await page.getByRole("button", { name: "Save locally" }).click();
@@ -1030,9 +1036,17 @@ test(
       await page
         .getByText("All contacts for this role are already collected.")
         .waitFor();
-      await page.getByRole("button", { name: "Filters" }).click();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Filters", exact: true })
+          .getAttribute("aria-expanded"),
+        "true",
+        "outreach filters should default open like v2",
+      );
       await page.getByLabel("Sort contacts").selectOption("company");
-      await page.getByLabel("Filter contacts by category").selectOption("peer");
+      await page.getByLabel("Recruiters").uncheck();
+      await page.getByLabel("Hiring managers").uncheck();
+      assert.equal(await page.getByLabel("Peers").isChecked(), true);
       await page
         .getByLabel(/Select hiring team at/i)
         .first()

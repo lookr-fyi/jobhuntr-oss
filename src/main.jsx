@@ -5980,11 +5980,20 @@ function OutreachPage({ state, reload }) {
     state.outreachDrafts[0]?.id || "",
   );
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
-  const [category, setCategory] = useState("all");
+  const [statuses, setStatuses] = useState([
+    "draft",
+    "sent",
+    "replied",
+    "archived",
+  ]);
+  const [categories, setCategories] = useState([
+    "recruiter",
+    "hiring_manager",
+    "peer",
+  ]);
   const [sort, setSort] = useState("newest");
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [showMessages, setShowMessages] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [showMessages, setShowMessages] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [connectOpen, setConnectOpen] = useState(false);
   const [deleteContact, setDeleteContact] = useState(null);
@@ -6032,8 +6041,8 @@ function OutreachPage({ state, reload }) {
     .filter((item) => {
       const job = state.jobs.find((candidate) => candidate.id === item.jobId);
       return (
-        (status === "all" || (item.status || "draft") === status) &&
-        (category === "all" || (item.category || "peer") === category) &&
+        statuses.includes(item.status || "draft") &&
+        categories.includes(item.category || "peer") &&
         `${item.subject} ${item.recipient || ""} ${job?.company || ""} ${job?.title || ""}`
           .toLowerCase()
           .includes(query.toLowerCase())
@@ -6062,6 +6071,12 @@ function OutreachPage({ state, reload }) {
       return next;
     });
   };
+  const toggleOutreachFilter = (value, values, setter) =>
+    setter(
+      values.includes(value)
+        ? values.filter((item) => item !== value)
+        : [...values, value],
+    );
   const markSelectedOutreached = async () => {
     setConnecting(true);
     try {
@@ -6141,11 +6156,11 @@ function OutreachPage({ state, reload }) {
       )}
       <div className="v2-outreach-stats">
         <div>
-          <span>Total contacts</span>
+          <span>Collected</span>
           <strong>{state.outreachDrafts.length}</strong>
         </div>
         <div>
-          <span>Ready to contact</span>
+          <span>Listed</span>
           <strong>
             {
               state.outreachDrafts.filter(
@@ -6191,20 +6206,26 @@ function OutreachPage({ state, reload }) {
       </div>
       {filtersOpen && (
         <div className="v2-outreach-filters">
-          <label>
-            Contact status
-            <select
-              aria-label="Filter contacts by status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              <option value="all">All statuses</option>
-              <option value="draft">Listed</option>
-              <option value="sent">Outreached</option>
-              <option value="replied">Replied</option>
-              <option value="archived">Archived</option>
-            </select>
-          </label>
+          <fieldset>
+            <legend>Contact status</legend>
+            {[
+              ["draft", "Listed"],
+              ["sent", "Outreached"],
+              ["replied", "Replied"],
+              ["archived", "Archived"],
+            ].map(([value, label]) => (
+              <label className="check" key={value}>
+                <input
+                  type="checkbox"
+                  checked={statuses.includes(value)}
+                  onChange={() =>
+                    toggleOutreachFilter(value, statuses, setStatuses)
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
           <label>
             Sort contacts
             <select
@@ -6217,25 +6238,31 @@ function OutreachPage({ state, reload }) {
               <option value="company">Company A–Z</option>
             </select>
           </label>
-          <label>
-            Contact category
-            <select
-              aria-label="Filter contacts by category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            >
-              <option value="all">All categories</option>
-              <option value="recruiter">Recruiters</option>
-              <option value="hiring_manager">Hiring managers</option>
-              <option value="peer">Peers</option>
-            </select>
-          </label>
+          <fieldset>
+            <legend>Contact category</legend>
+            {[
+              ["recruiter", "Recruiters"],
+              ["hiring_manager", "Hiring managers"],
+              ["peer", "Peers"],
+            ].map(([value, label]) => (
+              <label className="check" key={value}>
+                <input
+                  type="checkbox"
+                  checked={categories.includes(value)}
+                  onChange={() =>
+                    toggleOutreachFilter(value, categories, setCategories)
+                  }
+                />
+                {label}
+              </label>
+            ))}
+          </fieldset>
           <button
             className="secondary"
             onClick={() => {
               setQuery("");
-              setStatus("all");
-              setCategory("all");
+              setStatuses(["draft", "sent", "replied", "archived"]);
+              setCategories(["recruiter", "hiring_manager", "peer"]);
               setSort("newest");
             }}
           >
