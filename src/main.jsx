@@ -4304,8 +4304,19 @@ function Resume({ state, reload, mode = "resume" }) {
                 <i />
               </span>
               <span>
-                <b>{template.name}</b>
+                <b>
+                  {template.name}
+                  {!template.originalResume &&
+                    !["clean-ats", "impact", "career-switch"].includes(
+                      template.id,
+                    ) && <em className="v2-template-status">In Progress</em>}
+                </b>
                 <small>{template.description}</small>
+                {template.additionalExperience && (
+                  <small className="v2-template-enriched">
+                    + Additional Experience
+                  </small>
+                )}
               </span>
             </button>
             <div className="v2-template-actions">
@@ -4503,6 +4514,16 @@ function Resume({ state, reload, mode = "resume" }) {
                         </span>
                         <small>{item.name}</small>
                       </button>
+                      {job?.url && (
+                        <a
+                          className="v2-resume-job-link"
+                          href={job.url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View job post <ExternalLink size={12} />
+                        </a>
+                      )}
                       <a
                         className="v2-resume-download"
                         aria-label={`Download ${item.name} PDF`}

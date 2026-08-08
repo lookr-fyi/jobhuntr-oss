@@ -412,6 +412,10 @@ test(
         .locator(".v2-resume-templates")
         .getByText("E2E Leadership", { exact: true })
         .waitFor();
+      await page
+        .locator(".v2-resume-templates")
+        .getByText("+ Additional Experience", { exact: true })
+        .waitFor();
       await page.getByLabel("Search resume templates").fill("E2E Leadership");
       assert.equal(
         await page
@@ -438,6 +442,10 @@ test(
       await page
         .locator(".v2-resume-groups")
         .getByText("E2E tailored resume", { exact: true })
+        .waitFor();
+      await page
+        .locator(".v2-resume-groups")
+        .getByRole("link", { name: "View job post" })
         .waitFor();
       await page.getByLabel("Delete E2E tailored resume").click();
       const deleteResumeDialog = page.getByRole("alertdialog", {
