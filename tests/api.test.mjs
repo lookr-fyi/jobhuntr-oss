@@ -467,6 +467,13 @@ test("outreach drafts persist edits and manual delivery status", async () => {
   assert.ok(
     ["recruiter", "hiring_manager", "peer"].includes(updated.body.category),
   );
+  const duplicate = await req("/api/outreach/draft", {
+    method: "POST",
+    body: JSON.stringify({ jobId: state.jobs[0].id }),
+  });
+  assert.equal(duplicate.res.status, 200);
+  assert.equal(duplicate.body.id, created.body.id);
+  assert.equal(duplicate.body.collectedCount, 0);
   assert.equal(
     (await req(`/api/outreach/${created.body.id}`, { method: "DELETE" })).res
       .status,

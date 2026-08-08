@@ -5015,6 +5015,8 @@ function OutreachPage({ state, reload }) {
   const [connectOpen, setConnectOpen] = useState(false);
   const [deleteContact, setDeleteContact] = useState(null);
   const [connecting, setConnecting] = useState(false);
+  const [collecting, setCollecting] = useState(false);
+  const [collectFeedback, setCollectFeedback] = useState("");
   const connectCloseRef = useRef(null);
   const [draft, setDraft] = useState(
     state.outreachDrafts.find((item) => item.id === selectedId) || null,
@@ -5033,13 +5035,24 @@ function OutreachPage({ state, reload }) {
     };
   }, [connectOpen]);
   const generate = async () => {
-    const created = await api("/api/outreach/draft", {
-      method: "POST",
-      body: JSON.stringify({ jobId }),
-    });
-    setSelectedId(created.id);
-    setDraft(created);
-    await reload();
+    setCollecting(true);
+    setCollectFeedback("");
+    try {
+      const created = await api("/api/outreach/draft", {
+        method: "POST",
+        body: JSON.stringify({ jobId }),
+      });
+      setSelectedId(created.id);
+      setDraft(created);
+      setCollectFeedback(
+        created.collectedCount
+          ? `${created.collectedCount} contact${created.collectedCount === 1 ? "" : "s"} collected.`
+          : "All contacts for this role are already collected.",
+      );
+      await reload();
+    } finally {
+      setCollecting(false);
+    }
   };
   const visible = state.outreachDrafts
     .filter((item) => {
@@ -5134,8 +5147,9 @@ function OutreachPage({ state, reload }) {
               </option>
             ))}
           </select>
-          <button disabled={!jobId} onClick={generate}>
-            <Users size={16} /> Collect contacts
+          <button disabled={!jobId || collecting} onClick={generate}>
+            <Users size={16} />{" "}
+            {collecting ? "Collecting…" : "Collect contacts"}
           </button>
           <button
             disabled={!selectedIds.size}
@@ -5146,6 +5160,11 @@ function OutreachPage({ state, reload }) {
           </button>
         </div>
       </div>
+      {collectFeedback && (
+        <div className="v2-save-notice" role="status">
+          <CheckCircle2 size={16} /> {collectFeedback}
+        </div>
+      )}
       <div className="v2-outreach-stats">
         <div>
           <span>Total contacts</span>

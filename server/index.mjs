@@ -924,43 +924,65 @@ app.delete("/api/career-stories/:id", async (req, res) => {
 });
 
 app.post("/api/outreach/draft", async (req, res) => {
-  const draft = await mutate((db) => {
+  const result = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.body.jobId);
     if (!job) return null;
-    const contact =
-      job.contacts.find((c) => c.id === req.body.contactId) || job.contacts[0];
-    const recipient = contact?.name || "there";
-    const contactRole = safeText(contact?.role, 200);
-    const category = /recruit/i.test(contactRole)
-      ? "recruiter"
-      : /hiring|manager|director|head|lead/i.test(contactRole)
-        ? "hiring_manager"
-        : "peer";
-    const body = `Hi ${recipient},\n\nI’m exploring the ${job.title} opportunity at ${job.company}. My background in ${(db.profile.skills || []).slice(0, 3).join(", ")} looks closely aligned, particularly with ${job.description || "the team’s product goals"}.\n\nIf you’re open to it, I’d appreciate hearing what the team values most in candidates for this role.\n\nBest,\n${db.profile.name}`;
-    const item = {
-      id: nanoid(),
-      jobId: job.id,
-      contactId: contact?.id || "",
-      recipient: contact?.name || "Hiring team",
-      contactRole: contactRole || "Hiring team",
-      contactEmail: safeText(contact?.email, 300),
-      category,
-      connectionDegree: contact ? "Known contact" : "Company contact",
-      channel: req.body.channel === "email" ? "email" : "linkedin",
-      subject: `Interest in ${job.title} at ${job.company}`,
-      body,
-      status: "draft",
-      createdAt: timestamp(),
-      updatedAt: timestamp(),
-    };
-    db.outreachDrafts.unshift(item);
-    auditEvent(db, "outreach", `Drafted outreach for ${job.company}.`, {
-      jobId: job.id,
-    });
-    return item;
+    const requested = req.body.contactId
+      ? job.contacts.filter((contact) => contact.id === req.body.contactId)
+      : job.contacts;
+    const contacts = requested.length ? requested : [null];
+    const collected = [];
+    let primary = null;
+    for (const contact of contacts) {
+      const contactId = contact?.id || "";
+      const existing = db.outreachDrafts.find(
+        (item) => item.jobId === job.id && item.contactId === contactId,
+      );
+      if (existing) {
+        primary ||= existing;
+        continue;
+      }
+      const recipient = contact?.name || "there";
+      const contactRole = safeText(contact?.role, 200);
+      const category = /recruit/i.test(contactRole)
+        ? "recruiter"
+        : /hiring|manager|director|head|lead/i.test(contactRole)
+          ? "hiring_manager"
+          : "peer";
+      const body = `Hi ${recipient},\n\nI’m exploring the ${job.title} opportunity at ${job.company}. My background in ${(db.profile.skills || []).slice(0, 3).join(", ")} looks closely aligned, particularly with ${job.description || "the team’s product goals"}.\n\nIf you’re open to it, I’d appreciate hearing what the team values most in candidates for this role.\n\nBest,\n${db.profile.name}`;
+      const item = {
+        id: nanoid(),
+        jobId: job.id,
+        contactId,
+        recipient: contact?.name || "Hiring team",
+        contactRole: contactRole || "Hiring team",
+        contactEmail: safeText(contact?.email, 300),
+        category,
+        connectionDegree: contact ? "Known contact" : "Company contact",
+        channel: req.body.channel === "email" ? "email" : "linkedin",
+        subject: `Interest in ${job.title} at ${job.company}`,
+        body,
+        status: "draft",
+        createdAt: timestamp(),
+        updatedAt: timestamp(),
+      };
+      db.outreachDrafts.unshift(item);
+      collected.push(item);
+      primary ||= item;
+    }
+    if (collected.length)
+      auditEvent(
+        db,
+        "outreach",
+        `Collected ${collected.length} outreach contact${collected.length === 1 ? "" : "s"} for ${job.company}.`,
+        { jobId: job.id },
+      );
+    return { primary, collectedCount: collected.length };
   });
-  if (!draft) return res.status(404).json({ error: "Job not found" });
-  res.status(201).json(draft);
+  if (!result) return res.status(404).json({ error: "Job not found" });
+  res
+    .status(result.collectedCount ? 201 : 200)
+    .json({ ...result.primary, collectedCount: result.collectedCount });
 });
 const ProfileAuditSchema = z.object({
   profileUrl: z.string().max(1000).optional().default(""),

@@ -854,6 +854,10 @@ test(
         .getByRole("heading", { name: "Outreach", exact: true })
         .waitFor();
       await page.getByText("E2E persisted outreach subject").first().waitFor();
+      await page.getByRole("button", { name: "Collect contacts" }).click();
+      await page
+        .getByText("All contacts for this role are already collected.")
+        .waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Sort contacts").selectOption("company");
       await page.getByLabel("Filter contacts by category").selectOption("peer");
