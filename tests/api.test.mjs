@@ -83,14 +83,29 @@ test("can add and update a tracked job", async () => {
 test("agent run saves matches and logs actions", async () => {
   const run = await req("/api/agent-runs/start", {
     method: "POST",
-    body: JSON.stringify({ q: "engineer", minFit: 50 }),
+    body: JSON.stringify({ q: "engineer", minFit: 50, optimizeResume: true }),
   });
   assert.equal(run.res.status, 201);
   assert.equal(run.body.status, "completed");
   assert.ok(run.body.actions.length > 0);
-  assert.equal(run.body.steps.length, 5);
+  assert.equal(run.body.steps.length, 6);
   assert.deepEqual(run.body.workflows, ["linkedin", "indeed"]);
   assert.ok(run.body.added >= 1);
+  assert.equal(run.body.queued, run.body.added);
+  assert.equal(
+    run.body.optimizedResumes + run.body.originalResumes,
+    run.body.queued,
+  );
+  const state = (await req("/api/state")).body;
+  assert.equal(
+    state.submissions.filter((item) => item.atsDecision).length,
+    run.body.queued,
+  );
+  assert.ok(
+    state.submissions.every(
+      (item) => !item.atsDecision || Number.isFinite(item.atsScore),
+    ),
+  );
 });
 
 test("hunt preview applies role, location, required, excluded, and fit rules truthfully", async () => {

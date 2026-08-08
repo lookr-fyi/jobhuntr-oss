@@ -365,11 +365,12 @@ test(
       await assertAccessible(page, "ATS Resume");
 
       await page.locator('button[title="Submission Queue"]').click();
+      await page
+        .locator(".v2-ats-recommendation")
+        .filter({ hasText: /ATS resume generated|Original resume meets/ })
+        .first()
+        .waitFor();
       await page.getByRole("tab", { name: /Search Jobs/ }).click();
-      const sourceMatch = Number.parseInt(
-        await page.locator(".v2-queue-list button.selected em").innerText(),
-        10,
-      );
       await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
@@ -379,17 +380,11 @@ test(
       const resumeAttachment = page.getByLabel("Resume attachment");
       await resumeAttachment.waitFor();
       assert.equal(
-        Boolean(await resumeAttachment.inputValue()),
-        sourceMatch >= 80,
-        "queue preparation should apply the persisted ATS threshold",
+        await resumeAttachment.inputValue(),
+        "profile-resume",
+        "manual queue preparation should attach the original profile resume",
       );
-      await page
-        .getByText(
-          sourceMatch >= 80
-            ? "ATS resume recommended"
-            : "Manual resume review recommended",
-        )
-        .waitFor();
+      await page.getByText("Resume ready for review").waitFor();
       await page.getByLabel("Cover letter attachment").waitFor();
       await page.getByLabel("Minimum queue match score").selectOption("40");
       await page.getByLabel("Sort submission queue").selectOption("fit");
@@ -424,9 +419,7 @@ test(
         ),
         submitDialog.getByRole("button", { name: "Confirm submitted" }).click(),
       ]);
-      await page
-        .getByRole("heading", { name: "Your queue is clear" })
-        .waitFor();
+      await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
 
       await page.getByRole("button", { name: "Cover Letter" }).click();
       await page.getByRole("button", { name: "Create Cover Letter" }).click();
@@ -743,8 +736,21 @@ test(
         "linkedin",
       ]);
       assert.equal(persisted.agentRuns[0].optimizeResume, true);
-      assert.equal(persisted.resumes[0].name, "E2E tailored resume");
-      assert.equal(persisted.submissions[0].status, "submitted");
+      assert.ok(
+        persisted.resumes.some(
+          (resume) => resume.name === "E2E tailored resume",
+        ),
+      );
+      assert.ok(
+        persisted.submissions.some(
+          (submission) => submission.status === "submitted",
+        ),
+      );
+      assert.equal(
+        persisted.submissions.filter((submission) => submission.atsDecision)
+          .length,
+        persisted.agentRuns[0].queued,
+      );
       assert.equal(persisted.coverLetters[0].title, "E2E product letter");
       assert.equal(persisted.profile.preferences.atsThreshold, 85);
       assert.equal(persisted.profileAudits.length, 1);

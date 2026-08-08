@@ -910,53 +910,62 @@ app.patch("/api/outreach/:id", async (req, res) => {
   res.json(draft);
 });
 
-app.post("/api/resume/score", async (req, res) => {
-  const db = await readDb();
-  const text = String(req.body.resumeText || db.profile.resumeText || "");
-  const job =
-    req.body.job || db.jobs.find((j) => j.id === req.body.jobId) || {};
+const scoreResumeAgainstJob = (text, job, profile) => {
+  const resumeLower = String(text || "").toLowerCase();
   const jd =
     `${job.title || ""} ${job.description || ""} ${(job.tags || []).join(" ")}`.toLowerCase();
-  const skills = db.profile.skills || [];
-  const hits = skills.filter(
-    (s) =>
-      text.toLowerCase().includes(String(s).toLowerCase()) ||
-      jd.includes(String(s).toLowerCase()),
+  const skills = profile.skills || [];
+  const hits = skills.filter((skill) =>
+    resumeLower.includes(String(skill).toLowerCase()),
   );
-  const missing = skills.filter((s) => !hits.includes(s)).slice(0, 6);
+  const missing = skills.filter((skill) => !hits.includes(skill)).slice(0, 6);
   const jobWords = [...new Set(jd.match(/[a-z][a-z+#.-]{2,}/g) || [])].filter(
-    (w) =>
-      !["and", "the", "with", "for", "you", "our", "this", "that"].includes(w),
+    (word) =>
+      !["and", "the", "with", "for", "you", "our", "this", "that"].includes(
+        word,
+      ),
   );
-  const resumeLower = text.toLowerCase();
   const keywordHits = jobWords
-    .filter((w) => resumeLower.includes(w))
+    .filter((word) => resumeLower.includes(word))
     .slice(0, 20);
   const missingKeywords = jobWords
-    .filter((w) => !resumeLower.includes(w))
+    .filter((word) => !resumeLower.includes(word))
     .slice(0, 10);
-  const quantified = (text.match(/\b\d+(?:%|x|k|m|\+)?\b/gi) || []).length;
+  const quantifiedBullets = (
+    String(text || "").match(/\b\d+(?:%|x|k|m|\+)?\b/gi) || []
+  ).length;
   const score = Math.min(
     98,
     42 +
       hits.length * 6 +
       Math.min(keywordHits.length, 10) * 3 +
-      Math.min(quantified, 5) * 2,
+      Math.min(quantifiedBullets, 5) * 2,
   );
-  res.json({
+  return {
     score,
     hits,
     missing,
     keywordHits,
     missingKeywords,
-    quantifiedBullets: quantified,
+    quantifiedBullets,
+  };
+};
+
+app.post("/api/resume/score", async (req, res) => {
+  const db = await readDb();
+  const text = String(req.body.resumeText || db.profile.resumeText || "");
+  const job =
+    req.body.job || db.jobs.find((j) => j.id === req.body.jobId) || {};
+  const result = scoreResumeAgainstJob(text, job, db.profile);
+  res.json({
+    ...result,
     suggestions: [
       `Mirror the job title: ${job.title || "target role"}.`,
-      quantified < 3
+      result.quantifiedBullets < 3
         ? "Add at least three quantified outcomes."
         : "Strong use of quantified outcomes.",
-      missingKeywords.length
-        ? `Consider truthful evidence for: ${missingKeywords.slice(0, 5).join(", ")}.`
+      result.missingKeywords.length
+        ? `Consider truthful evidence for: ${result.missingKeywords.slice(0, 5).join(", ")}.`
         : "Your resume covers the main job-description keywords.",
     ],
   });
@@ -1007,6 +1016,9 @@ app.post("/api/agent-runs/start", async (req, res) => {
     const matches = findLocalMatches(seedJobs, db.profile, options);
     let added = 0;
     let duplicates = 0;
+    let optimizedResumes = 0;
+    let originalResumes = 0;
+    let queued = 0;
     for (const match of matches) {
       if (db.jobs.some((job) => job.url && job.url === match.url)) {
         duplicates++;
@@ -1015,7 +1027,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
       const job = { ...match };
       delete job.eligible;
       delete job.rejectedBecause;
-      db.jobs.unshift({
+      const savedJob = {
         ...job,
         id: nanoid(),
         status: "saved",
@@ -1028,8 +1040,72 @@ app.post("/api/agent-runs/start", async (req, res) => {
         statusHistory: [
           { status: "saved", at: timestamp(), source: "local-hunt" },
         ],
-      });
+      };
+      db.jobs.unshift(savedJob);
       added++;
+      if (options.optimizeResume) {
+        const original = scoreResumeAgainstJob(
+          db.profile.resumeText,
+          savedJob,
+          db.profile,
+        );
+        const threshold = Number(db.profile.preferences?.atsThreshold ?? 80);
+        let resumeId = "profile-resume";
+        let decision = "original";
+        if (original.score < threshold) {
+          const truthfulKeywords = original.missingKeywords
+            .filter((word) =>
+              (db.profile.skills || []).some(
+                (skill) => String(skill).toLowerCase() === word,
+              ),
+            )
+            .slice(0, 5);
+          const tailored = {
+            id: nanoid(),
+            name: `${savedJob.company} — ${savedJob.title}`,
+            templateId: db.templates[0]?.id || "clean-ats",
+            jobId: savedJob.id,
+            content: [
+              db.profile.resumeText,
+              truthfulKeywords.length
+                ? `\n\nRELEVANT SKILLS\n${truthfulKeywords.join(" · ")}`
+                : "",
+            ].join(""),
+            sourceAtsScore: original.score,
+            generatedBy: "infinite-hunt",
+            createdAt: timestamp(),
+            updatedAt: timestamp(),
+          };
+          db.resumes.unshift(tailored);
+          resumeId = tailored.id;
+          decision = "optimized";
+          optimizedResumes++;
+        } else {
+          originalResumes++;
+        }
+        db.submissions.unshift({
+          id: nanoid(),
+          jobId: savedJob.id,
+          resumeId,
+          coverLetterId: "",
+          status: "draft",
+          atsScore: original.score,
+          atsThreshold: threshold,
+          atsDecision: decision,
+          checklist: [
+            { id: nanoid(), text: "Review resume alignment", done: true },
+            { id: nanoid(), text: "Review cover letter", done: false },
+            {
+              id: nanoid(),
+              text: "Confirm application details",
+              done: false,
+            },
+          ],
+          createdAt: timestamp(),
+          updatedAt: timestamp(),
+        });
+        queued++;
+      }
     }
     const steps = [
       {
@@ -1058,6 +1134,13 @@ app.post("/api/agent-runs/start", async (req, res) => {
         detail: `${added} saved, ${duplicates} already tracked`,
       },
     ];
+    if (options.optimizeResume) {
+      steps.push({
+        name: "Prepare application packets",
+        status: "completed",
+        detail: `${queued} queued · ${optimizedResumes} ATS resumes generated · ${originalResumes} original resumes already met the threshold`,
+      });
+    }
     const item = {
       id: nanoid(),
       status: "completed",
@@ -1071,6 +1154,9 @@ app.post("/api/agent-runs/start", async (req, res) => {
       found: matches.length,
       added,
       duplicates,
+      queued,
+      optimizedResumes,
+      originalResumes,
       minFit: options.minFit,
       matches: matches.map((m) => ({
         company: m.company,

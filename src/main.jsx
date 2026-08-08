@@ -2191,14 +2191,10 @@ function Queue({ state, reload }) {
   const sourceSelected =
     visibleSourceJobs.find((job) => job.id === sourceSelectedId) ||
     visibleSourceJobs[0];
-  const atsThreshold = state.profile.preferences?.atsThreshold ?? 80;
   const recommendedResume = (targetJobId) => {
-    const targetJob = state.jobs.find((job) => job.id === targetJobId);
-    if ((targetJob?.fitScore || 0) < atsThreshold) return "";
     return (
       state.resumes.find((resume) => resume.jobId === targetJobId)?.id ||
-      state.resumes[0]?.id ||
-      ""
+      "profile-resume"
     );
   };
   const create = async () => {
@@ -2606,8 +2602,6 @@ function InboxIcon() {
 }
 function SubmissionCard({ submission: s, state, reload }) {
   const job = state.jobs.find((j) => j.id === s.jobId);
-  const atsThreshold = state.profile.preferences?.atsThreshold ?? 80;
-  const meetsAtsThreshold = (job?.fitScore || 0) >= atsThreshold;
   const updatePacket = async (body) => {
     await api(`/api/submissions/${s.id}`, {
       method: "PATCH",
@@ -2648,23 +2642,26 @@ function SubmissionCard({ submission: s, state, reload }) {
       <div className="attachments v2-packet-attachments">
         <div
           className={`v2-ats-recommendation ${
-            meetsAtsThreshold ? "recommended" : "manual"
+            s.atsDecision === "optimized" ? "recommended" : "manual"
           }`}
         >
-          {meetsAtsThreshold ? (
+          {s.atsDecision === "optimized" ? (
             <CheckCircle2 size={16} />
           ) : (
             <ShieldCheck size={16} />
           )}
           <span>
             <strong>
-              {meetsAtsThreshold
-                ? "ATS resume recommended"
-                : "Manual resume review recommended"}
+              {s.atsDecision === "optimized"
+                ? "ATS resume generated"
+                : s.atsDecision === "original"
+                  ? "Original resume meets your ATS threshold"
+                  : "Resume ready for review"}
             </strong>
             <small>
-              {job?.fitScore || 0}% role match · Your automatic threshold is{" "}
-              {atsThreshold}%
+              {s.atsScore !== undefined
+                ? `${s.atsScore}% original resume alignment · ${s.atsThreshold}% threshold`
+                : `${job?.fitScore || 0}% profile match · Review before submitting`}
             </small>
           </span>
         </div>
@@ -2675,6 +2672,7 @@ function SubmissionCard({ submission: s, state, reload }) {
             onChange={(event) => updatePacket({ resumeId: event.target.value })}
           >
             <option value="">No resume attached</option>
+            <option value="profile-resume">Original profile resume</option>
             {state.resumes.map((resume) => (
               <option key={resume.id} value={resume.id}>
                 {resume.name}
@@ -6852,8 +6850,9 @@ function SettingsPage({ state, reload }) {
                 }
               />
               <small>
-                Tailored ATS templates are recommended only when a role meets
-                this match score.
+                If your original resume already meets this score, JobHuntr skips
+                ATS resume generation. Otherwise, it prepares a tailored
+                version. Default: 80%.
               </small>
             </label>
             <label className="check">
