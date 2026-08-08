@@ -6073,11 +6073,14 @@ function Gigs({ state, reload }) {
   const [form, setForm] = useState(empty);
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [campaignPreview, setCampaignPreview] = useState(null);
+  const [campaignProposal, setCampaignProposal] = useState("");
   const [gigQuery, setGigQuery] = useState("");
   const [myGigQuery, setMyGigQuery] = useState("");
   const [myView, setMyView] = useState("table");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const gigCloseRef = useRef(null);
+  const campaignCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
   const money = (value) =>
     new Intl.NumberFormat("en-US", {
@@ -6141,10 +6144,13 @@ function Gigs({ state, reload }) {
         title: item.title,
         budget: item.budget,
         description: item.description,
+        proposal: campaignProposal,
         source: "JobHuntr Gigs",
       }),
     });
     setSelected(created.id);
+    setCampaignPreview(null);
+    setCampaignProposal("");
     await reload();
   };
   const visibleTrackedGigs = state.gigs.filter((item) =>
@@ -6166,6 +6172,19 @@ function Gigs({ state, reload }) {
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [gig, myView, deleteTarget]);
+  useEffect(() => {
+    if (!campaignPreview) return undefined;
+    const returnFocus = document.activeElement;
+    campaignCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setCampaignPreview(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [campaignPreview]);
   return (
     <section className="gigs-page">
       <ConfirmDialog
@@ -6225,11 +6244,81 @@ function Gigs({ state, reload }) {
                   <span key={skill}>{skill}</span>
                 ))}
               </div>
-              <button onClick={() => applyToGig(item)}>View & apply</button>
+              <button
+                onClick={() => {
+                  setCampaignProposal("");
+                  setCampaignPreview(item);
+                }}
+              >
+                Apply Now
+              </button>
             </article>
           ))}
         </div>
       </div>
+      {campaignPreview && (
+        <div
+          className="v2-template-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gig-campaign-title"
+          onKeyDown={containDialogFocus}
+        >
+          <button
+            className="v2-template-backdrop"
+            aria-label="Close gig application"
+            onClick={() => setCampaignPreview(null)}
+          />
+          <div className="v2-template-modal-content v2-gig-campaign-modal">
+            <div className="v2-gig-campaign-modal-head">
+              <span className="v2-gig-partner">
+                {campaignPreview.client[0]}
+              </span>
+              <div>
+                <small>GIG CAMPAIGN</small>
+                <h2 id="gig-campaign-title">{campaignPreview.title}</h2>
+                <p>by {campaignPreview.client}</p>
+              </div>
+              <strong>{money(campaignPreview.budget)}+ Cash</strong>
+            </div>
+            <section>
+              <h3>Campaign description</h3>
+              <p>{campaignPreview.description}</p>
+              <div className="chips">
+                {campaignPreview.skills.map((skill) => (
+                  <span key={skill}>{skill}</span>
+                ))}
+              </div>
+            </section>
+            <label>
+              Why are you a good fit? <span>Optional</span>
+              <textarea
+                aria-label="Gig application pitch"
+                value={campaignProposal}
+                onChange={(event) => setCampaignProposal(event.target.value)}
+                placeholder="Share relevant experience, your approach, and availability…"
+              />
+            </label>
+            <div className="v2-gig-application-notice">
+              <ShieldCheck size={18} />
+              Your application and pitch are stored only in this local
+              workspace.
+            </div>
+            <div className="v2-template-modal-actions">
+              <button
+                ref={campaignCloseRef}
+                className="secondary"
+                onClick={() => setCampaignPreview(null)}
+              >
+                Cancel
+              </button>
+              <button onClick={() => applyToGig(campaignPreview)}>
+                Submit Application
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="v2-gigs-section-title">
         <div>
           <h3>My Gigs</h3>

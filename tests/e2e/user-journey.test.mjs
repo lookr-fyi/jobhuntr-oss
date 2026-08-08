@@ -911,6 +911,24 @@ test(
       await deleteCoachDialog.getByRole("button", { name: "Cancel" }).click();
 
       await page.getByRole("button", { name: "Gigs" }).click();
+      await page.getByRole("button", { name: "Apply Now" }).first().click();
+      const campaignDialog = page.getByRole("dialog", {
+        name: "Review an AI resume workflow",
+      });
+      await campaignDialog.waitFor();
+      assert.equal(
+        await campaignDialog
+          .getByRole("button", { name: "Cancel" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "gig application review should focus its safe cancel action",
+      );
+      await campaignDialog
+        .getByLabel("Gig application pitch")
+        .fill(
+          "I test complex React workflows and provide evidence-based feedback.",
+        );
+      await assertAccessible(page, "Gig application review");
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -918,7 +936,9 @@ test(
             response.request().method() === "POST" &&
             response.ok(),
         ),
-        page.getByRole("button", { name: "View & apply" }).first().click(),
+        campaignDialog
+          .getByRole("button", { name: "Submit Application" })
+          .click(),
       ]);
       await page
         .getByRole("heading", { name: "Review an AI resume workflow" })
@@ -1068,6 +1088,10 @@ test(
         ),
       );
       assert.equal(persisted.gigs[0].title, "Review an AI resume workflow");
+      assert.equal(
+        persisted.gigs[0].proposal,
+        "I test complex React workflows and provide evidence-based feedback.",
+      );
       assert.equal(
         persisted.outreachDrafts[0].subject,
         "E2E persisted outreach subject",
