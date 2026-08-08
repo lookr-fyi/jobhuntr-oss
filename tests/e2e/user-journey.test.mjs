@@ -173,7 +173,9 @@ test(
         state: "hidden",
       });
 
-      await page.getByRole("button", { name: "Infinite Hunting" }).click();
+      await page
+        .getByRole("button", { name: "Infinite Hunting", exact: true })
+        .click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
       await assertAccessible(page, "Infinite Hunting");
       await page
@@ -213,6 +215,18 @@ test(
       await page.keyboard.press("Escape");
       await runDialog.waitFor({ state: "hidden" });
       await assertAccessible(page, "All Runs");
+      const huntStatus = page.getByRole("button", {
+        name: "Open Infinite Hunting status",
+      });
+      await huntStatus.hover();
+      const huntPopover = page.getByRole("status").filter({
+        hasText: "Infinite Hunt",
+      });
+      await huntPopover.getByText("Inspected", { exact: true }).waitFor();
+      await huntPopover.getByText("Matched", { exact: true }).waitFor();
+      await huntPopover.getByText("Saved", { exact: true }).waitFor();
+      await huntStatus.click();
+      await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
 
       await page.getByRole("button", { name: "Job Board" }).click();
       await page.getByRole("heading", { name: "Today's Picks" }).waitFor();

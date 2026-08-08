@@ -4435,7 +4435,8 @@ button.v2-run-row:hover {
     padding: 20px 16px 80px;
   }
   .v2-farewell-button {
-    right: 16px;
+    right: auto;
+    left: 16px;
     bottom: 76px;
   }
   .v2-run-stats {
@@ -4487,7 +4488,7 @@ button.v2-run-row:hover {
 }
 .v2-farewell-button {
   position: fixed;
-  right: 32px;
+  right: 86px;
   bottom: 32px;
   z-index: 20;
   padding: 14px 24px;
@@ -4505,6 +4506,141 @@ button.v2-run-row:hover {
   background: #1d4ed8;
   box-shadow: 0 15px 30px rgba(15, 23, 42, 0.22);
   transform: translateY(-2px);
+}
+.v2-hunt-float {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 90;
+}
+.v2-hunt-float > button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: #111827;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.3);
+  opacity: 0.72;
+}
+.v2-hunt-float > button:hover,
+.v2-hunt-float > button:focus-visible {
+  opacity: 1;
+  transform: translateY(-1px);
+}
+.v2-hunt-float > button.running {
+  opacity: 1;
+  animation: v2-hunt-pulse 1.8s ease-in-out infinite;
+}
+.v2-hunt-float > button i {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #22c55e;
+}
+@keyframes v2-hunt-pulse {
+  50% {
+    box-shadow:
+      0 5px 18px rgba(15, 23, 42, 0.3),
+      0 0 0 7px rgba(34, 197, 94, 0.15);
+  }
+}
+.v2-hunt-popover {
+  position: absolute;
+  right: 0;
+  bottom: 60px;
+  width: 270px;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  color: #334155;
+  background: #fff;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.18);
+}
+.v2-hunt-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.v2-hunt-popover-head > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+}
+.v2-hunt-popover-head em {
+  padding: 3px 7px;
+  border-radius: 99px;
+  color: #64748b;
+  background: #f1f5f9;
+  font-size: 10px;
+  font-style: normal;
+}
+.v2-hunt-popover-head em.running {
+  color: #166534;
+  background: #dcfce7;
+}
+.v2-hunt-popover > strong {
+  display: block;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-hunt-popover > small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+}
+.v2-hunt-popover p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.v2-hunt-popover dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 12px 0;
+}
+.v2-hunt-popover dl div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+.v2-hunt-popover dt {
+  color: #64748b;
+  font-size: 9px;
+}
+.v2-hunt-popover dd {
+  margin: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 750;
+}
+.v2-hunt-hint {
+  display: block;
+  padding-top: 9px;
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 10px;
+  text-align: center;
 }
 .v2-farewell-modal {
   position: fixed;
@@ -4929,6 +5065,18 @@ button.v2-run-row:hover {
   }
 }
 @media (max-width: 700px) {
+  .v2-hunt-float {
+    right: 14px;
+    bottom: 74px;
+  }
+  .v2-hunt-float > button {
+    width: 44px;
+    height: 44px;
+  }
+  .v2-hunt-popover {
+    bottom: 54px;
+    width: min(270px, calc(100vw - 28px));
+  }
   .v2-overview-hero-content {
     flex-direction: column;
   }

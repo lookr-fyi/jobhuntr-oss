@@ -128,6 +128,76 @@ function ConfirmDialog({
     </div>
   );
 }
+function InfiniteHuntStatus({ runs, onOpen }) {
+  const [expanded, setExpanded] = useState(false);
+  const latest = runs[0] || null;
+  const running = latest?.status === "running";
+  return (
+    <div
+      className="v2-hunt-float"
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      onFocusCapture={() => setExpanded(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setExpanded(false);
+      }}
+    >
+      {expanded && (
+        <div className="v2-hunt-popover" role="status">
+          <div className="v2-hunt-popover-head">
+            <span>
+              <InfinityIcon size={15} /> Infinite Hunt
+            </span>
+            <em className={running ? "running" : ""}>
+              {running ? "Active" : "Idle"}
+            </em>
+          </div>
+          {latest ? (
+            <>
+              <strong>{latest.search?.q || "Latest local hunt"}</strong>
+              <small>
+                {latest.search?.location || "All locations"} ·{" "}
+                {new Date(
+                  latest.completedAt || latest.createdAt,
+                ).toLocaleDateString()}
+              </small>
+              <dl>
+                <div>
+                  <dt>Inspected</dt>
+                  <dd>{latest.inspected || 0}</dd>
+                </div>
+                <div>
+                  <dt>Matched</dt>
+                  <dd>{latest.found || 0}</dd>
+                </div>
+                <div>
+                  <dt>Saved</dt>
+                  <dd>{latest.added || 0}</dd>
+                </div>
+              </dl>
+            </>
+          ) : (
+            <p>
+              No hunts yet. Start one to continuously discover local matches.
+            </p>
+          )}
+          <span className="v2-hunt-hint">Open Infinite Hunting</span>
+        </div>
+      )}
+      <button
+        className={running ? "running" : ""}
+        onClick={onOpen}
+        aria-label={
+          running ? "Infinite Hunt is active" : "Open Infinite Hunting status"
+        }
+      >
+        <InfinityIcon size={22} />
+        {running && <i />}
+      </button>
+    </div>
+  );
+}
 function App() {
   const [state, setState] = useState(null);
   const initialRoute = window.location.hash.replace(/^#\/?/, "");
@@ -315,6 +385,12 @@ function App() {
         )}{" "}
         {tab === "privacy" && <Privacy state={state} />}
       </main>
+      {tab !== "agent" && (
+        <InfiniteHuntStatus
+          runs={state.agentRuns}
+          onOpen={() => setTab("agent")}
+        />
+      )}
     </div>
   );
 }
