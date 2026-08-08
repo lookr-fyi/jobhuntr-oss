@@ -73,6 +73,7 @@ function App() {
         <Onboarding profile={state.profile} reload={load} />
       )}
       <aside
+        aria-label="JobHuntr navigation"
         className={
           sidebarHovered ? "v2-sidebar expanded" : "v2-sidebar collapsed"
         }
@@ -91,6 +92,7 @@ function App() {
               )}
               <button
                 title={label}
+                aria-current={tab === name ? "page" : undefined}
                 className={tab === name ? "active" : ""}
                 onClick={() => setTab(name)}
               >
@@ -117,6 +119,7 @@ function App() {
             onClick={() => setTab("settings")}
             className={tab === "settings" ? "active" : ""}
             title="Profile and settings"
+            aria-current={tab === "settings" ? "page" : undefined}
           >
             <span className="v2-avatar">
               <User size={15} />
@@ -131,6 +134,7 @@ function App() {
             onClick={() => setTab("privacy")}
             className="v2-settings"
             title="Data and privacy"
+            aria-current={tab === "privacy" ? "page" : undefined}
           >
             <Settings size={16} />
             <span>Settings & data</span>
@@ -153,6 +157,8 @@ function App() {
               "audit",
               "gigs",
               "coach",
+              "settings",
+              "privacy",
             ].includes(tab)
               ? "integrated-page-header"
               : ""
@@ -922,7 +928,18 @@ function Board({ reload }) {
     <section className="v2-board-page">
       <div className="v2-board-header">
         <span className="eyebrow">COMMUNITY JOB FEED</span>
-        <div className="v2-page-intro"><div><h2>Today's Picks</h2><p>{results.length} fresh jobs from the local demo catalog. Add one to your queue before it's gone.</p></div><button className="secondary" onClick={search}>Refresh now</button></div>
+        <div className="v2-page-intro">
+          <div>
+            <h2>Today's Picks</h2>
+            <p>
+              {results.length} fresh jobs from the local demo catalog. Add one
+              to your queue before it's gone.
+            </p>
+          </div>
+          <button className="secondary" onClick={search}>
+            Refresh now
+          </button>
+        </div>
       </div>
       <div className="v2-board-search">
         <Search size={17} />
@@ -935,20 +952,52 @@ function Board({ reload }) {
       </div>
       <div className="v2-board-layout">
         <div className="v2-board-list">
-        {results.map((j, i) => (
-          <button type="button" className={`v2-board-row ${selectedIndex === i ? "selected" : ""}`} key={`${j.url}-${i}`} onClick={() => setSelectedIndex(i)}>
-            <span className="v2-job-logo">{j.company?.slice(0, 1)}</span>
-            <span><strong>{j.title}</strong><small>{j.company} · {j.location}</small><em>{j.fitScore}% match</em></span>
-            <ChevronRight size={16} />
-          </button>
-        ))}
+          {results.map((j, i) => (
+            <button
+              type="button"
+              className={`v2-board-row ${selectedIndex === i ? "selected" : ""}`}
+              key={`${j.url}-${i}`}
+              onClick={() => setSelectedIndex(i)}
+            >
+              <span className="v2-job-logo">{j.company?.slice(0, 1)}</span>
+              <span>
+                <strong>{j.title}</strong>
+                <small>
+                  {j.company} · {j.location}
+                </small>
+                <em>{j.fitScore}% match</em>
+              </span>
+              <ChevronRight size={16} />
+            </button>
+          ))}
         </div>
-        {selected && <article className="card v2-board-detail">
-          <div className="v2-board-detail-top"><span className="v2-job-logo large">{selected.company?.slice(0, 1)}</span><div><h3>{selected.title}</h3><p>{selected.company} · {selected.location}</p></div><span className="v2-match-pill">{selected.fitScore}% match</span></div>
-          <div className="v2-job-facts"><span>Full-time</span><span>Recently added</span><span>Community sourced</span></div>
-          <h4>About the role</h4><p>{selected.description}</p>
-          <h4>Why it matches</h4><ul><li>Matches your target role and saved preferences</li><li>Relevant skills found in your JobHuntr profile</li></ul>
-          <button
+        {selected && (
+          <article className="card v2-board-detail">
+            <div className="v2-board-detail-top">
+              <span className="v2-job-logo large">
+                {selected.company?.slice(0, 1)}
+              </span>
+              <div>
+                <h3>{selected.title}</h3>
+                <p>
+                  {selected.company} · {selected.location}
+                </p>
+              </div>
+              <span className="v2-match-pill">{selected.fitScore}% match</span>
+            </div>
+            <div className="v2-job-facts">
+              <span>Full-time</span>
+              <span>Recently added</span>
+              <span>Community sourced</span>
+            </div>
+            <h4>About the role</h4>
+            <p>{selected.description}</p>
+            <h4>Why it matches</h4>
+            <ul>
+              <li>Matches your target role and saved preferences</li>
+              <li>Relevant skills found in your JobHuntr profile</li>
+            </ul>
+            <button
               onClick={async () => {
                 await api("/api/jobs", {
                   method: "POST",
@@ -958,8 +1007,9 @@ function Board({ reload }) {
               }}
             >
               <Plus size={16} /> Add to job tracker
-          </button>
-        </article>}
+            </button>
+          </article>
+        )}
       </div>
     </section>
   );
@@ -1546,28 +1596,189 @@ function Resume({ state, reload, mode = "resume" }) {
 }
 function OutreachPage({ state, reload }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
-  const [selectedId, setSelectedId] = useState(state.outreachDrafts[0]?.id || "");
+  const [selectedId, setSelectedId] = useState(
+    state.outreachDrafts[0]?.id || "",
+  );
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
-  const [draft, setDraft] = useState(state.outreachDrafts.find((item) => item.id === selectedId) || null);
+  const [draft, setDraft] = useState(
+    state.outreachDrafts.find((item) => item.id === selectedId) || null,
+  );
   const generate = async () => {
-    const created = await api("/api/outreach/draft", { method: "POST", body: JSON.stringify({ jobId }) });
-    setSelectedId(created.id); setDraft(created); await reload();
+    const created = await api("/api/outreach/draft", {
+      method: "POST",
+      body: JSON.stringify({ jobId }),
+    });
+    setSelectedId(created.id);
+    setDraft(created);
+    await reload();
   };
   const visible = state.outreachDrafts.filter((item) => {
     const job = state.jobs.find((candidate) => candidate.id === item.jobId);
-    return (status === "all" || (item.status || "draft") === status) && `${item.subject} ${job?.company || ""} ${job?.title || ""}`.toLowerCase().includes(query.toLowerCase());
+    return (
+      (status === "all" || (item.status || "draft") === status) &&
+      `${item.subject} ${job?.company || ""} ${job?.title || ""}`
+        .toLowerCase()
+        .includes(query.toLowerCase())
+    );
   });
-  const selected = draft || visible.find((item) => item.id === selectedId) || visible[0];
-  return <section className="v2-outreach-page">
-    <div className="v2-page-intro"><div><h2>Outreach</h2><p>Build relationships with recruiters, hiring managers, and peers connected to your saved roles.</p></div><div className="inline"><select aria-label="Role for outreach" value={jobId} onChange={(e) => setJobId(e.target.value)}>{state.jobs.map((job) => <option key={job.id} value={job.id}>{job.company} — {job.title}</option>)}</select><button disabled={!jobId} onClick={generate}><Users size={16} /> Collect contacts</button></div></div>
-    <div className="v2-outreach-stats"><div><span>Total contacts</span><strong>{state.outreachDrafts.length}</strong></div><div><span>Ready to contact</span><strong>{state.outreachDrafts.filter((item) => (item.status || "draft") === "draft").length}</strong></div><div><span>Outreached</span><strong>{state.outreachDrafts.filter((item) => item.status === "sent").length}</strong></div></div>
-    <div className="v2-outreach-toolbar"><div className="searchbox"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts, companies, or roles" /></div><select value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">All statuses</option><option value="draft">Listed</option><option value="sent">Outreached</option></select></div>
-    <div className="v2-outreach-layout">
-      <div className="card v2-contact-table"><div className="v2-contact-head"><span>Contact</span><span>Company & role</span><span>Status</span></div>{visible.length ? visible.map((item) => { const job = state.jobs.find((candidate) => candidate.id === item.jobId); return <button className={selected?.id === item.id ? "selected" : ""} key={item.id} onClick={() => { setSelectedId(item.id); setDraft(item); }}><span className="v2-contact-avatar">{(job?.company || "C")[0]}</span><span><strong>{item.recipient || "Hiring team"}</strong><small>{item.subject}</small></span><span><strong>{job?.company || "Deleted role"}</strong><small>{job?.title}</small></span><em>{item.status === "sent" ? "Outreached" : "Listed"}</em></button>; }) : <div className="empty-state"><Users /><h3>No contacts collected yet</h3><p>Choose a tracked role and collect a private, editable outreach draft.</p></div>}</div>
-      <div className="card v2-contact-detail">{selected ? <><div className="v2-contact-profile"><span className="v2-contact-avatar large">{(state.jobs.find((job) => job.id === selected.jobId)?.company || "C")[0]}</span><div><h3>{selected.recipient || "Hiring team"}</h3><p>{state.jobs.find((job) => job.id === selected.jobId)?.company} · {state.jobs.find((job) => job.id === selected.jobId)?.title}</p></div></div><OutreachEditor draft={selected} setDraft={setDraft} reload={reload} /></> : <div className="empty-state"><MessageSquare /><h3>Select a contact</h3><p>Contact details and your personalized message will appear here.</p></div>}</div>
-    </div>
-  </section>;
+  const selected =
+    draft || visible.find((item) => item.id === selectedId) || visible[0];
+  return (
+    <section className="v2-outreach-page">
+      <div className="v2-page-intro">
+        <div>
+          <h2>Outreach</h2>
+          <p>
+            Build relationships with recruiters, hiring managers, and peers
+            connected to your saved roles.
+          </p>
+        </div>
+        <div className="inline">
+          <select
+            aria-label="Role for outreach"
+            value={jobId}
+            onChange={(e) => setJobId(e.target.value)}
+          >
+            {state.jobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.company} — {job.title}
+              </option>
+            ))}
+          </select>
+          <button disabled={!jobId} onClick={generate}>
+            <Users size={16} /> Collect contacts
+          </button>
+        </div>
+      </div>
+      <div className="v2-outreach-stats">
+        <div>
+          <span>Total contacts</span>
+          <strong>{state.outreachDrafts.length}</strong>
+        </div>
+        <div>
+          <span>Ready to contact</span>
+          <strong>
+            {
+              state.outreachDrafts.filter(
+                (item) => (item.status || "draft") === "draft",
+              ).length
+            }
+          </strong>
+        </div>
+        <div>
+          <span>Outreached</span>
+          <strong>
+            {
+              state.outreachDrafts.filter((item) => item.status === "sent")
+                .length
+            }
+          </strong>
+        </div>
+      </div>
+      <div className="v2-outreach-toolbar">
+        <div className="searchbox">
+          <Search size={16} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search contacts, companies, or roles"
+          />
+        </div>
+        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="all">All statuses</option>
+          <option value="draft">Listed</option>
+          <option value="sent">Outreached</option>
+        </select>
+      </div>
+      <div className="v2-outreach-layout">
+        <div className="card v2-contact-table">
+          <div className="v2-contact-head">
+            <span>Contact</span>
+            <span>Company & role</span>
+            <span>Status</span>
+          </div>
+          {visible.length ? (
+            visible.map((item) => {
+              const job = state.jobs.find(
+                (candidate) => candidate.id === item.jobId,
+              );
+              return (
+                <button
+                  className={selected?.id === item.id ? "selected" : ""}
+                  key={item.id}
+                  onClick={() => {
+                    setSelectedId(item.id);
+                    setDraft(item);
+                  }}
+                >
+                  <span className="v2-contact-avatar">
+                    {(job?.company || "C")[0]}
+                  </span>
+                  <span>
+                    <strong>{item.recipient || "Hiring team"}</strong>
+                    <small>{item.subject}</small>
+                  </span>
+                  <span>
+                    <strong>{job?.company || "Deleted role"}</strong>
+                    <small>{job?.title}</small>
+                  </span>
+                  <em>{item.status === "sent" ? "Outreached" : "Listed"}</em>
+                </button>
+              );
+            })
+          ) : (
+            <div className="empty-state">
+              <Users />
+              <h3>No contacts collected yet</h3>
+              <p>
+                Choose a tracked role and collect a private, editable outreach
+                draft.
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="card v2-contact-detail">
+          {selected ? (
+            <>
+              <div className="v2-contact-profile">
+                <span className="v2-contact-avatar large">
+                  {
+                    (state.jobs.find((job) => job.id === selected.jobId)
+                      ?.company || "C")[0]
+                  }
+                </span>
+                <div>
+                  <h3>{selected.recipient || "Hiring team"}</h3>
+                  <p>
+                    {
+                      state.jobs.find((job) => job.id === selected.jobId)
+                        ?.company
+                    }{" "}
+                    ·{" "}
+                    {state.jobs.find((job) => job.id === selected.jobId)?.title}
+                  </p>
+                </div>
+              </div>
+              <OutreachEditor
+                draft={selected}
+                setDraft={setDraft}
+                reload={reload}
+              />
+            </>
+          ) : (
+            <div className="empty-state">
+              <MessageSquare />
+              <h3>Select a contact</h3>
+              <p>
+                Contact details and your personalized message will appear here.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
 }
 function Coach({ state, reload }) {
   const [view, setView] = useState("practice");
@@ -1596,7 +1807,18 @@ function Coach({ state, reload }) {
   };
   return (
     <section className="coach-page">
-      <div className="v2-coach-hero"><div className="v2-coach-avatar"><Sparkles size={22} /></div><div><h2>Hi, I'm AI Coach!</h2><p>Turn your experience into stronger interview answers, career stories, and role-specific preparation.</p></div></div>
+      <div className="v2-coach-hero">
+        <div className="v2-coach-avatar">
+          <Sparkles size={22} />
+        </div>
+        <div>
+          <h2>Hi, I'm AI Coach!</h2>
+          <p>
+            Turn your experience into stronger interview answers, career
+            stories, and role-specific preparation.
+          </p>
+        </div>
+      </div>
       <div className="card coach-toolbar">
         <div className="segmented">
           <button
@@ -2069,8 +2291,27 @@ function Gigs({ state, reload }) {
   };
   return (
     <section className="gigs-page">
-      <div className="v2-page-intro v2-gigs-intro"><div><h2>Gigs</h2><p>All tasks listed here are designed for quick skill validation and fast earnings, typically completed within a few days.</p></div><button onClick={() => setShowForm(!showForm)}><Plus size={16} /> Add gig</button></div>
-      <div className="v2-gigs-section-title"><div><h3>My Gigs</h3><p>Track freelance opportunities, applications, delivery, and earnings locally.</p></div></div>
+      <div className="v2-page-intro v2-gigs-intro">
+        <div>
+          <h2>Gigs</h2>
+          <p>
+            All tasks listed here are designed for quick skill validation and
+            fast earnings, typically completed within a few days.
+          </p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)}>
+          <Plus size={16} /> Add gig
+        </button>
+      </div>
+      <div className="v2-gigs-section-title">
+        <div>
+          <h3>My Gigs</h3>
+          <p>
+            Track freelance opportunities, applications, delivery, and earnings
+            locally.
+          </p>
+        </div>
+      </div>
       <div className="gig-metrics">
         <div className="card metric">
           <span>ACTIVE GIGS</span>
@@ -2087,7 +2328,15 @@ function Gigs({ state, reload }) {
           <strong>{money(state.summary.gigs.earnings)}</strong>
           <small>won through completed</small>
         </div>
-        <div className="card v2-gig-privacy"><ShieldCheck size={20} /><div><strong>Private workspace</strong><p className="hint">No marketplace account or external service required.</p></div></div>
+        <div className="card v2-gig-privacy">
+          <ShieldCheck size={20} />
+          <div>
+            <strong>Private workspace</strong>
+            <p className="hint">
+              No marketplace account or external service required.
+            </p>
+          </div>
+        </div>
       </div>
       {showForm && (
         <div className="card add-panel">
@@ -2319,173 +2568,209 @@ function ProfileAudit({ state, reload }) {
   };
   return (
     <section className="v2-audit-page">
-      <div className="v2-page-intro"><div><h2>LinkedIn Profile Audit</h2><p>Review your profile positioning and receive comprehensive, evidence-based feedback.</p></div></div>
-      <div className="v2-audit-url"><input value={profileUrl} onChange={(e) => setProfileUrl(e.target.value)} placeholder="https://www.linkedin.com/in/username" /><button disabled={running || !form.headline.trim()} onClick={run}>{running ? "Analyzing…" : "Analyze Profile"}</button></div>
-      <div className="v2-local-notice"><ShieldCheck size={18} /><span><strong>Private local analysis</strong> JobHuntr does not open LinkedIn or transmit your content. Paste the sections you want reviewed below.</span></div>
-      <button className="v2-audit-toggle" onClick={() => setExpanded(!expanded)}><span>{expanded ? "Hide" : "Show"} profile content and additional context</span><ChevronRight className={expanded ? "rotated" : ""} size={18} /></button>
-      <div className="audit-layout">
-      {expanded && <div className="card audit-form">
-        <span className="eyebrow">PROFILE CONTENT</span>
-        <label>
-          Headline
-          <input
-            value={form.headline}
-            maxLength="1000"
-            onChange={(e) => setForm({ ...form, headline: e.target.value })}
-            placeholder="Product engineer | AI workflows | Shipped 0→1 products"
-          />
-        </label>
-        <label>
-          About section
-          <textarea
-            value={form.about}
-            onChange={(e) => setForm({ ...form, about: e.target.value })}
-            placeholder="Your positioning, evidence, motivation, and call to action…"
-          />
-        </label>
-        <label>
-          Experience highlights
-          <textarea
-            className="audit-experience"
-            value={form.experience}
-            onChange={(e) => setForm({ ...form, experience: e.target.value })}
-            placeholder="Paste representative experience bullets…"
-          />
-        </label>
-        <label>
-          Skills, comma-separated
-          <input
-            value={form.skills}
-            onChange={(e) => setForm({ ...form, skills: e.target.value })}
-          />
-        </label>
+      <div className="v2-page-intro">
+        <div>
+          <h2>LinkedIn Profile Audit</h2>
+          <p>
+            Review your profile positioning and receive comprehensive,
+            evidence-based feedback.
+          </p>
+        </div>
+      </div>
+      <div className="v2-audit-url">
+        <input
+          value={profileUrl}
+          onChange={(e) => setProfileUrl(e.target.value)}
+          placeholder="https://www.linkedin.com/in/username"
+        />
         <button disabled={running || !form.headline.trim()} onClick={run}>
-          <BadgeCheck size={16} />
-          {running ? "Auditing…" : "Run private audit"}
+          {running ? "Analyzing…" : "Analyze Profile"}
         </button>
-        <p className="hint">
-          JobHuntr does not open LinkedIn, use cookies, or transmit this
-          content.
-        </p>
-      </div>}
-      <div className="audit-results">
-        {audit ? (
-          <div className="card">
-            <div className="audit-score">
-              <div
-                className={`score-orb ${audit.total >= 75 ? "strong" : audit.total >= 50 ? "fair" : "weak"}`}
-              >
-                <strong>{audit.total}</strong>
-                <span>/ 100</span>
-              </div>
-              <div>
-                <span className="eyebrow">PROFILE STRENGTH</span>
-                <h2>
-                  {audit.total >= 75
-                    ? "Strong foundation"
-                    : audit.total >= 50
-                      ? "Good start, with gaps"
-                      : "Needs focused revision"}
-                </h2>
-                <p>
-                  {audit.matchedTerms.length} target-role terms matched ·{" "}
-                  {audit.metrics} quantified outcomes
-                </p>
-              </div>
-            </div>
-            <div className="audit-checks">
-              {audit.checks.map((check) => (
-                <div
-                  className={`audit-check ${check.status}`}
-                  key={check.section}
-                >
-                  <div className="row">
-                    <b>{check.section}</b>
-                    <strong>{check.score}</strong>
-                  </div>
-                  <div className="mini-progress">
-                    <i style={{ width: `${check.score}%` }} />
-                  </div>
-                  <p>{check.detail}</p>
-                </div>
-              ))}
-            </div>
-            <h3>Prioritized recommendations</h3>
-            {audit.suggestions.length ? (
-              audit.suggestions.map((suggestion) => (
-                <p className="recommendation" key={suggestion}>
-                  → {suggestion}
-                </p>
-              ))
-            ) : (
-              <p className="success-message">
-                Every baseline check passed. Keep claims specific and current.
-              </p>
-            )}
-            <h3>Matched positioning terms</h3>
-            <div className="chips">
-              {audit.matchedTerms.map((term) => (
-                <span key={term}>{term}</span>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="card empty-state">
-            <BadgeCheck />
-            <h3>Get an inspectable score</h3>
-            <p>
-              No generative AI or hidden rubric. Every section score maps to
-              visible evidence.
+      </div>
+      <div className="v2-local-notice">
+        <ShieldCheck size={18} />
+        <span>
+          <strong>Private local analysis</strong> JobHuntr does not open
+          LinkedIn or transmit your content. Paste the sections you want
+          reviewed below.
+        </span>
+      </div>
+      <button
+        className="v2-audit-toggle"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <span>
+          {expanded ? "Hide" : "Show"} profile content and additional context
+        </span>
+        <ChevronRight className={expanded ? "rotated" : ""} size={18} />
+      </button>
+      <div className="audit-layout">
+        {expanded && (
+          <div className="card audit-form">
+            <span className="eyebrow">PROFILE CONTENT</span>
+            <label>
+              Headline
+              <input
+                value={form.headline}
+                maxLength="1000"
+                onChange={(e) => setForm({ ...form, headline: e.target.value })}
+                placeholder="Product engineer | AI workflows | Shipped 0→1 products"
+              />
+            </label>
+            <label>
+              About section
+              <textarea
+                value={form.about}
+                onChange={(e) => setForm({ ...form, about: e.target.value })}
+                placeholder="Your positioning, evidence, motivation, and call to action…"
+              />
+            </label>
+            <label>
+              Experience highlights
+              <textarea
+                className="audit-experience"
+                value={form.experience}
+                onChange={(e) =>
+                  setForm({ ...form, experience: e.target.value })
+                }
+                placeholder="Paste representative experience bullets…"
+              />
+            </label>
+            <label>
+              Skills, comma-separated
+              <input
+                value={form.skills}
+                onChange={(e) => setForm({ ...form, skills: e.target.value })}
+              />
+            </label>
+            <button disabled={running || !form.headline.trim()} onClick={run}>
+              <BadgeCheck size={16} />
+              {running ? "Auditing…" : "Run private audit"}
+            </button>
+            <p className="hint">
+              JobHuntr does not open LinkedIn, use cookies, or transmit this
+              content.
             </p>
           </div>
         )}
-        <div className="card">
-          <h3>Audit history · {state.profileAudits.length}</h3>
-          {state.profileAudits.length ? (
-            state.profileAudits.map((item) => (
-              <div
-                className={
-                  audit?.id === item.id
-                    ? "audit-history selected"
-                    : "audit-history"
-                }
-                key={item.id}
-              >
-                <button
-                  onClick={() => {
-                    setAudit(item);
-                    setForm({
-                      ...item.input,
-                      skills: Array.isArray(item.input.skills)
-                        ? item.input.skills.join(", ")
-                        : item.input.skills,
-                    });
-                  }}
+        <div className="audit-results">
+          {audit ? (
+            <div className="card">
+              <div className="audit-score">
+                <div
+                  className={`score-orb ${audit.total >= 75 ? "strong" : audit.total >= 50 ? "fair" : "weak"}`}
                 >
-                  <strong>{item.total}</strong>
-                  <span>{new Date(item.createdAt).toLocaleString()}</span>
-                  <small>{item.suggestions.length} recommendation(s)</small>
-                </button>
-                <button
-                  className="danger"
-                  aria-label="Delete profile audit"
-                  onClick={async () => {
-                    await api(`/api/profile-audits/${item.id}`, {
-                      method: "DELETE",
-                    });
-                    if (audit?.id === item.id) setAudit(null);
-                    reload();
-                  }}
-                >
-                  ×
-                </button>
+                  <strong>{audit.total}</strong>
+                  <span>/ 100</span>
+                </div>
+                <div>
+                  <span className="eyebrow">PROFILE STRENGTH</span>
+                  <h2>
+                    {audit.total >= 75
+                      ? "Strong foundation"
+                      : audit.total >= 50
+                        ? "Good start, with gaps"
+                        : "Needs focused revision"}
+                  </h2>
+                  <p>
+                    {audit.matchedTerms.length} target-role terms matched ·{" "}
+                    {audit.metrics} quantified outcomes
+                  </p>
+                </div>
               </div>
-            ))
+              <div className="audit-checks">
+                {audit.checks.map((check) => (
+                  <div
+                    className={`audit-check ${check.status}`}
+                    key={check.section}
+                  >
+                    <div className="row">
+                      <b>{check.section}</b>
+                      <strong>{check.score}</strong>
+                    </div>
+                    <div className="mini-progress">
+                      <i style={{ width: `${check.score}%` }} />
+                    </div>
+                    <p>{check.detail}</p>
+                  </div>
+                ))}
+              </div>
+              <h3>Prioritized recommendations</h3>
+              {audit.suggestions.length ? (
+                audit.suggestions.map((suggestion) => (
+                  <p className="recommendation" key={suggestion}>
+                    → {suggestion}
+                  </p>
+                ))
+              ) : (
+                <p className="success-message">
+                  Every baseline check passed. Keep claims specific and current.
+                </p>
+              )}
+              <h3>Matched positioning terms</h3>
+              <div className="chips">
+                {audit.matchedTerms.map((term) => (
+                  <span key={term}>{term}</span>
+                ))}
+              </div>
+            </div>
           ) : (
-            <p className="empty">No saved audits yet.</p>
+            <div className="card empty-state">
+              <BadgeCheck />
+              <h3>Get an inspectable score</h3>
+              <p>
+                No generative AI or hidden rubric. Every section score maps to
+                visible evidence.
+              </p>
+            </div>
           )}
+          <div className="card">
+            <h3>Audit history · {state.profileAudits.length}</h3>
+            {state.profileAudits.length ? (
+              state.profileAudits.map((item) => (
+                <div
+                  className={
+                    audit?.id === item.id
+                      ? "audit-history selected"
+                      : "audit-history"
+                  }
+                  key={item.id}
+                >
+                  <button
+                    onClick={() => {
+                      setAudit(item);
+                      setForm({
+                        ...item.input,
+                        skills: Array.isArray(item.input.skills)
+                          ? item.input.skills.join(", ")
+                          : item.input.skills,
+                      });
+                    }}
+                  >
+                    <strong>{item.total}</strong>
+                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+                    <small>{item.suggestions.length} recommendation(s)</small>
+                  </button>
+                  <button
+                    className="danger"
+                    aria-label="Delete profile audit"
+                    onClick={async () => {
+                      await api(`/api/profile-audits/${item.id}`, {
+                        method: "DELETE",
+                      });
+                      if (audit?.id === item.id) setAudit(null);
+                      reload();
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))
+            ) : (
+              <p className="empty">No saved audits yet.</p>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </section>
   );
@@ -2545,23 +2830,49 @@ function Agent({ state, reload }) {
     }
   };
   const workflows = [
-    ["linkedin", "in", "LinkedIn Jobs", "Search jobs and prepare applications from LinkedIn."],
+    [
+      "linkedin",
+      "in",
+      "LinkedIn Jobs",
+      "Search jobs and prepare applications from LinkedIn.",
+    ],
     ["indeed", "i", "Indeed", "Find matching roles across Indeed listings."],
-    ["glassdoor", "g", "Glassdoor", "Discover roles using company and salary context."],
-    ["company", "↗", "Company Career Page Search", "Search verified company career pages directly."],
+    [
+      "glassdoor",
+      "g",
+      "Glassdoor",
+      "Discover roles using company and salary context.",
+    ],
+    [
+      "company",
+      "↗",
+      "Company Career Page Search",
+      "Search verified company career pages directly.",
+    ],
   ];
-  const toggleRun = (id) => setSelectedRuns((runs) =>
-    runs.includes(id) ? runs.filter((runId) => runId !== id) : [...runs, id],
-  );
+  const toggleRun = (id) =>
+    setSelectedRuns((runs) =>
+      runs.includes(id) ? runs.filter((runId) => runId !== id) : [...runs, id],
+    );
   return (
     <section className="v2-hunt-page">
       <div className="v2-page-intro v2-hunt-intro">
         <div>
           <h2>Infinite Hunting</h2>
-          <p>Automatically create new runs to search and apply to jobs around the clock.</p>
+          <p>
+            Automatically create new runs to search and apply to jobs around the
+            clock.
+          </p>
         </div>
         {state.agentRuns.length > 0 && (
-          <button className="secondary" onClick={() => document.querySelector(".v2-hunt-history")?.scrollIntoView({ behavior: "smooth" })}>
+          <button
+            className="secondary"
+            onClick={() =>
+              document
+                .querySelector(".v2-hunt-history")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+          >
             View last infinite session
           </button>
         )}
@@ -2569,37 +2880,79 @@ function Agent({ state, reload }) {
       {state.queue?.length > 0 && (
         <div className="v2-queue-banner">
           <List size={20} />
-          <span>You have {state.queue.length} queued job{state.queue.length === 1 ? "" : "s"} waiting to be reviewed</span>
+          <span>
+            You have {state.queue.length} queued job
+            {state.queue.length === 1 ? "" : "s"} waiting to be reviewed
+          </span>
         </div>
       )}
       <div className="card v2-hunt-builder">
         <div className="v2-resume-source">
           <div className="v2-section-heading">
-            <div className="v2-icon-tile"><FileText size={19} /></div>
-            <div><h3>Your resume</h3><p>JobHuntr uses your profile and resume to evaluate every opportunity.</p></div>
+            <div className="v2-icon-tile">
+              <FileText size={19} />
+            </div>
+            <div>
+              <h3>Your resume</h3>
+              <p>
+                JobHuntr uses your profile and resume to evaluate every
+                opportunity.
+              </p>
+            </div>
           </div>
           <div className="v2-resume-choice">
-            <div><strong>{state.profile.name || "Your JobHuntr profile"}</strong><span>{state.profile.targetRoles?.join(" · ") || "Add target roles in settings"}</span></div>
+            <div>
+              <strong>{state.profile.name || "Your JobHuntr profile"}</strong>
+              <span>
+                {state.profile.targetRoles?.join(" · ") ||
+                  "Add target roles in settings"}
+              </span>
+            </div>
             <BadgeCheck size={20} />
           </div>
         </div>
         <div className="v2-ats-option">
           <label className="v2-check-row">
-            <input type="checkbox" checked={optimizeResume} onChange={(e) => setOptimizeResume(e.target.checked)} />
-            <span><strong>Generate an optimized resume for each job</strong><small>Create a tailored, ATS-friendly version before adding the application to your queue.</small></span>
+            <input
+              type="checkbox"
+              checked={optimizeResume}
+              onChange={(e) => setOptimizeResume(e.target.checked)}
+            />
+            <span>
+              <strong>Generate an optimized resume for each job</strong>
+              <small>
+                Create a tailored, ATS-friendly version before adding the
+                application to your queue.
+              </small>
+            </span>
           </label>
         </div>
         <div className="v2-run-picker">
           <h3>Available runs</h3>
-          <p>Select where JobHuntr should search. You can combine multiple runs in one infinite hunt.</p>
+          <p>
+            Select where JobHuntr should search. You can combine multiple runs
+            in one infinite hunt.
+          </p>
           <div className="v2-workflow-grid">
             {workflows.map(([id, mark, title, description]) => {
               const selected = selectedRuns.includes(id);
-              return <button type="button" className={`v2-workflow-card ${selected ? "selected" : ""}`} key={id} onClick={() => toggleRun(id)}>
-                <span className={`v2-platform-mark ${id}`}>{mark}</span>
-                <span className="v2-workflow-copy"><strong>{title}</strong><small>{description}</small></span>
-                <span className="v2-workflow-check">{selected ? "✓" : "+"}</span>
-              </button>;
+              return (
+                <button
+                  type="button"
+                  className={`v2-workflow-card ${selected ? "selected" : ""}`}
+                  key={id}
+                  onClick={() => toggleRun(id)}
+                >
+                  <span className={`v2-platform-mark ${id}`}>{mark}</span>
+                  <span className="v2-workflow-copy">
+                    <strong>{title}</strong>
+                    <small>{description}</small>
+                  </span>
+                  <span className="v2-workflow-check">
+                    {selected ? "✓" : "+"}
+                  </span>
+                </button>
+              );
             })}
           </div>
         </div>
@@ -2607,79 +2960,121 @@ function Agent({ state, reload }) {
           <h3>Runs in infinite hunt loop</h3>
           <p>Selected runs execute in the order shown below.</p>
           <div className="v2-loop-box">
-            {selectedRuns.length ? selectedRuns.map((id, index) => {
-              const workflow = workflows.find((item) => item[0] === id);
-              return <div className="v2-loop-row" key={id}><b>{index + 1}</b><span className={`v2-platform-mark ${id}`}>{workflow[1]}</span><div><strong>{workflow[2]}</strong><small>Ready for local preview</small></div><button className="text-button" onClick={() => toggleRun(id)}>Remove</button></div>;
-            }) : <div className="v2-loop-empty">Please select from available runs</div>}
+            {selectedRuns.length ? (
+              selectedRuns.map((id, index) => {
+                const workflow = workflows.find((item) => item[0] === id);
+                return (
+                  <div className="v2-loop-row" key={id}>
+                    <b>{index + 1}</b>
+                    <span className={`v2-platform-mark ${id}`}>
+                      {workflow[1]}
+                    </span>
+                    <div>
+                      <strong>{workflow[2]}</strong>
+                      <small>Ready for local preview</small>
+                    </div>
+                    <button
+                      className="text-button"
+                      onClick={() => toggleRun(id)}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="v2-loop-empty">
+                Please select from available runs
+              </div>
+            )}
           </div>
         </div>
         <details className="v2-hunt-filters">
           <summary>Search preferences</summary>
           <div className="hunt-config-fields">
-        <label>
-          Role or keywords
-          <input
-            value={form.q}
-            onChange={(e) => setForm({ ...form, q: e.target.value })}
-            placeholder="Product engineer"
-          />
-        </label>
-        <label>
-          Location
-          <input
-            value={form.location}
-            onChange={(e) => setForm({ ...form, location: e.target.value })}
-            placeholder="Remote or leave blank"
-          />
-        </label>
-        <div className="double">
-          <label>
-            Required keywords
-            <input
-              value={form.required}
-              onChange={(e) => setForm({ ...form, required: e.target.value })}
-              placeholder="typescript, react"
-            />
-          </label>
-          <label>
-            Exclude keywords
-            <input
-              value={form.excluded}
-              onChange={(e) => setForm({ ...form, excluded: e.target.value })}
-              placeholder="senior, clearance"
-            />
-          </label>
-        </div>
-        <label>
-          Minimum profile fit: <b>{form.minFit}%</b>
-          <input
-            type="range"
-            min="30"
-            max="95"
-            value={form.minFit}
-            onChange={(e) =>
-              setForm({ ...form, minFit: Number(e.target.value) })
-            }
-          />
-        </label>
-        <label>
-          Maximum results
-          <select
-            value={form.maxResults}
-            onChange={(e) =>
-              setForm({ ...form, maxResults: Number(e.target.value) })
-            }
-          >
-            {[5, 10, 25, 50].map((x) => (
-              <option key={x}>{x}</option>
-            ))}
-          </select>
-        </label>
+            <label>
+              Role or keywords
+              <input
+                value={form.q}
+                onChange={(e) => setForm({ ...form, q: e.target.value })}
+                placeholder="Product engineer"
+              />
+            </label>
+            <label>
+              Location
+              <input
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder="Remote or leave blank"
+              />
+            </label>
+            <div className="double">
+              <label>
+                Required keywords
+                <input
+                  value={form.required}
+                  onChange={(e) =>
+                    setForm({ ...form, required: e.target.value })
+                  }
+                  placeholder="typescript, react"
+                />
+              </label>
+              <label>
+                Exclude keywords
+                <input
+                  value={form.excluded}
+                  onChange={(e) =>
+                    setForm({ ...form, excluded: e.target.value })
+                  }
+                  placeholder="senior, clearance"
+                />
+              </label>
+            </div>
+            <label>
+              Minimum profile fit: <b>{form.minFit}%</b>
+              <input
+                type="range"
+                min="30"
+                max="95"
+                value={form.minFit}
+                onChange={(e) =>
+                  setForm({ ...form, minFit: Number(e.target.value) })
+                }
+              />
+            </label>
+            <label>
+              Maximum results
+              <select
+                value={form.maxResults}
+                onChange={(e) =>
+                  setForm({ ...form, maxResults: Number(e.target.value) })
+                }
+              >
+                {[5, 10, 25, 50].map((x) => (
+                  <option key={x}>{x}</option>
+                ))}
+              </select>
+            </label>
           </div>
         </details>
         <div className="v2-hunt-actions">
-          <button className="secondary" onClick={async () => setPreview(await api("/api/agent-runs/preview", { method: "POST", body: JSON.stringify(payload()) }))}>Preview matches</button>
-          <button disabled={running || selectedRuns.length === 0} onClick={run}><InfinityIcon size={17} />{running ? "Starting infinite hunt…" : "Start infinite hunt"}</button>
+          <button
+            className="secondary"
+            onClick={async () =>
+              setPreview(
+                await api("/api/agent-runs/preview", {
+                  method: "POST",
+                  body: JSON.stringify(payload()),
+                }),
+              )
+            }
+          >
+            Preview matches
+          </button>
+          <button disabled={running || selectedRuns.length === 0} onClick={run}>
+            <InfinityIcon size={17} />
+            {running ? "Starting infinite hunt…" : "Start infinite hunt"}
+          </button>
         </div>
         <button
           className="text-button"
@@ -2923,69 +3318,93 @@ function SettingsPage({ state, reload }) {
     reload();
   };
   return (
-    <section className="split">
-      <div className="card">
-        <h3>Your local profile</h3>
-        {[
-          ["name", "Name"],
-          ["headline", "Headline"],
-          ["location", "Home location"],
-          ["targetRoles", "Target roles"],
-          ["skills", "Skills"],
-        ].map(([key, label]) => (
-          <label key={key}>
-            {label}
+    <section className="v2-settings-page">
+      <div className="v2-page-intro">
+        <div>
+          <h2>Profile & preferences</h2>
+          <p>Keep your career profile and search defaults up to date.</p>
+        </div>
+        <button onClick={save}>
+          <Save size={16} /> Save changes
+        </button>
+      </div>
+      <div className="v2-settings-grid">
+        <div className="card v2-settings-card">
+          <div className="v2-settings-card-title">
+            <span className="v2-settings-icon">
+              <User size={18} />
+            </span>
+            <div>
+              <h3>Your profile</h3>
+              <p>Used to personalize matches, documents, and coaching.</p>
+            </div>
+          </div>
+          {[
+            ["name", "Name"],
+            ["headline", "Headline"],
+            ["location", "Home location"],
+            ["targetRoles", "Target roles"],
+            ["skills", "Skills"],
+          ].map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                value={form[key] || ""}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+              />
+            </label>
+          ))}
+        </div>
+        <div className="card v2-settings-card">
+          <div className="v2-settings-card-title">
+            <span className="v2-settings-icon">
+              <Search size={18} />
+            </span>
+            <div>
+              <h3>Search preferences</h3>
+              <p>Control which opportunities JobHuntr prioritizes.</p>
+            </div>
+          </div>
+          <label>
+            Preferred locations
             <input
-              value={form[key] || ""}
-              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+              value={form.locations || ""}
+              onChange={(e) => setForm({ ...form, locations: e.target.value })}
             />
           </label>
-        ))}
-      </div>
-      <div className="card">
-        <h3>Search preferences</h3>
-        <label>
-          Preferred locations
-          <input
-            value={form.locations || ""}
-            onChange={(e) => setForm({ ...form, locations: e.target.value })}
-          />
-        </label>
-        <label>
-          Minimum salary
-          <input
-            type="number"
-            value={form.minSalary || 0}
-            onChange={(e) => setForm({ ...form, minSalary: e.target.value })}
-          />
-        </label>
-        <label>
-          Weekly application goal
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={form.weeklyApplicationGoal}
-            onChange={(e) =>
-              setForm({ ...form, weeklyApplicationGoal: e.target.value })
-            }
-          />
-        </label>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={form.remote}
-            onChange={(e) => setForm({ ...form, remote: e.target.checked })}
-          />{" "}
-          Include remote roles
-        </label>
-        <button onClick={save}>
-          <Save size={16} /> Save preferences
-        </button>
-        <p className="hint">
-          Used for local fit scores and hunt defaults. Nothing is sent over the
-          network.
-        </p>
+          <label>
+            Minimum salary
+            <input
+              type="number"
+              value={form.minSalary || 0}
+              onChange={(e) => setForm({ ...form, minSalary: e.target.value })}
+            />
+          </label>
+          <label>
+            Weekly application goal
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={form.weeklyApplicationGoal}
+              onChange={(e) =>
+                setForm({ ...form, weeklyApplicationGoal: e.target.value })
+              }
+            />
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={form.remote}
+              onChange={(e) => setForm({ ...form, remote: e.target.checked })}
+            />{" "}
+            Include remote roles
+          </label>
+          <p className="hint">
+            Used for local fit scores and hunt defaults. Nothing is sent over
+            the network.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -3015,71 +3434,80 @@ function Privacy() {
     setResult(response);
   };
   return (
-    <section className="grid">
-      <div className="card">
-        <h3>
-          <ShieldCheck /> Local-first guarantees
-        </h3>
-        <p>
-          All personal data persists to <code>./data/jobhuntr.json</code>. There
-          is no hosted database, telemetry, auth vendor, or required API key.
-        </p>
+    <section className="v2-data-page">
+      <div className="v2-page-intro">
+        <div>
+          <h2>Settings & data</h2>
+          <p>Manage local backups, imports, exports, and privacy controls.</p>
+        </div>
       </div>
-      <div className="card">
-        <h3>
-          <Download /> Backup
-        </h3>
-        <p>Exports can contain private resume and note data.</p>
-        <a className="button" href="/api/export">
-          Download JSON
-        </a>{" "}
-        <a className="button secondary" href="/api/export/jobs.csv">
-          Download CSV
-        </a>
-      </div>
-      <div className="card">
-        <h3>
-          <Upload /> Restore workspace
-        </h3>
-        <input
-          type="file"
-          accept=".json,application/json"
-          onChange={(e) => setBackupFile(e.target.files?.[0])}
-        />
-        <button disabled={!backupFile} onClick={restore}>
-          Restore JSON
-        </button>
-      </div>
-      <div className="card">
-        <h3>Import tracked jobs</h3>
-        <p>
-          Import a JobHuntr CSV or any CSV containing <code>company</code> and{" "}
-          <code>title</code> headers. Matching URLs are skipped.
-        </p>
-        <input
-          type="file"
-          accept=".csv,text/csv"
-          onChange={(e) => {
-            setCsvFile(e.target.files?.[0]);
-            setResult(null);
-          }}
-        />
-        <button disabled={!csvFile} onClick={importCsv}>
-          Import CSV
-        </button>
-        {result && (
-          <p className={result.error ? "error" : "success-message"}>
-            {result.error ||
-              `${result.added} jobs imported · ${result.skipped} duplicates skipped`}
+      <div className="grid v2-data-grid">
+        <div className="card">
+          <h3>
+            <ShieldCheck /> Local-first guarantees
+          </h3>
+          <p>
+            All personal data persists to <code>./data/jobhuntr.json</code>.
+            There is no hosted database, telemetry, auth vendor, or required API
+            key.
           </p>
-        )}
-      </div>
-      <div className="card">
-        <h3>Secret scanning</h3>
-        <p>
-          <code>npm run secret:scan</code> blocks common private keys, tokens,
-          and copied env files in CI.
-        </p>
+        </div>
+        <div className="card">
+          <h3>
+            <Download /> Backup
+          </h3>
+          <p>Exports can contain private resume and note data.</p>
+          <a className="button" href="/api/export">
+            Download JSON
+          </a>{" "}
+          <a className="button secondary" href="/api/export/jobs.csv">
+            Download CSV
+          </a>
+        </div>
+        <div className="card">
+          <h3>
+            <Upload /> Restore workspace
+          </h3>
+          <input
+            type="file"
+            accept=".json,application/json"
+            onChange={(e) => setBackupFile(e.target.files?.[0])}
+          />
+          <button disabled={!backupFile} onClick={restore}>
+            Restore JSON
+          </button>
+        </div>
+        <div className="card">
+          <h3>Import tracked jobs</h3>
+          <p>
+            Import a JobHuntr CSV or any CSV containing <code>company</code> and{" "}
+            <code>title</code> headers. Matching URLs are skipped.
+          </p>
+          <input
+            type="file"
+            accept=".csv,text/csv"
+            onChange={(e) => {
+              setCsvFile(e.target.files?.[0]);
+              setResult(null);
+            }}
+          />
+          <button disabled={!csvFile} onClick={importCsv}>
+            Import CSV
+          </button>
+          {result && (
+            <p className={result.error ? "error" : "success-message"}>
+              {result.error ||
+                `${result.added} jobs imported · ${result.skipped} duplicates skipped`}
+            </p>
+          )}
+        </div>
+        <div className="card">
+          <h3>Secret scanning</h3>
+          <p>
+            <code>npm run secret:scan</code> blocks common private keys, tokens,
+            and copied env files in CI.
+          </p>
+        </div>
       </div>
     </section>
   );

@@ -50,7 +50,7 @@ test(
       assert.ok(response?.ok, `launcher did not become healthy:\n${output}`);
       const page = await fetch(`http://127.0.0.1:${port}/`);
       assert.equal(page.status, 200);
-      assert.match(await page.text(), /JobHuntr OSS/);
+      assert.match(await page.text(), /<title>JobHuntr<\/title>/);
     } finally {
       try {
         process.platform === "win32"
