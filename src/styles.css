@@ -1935,6 +1935,33 @@ button:disabled {
   color: #92400e;
   background: #fef3c7;
 }
+.v2-confirm-dialog {
+  max-width: 450px;
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  text-align: center;
+}
+.v2-confirm-dialog h2 {
+  margin: 0 0 8px;
+}
+.v2-confirm-dialog p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.6;
+}
+.v2-danger-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  color: #b91c1c;
+  background: #fee2e2;
+}
 .v2-restore-dialog p {
   color: #64748b;
   line-height: 1.6;

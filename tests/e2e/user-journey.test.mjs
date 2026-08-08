@@ -401,6 +401,15 @@ test(
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
+      await page.getByRole("button", { name: "Delete role" }).click();
+      const deleteJobDialog = page.getByRole("alertdialog", {
+        name: "Delete tracked job?",
+      });
+      await deleteJobDialog.waitFor();
+      await assertAccessible(page, "Delete tracked job confirmation");
+      await deleteJobDialog.getByRole("button", { name: "Cancel" }).click();
+      await deleteJobDialog.waitFor({ state: "hidden" });
+      await page.getByText("E2E tracker note").waitFor();
       await assertAccessible(page, "Job Tracker");
 
       await page.getByRole("button", { name: "LinkedIn Audit" }).click();

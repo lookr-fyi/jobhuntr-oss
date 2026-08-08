@@ -63,6 +63,71 @@ const api = async (path, options = {}) => {
   if (!res.ok) throw new Error(await res.text());
   return res.status === 204 ? null : res.json();
 };
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = "Delete",
+  onClose,
+  onConfirm,
+}) {
+  const [busy, setBusy] = useState(false);
+  const cancelRef = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    cancelRef.current?.focus();
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && !busy) onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, busy, onClose]);
+  if (!open) return null;
+  const confirm = async () => {
+    setBusy(true);
+    try {
+      await onConfirm();
+      onClose();
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div
+      className="modal-backdrop"
+      onMouseDown={(event) =>
+        event.target === event.currentTarget && !busy && onClose()
+      }
+    >
+      <div
+        className="modal-card v2-confirm-dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-description"
+      >
+        <span className="v2-danger-icon">
+          <Trash2 size={21} />
+        </span>
+        <h2 id="confirm-title">{title}</h2>
+        <p id="confirm-description">{description}</p>
+        <div className="modal-actions">
+          <button
+            ref={cancelRef}
+            className="secondary"
+            disabled={busy}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button className="danger" disabled={busy} onClick={confirm}>
+            {busy ? "Deleting…" : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function App() {
   const [state, setState] = useState(null);
   const initialRoute = window.location.hash.replace(/^#\/?/, "");
@@ -926,6 +991,7 @@ function Tracker({ state, reload }) {
   const [mode, setMode] = useState("board");
   const [showForm, setShowForm] = useState(false);
   const [funnelOpen, setFunnelOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const funnelCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
   const filtered = state.jobs.filter((item) => {
@@ -1016,13 +1082,24 @@ function Tracker({ state, reload }) {
     await reload();
   };
   const remove = async () => {
-    if (!job || !confirm(`Delete ${job.title} at ${job.company}?`)) return;
+    if (!job) return;
     await api(`/api/jobs/${job.id}`, { method: "DELETE" });
     setSelected(null);
     await reload();
   };
   return (
     <section className="tracker-page">
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete tracked job?"
+        description={
+          job
+            ? `${job.title} at ${job.company} and its related notes, tasks, and drafts will be permanently removed.`
+            : "This tracked job will be permanently removed."
+        }
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={remove}
+      />
       <div className="v2-tracker-header">
         <h2>Job Tracker</h2>
         <div>
@@ -1231,7 +1308,7 @@ function Tracker({ state, reload }) {
                 </p>
               ))}
             </div>
-            <button className="danger" onClick={remove}>
+            <button className="danger" onClick={() => setDeleteOpen(true)}>
               Delete role
             </button>
           </div>
@@ -2304,6 +2381,7 @@ function Resume({ state, reload, mode = "resume" }) {
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
   const [templateDialog, setTemplateDialog] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [historyQuery, setHistoryQuery] = useState("");
   const [historyTemplate, setHistoryTemplate] = useState("all");
   const [showAllResumes, setShowAllResumes] = useState(false);
@@ -2704,6 +2782,23 @@ function Resume({ state, reload, mode = "resume" }) {
     }
     return (
       <section className="v2-document-page">
+        <ConfirmDialog
+          open={deleteTarget?.type === "letter"}
+          title="Delete cover letter?"
+          description={
+            deleteTarget
+              ? `“${deleteTarget.item.title}” will be permanently removed from your local workspace.`
+              : "This cover letter will be permanently removed."
+          }
+          onClose={() => setDeleteTarget(null)}
+          onConfirm={async () => {
+            await api(`/api/cover-letters/${deleteTarget.item.id}`, {
+              method: "DELETE",
+            });
+            if (letter?.id === deleteTarget.item.id) setLetter(null);
+            await reload();
+          }}
+        />
         <div className="v2-document-page-head">
           <div>
             <h2>Cover Letters</h2>
@@ -2752,14 +2847,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <button
                     className="v2-letter-delete"
                     aria-label={`Delete ${item.title}`}
-                    onClick={async () => {
-                      if (!window.confirm(`Delete “${item.title}”?`)) return;
-                      await api(`/api/cover-letters/${item.id}`, {
-                        method: "DELETE",
-                      });
-                      if (letter?.id === item.id) setLetter(null);
-                      await reload();
-                    }}
+                    onClick={() => setDeleteTarget({ type: "letter", item })}
                   >
                     <Trash2 size={15} />
                   </button>
@@ -2810,13 +2898,9 @@ function Resume({ state, reload, mode = "resume" }) {
                   </button>
                   <button
                     className="danger"
-                    onClick={async () => {
-                      await api(`/api/cover-letters/${letter.id}`, {
-                        method: "DELETE",
-                      });
-                      setLetter(null);
-                      reload();
-                    }}
+                    onClick={() =>
+                      setDeleteTarget({ type: "letter", item: letter })
+                    }
                   >
                     Delete
                   </button>
@@ -2836,6 +2920,27 @@ function Resume({ state, reload, mode = "resume" }) {
   }
   return (
     <section className="resume-studio">
+      <ConfirmDialog
+        open={deleteTarget?.type === "template"}
+        title="Delete resume template?"
+        description={
+          deleteTarget
+            ? `“${deleteTarget.item.name}” will be permanently removed. Existing generated resumes will remain available.`
+            : "This template will be permanently removed."
+        }
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await api(`/api/templates/${deleteTarget.item.id}`, {
+            method: "DELETE",
+          });
+          if (templateId === deleteTarget.item.id)
+            setTemplateId(
+              state.templates.find((item) => item.id !== deleteTarget.item.id)
+                ?.id || "",
+            );
+          await reload();
+        }}
+      />
       <div className="v2-ats-header">
         <div>
           <h2>ATS Resume</h2>
@@ -2904,18 +3009,9 @@ function Resume({ state, reload, mode = "resume" }) {
                 className="text-button danger"
                 aria-label={`Delete ${template.name} template`}
                 disabled={state.templates.length <= 1}
-                onClick={async () => {
-                  if (!window.confirm(`Delete “${template.name}”?`)) return;
-                  await api(`/api/templates/${template.id}`, {
-                    method: "DELETE",
-                  });
-                  if (templateId === template.id)
-                    setTemplateId(
-                      state.templates.find((item) => item.id !== template.id)
-                        ?.id || "",
-                    );
-                  await reload();
-                }}
+                onClick={() =>
+                  setDeleteTarget({ type: "template", item: template })
+                }
               >
                 Delete
               </button>
