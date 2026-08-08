@@ -3696,7 +3696,16 @@ function Resume({ state, reload, mode = "resume" }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const [score, setScore] = useState(null);
   const [letter, setLetter] = useState(state.coverLetters[0] || null);
-  const [letterWizard, setLetterWizard] = useState(null);
+  const [letterWizard, setLetterWizard] = useState(() => {
+    if (mode !== "cover-letter") return null;
+    try {
+      const saved = sessionStorage.getItem("jobhuntr-cover-letter-wizard");
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      sessionStorage.removeItem("jobhuntr-cover-letter-wizard");
+      return null;
+    }
+  });
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
@@ -3706,6 +3715,30 @@ function Resume({ state, reload, mode = "resume" }) {
   const [historyTemplate, setHistoryTemplate] = useState("all");
   const [showAllResumes, setShowAllResumes] = useState(false);
   const templateDialogCloseRef = useRef(null);
+  useEffect(() => {
+    if (mode !== "cover-letter") return;
+    if (letterWizard) {
+      sessionStorage.setItem(
+        "jobhuntr-cover-letter-wizard",
+        JSON.stringify(letterWizard),
+      );
+      const nextHash = `#/cover-letter?step=${letterWizard.step}`;
+      if (window.location.hash !== nextHash)
+        window.history.replaceState(
+          { tab: "cover-letter", step: letterWizard.step },
+          "",
+          nextHash,
+        );
+    } else {
+      sessionStorage.removeItem("jobhuntr-cover-letter-wizard");
+      if (window.location.hash.startsWith("#/cover-letter?"))
+        window.history.replaceState(
+          { tab: "cover-letter" },
+          "",
+          "#/cover-letter",
+        );
+    }
+  }, [letterWizard, mode]);
   const visibleTemplates = state.templates
     .filter((template) =>
       `${template.name} ${template.description}`

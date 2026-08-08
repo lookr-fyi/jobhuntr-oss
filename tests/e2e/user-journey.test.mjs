@@ -619,11 +619,20 @@ test(
       await assertAccessible(page, "Cover Letter wizard");
       await page.getByRole("button", { name: /Modern Impact/ }).click();
       await page.getByRole("button", { name: "Continue" }).click();
+      assert.equal(new URL(page.url()).hash, "#/cover-letter?step=2");
       await page
         .getByLabel("Template content")
         .fill(
           "{{name}} — {{role}}\n\nHello {{company}} team,\n\n{{opening}}\n\n{{evidence}}\n\n{{closing}}",
         );
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Edit Your Cover Letter Template" })
+        .waitFor();
+      assert.match(
+        await page.getByLabel("Template content").inputValue(),
+        /Hello \{\{company\}\}/,
+      );
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("button", { name: /E2E tailored resume/ }).click();
       await page.getByRole("button", { name: "Continue" }).click();
