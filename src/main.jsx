@@ -4188,9 +4188,12 @@ function Gigs({ state, reload }) {
     status: "lead",
   };
   const [form, setForm] = useState(empty);
-  const [selected, setSelected] = useState(state.gigs[0]?.id || null);
+  const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [gigQuery, setGigQuery] = useState("");
+  const [myGigQuery, setMyGigQuery] = useState("");
+  const [myView, setMyView] = useState("table");
+  const gigCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
   const money = (value) =>
     new Intl.NumberFormat("en-US", {
@@ -4260,6 +4263,20 @@ function Gigs({ state, reload }) {
     setSelected(created.id);
     await reload();
   };
+  const visibleTrackedGigs = state.gigs.filter((item) =>
+    `${item.title} ${item.client} ${item.status}`
+      .toLowerCase()
+      .includes(myGigQuery.toLowerCase()),
+  );
+  useEffect(() => {
+    if (!gig || myView !== "table") return undefined;
+    gigCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [gig, myView]);
   return (
     <section className="gigs-page">
       <div className="v2-page-intro v2-gigs-intro">
@@ -4319,6 +4336,20 @@ function Gigs({ state, reload }) {
             Track freelance opportunities, applications, delivery, and earnings
             locally.
           </p>
+        </div>
+        <div className="segmented v2-gig-view-toggle">
+          <button
+            className={myView === "table" ? "active" : ""}
+            onClick={() => setMyView("table")}
+          >
+            List
+          </button>
+          <button
+            className={myView === "board" ? "active" : ""}
+            onClick={() => setMyView("board")}
+          >
+            Board
+          </button>
         </div>
       </div>
       <div className="gig-metrics">
@@ -4397,100 +4428,275 @@ function Gigs({ state, reload }) {
           </button>
         </div>
       )}
-      <div className={gig ? "gig-workspace with-detail" : "gig-workspace"}>
-        <div className="gig-board">
-          {stages.map((stage) => (
-            <div
-              className="gig-column"
-              key={stage}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) =>
-                patch(e.dataTransfer.getData("gigId"), { status: stage })
-              }
-            >
-              <div className="column-title">
-                <b>{stage}</b>
-                <span>
-                  {state.gigs.filter((item) => item.status === stage).length}
-                </span>
-              </div>
-              {state.gigs
-                .filter((item) => item.status === stage)
-                .map((item) => (
-                  <button
-                    draggable
-                    onDragStart={(e) =>
-                      e.dataTransfer.setData("gigId", item.id)
-                    }
-                    className={
-                      item.id === selected ? "gig-card selected" : "gig-card"
-                    }
-                    key={item.id}
-                    onClick={() => setSelected(item.id)}
-                  >
-                    <b>{item.title}</b>
-                    <span>{item.client}</span>
-                    <strong>{money(item.budget)}</strong>
-                    {item.dueDate && (
-                      <small>
-                        Due{" "}
-                        {new Date(
-                          `${item.dueDate}T12:00:00`,
-                        ).toLocaleDateString()}
-                      </small>
-                    )}
-                  </button>
-                ))}
-            </div>
+      <div className="searchbox v2-my-gig-search">
+        <Search size={16} />
+        <input
+          aria-label="Search my gigs"
+          value={myGigQuery}
+          onChange={(event) => setMyGigQuery(event.target.value)}
+          placeholder="Search applications by campaign, partner, or status…"
+        />
+      </div>
+      {myView === "table" ? (
+        <div className="card v2-gig-applications">
+          <div className="v2-gig-table-head">
+            <span>Campaign</span>
+            <span>Earning</span>
+            <span>Created</span>
+            <span>Status</span>
+            <span>Actions</span>
+          </div>
+          {visibleTrackedGigs.map((item) => (
+            <button key={item.id} onClick={() => setSelected(item.id)}>
+              <span>
+                <b>{item.title}</b>
+                <small>by {item.client}</small>
+              </span>
+              <strong>{money(item.earned || item.budget)}</strong>
+              <time>{new Date(item.createdAt).toLocaleDateString()}</time>
+              <em className={`v2-gig-status ${item.status}`}>
+                {item.status === "lead"
+                  ? "Reviewing Application"
+                  : item.status === "proposal"
+                    ? "Application Submitted"
+                    : item.status === "negotiation"
+                      ? "Application Approved"
+                      : item.status === "won"
+                        ? "Ready to Start"
+                        : item.status === "in-progress"
+                          ? "In Progress"
+                          : item.status === "completed"
+                            ? "Payment Sent"
+                            : "Closed"}
+              </em>
+              <span className="v2-gig-row-action">
+                View <ChevronRight size={15} />
+              </span>
+            </button>
           ))}
+          {!visibleTrackedGigs.length && (
+            <div className="v2-gig-table-empty">
+              <CircleDollarSign size={26} />
+              <h3>
+                {state.gigs.length
+                  ? "No matching gigs"
+                  : "No gig applications yet"}
+              </h3>
+              <p>
+                {state.gigs.length
+                  ? "Try a broader search."
+                  : "Apply to an available campaign or add a private opportunity."}
+              </p>
+            </div>
+          )}
         </div>
-        {gig && (
-          <div className="card gig-drawer">
+      ) : (
+        <div className={gig ? "gig-workspace with-detail" : "gig-workspace"}>
+          <div className="gig-board">
+            {stages.map((stage) => (
+              <div
+                className="gig-column"
+                key={stage}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) =>
+                  patch(e.dataTransfer.getData("gigId"), { status: stage })
+                }
+              >
+                <div className="column-title">
+                  <b>{stage}</b>
+                  <span>
+                    {state.gigs.filter((item) => item.status === stage).length}
+                  </span>
+                </div>
+                {visibleTrackedGigs
+                  .filter((item) => item.status === stage)
+                  .map((item) => (
+                    <button
+                      draggable
+                      onDragStart={(e) =>
+                        e.dataTransfer.setData("gigId", item.id)
+                      }
+                      className={
+                        item.id === selected ? "gig-card selected" : "gig-card"
+                      }
+                      key={item.id}
+                      onClick={() => setSelected(item.id)}
+                    >
+                      <b>{item.title}</b>
+                      <span>{item.client}</span>
+                      <strong>{money(item.budget)}</strong>
+                      {item.dueDate && (
+                        <small>
+                          Due{" "}
+                          {new Date(
+                            `${item.dueDate}T12:00:00`,
+                          ).toLocaleDateString()}
+                        </small>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            ))}
+          </div>
+          {gig && (
+            <div className="card gig-drawer">
+              <div className="row">
+                <span className={`pill ${gig.status}`}>{gig.status}</span>
+                <button
+                  className="drawer-close"
+                  onClick={() => setSelected(null)}
+                >
+                  ×
+                </button>
+              </div>
+              <h2>{gig.title}</h2>
+              <p className="muted">
+                {gig.client} · {gig.source}
+              </p>
+              <select
+                aria-label="Gig stage"
+                value={gig.status}
+                onChange={(e) => patch(gig.id, { status: e.target.value })}
+              >
+                {stages.map((stage) => (
+                  <option key={stage}>{stage}</option>
+                ))}
+              </select>
+              {gig.url && (
+                <a href={gig.url} target="_blank" rel="noreferrer">
+                  Open listing ↗
+                </a>
+              )}
+              <div className="double">
+                <label>
+                  Budget
+                  <input
+                    type="number"
+                    defaultValue={gig.budget}
+                    onBlur={(e) =>
+                      patch(gig.id, { budget: Number(e.target.value) })
+                    }
+                  />
+                </label>
+                <label>
+                  Earned
+                  <input
+                    type="number"
+                    defaultValue={gig.earned}
+                    onBlur={(e) =>
+                      patch(gig.id, { earned: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </div>
+              <label>
+                Deadline
+                <input
+                  type="date"
+                  defaultValue={gig.dueDate || ""}
+                  onBlur={(e) => patch(gig.id, { dueDate: e.target.value })}
+                />
+              </label>
+              <label>
+                Description
+                <textarea
+                  defaultValue={gig.description}
+                  onBlur={(e) => patch(gig.id, { description: e.target.value })}
+                />
+              </label>
+              <label>
+                Proposal / pitch
+                <textarea
+                  className="gig-proposal"
+                  defaultValue={gig.proposal}
+                  onBlur={(e) => patch(gig.id, { proposal: e.target.value })}
+                  placeholder="Scope, approach, timeline, and evidence…"
+                />
+              </label>
+              <h3>Status timeline</h3>
+              <div className="status-history">
+                {gig.statusHistory.map((event, index) => (
+                  <p key={`${event.at}-${index}`}>
+                    <b>{event.status}</b>
+                    <small>{new Date(event.at).toLocaleString()}</small>
+                  </p>
+                ))}
+              </div>
+              <button
+                className="danger"
+                onClick={async () => {
+                  if (!confirm(`Delete ${gig.title}?`)) return;
+                  await api(`/api/gigs/${gig.id}`, { method: "DELETE" });
+                  setSelected(null);
+                  reload();
+                }}
+              >
+                Delete gig
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+      {myView === "table" && gig && (
+        <div
+          className="v2-template-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="gig-detail-title"
+        >
+          <button
+            className="v2-template-backdrop"
+            aria-label="Close gig details"
+            onClick={() => setSelected(null)}
+          />
+          <div className="v2-template-modal-content v2-gig-detail-modal">
             <div className="row">
               <span className={`pill ${gig.status}`}>{gig.status}</span>
               <button
+                ref={gigCloseRef}
                 className="drawer-close"
+                aria-label="Close gig details"
                 onClick={() => setSelected(null)}
               >
                 ×
               </button>
             </div>
-            <h2>{gig.title}</h2>
+            <h2 id="gig-detail-title">{gig.title}</h2>
             <p className="muted">
               {gig.client} · {gig.source}
             </p>
-            <select
-              aria-label="Gig stage"
-              value={gig.status}
-              onChange={(e) => patch(gig.id, { status: e.target.value })}
-            >
-              {stages.map((stage) => (
-                <option key={stage}>{stage}</option>
-              ))}
-            </select>
-            {gig.url && (
-              <a href={gig.url} target="_blank" rel="noreferrer">
-                Open listing ↗
-              </a>
-            )}
+            <label>
+              Application status
+              <select
+                aria-label="Gig application status"
+                value={gig.status}
+                onChange={(event) =>
+                  patch(gig.id, { status: event.target.value })
+                }
+              >
+                {stages.map((stage) => (
+                  <option key={stage}>{stage}</option>
+                ))}
+              </select>
+            </label>
             <div className="double">
               <label>
-                Budget
+                Potential earning
                 <input
                   type="number"
                   defaultValue={gig.budget}
-                  onBlur={(e) =>
-                    patch(gig.id, { budget: Number(e.target.value) })
+                  onBlur={(event) =>
+                    patch(gig.id, { budget: Number(event.target.value) })
                   }
                 />
               </label>
               <label>
-                Earned
+                Actual earning
                 <input
                   type="number"
                   defaultValue={gig.earned}
-                  onBlur={(e) =>
-                    patch(gig.id, { earned: Number(e.target.value) })
+                  onBlur={(event) =>
+                    patch(gig.id, { earned: Number(event.target.value) })
                   }
                 />
               </label>
@@ -4500,48 +4706,40 @@ function Gigs({ state, reload }) {
               <input
                 type="date"
                 defaultValue={gig.dueDate || ""}
-                onBlur={(e) => patch(gig.id, { dueDate: e.target.value })}
+                onBlur={(event) =>
+                  patch(gig.id, { dueDate: event.target.value })
+                }
               />
             </label>
             <label>
-              Description
-              <textarea
-                defaultValue={gig.description}
-                onBlur={(e) => patch(gig.id, { description: e.target.value })}
-              />
-            </label>
-            <label>
-              Proposal / pitch
+              Proposal / delivery notes
               <textarea
                 className="gig-proposal"
                 defaultValue={gig.proposal}
-                onBlur={(e) => patch(gig.id, { proposal: e.target.value })}
-                placeholder="Scope, approach, timeline, and evidence…"
+                onBlur={(event) =>
+                  patch(gig.id, { proposal: event.target.value })
+                }
               />
             </label>
-            <h3>Status timeline</h3>
-            <div className="status-history">
-              {gig.statusHistory.map((event, index) => (
-                <p key={`${event.at}-${index}`}>
-                  <b>{event.status}</b>
-                  <small>{new Date(event.at).toLocaleString()}</small>
-                </p>
-              ))}
+            <div className="v2-gig-modal-footer">
+              <button
+                className="danger"
+                onClick={async () => {
+                  if (!confirm(`Delete ${gig.title}?`)) return;
+                  await api(`/api/gigs/${gig.id}`, { method: "DELETE" });
+                  setSelected(null);
+                  reload();
+                }}
+              >
+                Close application
+              </button>
+              <button className="secondary" onClick={() => setSelected(null)}>
+                Done
+              </button>
             </div>
-            <button
-              className="danger"
-              onClick={async () => {
-                if (!confirm(`Delete ${gig.title}?`)) return;
-                await api(`/api/gigs/${gig.id}`, { method: "DELETE" });
-                setSelected(null);
-                reload();
-              }}
-            >
-              Delete gig
-            </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       {!state.gigs.length && !showForm && (
         <div className="card empty-state">
           <CircleDollarSign />

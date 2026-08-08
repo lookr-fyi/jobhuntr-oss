@@ -487,6 +487,26 @@ test(
         .getByRole("heading", { name: "Review an AI resume workflow" })
         .last()
         .waitFor();
+      const gigDialog = page.getByRole("dialog", {
+        name: "Review an AI resume workflow",
+      });
+      await gigDialog.waitFor();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/gigs/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        gigDialog.getByLabel("Gig application status").selectOption("proposal"),
+      ]);
+      await page.keyboard.press("Escape");
+      await gigDialog.waitFor({ state: "hidden" });
+      await page.getByLabel("Search my gigs").fill("Career Tools Lab");
+      await page
+        .locator(".v2-gig-applications")
+        .getByText("Application Submitted")
+        .waitFor();
       await assertAccessible(page, "Gigs");
 
       await page.locator('[title="Profile and settings"]').click();
