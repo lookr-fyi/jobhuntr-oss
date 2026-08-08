@@ -532,12 +532,12 @@ test(
       });
       await archiveQueueDialog.waitFor();
       await archiveQueueDialog.getByRole("button", { name: "Cancel" }).click();
-      await page.getByRole("tab", { name: /Search Jobs/ }).click();
+      await page.getByRole("tab", { name: /From Search Runs/ }).click();
       assert.match(page.url(), /tab=search/);
       await page.reload();
       assert.equal(
         await page
-          .getByRole("tab", { name: /Search Jobs/ })
+          .getByRole("tab", { name: /From Search Runs/ })
           .getAttribute("aria-selected"),
         "true",
       );
@@ -555,6 +555,11 @@ test(
         "manual queue preparation should attach the original profile resume",
       );
       await page.getByText("Resume ready for review").waitFor();
+      await page.getByText("Queued", { exact: true }).first().waitFor();
+      await page
+        .getByText(/^Queued (just now|\d+ min)/)
+        .first()
+        .waitFor();
       await page.getByLabel("Cover letter attachment").waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Minimum queue match score").selectOption("40");

@@ -5814,9 +5814,22 @@ main > header.integrated-page-header {
   font-size: 13px;
 }
 .v2-queued-job > small {
-  margin: 4px 0 9px;
+  margin: 4px 0 7px;
   color: #475569;
   font-size: 11px;
+}
+.v2-queue-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.v2-queued-job .v2-queue-tags em {
+  margin: 0;
+  padding: 2px 6px;
+  color: #475569;
+  background: #f1f5f9;
+  font-size: 9px;
 }
 .v2-queued-job > span {
   display: flex;

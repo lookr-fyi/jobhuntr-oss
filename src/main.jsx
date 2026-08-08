@@ -71,6 +71,17 @@ const maximumListedSalary = (job) => {
     });
   return values?.length ? Math.max(...values) : 0;
 };
+const formatRelativeTime = (value) => {
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(elapsed / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return new Date(value).toLocaleDateString();
+};
 
 const api = async (path, options = {}) => {
   try {
@@ -2948,7 +2959,7 @@ function Queue({ state, reload, setTab }) {
           className={queueTab === "apply" ? "active" : ""}
           onClick={() => setQueueTab("apply")}
         >
-          <ClipboardListIcon /> Apply Jobs <em>{active.length}</em>
+          <ClipboardListIcon /> From Apply Runs <em>{active.length}</em>
         </button>
         <button
           role="tab"
@@ -2956,7 +2967,7 @@ function Queue({ state, reload, setTab }) {
           className={queueTab === "search" ? "active" : ""}
           onClick={() => setQueueTab("search")}
         >
-          <Search size={15} /> Search Jobs{" "}
+          <Search size={15} /> From Search Runs{" "}
           <em>
             {
               state.jobs.filter(
@@ -2975,7 +2986,7 @@ function Queue({ state, reload, setTab }) {
           className={queueTab === "manual" ? "active" : ""}
           onClick={() => setQueueTab("manual")}
         >
-          <Plus size={15} /> Manual Jobs{" "}
+          <Briefcase size={15} /> From Job Board{" "}
           <em>
             {
               state.jobs.filter(
@@ -3198,16 +3209,22 @@ function Queue({ state, reload, setTab }) {
                         {job?.company} ·{" "}
                         {job?.location || "Location unavailable"}
                       </small>
+                      <div className="v2-queue-tags">
+                        {job?.salary && <em>{job.salary}</em>}
+                        {(job?.tags || []).slice(0, 2).map((tag) => (
+                          <em key={tag}>{tag}</em>
+                        ))}
+                      </div>
                       <span>
                         <i className={`queue-state ${item.status}`} />
-                        {item.status}
+                        {item.status === "ready" ? "Submitting" : "Queued"}
                         <em>{job?.fitScore || 0}% match</em>
                         {item.atsScore !== undefined && (
                           <em className="ats">{item.atsScore}% ATS</em>
                         )}
                       </span>
                     </span>
-                    <time>{new Date(item.createdAt).toLocaleDateString()}</time>
+                    <time>Queued {formatRelativeTime(item.createdAt)}</time>
                   </button>
                 );
               })}
@@ -3346,7 +3363,9 @@ function SubmissionCard({ submission: s, state, reload }) {
             {job?.company} · {job?.location || "Location unavailable"}
           </small>
         </div>
-        <span className={`pill ${s.status}`}>{s.status}</span>
+        <span className={`pill ${s.status}`}>
+          {s.status === "ready" ? "Submitting" : "Queued"}
+        </span>
       </div>
       <div className="v2-packet-job-facts">
         <span>
