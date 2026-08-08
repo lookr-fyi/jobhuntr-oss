@@ -54,7 +54,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 7, createdAt, updatedAt: createdAt },
+    meta: { version: 8, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: "Local Job Hunter",
@@ -98,6 +98,7 @@ export function emptyDb() {
     huntPresets: [],
     careerStories: [],
     profileAudits: [],
+    gigs: [],
     agentRuns: [],
     activities: [
       {
@@ -158,6 +159,11 @@ function migrate(db) {
   db.huntPresets ||= [];
   db.careerStories ||= [];
   db.profileAudits ||= [];
+  db.gigs ||= [];
+  for (const gig of db.gigs) {
+    gig.status ||= "lead";
+    gig.statusHistory ||= [{ status: gig.status, at: gig.createdAt || now() }];
+  }
   for (const draft of db.outreachDrafts) draft.status ||= "draft";
   for (const session of db.coachingSessions) {
     session.status ||= "in-progress";
@@ -178,7 +184,7 @@ function migrate(db) {
       { status: job.status || "saved", at: job.createdAt || now() },
     ];
   }
-  db.meta.version = 7;
+  db.meta.version = 8;
   return db;
 }
 
@@ -414,6 +420,15 @@ export function summarize(db) {
     1,
     Number(db.profile.preferences?.weeklyApplicationGoal || 5),
   );
+  const activeGigs = db.gigs.filter((gig) =>
+    ["proposal", "negotiation", "won", "in-progress"].includes(gig.status),
+  );
+  const gigPipelineValue = db.gigs
+    .filter((gig) => ["lead", "proposal", "negotiation"].includes(gig.status))
+    .reduce((sum, gig) => sum + Number(gig.budget || 0), 0);
+  const gigEarnings = db.gigs
+    .filter((gig) => ["won", "in-progress", "completed"].includes(gig.status))
+    .reduce((sum, gig) => sum + Number(gig.earned || 0), 0);
   return {
     totalJobs: db.jobs.length,
     byStatus,
@@ -437,6 +452,25 @@ export function summarize(db) {
       status: job.status,
       updatedAt: job.updatedAt,
     })),
+    gigs: {
+      total: db.gigs.length,
+      active: activeGigs.length,
+      pipelineValue: gigPipelineValue,
+      earnings: gigEarnings,
+      dueSoon: db.gigs
+        .filter((gig) => {
+          const due =
+            gig.dueDate && new Date(`${gig.dueDate}T23:59:59`).getTime();
+          return (
+            due &&
+            due >= currentTime &&
+            due <= currentTime + 14 * 864e5 &&
+            !["completed", "lost"].includes(gig.status)
+          );
+        })
+        .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+        .slice(0, 8),
+    },
     queueCount: queue.length,
     recentActivities: db.activities.slice(0, 12),
     activeRuns: db.agentRuns.filter((r) =>

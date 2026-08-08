@@ -60,6 +60,29 @@ const JobSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   status: z.string().optional().default("saved"),
 });
+const GigSchema = z.object({
+  client: z.string().min(1).max(200),
+  title: z.string().min(1).max(300),
+  source: z.string().max(200).optional().default("Manual"),
+  url: z.string().max(2000).optional().default(""),
+  budget: z.coerce.number().min(0).max(100000000).optional().default(0),
+  earned: z.coerce.number().min(0).max(100000000).optional().default(0),
+  dueDate: z.string().optional().default(""),
+  description: z.string().max(50000).optional().default(""),
+  proposal: z.string().max(100000).optional().default(""),
+  status: z
+    .enum([
+      "lead",
+      "proposal",
+      "negotiation",
+      "won",
+      "in-progress",
+      "completed",
+      "lost",
+    ])
+    .optional()
+    .default("lead"),
+});
 
 app.get("/api/health", async (_req, res) =>
   res.json({
@@ -97,6 +120,59 @@ app.put("/api/profile", async (req, res) => {
 app.get("/api/jobs", async (_req, res) => {
   const db = await readDb();
   res.json(db.jobs);
+});
+app.get("/api/gigs", async (_req, res) => {
+  const db = await readDb();
+  res.json(db.gigs);
+});
+app.post("/api/gigs", async (req, res) => {
+  const parsed = GigSchema.parse(req.body);
+  parsed.dueDate = safeDueDate(parsed.dueDate);
+  const gig = await mutate((db) => {
+    const item = {
+      id: nanoid(),
+      ...parsed,
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+      statusHistory: [{ status: parsed.status, at: timestamp() }],
+    };
+    db.gigs.unshift(item);
+    auditEvent(db, "gig", `Added gig “${item.title}” for ${item.client}.`, {
+      gigId: item.id,
+    });
+    return item;
+  });
+  res.status(201).json(gig);
+});
+app.patch("/api/gigs/:id", async (req, res) => {
+  const gig = await mutate((db) => {
+    const item = db.gigs.find((entry) => entry.id === req.params.id);
+    if (!item) return null;
+    const previous = item.status;
+    const merged = GigSchema.parse({ ...item, ...req.body });
+    merged.dueDate = safeDueDate(merged.dueDate);
+    Object.assign(item, merged, {
+      id: item.id,
+      createdAt: item.createdAt,
+      updatedAt: timestamp(),
+    });
+    if (item.status !== previous)
+      item.statusHistory.unshift({ status: item.status, at: timestamp() });
+    auditEvent(db, "gig", `Updated gig “${item.title}” for ${item.client}.`, {
+      gigId: item.id,
+    });
+    return item;
+  });
+  if (!gig) return res.status(404).json({ error: "Gig not found" });
+  res.json(gig);
+});
+app.delete("/api/gigs/:id", async (req, res) => {
+  const removed = await mutate((db) => {
+    const before = db.gigs.length;
+    db.gigs = db.gigs.filter((gig) => gig.id !== req.params.id);
+    return before !== db.gigs.length;
+  });
+  res.status(removed ? 204 : 404).end();
 });
 app.post("/api/jobs", async (req, res) => {
   const parsed = JobSchema.parse(req.body);
@@ -1048,6 +1124,7 @@ app.post("/api/import", async (req, res) => {
     "huntPresets",
     "careerStories",
     "profileAudits",
+    "gigs",
     "agentRuns",
     "activities",
   ];

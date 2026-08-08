@@ -33,6 +33,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 - **Submission queue**: assemble resume/letter packets, enforce a review checklist, and record applications without external account automation.
 - **Interview coach and outreach**: persistent role-specific practice answers, research checklists, private notes, reusable STAR story evidence, session history, and editable outreach statuses—all offline.
 - **Professional profile audit**: paste-only, deterministic headline/about/experience/skills scoring with visible checks, recommendations, target-term matching, and local history—without scraping or account access.
+- **Freelance gigs**: local lead-to-delivery Kanban, proposal notes, deadlines, budgets, status history, pipeline value, and tracked earnings without marketplace integration.
 - **Import/export**: one-click JSON backup/restore, CSV export, and user-facing CSV import with quoted-field support and URL deduplication.
 - **Public-repo safety**: `.gitignore`, `.env.example`, and `npm run secret:scan`.
 

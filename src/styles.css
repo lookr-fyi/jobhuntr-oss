@@ -1352,3 +1352,127 @@ button:disabled {
     margin-bottom: 14px;
   }
 }
+.gigs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.gig-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.gig-metrics .metric strong {
+  font-size: 28px;
+}
+.gig-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+.gig-workspace.with-detail {
+  grid-template-columns: minmax(0, 1fr) 390px;
+}
+.gig-board {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(210px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 14px;
+}
+.gig-column {
+  background: #eef2f7;
+  border-radius: 16px;
+  padding: 9px;
+  min-height: 430px;
+}
+.gig-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  background: white;
+  color: #334155;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 8px;
+  cursor: grab;
+}
+.gig-card.selected {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px #bfdbfe;
+}
+.gig-card span,
+.gig-card small {
+  color: #64748b;
+  font-size: 12px;
+}
+.gig-card strong {
+  color: #0f766e;
+  margin: 7px 0;
+}
+.gig-drawer {
+  align-self: start;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+}
+.gig-drawer label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  margin: 10px 0;
+}
+.gig-drawer > a {
+  display: block;
+  margin: 10px 0;
+}
+.gig-proposal {
+  min-height: 220px;
+}
+@media (max-width: 1150px) {
+  .gig-workspace.with-detail {
+    grid-template-columns: 1fr;
+  }
+  .gig-drawer {
+    position: static;
+    max-height: none;
+  }
+  .gig-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .gig-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+.freelance-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.freelance-summary p {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0;
+}
+.freelance-summary strong,
+.freelance-summary span {
+  display: block;
+}
+.freelance-summary strong {
+  font-size: 19px;
+}
+.freelance-summary span {
+  font-size: 11px;
+  color: #64748b;
+}
+@media (max-width: 500px) {
+  .freelance-summary {
+    grid-template-columns: 1fr;
+  }
+}

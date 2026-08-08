@@ -397,6 +397,55 @@ test("professional profile audits stay local, persist history, and validate limi
   assert.equal(removed.res.status, 204);
 });
 
+test("local gigs track proposals, deadlines, status history, and earnings", async () => {
+  const dueDate = new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10);
+  const created = await req("/api/gigs", {
+    method: "POST",
+    body: JSON.stringify({
+      client: "Local Client",
+      title: "Workflow prototype",
+      budget: 5000,
+      dueDate,
+      description: "Build an offline prototype",
+      proposal: "Deliver in two milestones",
+      status: "proposal",
+    }),
+  });
+  assert.equal(created.res.status, 201);
+  assert.equal(created.body.budget, 5000);
+  let summary = (await req("/api/summary")).body;
+  assert.ok(summary.gigs.pipelineValue >= 5000);
+  assert.ok(summary.gigs.dueSoon.some((gig) => gig.id === created.body.id));
+  const updated = await req(`/api/gigs/${created.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "won", earned: 3000 }),
+  });
+  assert.equal(updated.body.status, "won");
+  assert.equal(updated.body.statusHistory[0].status, "won");
+  summary = (await req("/api/summary")).body;
+  assert.ok(summary.gigs.earnings >= 3000);
+  assert.ok(summary.gigs.active >= 1);
+  const invalidDate = await req("/api/gigs", {
+    method: "POST",
+    body: JSON.stringify({
+      client: "Safe Client",
+      title: "Safe date",
+      dueDate: "tomorrow",
+    }),
+  });
+  assert.equal(invalidDate.body.dueDate, "");
+  assert.equal(
+    (await req(`/api/gigs/${created.body.id}`, { method: "DELETE" })).res
+      .status,
+    204,
+  );
+  assert.equal(
+    (await req(`/api/gigs/${invalidDate.body.id}`, { method: "DELETE" })).res
+      .status,
+    204,
+  );
+});
+
 test("cover letters can be edited, printed safely, and removed", async () => {
   const state = (await req("/api/state")).body;
   const job = state.jobs[0];

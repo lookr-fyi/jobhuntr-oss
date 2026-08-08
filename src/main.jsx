@@ -17,6 +17,7 @@ import {
   ListChecks,
   MessageSquare,
   BadgeCheck,
+  CircleDollarSign,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -46,6 +47,7 @@ function App() {
     ["resume", FileText],
     ["coach", MessageSquare],
     ["audit", BadgeCheck],
+    ["gigs", CircleDollarSign],
     ["agent", Bot],
     ["settings", Settings],
     ["privacy", ShieldCheck],
@@ -99,6 +101,7 @@ function App() {
         {tab === "resume" && <Resume state={state} reload={load} />}{" "}
         {tab === "coach" && <Coach state={state} reload={load} />}{" "}
         {tab === "audit" && <ProfileAudit state={state} reload={load} />}
+        {tab === "gigs" && <Gigs state={state} reload={load} />}
         {tab === "agent" && <Agent state={state} reload={load} />}{" "}
         {tab === "settings" && <SettingsPage state={state} reload={load} />}{" "}
         {tab === "privacy" && <Privacy />}
@@ -205,6 +208,7 @@ function title(t) {
     resume: "Resume studio",
     coach: "Interview coach",
     audit: "Professional profile audit",
+    gigs: "Freelance gigs",
     agent: "Autonomous hunt",
     settings: "Profile & preferences",
     privacy: "Privacy & safety",
@@ -370,6 +374,43 @@ function Overview({ state, setTab }) {
             ))
           ) : (
             <p className="empty">No opportunities have gone stale.</p>
+          )}
+        </div>
+        <div className="card">
+          <div className="row">
+            <h3>Freelance pipeline</h3>
+            <button className="text-button" onClick={() => setTab("gigs")}>
+              Open gigs
+            </button>
+          </div>
+          <div className="freelance-summary">
+            <p>
+              <strong>{s.gigs.active}</strong>
+              <span>active gigs</span>
+            </p>
+            <p>
+              <strong>
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                }).format(s.gigs.pipelineValue)}
+              </strong>
+              <span>pipeline value</span>
+            </p>
+            <p>
+              <strong>
+                {new Intl.NumberFormat("en-US", {
+                  style: "currency",
+                  currency: "USD",
+                  maximumFractionDigits: 0,
+                }).format(s.gigs.earnings)}
+              </strong>
+              <span>tracked earnings</span>
+            </p>
+          </div>
+          {s.gigs.dueSoon.length > 0 && (
+            <small>{s.gigs.dueSoon.length} deadline(s) in 14 days</small>
           )}
         </div>
         <div className="card">
@@ -1676,6 +1717,286 @@ function OutreachEditor({ draft, setDraft, reload }) {
         by JobHuntr.
       </p>
     </div>
+  );
+}
+function Gigs({ state, reload }) {
+  const stages = [
+    "lead",
+    "proposal",
+    "negotiation",
+    "won",
+    "in-progress",
+    "completed",
+    "lost",
+  ];
+  const empty = {
+    client: "",
+    title: "",
+    source: "Manual",
+    url: "",
+    budget: 0,
+    earned: 0,
+    dueDate: "",
+    description: "",
+    proposal: "",
+    status: "lead",
+  };
+  const [form, setForm] = useState(empty);
+  const [selected, setSelected] = useState(state.gigs[0]?.id || null);
+  const [showForm, setShowForm] = useState(state.gigs.length === 0);
+  const gig = state.gigs.find((item) => item.id === selected);
+  const money = (value) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+  const save = async () => {
+    const created = await api("/api/gigs", {
+      method: "POST",
+      body: JSON.stringify(form),
+    });
+    setSelected(created.id);
+    setForm(empty);
+    setShowForm(false);
+    await reload();
+  };
+  const patch = async (id, body) => {
+    await api(`/api/gigs/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    await reload();
+  };
+  return (
+    <section className="gigs-page">
+      <div className="gig-metrics">
+        <div className="card metric">
+          <span>ACTIVE GIGS</span>
+          <strong>{state.summary.gigs.active}</strong>
+          <small>{state.summary.gigs.total} total opportunities</small>
+        </div>
+        <div className="card metric">
+          <span>PIPELINE VALUE</span>
+          <strong>{money(state.summary.gigs.pipelineValue)}</strong>
+          <small>lead through negotiation</small>
+        </div>
+        <div className="card metric">
+          <span>TRACKED EARNINGS</span>
+          <strong>{money(state.summary.gigs.earnings)}</strong>
+          <small>won through completed</small>
+        </div>
+        <div className="card">
+          <button onClick={() => setShowForm(!showForm)}>
+            <Plus size={16} /> Add gig
+          </button>
+          <p className="hint">
+            No marketplace account or external service required.
+          </p>
+        </div>
+      </div>
+      {showForm && (
+        <div className="card add-panel">
+          <div className="row">
+            <h3>Add freelance opportunity</h3>
+            <button className="text-button" onClick={() => setShowForm(false)}>
+              Close
+            </button>
+          </div>
+          <div className="form-grid">
+            {[
+              ["client", "Client"],
+              ["title", "Project title"],
+              ["source", "Source"],
+              ["url", "Listing URL"],
+              ["budget", "Potential budget"],
+              ["dueDate", "Deadline"],
+            ].map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  type={
+                    key === "budget"
+                      ? "number"
+                      : key === "dueDate"
+                        ? "date"
+                        : "text"
+                  }
+                  value={form[key]}
+                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                />
+              </label>
+            ))}
+          </div>
+          <label>
+            Description
+            <textarea
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+          </label>
+          <button
+            disabled={!form.client.trim() || !form.title.trim()}
+            onClick={save}
+          >
+            Save gig
+          </button>
+        </div>
+      )}
+      <div className={gig ? "gig-workspace with-detail" : "gig-workspace"}>
+        <div className="gig-board">
+          {stages.map((stage) => (
+            <div
+              className="gig-column"
+              key={stage}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) =>
+                patch(e.dataTransfer.getData("gigId"), { status: stage })
+              }
+            >
+              <div className="column-title">
+                <b>{stage}</b>
+                <span>
+                  {state.gigs.filter((item) => item.status === stage).length}
+                </span>
+              </div>
+              {state.gigs
+                .filter((item) => item.status === stage)
+                .map((item) => (
+                  <button
+                    draggable
+                    onDragStart={(e) =>
+                      e.dataTransfer.setData("gigId", item.id)
+                    }
+                    className={
+                      item.id === selected ? "gig-card selected" : "gig-card"
+                    }
+                    key={item.id}
+                    onClick={() => setSelected(item.id)}
+                  >
+                    <b>{item.title}</b>
+                    <span>{item.client}</span>
+                    <strong>{money(item.budget)}</strong>
+                    {item.dueDate && (
+                      <small>
+                        Due{" "}
+                        {new Date(
+                          `${item.dueDate}T12:00:00`,
+                        ).toLocaleDateString()}
+                      </small>
+                    )}
+                  </button>
+                ))}
+            </div>
+          ))}
+        </div>
+        {gig && (
+          <div className="card gig-drawer">
+            <div className="row">
+              <span className={`pill ${gig.status}`}>{gig.status}</span>
+              <button
+                className="drawer-close"
+                onClick={() => setSelected(null)}
+              >
+                ×
+              </button>
+            </div>
+            <h2>{gig.title}</h2>
+            <p className="muted">
+              {gig.client} · {gig.source}
+            </p>
+            <select
+              value={gig.status}
+              onChange={(e) => patch(gig.id, { status: e.target.value })}
+            >
+              {stages.map((stage) => (
+                <option key={stage}>{stage}</option>
+              ))}
+            </select>
+            {gig.url && (
+              <a href={gig.url} target="_blank" rel="noreferrer">
+                Open listing ↗
+              </a>
+            )}
+            <div className="double">
+              <label>
+                Budget
+                <input
+                  type="number"
+                  defaultValue={gig.budget}
+                  onBlur={(e) =>
+                    patch(gig.id, { budget: Number(e.target.value) })
+                  }
+                />
+              </label>
+              <label>
+                Earned
+                <input
+                  type="number"
+                  defaultValue={gig.earned}
+                  onBlur={(e) =>
+                    patch(gig.id, { earned: Number(e.target.value) })
+                  }
+                />
+              </label>
+            </div>
+            <label>
+              Deadline
+              <input
+                type="date"
+                defaultValue={gig.dueDate || ""}
+                onBlur={(e) => patch(gig.id, { dueDate: e.target.value })}
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                defaultValue={gig.description}
+                onBlur={(e) => patch(gig.id, { description: e.target.value })}
+              />
+            </label>
+            <label>
+              Proposal / pitch
+              <textarea
+                className="gig-proposal"
+                defaultValue={gig.proposal}
+                onBlur={(e) => patch(gig.id, { proposal: e.target.value })}
+                placeholder="Scope, approach, timeline, and evidence…"
+              />
+            </label>
+            <h3>Status timeline</h3>
+            <div className="status-history">
+              {gig.statusHistory.map((event, index) => (
+                <p key={`${event.at}-${index}`}>
+                  <b>{event.status}</b>
+                  <small>{new Date(event.at).toLocaleString()}</small>
+                </p>
+              ))}
+            </div>
+            <button
+              className="danger"
+              onClick={async () => {
+                if (!confirm(`Delete ${gig.title}?`)) return;
+                await api(`/api/gigs/${gig.id}`, { method: "DELETE" });
+                setSelected(null);
+                reload();
+              }}
+            >
+              Delete gig
+            </button>
+          </div>
+        )}
+      </div>
+      {!state.gigs.length && !showForm && (
+        <div className="card empty-state">
+          <CircleDollarSign />
+          <h3>No gigs tracked</h3>
+          <p>Add freelance leads without connecting a marketplace account.</p>
+        </div>
+      )}
+    </section>
   );
 }
 function ProfileAudit({ state, reload }) {
