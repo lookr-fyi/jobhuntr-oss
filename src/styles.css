@@ -1979,7 +1979,11 @@ button:disabled {
   color: #1e293b;
   font-size: 24px;
 }
-.v2-coaches-panel {
+.v2-user-coaches {
+  display: grid;
+  gap: 24px;
+}
+.v2-coach-access-card {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 18px;
@@ -1995,13 +1999,101 @@ button:disabled {
   border-radius: 12px;
   background: #dbeafe;
 }
-.v2-coaches-panel h3 {
+.v2-coach-access-card h3 {
   margin: 4px 0 7px;
 }
-.v2-coaches-panel p {
+.v2-coach-access-card p {
   max-width: 680px;
   color: #64748b;
   line-height: 1.6;
+}
+.v2-coach-access-actions {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+.v2-my-coaches-card {
+  overflow: hidden;
+  padding: 26px;
+}
+.v2-my-coaches-card .v2-about-section-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.v2-my-coaches-card .v2-about-section-header > strong {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: #1d4ed8;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+.v2-coaching-activity-list {
+  display: grid;
+  gap: 8px;
+}
+.v2-coaching-activity-list > button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  text-align: left;
+}
+.v2-coaching-activity-list > button > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+.v2-coaching-activity-list small {
+  color: #64748b;
+}
+.v2-coach-avatar-small {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  color: #1d4ed8;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+.v2-coaching-empty {
+  display: grid;
+  justify-items: center;
+  padding: 32px 20px;
+  color: #64748b;
+  text-align: center;
+}
+.v2-coaching-empty h4,
+.v2-coaching-empty p {
+  margin: 8px 0 0;
+}
+.v2-coaching-empty button {
+  margin-top: 16px;
+}
+.v2-coach-local-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 13px;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+}
+.v2-coach-local-notice span {
+  display: grid;
+  gap: 3px;
+}
+.v2-coach-local-notice small {
+  color: #4b5563;
 }
 .v2-about-panel {
   padding: 26px;
@@ -2257,12 +2349,12 @@ button:disabled {
   .v2-usage-grid {
     grid-template-columns: 1fr;
   }
-  .v2-coaches-panel {
+  .v2-coach-access-card {
     grid-template-columns: auto 1fr;
   }
-  .v2-coaches-panel > .pill {
+  .v2-coach-access-actions {
     grid-column: 2;
-    width: max-content;
+    align-items: flex-start;
   }
 }
 @media (max-width: 950px) {

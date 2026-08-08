@@ -639,7 +639,7 @@ function App() {
         )}
         {tab === "outreach" && <OutreachPage state={state} reload={load} />}
         {tab === "settings" && (
-          <SettingsPage state={state} reload={load} />
+          <SettingsPage state={state} reload={load} setTab={setTab} />
         )}{" "}
         {tab === "privacy" && <Privacy state={state} />}
       </main>
@@ -8118,7 +8118,7 @@ function RunsPage({ state, setTab, reload }) {
     </section>
   );
 }
-function SettingsPage({ state, reload }) {
+function SettingsPage({ state, reload, setTab }) {
   const p = state.profile;
   const [activeTab, setActiveTab] = useState(() => {
     const hashQuery = window.location.hash.split("?")[1] || "";
@@ -8351,24 +8351,84 @@ function SettingsPage({ state, reload }) {
         </div>
       )}
       {activeTab === "coaches" && (
-        <div className="card v2-coaches-panel" role="tabpanel">
-          <div className="v2-coach-avatar">
-            <Sparkles size={22} />
-          </div>
-          <div>
-            <span className="eyebrow">YOUR CAREER COACH</span>
-            <h3>JobHuntr AI Coach</h3>
-            <p>
-              Practice interviews, organize career evidence, and turn your
-              experience into stronger answers—all inside your local workspace.
-            </p>
-            <div className="chips">
-              <span>Interview practice</span>
-              <span>STAR stories</span>
-              <span>Career planning</span>
+        <div className="v2-user-coaches" role="tabpanel">
+          <div className="card v2-coach-access-card">
+            <div className="v2-coach-avatar">
+              <Sparkles size={22} />
+            </div>
+            <div>
+              <span className="eyebrow">PRIVATE COACHING WORKSPACE</span>
+              <h3>JobHuntr AI Coach</h3>
+              <p>
+                Practice interviews, organize career evidence, and turn your
+                experience into stronger answers—all inside your local
+                workspace.
+              </p>
+              <div className="chips">
+                <span>Interview practice</span>
+                <span>STAR stories</span>
+                <span>Career planning</span>
+              </div>
+            </div>
+            <div className="v2-coach-access-actions">
+              <span className="pill completed">Active</span>
+              <button onClick={() => setTab("coach")}>Open AI Coach</button>
             </div>
           </div>
-          <span className="pill completed">Active</span>
+          <div className="card v2-my-coaches-card">
+            <div className="v2-about-section-header">
+              <div>
+                <h3>
+                  <Users size={19} /> Coaching activity
+                </h3>
+                <p>Your locally saved preparation sessions and evidence.</p>
+              </div>
+              <strong>{state.coachingSessions.length}</strong>
+            </div>
+            {state.coachingSessions.length ? (
+              <div className="v2-coaching-activity-list">
+                {state.coachingSessions.slice(0, 4).map((session) => (
+                  <button key={session.id} onClick={() => setTab("coach")}>
+                    <span className="v2-coach-avatar-small">
+                      <MessageSquare size={15} />
+                    </span>
+                    <span>
+                      <b>
+                        {state.jobs.find((job) => job.id === session.jobId)
+                          ?.title || "Career coaching session"}
+                      </b>
+                      <small>
+                        {session.questions?.length || 0} questions · Updated{" "}
+                        {new Date(
+                          session.updatedAt || session.createdAt,
+                        ).toLocaleDateString()}
+                      </small>
+                    </span>
+                    <ChevronRight size={16} />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="v2-coaching-empty">
+                <MessageSquare size={25} />
+                <h4>No coaching sessions yet</h4>
+                <p>
+                  Open AI Coach to prepare for a role or practice an answer.
+                </p>
+                <button onClick={() => setTab("coach")}>Start coaching</button>
+              </div>
+            )}
+            <div className="v2-coach-local-notice">
+              <ShieldCheck size={17} />
+              <span>
+                <b>Only you can access this workspace</b>
+                <small>
+                  Unlike hosted coach portals, this open-source edition never
+                  uploads or exposes your job-search data.
+                </small>
+              </span>
+            </div>
+          </div>
         </div>
       )}
       {activeTab === "about" && (

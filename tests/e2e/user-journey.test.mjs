@@ -988,6 +988,15 @@ test(
       assert.equal(new URL(page.url()).hash, "#/settings");
       await page.reload();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
+      await page.getByRole("tab", { name: "Coaches" }).click();
+      await page.getByRole("heading", { name: "Coaching activity" }).waitFor();
+      await page.getByText("Only you can access this workspace").waitFor();
+      await assertAccessible(page, "User Center coaches");
+      await page.getByRole("button", { name: "Open AI Coach" }).click();
+      await page.getByRole("button", { name: "AI Career Coach" }).waitFor();
+      await page.locator('[title="Profile and settings"]').click();
+      await page.getByRole("menuitem", { name: "Profile & usage" }).click();
+      await page.getByRole("heading", { name: "User Center" }).waitFor();
       await page.getByRole("tab", { name: "About Me" }).click();
       assert.equal(new URL(page.url()).hash, "#/settings?tab=about");
       await page
