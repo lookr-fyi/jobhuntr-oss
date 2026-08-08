@@ -660,6 +660,17 @@ test(
       await page.getByText("Changes saved locally.").waitFor();
       await page.getByRole("tab", { name: "Settings" }).click();
       await page.getByLabel("Weekly application goal").waitFor();
+      await page.getByLabel("ATS template application threshold").fill("85");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save settings" }).click(),
+      ]);
+      await page.getByText("Changes saved locally.").waitFor();
       await assertAccessible(page, "User Center");
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
@@ -697,6 +708,7 @@ test(
       assert.equal(persisted.resumes[0].name, "E2E tailored resume");
       assert.equal(persisted.submissions[0].status, "submitted");
       assert.equal(persisted.coverLetters[0].title, "E2E product letter");
+      assert.equal(persisted.profile.preferences.atsThreshold, 85);
       assert.equal(persisted.profileAudits.length, 1);
       assert.ok(
         persisted.jobs.some(

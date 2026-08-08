@@ -6464,6 +6464,7 @@ function SettingsPage({ state, reload }) {
     locations: (p.preferences?.locations || []).join(", "),
     remote: p.preferences?.remote,
     minSalary: p.preferences?.minSalary,
+    atsThreshold: p.preferences?.atsThreshold ?? 80,
     weeklyApplicationGoal: p.preferences?.weeklyApplicationGoal || 5,
     resumeText: p.resumeText || "",
   });
@@ -6495,6 +6496,7 @@ function SettingsPage({ state, reload }) {
             .split(",")
             .map((x) => x.trim())
             .filter(Boolean),
+          atsThreshold: Number(form.atsThreshold) || 80,
         },
         resumeText: form.resumeText,
       }),
@@ -6711,6 +6713,29 @@ function SettingsPage({ state, reload }) {
                   setForm({ ...form, weeklyApplicationGoal: e.target.value })
                 }
               />
+            </label>
+            <label className="v2-threshold-setting">
+              <span>
+                ATS template application threshold
+                <strong>{form.atsThreshold}%</strong>
+              </span>
+              <input
+                type="range"
+                min="50"
+                max="100"
+                step="5"
+                value={form.atsThreshold}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    atsThreshold: Number(event.target.value),
+                  })
+                }
+              />
+              <small>
+                Tailored ATS templates are recommended only when a role meets
+                this match score.
+              </small>
             </label>
             <label className="check">
               <input

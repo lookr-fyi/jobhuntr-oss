@@ -1571,6 +1571,27 @@ button:disabled {
   font-size: 13px;
   font-weight: 700;
 }
+.v2-threshold-setting > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.v2-threshold-setting > span strong {
+  color: #111827;
+  font-size: 14px;
+}
+.v2-threshold-setting input[type="range"] {
+  width: 100%;
+  padding: 0;
+  accent-color: #111827;
+}
+.v2-threshold-setting small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+}
 .v2-settings-card-title {
   display: flex;
   gap: 11px;
