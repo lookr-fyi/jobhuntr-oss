@@ -590,7 +590,9 @@ function App() {
         )}{" "}
         {tab === "tracker" && <Tracker state={state} reload={load} />}{" "}
         {tab === "board" && <Board reload={load} />}{" "}
-        {tab === "queue" && <Queue state={state} reload={load} />}{" "}
+        {tab === "queue" && (
+          <Queue state={state} reload={load} setTab={setTab} />
+        )}{" "}
         {tab === "resume" && <Resume state={state} reload={load} />}{" "}
         {tab === "coach" && <Coach state={state} reload={load} />}{" "}
         {tab === "audit" && <ProfileAudit state={state} reload={load} />}
@@ -2131,7 +2133,7 @@ function Board({ reload }) {
     </section>
   );
 }
-function Queue({ state, reload }) {
+function Queue({ state, reload, setTab }) {
   const [jobId, setJobId] = useState(
     state.jobs.find((j) => !["applied", "rejected"].includes(j.status))?.id ||
       "",
@@ -2145,7 +2147,11 @@ function Queue({ state, reload }) {
   const [queueTab, setQueueTab] = useState("apply");
   const [sourceSelectedId, setSourceSelectedId] = useState("");
   const [minimumFit, setMinimumFit] = useState(0);
+  const [minimumAts, setMinimumAts] = useState(0);
+  const [showAtsOnly, setShowAtsOnly] = useState(false);
   const [queueSort, setQueueSort] = useState("time");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
   const [submittingReady, setSubmittingReady] = useState(false);
   const submitCloseRef = useRef(null);
@@ -2157,6 +2163,8 @@ function Queue({ state, reload }) {
       const job = state.jobs.find((candidate) => candidate.id === item.jobId);
       return (
         (job?.fitScore || 0) >= minimumFit &&
+        (item.atsScore ?? 0) >= minimumAts &&
+        (!showAtsOnly || item.atsDecision === "optimized") &&
         `${job?.title || ""} ${job?.company || ""}`
           .toLowerCase()
           .includes(query.toLowerCase())
@@ -2165,12 +2173,14 @@ function Queue({ state, reload }) {
     .sort((a, b) => {
       const aJob = state.jobs.find((job) => job.id === a.jobId);
       const bJob = state.jobs.find((job) => job.id === b.jobId);
-      return queueSort === "fit"
-        ? (bJob?.fitScore || 0) - (aJob?.fitScore || 0)
-        : new Date(b.createdAt) - new Date(a.createdAt);
+      if (queueSort === "fit")
+        return (bJob?.fitScore || 0) - (aJob?.fitScore || 0);
+      if (queueSort === "ats") return (b.atsScore || 0) - (a.atsScore || 0);
+      return new Date(b.createdAt) - new Date(a.createdAt);
     });
   const readySubmissions = active.filter((item) => item.status === "ready");
-  const selected = active.find((item) => item.id === selectedId) || filtered[0];
+  const selected =
+    filtered.find((item) => item.id === selectedId) || filtered[0];
   const queuedJobIds = new Set(active.map((item) => item.jobId));
   const sourceJobs = state.jobs.filter((job) => {
     if (
@@ -2259,6 +2269,26 @@ function Queue({ state, reload }) {
   };
   return (
     <section className="v2-queue-page">
+      <ConfirmDialog
+        open={archiveOpen}
+        title="Archive filtered queue jobs?"
+        description={`${filtered.length} visible application packet${filtered.length === 1 ? "" : "s"} will leave the active queue. Tracked jobs and documents will remain available.`}
+        confirmLabel="Archive packets"
+        onClose={() => setArchiveOpen(false)}
+        onConfirm={async () => {
+          await Promise.all(
+            filtered.map((item) =>
+              api(`/api/submissions/${item.id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ status: "archived" }),
+              }),
+            ),
+          );
+          setArchiveOpen(false);
+          setSelectedId("");
+          await reload();
+        }}
+      />
       <div className="v2-queue-title-row">
         <div>
           <h2>Submission Queue</h2>
@@ -2289,9 +2319,18 @@ function Queue({ state, reload }) {
         <div>
           <strong>Review before you submit</strong>
           <p>
-            Complete each packet checklist first. This local version records
-            your confirmation but never submits to an external website.
+            Confirmed queued jobs are processed in your next Infinite Hunt. New
+            application answers can be saved in your About Me profile.
           </p>
+          <button
+            className="text-button"
+            onClick={() => {
+              sessionStorage.setItem("jobhuntr-user-tab", "about");
+              setTab("settings");
+            }}
+          >
+            About Me
+          </button>
         </div>
       </div>
       <div className="v2-queue-tabs" role="tablist">
@@ -2431,32 +2470,20 @@ function Queue({ state, reload }) {
               />
             </div>
             <div className="v2-create-packet">
-              <label>
-                Above match score
-                <select
-                  aria-label="Minimum queue match score"
-                  value={minimumFit}
-                  onChange={(event) =>
-                    setMinimumFit(Number(event.target.value))
-                  }
-                >
-                  <option value="0">All</option>
-                  <option value="40">Above 40</option>
-                  <option value="60">Above 60</option>
-                  <option value="80">Above 80</option>
-                </select>
-              </label>
-              <label>
-                Sort by
-                <select
-                  aria-label="Sort submission queue"
-                  value={queueSort}
-                  onChange={(event) => setQueueSort(event.target.value)}
-                >
-                  <option value="time">Queue time</option>
-                  <option value="fit">Match score</option>
-                </select>
-              </label>
+              <button
+                className="secondary"
+                aria-expanded={filtersOpen}
+                onClick={() => setFiltersOpen((current) => !current)}
+              >
+                <Filter size={15} /> Filters
+              </button>
+              <button
+                className="secondary danger"
+                disabled={!filtered.length}
+                onClick={() => setArchiveOpen(true)}
+              >
+                <Trash2 size={15} /> Archive filtered
+              </button>
               <select
                 aria-label="Tracked role"
                 value={jobId}
@@ -2475,6 +2502,69 @@ function Queue({ state, reload }) {
               </button>
             </div>
           </div>
+          {filtersOpen && (
+            <div className="v2-queue-filter-panel">
+              <label>
+                Minimum profile match
+                <select
+                  aria-label="Minimum queue match score"
+                  value={minimumFit}
+                  onChange={(event) =>
+                    setMinimumFit(Number(event.target.value))
+                  }
+                >
+                  <option value="0">All</option>
+                  {[40, 50, 60, 70, 80, 90].map((score) => (
+                    <option key={score} value={score}>
+                      Above {score}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Minimum ATS score
+                <select
+                  aria-label="Minimum queue ATS score"
+                  value={minimumAts}
+                  onChange={(event) =>
+                    setMinimumAts(Number(event.target.value))
+                  }
+                >
+                  <option value="0">All</option>
+                  {[40, 50, 60, 70, 80, 90].map((score) => (
+                    <option key={score} value={score}>
+                      Above {score}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Has ATS resume
+                <select
+                  aria-label="Show jobs with ATS resume"
+                  value={String(showAtsOnly)}
+                  onChange={(event) =>
+                    setShowAtsOnly(event.target.value === "true")
+                  }
+                >
+                  <option value="false">All jobs</option>
+                  <option value="true">ATS resume only</option>
+                </select>
+              </label>
+              <label>
+                Sort by
+                <select
+                  aria-label="Sort submission queue"
+                  value={queueSort}
+                  onChange={(event) => setQueueSort(event.target.value)}
+                >
+                  <option value="time">Queue time</option>
+                  <option value="fit">Match score</option>
+                  <option value="ats">ATS score</option>
+                </select>
+              </label>
+            </div>
+          )}
           <div className="v2-queue-layout">
             <div className="v2-queue-list">
               <div className="v2-queue-list-head">
@@ -6487,7 +6577,13 @@ function RunsPage({ state, setTab }) {
 }
 function SettingsPage({ state, reload }) {
   const p = state.profile;
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(() => {
+    const pending = sessionStorage.getItem("jobhuntr-user-tab");
+    sessionStorage.removeItem("jobhuntr-user-tab");
+    return ["profile", "coaches", "about", "settings"].includes(pending)
+      ? pending
+      : "profile";
+  });
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
     ...p,

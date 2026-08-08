@@ -5399,6 +5399,20 @@ main > header.integrated-page-header {
   font-size: 12px;
   line-height: 1.5;
 }
+.v2-queue-info .text-button {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-queue-info .text-button:hover {
+  background: #1d4ed8;
+  color: #fff;
+}
 .v2-queue-tabs {
   display: flex;
   gap: 4px;
@@ -5467,6 +5481,27 @@ main > header.integrated-page-header {
 }
 .v2-create-packet > select {
   width: 260px;
+}
+.v2-queue-filter-panel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.v2-queue-filter-panel label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v2-queue-filter-panel select {
+  margin: 0;
+  background: #fff;
 }
 .v2-queue-layout {
   display: grid;
@@ -5760,6 +5795,9 @@ main > header.integrated-page-header {
   .v2-create-packet label select {
     width: 100%;
   }
+  .v2-queue-filter-panel {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 @media (max-width: 600px) {
   .v2-queue-title-row {
@@ -5768,6 +5806,9 @@ main > header.integrated-page-header {
     gap: 12px;
   }
   .v2-packet-attachments {
+    grid-template-columns: 1fr;
+  }
+  .v2-queue-filter-panel {
     grid-template-columns: 1fr;
   }
 }

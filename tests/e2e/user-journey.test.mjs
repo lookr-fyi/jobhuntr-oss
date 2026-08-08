@@ -370,6 +370,20 @@ test(
         .filter({ hasText: /ATS resume generated|Original resume meets/ })
         .first()
         .waitFor();
+      await page.getByRole("button", { name: "Filters" }).click();
+      await page.getByLabel("Show jobs with ATS resume").selectOption("true");
+      await page
+        .locator(".v2-ats-recommendation", { hasText: "ATS resume generated" })
+        .first()
+        .waitFor();
+      await page.getByLabel("Sort submission queue").selectOption("ats");
+      await page.getByLabel("Show jobs with ATS resume").selectOption("false");
+      await page.getByRole("button", { name: "Archive filtered" }).click();
+      const archiveQueueDialog = page.getByRole("alertdialog", {
+        name: "Archive filtered queue jobs?",
+      });
+      await archiveQueueDialog.waitFor();
+      await archiveQueueDialog.getByRole("button", { name: "Cancel" }).click();
       await page.getByRole("tab", { name: /Search Jobs/ }).click();
       await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
@@ -420,6 +434,12 @@ test(
         submitDialog.getByRole("button", { name: "Confirm submitted" }).click(),
       ]);
       await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
+      await page.getByRole("button", { name: "About Me" }).click();
+      await page
+        .getByRole("heading", {
+          name: "Teach JobHuntr how to speak on your behalf",
+        })
+        .waitFor();
 
       await page.getByRole("button", { name: "Cover Letter" }).click();
       await page.getByRole("button", { name: "Create Cover Letter" }).click();
