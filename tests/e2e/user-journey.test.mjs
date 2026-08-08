@@ -680,7 +680,7 @@ test(
       await page.getByRole("button", { name: "Create Cover Letter" }).click();
       await page.getByRole("heading", { name: "Choose a Template" }).waitFor();
       await assertAccessible(page, "Cover Letter wizard");
-      await page.getByRole("button", { name: /Modern Impact/ }).click();
+      await page.getByRole("button", { name: "Select Modern" }).click();
       await page.getByRole("button", { name: "Continue" }).click();
       assert.equal(new URL(page.url()).hash, "#/cover-letter?step=2");
       await page

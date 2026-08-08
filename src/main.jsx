@@ -4154,26 +4154,119 @@ function SubmissionCard({ submission: s, state, reload }) {
 }
 const COVER_LETTER_TEMPLATES = [
   {
-    id: "classic",
-    name: "Classic Professional",
-    description: "A polished traditional letter with balanced spacing.",
+    id: "blank",
+    name: "Blank Template",
+    category: "General",
+    description: "Start with a clean slate and create your own design",
     content:
       "Dear {{company}},\n\n{{opening}} My background in {{skills}} maps well to the {{role}} opportunity.\n\n{{evidence}}\n\n{{closing}}\n\nBest,\n{{name}}",
   },
   {
+    id: "minimal",
+    name: "Minimal",
+    category: "General",
+    description: "Clean and simple design perfect for any industry",
+    content:
+      "Dear {{company}},\n\nI’m applying for the {{role}} position. {{opening}}\n\n{{evidence}}\n\nMy relevant strengths include {{skills}}. {{closing}}\n\n{{name}}",
+  },
+  {
+    id: "professional",
+    name: "Professional",
+    category: "General",
+    description: "Traditional format ideal for corporate positions",
+    content:
+      "Dear Hiring Manager at {{company}},\n\n{{opening}} My experience in {{skills}} aligns strongly with your {{role}} opening.\n\n{{evidence}}\n\n{{closing}}\n\nSincerely,\n{{name}}",
+  },
+  {
     id: "modern",
-    name: "Modern Impact",
-    description: "A concise structure that leads with fit and evidence.",
+    name: "Modern",
+    category: "General",
+    description: "Contemporary design with subtle color accents",
     content:
       "{{name}}\nCandidate for {{role}}\n\nHello {{company}} team,\n\n{{opening}}\n\nWHY I’M A STRONG FIT\n{{evidence}}\n\nCORE STRENGTHS\n{{skills}}\n\n{{closing}}",
   },
   {
-    id: "minimal",
-    name: "Minimal Direct",
-    description: "A compact, straightforward letter for fast-moving teams.",
+    id: "creative",
+    name: "Creative",
+    category: "Creative",
+    description: "Eye-catching design perfect for creative roles",
     content:
-      "Dear {{company}},\n\nI’m applying for the {{role}} position. {{opening}}\n\n{{evidence}}\n\nMy relevant strengths include {{skills}}. {{closing}}\n\n{{name}}",
+      "Hello {{company}},\n\n{{opening}}\n\nHere is the story behind my fit for {{role}}: {{evidence}}\n\nI bring {{skills}}. {{closing}}\n\nCreatively yours,\n{{name}}",
   },
+  ...[
+    [
+      "tech-startup",
+      "Tech Startup",
+      "Technology",
+      "Modern design perfect for tech companies and startups",
+    ],
+    [
+      "finance",
+      "Finance",
+      "Finance",
+      "Conservative and professional for financial services",
+    ],
+    [
+      "healthcare",
+      "Healthcare",
+      "Healthcare",
+      "Caring and professional design for healthcare roles",
+    ],
+    [
+      "marketing",
+      "Marketing",
+      "Marketing",
+      "Vibrant and creative design for marketing professionals",
+    ],
+    [
+      "education",
+      "Education",
+      "Education",
+      "Academic and professional for education sector",
+    ],
+    [
+      "legal",
+      "Legal",
+      "Legal",
+      "Traditional and formal for legal professionals",
+    ],
+    [
+      "engineering",
+      "Engineering",
+      "Engineering",
+      "Technical and professional for engineering roles",
+    ],
+    [
+      "sales",
+      "Sales",
+      "Sales",
+      "Dynamic and results-focused for sales positions",
+    ],
+    [
+      "nonprofit",
+      "Nonprofit",
+      "Nonprofit",
+      "Mission-focused design for nonprofit organizations",
+    ],
+    [
+      "consulting",
+      "Consulting",
+      "Consulting",
+      "Strategic and analytical for consulting firms",
+    ],
+    [
+      "startup",
+      "Startup",
+      "Startup",
+      "Energetic and innovative for startup environments",
+    ],
+  ].map(([id, name, category, description]) => ({
+    id,
+    name,
+    category,
+    description,
+    content: `Dear {{company}},\n\n{{opening}} I’m excited to apply for the {{role}} position.\n\n{{evidence}}\n\nMy experience with {{skills}} would help me contribute quickly. {{closing}}\n\nSincerely,\n{{name}}`,
+  })),
 ];
 function Resume({ state, reload, mode = "resume" }) {
   const resumeRef = useRef(null);
@@ -4458,38 +4551,88 @@ function Resume({ state, reload, mode = "resume" }) {
             {letterWizard.step === 1 && (
               <>
                 <div className="v2-cover-step-head">
-                  <span>STEP 1 OF 5</span>
                   <h3>Choose a Template</h3>
-                  <p>Select a design and structure for your cover letter.</p>
+                  <p>Select a professional template for your cover letter</p>
                 </div>
-                <div className="v2-cover-style-grid v2-cover-template-grid">
-                  {COVER_LETTER_TEMPLATES.map((template) => (
-                    <button
-                      className={
-                        letterWizard.templateId === template.id
-                          ? "selected"
-                          : ""
-                      }
-                      key={template.id}
-                      onClick={() =>
-                        setLetterWizard({
-                          ...letterWizard,
-                          templateId: template.id,
-                          templateName: template.name,
-                          templateContent: template.content,
-                        })
-                      }
-                    >
-                      <span
-                        className={`v2-cover-template-preview ${template.id}`}
+                {(() => {
+                  const selectedIndex = Math.max(
+                    0,
+                    COVER_LETTER_TEMPLATES.findIndex(
+                      (template) => template.id === letterWizard.templateId,
+                    ),
+                  );
+                  const selectedTemplate =
+                    COVER_LETTER_TEMPLATES[selectedIndex];
+                  const selectTemplate = (index) => {
+                    const template =
+                      COVER_LETTER_TEMPLATES[
+                        (index + COVER_LETTER_TEMPLATES.length) %
+                          COVER_LETTER_TEMPLATES.length
+                      ];
+                    setLetterWizard({
+                      ...letterWizard,
+                      templateId: template.id,
+                      templateName: template.name,
+                      templateContent: template.content,
+                    });
+                  };
+                  return (
+                    <div className="v2-cover-carousel">
+                      <div className="v2-cover-carousel-stage">
+                        <button
+                          className="secondary v2-cover-carousel-arrow"
+                          aria-label="Previous cover letter template"
+                          onClick={() => selectTemplate(selectedIndex - 1)}
+                        >
+                          <ChevronLeft size={30} />
+                        </button>
+                        <button
+                          className={`v2-cover-template-sheet ${selectedTemplate.id}`}
+                          aria-label={`${selectedTemplate.name} selected`}
+                        >
+                          <span className="v2-cover-template-letterhead">
+                            {state.profile.name || "Your Name"}
+                          </span>
+                          <i /> <i /> <i />
+                          <b>{selectedTemplate.name}</b>
+                          <span>{selectedTemplate.category}</span>
+                        </button>
+                        <button
+                          className="secondary v2-cover-carousel-arrow"
+                          aria-label="Next cover letter template"
+                          onClick={() => selectTemplate(selectedIndex + 1)}
+                        >
+                          <ChevronRight size={30} />
+                        </button>
+                      </div>
+                      <div
+                        className="v2-cover-template-strip"
+                        aria-label="Cover letter templates"
                       >
-                        <i /> <i /> <i /> <i />
-                      </span>
-                      <b>{template.name}</b>
-                      <span>{template.description}</span>
-                    </button>
-                  ))}
-                </div>
+                        {COVER_LETTER_TEMPLATES.map((template, index) => (
+                          <button
+                            className={
+                              index === selectedIndex ? "selected" : ""
+                            }
+                            aria-label={`Select ${template.name}`}
+                            key={template.id}
+                            onClick={() => selectTemplate(index)}
+                          >
+                            <span className={template.id}>
+                              <i />
+                              <i />
+                              <i />
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="v2-cover-template-info">
+                        <h3>{selectedTemplate.name}</h3>
+                        <p>{selectedTemplate.description}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
             {letterWizard.step === 2 && (
