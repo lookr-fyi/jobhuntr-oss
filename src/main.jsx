@@ -28,6 +28,11 @@ import {
   Medal,
   Trash2,
   Calendar,
+  Filter,
+  MapPin,
+  ExternalLink,
+  ListPlus,
+  X,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -1289,23 +1294,59 @@ function Actions({ job, reload }) {
   );
 }
 function Board({ reload }) {
-  const [q, setQ] = useState("engineer");
+  const [q, setQ] = useState("");
   const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const search = async () =>
-    setResults(
-      await api("/api/board/search", {
-        method: "POST",
-        body: JSON.stringify({ q }),
-      }),
-    );
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [location, setLocation] = useState("");
+  const [minimumFit, setMinimumFit] = useState(0);
+  const [sort, setSort] = useState("fit");
+  const [queuedUrls, setQueuedUrls] = useState(new Set());
+  const [queueing, setQueueing] = useState("");
+  const [notice, setNotice] = useState("");
+  const search = async () => {
+    const jobs = await api("/api/board/search", {
+      method: "POST",
+      body: JSON.stringify({ q, location }),
+    });
+    setResults(jobs);
+    setSelectedIndex(0);
+  };
   useEffect(() => {
     api("/api/board/search", {
       method: "POST",
-      body: JSON.stringify({ q: "engineer" }),
+      body: JSON.stringify({ q: "" }),
     }).then(setResults);
   }, []);
-  const selected = results[selectedIndex] || results[0];
+  const visibleResults = results
+    .filter((job) => job.fitScore >= minimumFit)
+    .sort((a, b) =>
+      sort === "fit"
+        ? b.fitScore - a.fitScore
+        : sort === "company"
+          ? a.company.localeCompare(b.company)
+          : a.title.localeCompare(b.title),
+    );
+  const selected = visibleResults[selectedIndex] || visibleResults[0];
+  const queueJob = async (job) => {
+    setQueueing(job.url);
+    setNotice("");
+    try {
+      const tracked = await api("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({ ...job, status: "saved" }),
+      });
+      await api("/api/submissions", {
+        method: "POST",
+        body: JSON.stringify({ jobId: tracked.id }),
+      });
+      setQueuedUrls((current) => new Set(current).add(job.url));
+      setNotice(`${job.title} was added to your submission queue.`);
+      reload();
+    } finally {
+      setQueueing("");
+    }
+  };
   return (
     <section className="v2-board-page">
       <div className="v2-board-header">
@@ -1314,27 +1355,101 @@ function Board({ reload }) {
           <div>
             <h2>Today's Picks</h2>
             <p>
-              {results.length} fresh jobs from the local demo catalog. Add one
-              to your queue before it's gone.
+              {results.length} jobs crowd-sourced by the local community. Add to
+              queue before they're gone!
             </p>
           </div>
           <button className="secondary" onClick={search}>
-            Refresh now
+            <RefreshCcw size={15} /> Refresh now
           </button>
         </div>
       </div>
-      <div className="v2-board-search">
-        <Search size={17} />
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search role, skill, company"
-        />
-        <button onClick={search}>Search</button>
+      <form
+        className="v2-board-toolbar"
+        onSubmit={(event) => {
+          event.preventDefault();
+          search();
+        }}
+      >
+        <div className="v2-board-search">
+          <Search size={17} />
+          <input
+            aria-label="Search jobs"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by company, job title, or location"
+          />
+          {q && (
+            <button
+              className="icon-btn"
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setQ("")}
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          className={filtersOpen ? "secondary active" : "secondary"}
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((value) => !value)}
+        >
+          <Filter size={16} /> Filters
+        </button>
+        <button type="submit">Search</button>
+      </form>
+      {filtersOpen && (
+        <div className="v2-board-filters">
+          <label>
+            Location
+            <input
+              value={location}
+              onChange={(event) => setLocation(event.target.value)}
+              placeholder="Remote, city, or state"
+            />
+          </label>
+          <label>
+            Minimum match
+            <select
+              value={minimumFit}
+              onChange={(event) => setMinimumFit(Number(event.target.value))}
+            >
+              <option value="0">Any match</option>
+              <option value="25">25% or better</option>
+              <option value="50">50% or better</option>
+              <option value="75">75% or better</option>
+            </select>
+          </label>
+          <label>
+            Sort by
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+            >
+              <option value="fit">Best match</option>
+              <option value="company">Company</option>
+              <option value="title">Job title</option>
+            </select>
+          </label>
+          <button className="secondary" onClick={search}>
+            Apply filters
+          </button>
+        </div>
+      )}
+      {notice && (
+        <div className="v2-board-notice" role="status">
+          {notice}
+        </div>
+      )}
+      <div className="v2-board-results-summary">
+        <strong>{visibleResults.length} opportunities</strong>
+        <span>Updated just now · Local community feed</span>
       </div>
       <div className="v2-board-layout">
         <div className="v2-board-list">
-          {results.map((j, i) => (
+          {visibleResults.map((j, i) => (
             <button
               type="button"
               className={`v2-board-row ${selectedIndex === i ? "selected" : ""}`}
@@ -1347,7 +1462,10 @@ function Board({ reload }) {
                 <small>
                   {j.company} · {j.location}
                 </small>
-                <em>{j.fitScore}% match</em>
+                <span className="v2-board-row-tags">
+                  <em>{j.fitScore}% match</em>
+                  <small>Recently added</small>
+                </span>
               </span>
               <ChevronRight size={16} />
             </button>
@@ -1360,17 +1478,41 @@ function Board({ reload }) {
                 {selected.company?.slice(0, 1)}
               </span>
               <div>
+                <small>{selected.company}</small>
                 <h3>{selected.title}</h3>
                 <p>
-                  {selected.company} · {selected.location}
+                  <MapPin size={14} /> {selected.location}
                 </p>
               </div>
               <span className="v2-match-pill">{selected.fitScore}% match</span>
             </div>
             <div className="v2-job-facts">
-              <span>Full-time</span>
+              <span>{selected.salary || "Salary not listed"}</span>
               <span>Recently added</span>
               <span>Community sourced</span>
+            </div>
+            <div className="v2-board-detail-actions">
+              <button
+                onClick={() => queueJob(selected)}
+                disabled={
+                  queueing === selected.url || queuedUrls.has(selected.url)
+                }
+              >
+                <ListPlus size={16} />
+                {queuedUrls.has(selected.url)
+                  ? "Queued"
+                  : queueing === selected.url
+                    ? "Queueing…"
+                    : "Queue"}
+              </button>
+              <a
+                className="button secondary"
+                href={selected.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View original post <ExternalLink size={15} />
+              </a>
             </div>
             <h4>About the role</h4>
             <p>{selected.description}</p>
@@ -1379,18 +1521,14 @@ function Board({ reload }) {
               <li>Matches your target role and saved preferences</li>
               <li>Relevant skills found in your JobHuntr profile</li>
             </ul>
-            <button
-              onClick={async () => {
-                await api("/api/jobs", {
-                  method: "POST",
-                  body: JSON.stringify(selected),
-                });
-                reload();
-              }}
-            >
-              <Plus size={16} /> Add to job tracker
-            </button>
           </article>
+        )}
+        {!selected && (
+          <div className="card v2-board-empty">
+            <Search size={28} />
+            <h3>No jobs found</h3>
+            <p>Try a broader search or clear your filters.</p>
+          </div>
         )}
       </div>
     </section>

@@ -184,6 +184,24 @@ test(
         .waitFor();
       await assertAccessible(page, "All Runs");
 
+      await page.getByRole("button", { name: "Job Board" }).click();
+      await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      await page.getByRole("button", { name: "Filters" }).click();
+      await page.getByLabel("Location").fill("Remote");
+      await page.getByLabel("Minimum match").selectOption("25");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/board/search") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Apply filters" }).click(),
+      ]);
+      await page.getByText(/opportunities$/).waitFor();
+      await page.getByRole("link", { name: /View original post/ }).waitFor();
+      await assertAccessible(page, "Job Board");
+
       await page.getByRole("button", { name: "ATS Resume" }).click();
       await page.getByRole("button", { name: "Create New" }).click();
       const templateDialog = page.getByRole("dialog", {
