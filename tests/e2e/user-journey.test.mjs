@@ -110,6 +110,10 @@ test(
         .getByRole("button", { name: "Use demo profile" })
         .waitFor({ state: "hidden" });
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await page
+        .getByRole("heading", { name: /Top Contributors of/ })
+        .waitFor();
+      await page.getByText(/jobs? contributed/).waitFor();
       const navigationIconBounds = await page
         .locator(".v2-nav button > svg")
         .evaluateAll((icons) =>

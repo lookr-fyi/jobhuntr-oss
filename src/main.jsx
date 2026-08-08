@@ -25,6 +25,7 @@ import {
   User,
   ChevronRight,
   RefreshCcw,
+  Medal,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -346,10 +347,23 @@ function Overview({ state, setTab, reload }) {
   }, [farewellOpen]);
   const s = state.summary;
   const firstName = (state.profile.name || "there").split(" ")[0];
-  const recent = (s.recentActivities || []).slice(0, 6);
   const submitted = s.byStatus.applied || 0;
   const interviews = (s.byStatus.interview || 0) + (s.byStatus.offer || 0);
   const collected = s.totalJobs;
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const daysLeft = monthEnd.getDate() - now.getDate();
+  const contributorName = state.profile.name || "Local job hunter";
+  const contributorInitials = contributorName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
   const points = [
     Math.max(4, Math.round(collected * 0.25)),
     Math.max(7, Math.round(collected * 0.4)),
@@ -467,50 +481,40 @@ function Overview({ state, setTab, reload }) {
           </div>
         </div>
       </div>
-      <div className="v2-overview-columns">
-        <div className="v2-overview-card">
+      <div className="v2-overview-columns single">
+        <div className="v2-overview-card v2-contributors-card">
           <div className="v2-card-head">
             <div>
-              <h3>Recent activity</h3>
-              <p>Your latest application updates.</p>
-            </div>
-            <button className="text-button" onClick={() => setTab("tracker")}>
-              View tracker
-            </button>
-          </div>
-          <div className="v2-activity-list">
-            {recent.map((item) => (
-              <div key={item.id}>
-                <span className="v2-activity-icon">
-                  <CheckCircle2 size={15} />
-                </span>
-                <span>
-                  <b>{item.message}</b>
-                  <small>{new Date(item.at).toLocaleString()}</small>
-                </span>
-              </div>
-            ))}
-            {!recent.length && (
-              <p className="empty">No activity yet. Start your first hunt.</p>
-            )}
-          </div>
-        </div>
-        <div className="v2-overview-card">
-          <div className="v2-card-head">
-            <div>
-              <h3>Application status</h3>
-              <p>Your current pipeline at a glance.</p>
+              <h3>Top Contributors of {monthLabel}</h3>
+              <p>Top 1 winner will get one month free max plan</p>
+              {daysLeft > 0 && (
+                <small>
+                  {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+                </small>
+              )}
             </div>
           </div>
-          <div className="v2-status-list">
-            {["saved", "interested", "applied", "interview", "offer"].map(
-              (status) => (
-                <div key={status}>
-                  <span>{status}</span>
-                  <b>{s.byStatus[status] || 0}</b>
-                </div>
-              ),
-            )}
+          <div className="v2-contributor-list">
+            <div className="v2-contributor-row">
+              <span
+                className="v2-contributor-rank"
+                role="img"
+                aria-label="Rank 1"
+              >
+                <Medal size={18} />
+              </span>
+              <span className="v2-contributor-avatar">
+                {contributorInitials || "JH"}
+              </span>
+              <span className="v2-contributor-copy">
+                <b>
+                  {contributorName} <em>(You)</em>
+                </b>
+                <small>
+                  {collected} {collected === 1 ? "job" : "jobs"} contributed
+                </small>
+              </span>
+            </div>
           </div>
         </div>
       </div>
