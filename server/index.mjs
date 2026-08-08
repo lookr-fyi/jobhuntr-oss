@@ -584,12 +584,28 @@ app.get("/api/submissions", async (_req, res) => {
 });
 const applicationQuestionsFor = (db) => {
   const defaults = [
-    "Why are you interested in this role?",
-    "What are your salary expectations?",
-    "When are you available to start?",
-    "Will you require work authorization sponsorship?",
+    {
+      question: "Why are you interested in this role?",
+      questionType: "text_input",
+      options: [],
+    },
+    {
+      question: "What are your salary expectations?",
+      questionType: "text_input",
+      options: [],
+    },
+    {
+      question: "When are you available to start?",
+      questionType: "dropdown",
+      options: ["Immediately", "Within 2 weeks", "Within 1 month", "Other"],
+    },
+    {
+      question: "Will you require work authorization sponsorship?",
+      questionType: "multiple_choice",
+      options: ["Yes", "No"],
+    },
   ];
-  return defaults.map((question) => ({
+  return defaults.map(({ question, questionType, options }) => ({
     id: nanoid(),
     question,
     answer:
@@ -597,7 +613,8 @@ const applicationQuestionsFor = (db) => {
         (item) =>
           String(item.question).trim().toLowerCase() === question.toLowerCase(),
       )?.answer || "",
-    questionType: "text_input",
+    questionType,
+    options,
     confident: false,
   }));
 };

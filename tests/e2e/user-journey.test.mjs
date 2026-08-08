@@ -404,6 +404,29 @@ test(
       const interestAnswer = page.getByLabel(
         "Why are you interested in this role?",
       );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page
+          .getByLabel("When are you available to start?")
+          .selectOption("Within 2 weeks"),
+      ]);
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page
+          .locator(".v2-application-questions")
+          .getByRole("radio", { name: "No", exact: true })
+          .click(),
+      ]);
       await interestAnswer.fill(
         "I enjoy building reliable user-facing products.",
       );
@@ -416,7 +439,7 @@ test(
         ),
         page.getByRole("button", { name: "Filters" }).click(),
       ]);
-      await page.getByText("1/4 answered").waitFor();
+      await page.getByText("3/4 answered").waitFor();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
       await page
         .locator(".v2-ats-recommendation", { hasText: "ATS resume generated" })

@@ -3358,23 +3358,67 @@ function SubmissionCard({ submission: s, state, reload }) {
               /{s.applicationQuestions.length} answered
             </span>
           </div>
-          {s.applicationQuestions.map((question) => (
-            <label key={question.id}>
+          {s.applicationQuestions.map((question) => {
+            const prompt = (
               <span>
                 {question.question}
                 {question.answer?.trim() && <em>Remembered</em>}
               </span>
-              <textarea
-                rows={2}
-                defaultValue={question.answer || ""}
-                placeholder="Enter your answer…"
-                onBlur={(event) => {
-                  if (event.target.value !== (question.answer || ""))
-                    updateQuestion(question.id, event.target.value);
-                }}
-              />
-            </label>
-          ))}
+            );
+            if (question.questionType === "multiple_choice") {
+              return (
+                <fieldset key={question.id}>
+                  <legend>{prompt}</legend>
+                  <div className="v2-question-options">
+                    {(question.options || []).map((option) => (
+                      <label key={option}>
+                        <input
+                          type="radio"
+                          name={`question-${question.id}`}
+                          value={option}
+                          checked={question.answer === option}
+                          onChange={() => updateQuestion(question.id, option)}
+                        />
+                        {option}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              );
+            }
+            if (question.questionType === "dropdown") {
+              return (
+                <label key={question.id}>
+                  {prompt}
+                  <select
+                    value={question.answer || ""}
+                    onChange={(event) =>
+                      updateQuestion(question.id, event.target.value)
+                    }
+                  >
+                    <option value="">Select an answer…</option>
+                    {(question.options || []).map((option) => (
+                      <option key={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+              );
+            }
+            return (
+              <label key={question.id}>
+                {prompt}
+                <textarea
+                  rows={2}
+                  defaultValue={question.answer || ""}
+                  placeholder="Enter your answer…"
+                  onBlur={(event) => {
+                    if (event.target.value !== (question.answer || ""))
+                      updateQuestion(question.id, event.target.value);
+                  }}
+                />
+              </label>
+            );
+          })}
         </section>
       )}
       <section className="v2-packet-section v2-packet-checklist">

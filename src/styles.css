@@ -5972,7 +5972,8 @@ main > header.integrated-page-header {
   display: grid;
   gap: 10px;
 }
-.v2-application-questions > label {
+.v2-application-questions > label,
+.v2-application-questions > fieldset {
   display: grid;
   gap: 7px;
   padding: 12px;
@@ -5980,7 +5981,11 @@ main > header.integrated-page-header {
   border-radius: 8px;
   background: #f8fafc;
 }
-.v2-application-questions > label > span {
+.v2-application-questions > fieldset {
+  margin: 0;
+}
+.v2-application-questions > label > span,
+.v2-application-questions legend > span {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -5988,6 +5993,10 @@ main > header.integrated-page-header {
   color: #334155;
   font-size: 11px;
   font-weight: 700;
+}
+.v2-application-questions legend {
+  width: 100%;
+  padding: 0;
 }
 .v2-application-questions em {
   padding: 3px 6px;
@@ -5997,12 +6006,35 @@ main > header.integrated-page-header {
   font-size: 9px;
   font-style: normal;
 }
-.v2-application-questions textarea {
+.v2-application-questions textarea,
+.v2-application-questions select {
   min-height: 56px;
   margin: 0;
   resize: vertical;
   background: #fff;
   font-size: 12px;
+}
+.v2-question-options {
+  display: flex;
+  gap: 8px;
+}
+.v2-question-options label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 72px;
+  padding: 8px 10px;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+.v2-question-options input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
 }
 .v2-packet-checklist .check:last-child {
   border-bottom: 0;

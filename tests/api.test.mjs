@@ -285,6 +285,17 @@ test("submission queue enforces review before local submission", async () => {
   assert.equal(packet.res.status, 201);
   assert.equal(packet.body.status, "draft");
   assert.equal(packet.body.applicationQuestions.length, 4);
+  assert.equal(packet.body.applicationQuestions[2].questionType, "dropdown");
+  assert.deepEqual(packet.body.applicationQuestions[2].options, [
+    "Immediately",
+    "Within 2 weeks",
+    "Within 1 month",
+    "Other",
+  ]);
+  assert.equal(
+    packet.body.applicationQuestions[3].questionType,
+    "multiple_choice",
+  );
   const questions = packet.body.applicationQuestions.map((question, index) =>
     index === 0
       ? { ...question, answer: "I build products that match this mission." }
