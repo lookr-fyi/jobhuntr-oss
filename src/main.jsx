@@ -56,12 +56,32 @@ const APP_ROUTES = [
 ];
 
 const api = async (path, options = {}) => {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.status === 204 ? null : res.json();
+  try {
+    const res = await fetch(path, {
+      headers: {
+        "Content-Type": "application/json",
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      let message = body;
+      try {
+        const parsed = JSON.parse(body);
+        message = parsed.error || parsed.message || body;
+      } catch {}
+      throw new Error(message || `Request failed (${res.status})`);
+    }
+    return res.status === 204 ? null : res.json();
+  } catch (error) {
+    window.dispatchEvent(
+      new CustomEvent("jobhuntr:api-error", {
+        detail: error.message || "JobHuntr could not complete that action.",
+      }),
+    );
+    throw error;
+  }
 };
 function ConfirmDialog({
   open,
@@ -217,6 +237,16 @@ function App() {
       .then(setState)
       .catch((e) => setErr(e.message));
   useEffect(load, []);
+  useEffect(() => {
+    const showApiError = (event) => setErr(event.detail);
+    window.addEventListener("jobhuntr:api-error", showApiError);
+    return () => window.removeEventListener("jobhuntr:api-error", showApiError);
+  }, []);
+  useEffect(() => {
+    if (!err) return undefined;
+    const timeout = window.setTimeout(() => setErr(""), 7000);
+    return () => window.clearTimeout(timeout);
+  }, [err]);
   useEffect(() => {
     if (!userMenuOpen) return undefined;
     const close = (event) => {
@@ -427,7 +457,20 @@ function App() {
           </div>
           <button onClick={load}>Refresh</button>
         </header>
-        {err && <div className="error">{err}</div>}
+        {err && (
+          <div className="v2-error-toast" role="alert">
+            <span>
+              <X size={17} />
+            </span>
+            <div>
+              <strong>Something went wrong</strong>
+              <p>{err}</p>
+            </div>
+            <button aria-label="Dismiss error" onClick={() => setErr("")}>
+              <X size={15} />
+            </button>
+          </div>
+        )}
         {tab === "overview" && (
           <Overview state={state} setTab={setTab} reload={load} />
         )}{" "}
@@ -5451,6 +5494,9 @@ function Agent({ state, reload, setTab }) {
     () => localStorage.getItem("jobhuntr-optimize-resume") === "true",
   );
   const [running, setRunning] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [presetSaved, setPresetSaved] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
   const latestRun = state.agentRuns[0] || null;
@@ -5513,6 +5559,35 @@ function Agent({ state, reload, setTab }) {
       await reload();
     } finally {
       setRunning(false);
+    }
+  };
+  const previewMatches = async () => {
+    if (previewing) return;
+    setPreviewing(true);
+    try {
+      setPreview(
+        await api("/api/agent-runs/preview", {
+          method: "POST",
+          body: JSON.stringify(payload()),
+        }),
+      );
+    } finally {
+      setPreviewing(false);
+    }
+  };
+  const savePreset = async () => {
+    if (savingPreset) return;
+    setSavingPreset(true);
+    setPresetSaved(false);
+    try {
+      await api("/api/hunt-presets", {
+        method: "POST",
+        body: JSON.stringify({ ...payload(), name: form.q }),
+      });
+      await reload();
+      setPresetSaved(true);
+    } finally {
+      setSavingPreset(false);
     }
   };
   const workflows = [
@@ -5779,16 +5854,10 @@ function Agent({ state, reload, setTab }) {
         <div className="v2-hunt-actions">
           <button
             className="secondary"
-            onClick={async () =>
-              setPreview(
-                await api("/api/agent-runs/preview", {
-                  method: "POST",
-                  body: JSON.stringify(payload()),
-                }),
-              )
-            }
+            disabled={previewing || running || selectedRuns.length === 0}
+            onClick={previewMatches}
           >
-            Preview matches
+            {previewing ? "Previewing matches…" : "Preview matches"}
           </button>
           <button disabled={running || selectedRuns.length === 0} onClick={run}>
             <InfinityIcon size={17} />
@@ -5797,16 +5866,16 @@ function Agent({ state, reload, setTab }) {
         </div>
         <button
           className="text-button"
-          onClick={async () => {
-            await api("/api/hunt-presets", {
-              method: "POST",
-              body: JSON.stringify({ ...payload(), name: form.q }),
-            });
-            reload();
-          }}
+          disabled={savingPreset || !form.q.trim()}
+          onClick={savePreset}
         >
-          Save as preset
+          {savingPreset ? "Saving preset…" : "Save as preset"}
         </button>
+        {presetSaved && (
+          <span className="v2-inline-success" role="status">
+            <CheckCircle2 size={14} /> Preset saved locally
+          </span>
+        )}
         {state.huntPresets.length > 0 && (
           <>
             <h3>Saved presets</h3>

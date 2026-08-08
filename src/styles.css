@@ -4583,6 +4583,56 @@ button.v2-run-row:hover {
   bottom: 24px;
   z-index: 90;
 }
+.v2-error-toast {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 1200;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: flex-start;
+  gap: 11px;
+  width: min(390px, calc(100vw - 36px));
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 11px;
+  color: #7f1d1d;
+  background: #fff;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.2);
+}
+.v2-error-toast > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #fee2e2;
+}
+.v2-error-toast strong {
+  color: #991b1b;
+  font-size: 13px;
+}
+.v2-error-toast p {
+  margin: 3px 0 0;
+  color: #7f1d1d;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.v2-error-toast > button {
+  padding: 5px;
+  color: #991b1b;
+  background: transparent;
+}
+.v2-inline-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 600;
+}
 .v2-hunt-float > button {
   position: relative;
   display: grid;

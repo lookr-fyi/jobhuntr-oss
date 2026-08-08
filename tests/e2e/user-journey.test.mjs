@@ -182,6 +182,27 @@ test(
         .getByLabel("Generate an optimized resume for each job")
         .check();
       await page.getByRole("button", { name: "Move Indeed up" }).click();
+      await page.route("**/api/agent-runs/preview", (route) => route.abort());
+      await page.getByRole("button", { name: "Preview matches" }).click();
+      const apiError = page.getByRole("alert");
+      await apiError.getByText("Something went wrong").waitFor();
+      await apiError.getByRole("button", { name: "Dismiss error" }).click();
+      await page.unroute("**/api/agent-runs/preview");
+      await page.route("**/api/agent-runs/preview", async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      });
+      await page.getByRole("button", { name: "Preview matches" }).click();
+      await page.getByRole("button", { name: "Previewing matches…" }).waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Previewing matches…" })
+          .isDisabled(),
+        true,
+        "match preview should prevent duplicate submissions while pending",
+      );
+      await page.getByText(/eligible matches/).waitFor();
+      await page.unroute("**/api/agent-runs/preview");
       await page.getByRole("button", { name: "Start infinite hunt" }).click();
       await page.getByText(/eligible matches/).waitFor();
       await page.getByRole("heading", { name: "Run history" }).waitFor();
