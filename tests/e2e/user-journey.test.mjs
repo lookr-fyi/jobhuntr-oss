@@ -888,6 +888,7 @@ test(
       await page.reload();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
       await page.getByRole("tab", { name: "About Me" }).click();
+      assert.equal(new URL(page.url()).hash, "#/settings?tab=about");
       await page
         .getByLabel("Long-form career context")
         .fill("E2E product engineer with React and TypeScript experience.");
@@ -902,7 +903,13 @@ test(
       ]);
       await page.getByText("Changes saved locally.").waitFor();
       await page.reload();
-      await page.getByRole("tab", { name: "About Me" }).click();
+      assert.equal(
+        await page
+          .getByRole("tab", { name: "About Me" })
+          .getAttribute("aria-selected"),
+        "true",
+        "User Center deep links should survive reloads",
+      );
       assert.equal(
         await page
           .getByLabel("Why are you interested in this role?")
@@ -910,6 +917,7 @@ test(
         "I enjoy building reliable user-facing products.",
       );
       await page.getByRole("tab", { name: "Settings" }).click();
+      assert.equal(new URL(page.url()).hash, "#/settings?tab=settings");
       await page.getByLabel("Weekly application goal").waitFor();
       await page.getByLabel("ATS template application threshold").fill("85");
       await Promise.all([

@@ -7707,11 +7707,15 @@ function RunsPage({ state, setTab, reload }) {
 function SettingsPage({ state, reload }) {
   const p = state.profile;
   const [activeTab, setActiveTab] = useState(() => {
+    const hashQuery = window.location.hash.split("?")[1] || "";
+    const linkedTab = new URLSearchParams(hashQuery).get("tab");
     const pending = sessionStorage.getItem("jobhuntr-user-tab");
     sessionStorage.removeItem("jobhuntr-user-tab");
-    return ["profile", "coaches", "about", "settings"].includes(pending)
-      ? pending
-      : "profile";
+    return ["profile", "coaches", "about", "settings"].includes(linkedTab)
+      ? linkedTab
+      : ["profile", "coaches", "about", "settings"].includes(pending)
+        ? pending
+        : "profile";
   });
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
@@ -7771,6 +7775,31 @@ function SettingsPage({ state, reload }) {
     ["Infinite Hunts", state.agentRuns.length, "runs completed"],
     ["Tracked Jobs", state.jobs.length, "opportunities saved"],
   ];
+  useEffect(() => {
+    const syncTabFromHistory = () => {
+      const hashQuery = window.location.hash.split("?")[1] || "";
+      const linkedTab = new URLSearchParams(hashQuery).get("tab");
+      if (["profile", "coaches", "about", "settings"].includes(linkedTab))
+        setActiveTab(linkedTab);
+    };
+    window.addEventListener("hashchange", syncTabFromHistory);
+    window.addEventListener("popstate", syncTabFromHistory);
+    return () => {
+      window.removeEventListener("hashchange", syncTabFromHistory);
+      window.removeEventListener("popstate", syncTabFromHistory);
+    };
+  }, []);
+  const selectTab = (nextTab) => {
+    setActiveTab(nextTab);
+    setSaved(false);
+    const nextHash = `#/settings?tab=${encodeURIComponent(nextTab)}`;
+    if (window.location.hash !== nextHash)
+      window.history.pushState(
+        { tab: "settings", userTab: nextTab },
+        "",
+        nextHash,
+      );
+  };
   return (
     <section className="v2-settings-page">
       <div className="v2-page-intro">
@@ -7793,10 +7822,7 @@ function SettingsPage({ state, reload }) {
             key={value}
             role="tab"
             aria-selected={activeTab === value}
-            onClick={() => {
-              setActiveTab(value);
-              setSaved(false);
-            }}
+            onClick={() => selectTab(value)}
           >
             {label}
           </button>
