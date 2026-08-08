@@ -366,13 +366,30 @@ test(
 
       await page.locator('button[title="Submission Queue"]').click();
       await page.getByRole("tab", { name: /Search Jobs/ }).click();
+      const sourceMatch = Number.parseInt(
+        await page.locator(".v2-queue-list button.selected em").innerText(),
+        10,
+      );
       await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
       await assertAccessible(page, "Submission Queue");
       const checklistCount = await checklist.count();
       assert.ok(checklistCount > 0, "submission checklist should be visible");
-      await page.getByLabel("Resume attachment").waitFor();
+      const resumeAttachment = page.getByLabel("Resume attachment");
+      await resumeAttachment.waitFor();
+      assert.equal(
+        Boolean(await resumeAttachment.inputValue()),
+        sourceMatch >= 80,
+        "queue preparation should apply the persisted ATS threshold",
+      );
+      await page
+        .getByText(
+          sourceMatch >= 80
+            ? "ATS resume recommended"
+            : "Manual resume review recommended",
+        )
+        .waitFor();
       await page.getByLabel("Cover letter attachment").waitFor();
       await page.getByLabel("Minimum queue match score").selectOption("40");
       await page.getByLabel("Sort submission queue").selectOption("fit");

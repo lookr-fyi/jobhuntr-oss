@@ -2191,12 +2191,22 @@ function Queue({ state, reload }) {
   const sourceSelected =
     visibleSourceJobs.find((job) => job.id === sourceSelectedId) ||
     visibleSourceJobs[0];
+  const atsThreshold = state.profile.preferences?.atsThreshold ?? 80;
+  const recommendedResume = (targetJobId) => {
+    const targetJob = state.jobs.find((job) => job.id === targetJobId);
+    if ((targetJob?.fitScore || 0) < atsThreshold) return "";
+    return (
+      state.resumes.find((resume) => resume.jobId === targetJobId)?.id ||
+      state.resumes[0]?.id ||
+      ""
+    );
+  };
   const create = async () => {
     const created = await api("/api/submissions", {
       method: "POST",
       body: JSON.stringify({
         jobId,
-        resumeId: state.resumes[0]?.id || "",
+        resumeId: recommendedResume(jobId),
         coverLetterId:
           state.coverLetters.find((x) => x.jobId === jobId)?.id || "",
       }),
@@ -2209,7 +2219,7 @@ function Queue({ state, reload }) {
       method: "POST",
       body: JSON.stringify({
         jobId: targetJobId,
-        resumeId: state.resumes[0]?.id || "",
+        resumeId: recommendedResume(targetJobId),
         coverLetterId:
           state.coverLetters.find((item) => item.jobId === targetJobId)?.id ||
           "",
@@ -2596,6 +2606,8 @@ function InboxIcon() {
 }
 function SubmissionCard({ submission: s, state, reload }) {
   const job = state.jobs.find((j) => j.id === s.jobId);
+  const atsThreshold = state.profile.preferences?.atsThreshold ?? 80;
+  const meetsAtsThreshold = (job?.fitScore || 0) >= atsThreshold;
   const updatePacket = async (body) => {
     await api(`/api/submissions/${s.id}`, {
       method: "PATCH",
@@ -2634,6 +2646,28 @@ function SubmissionCard({ submission: s, state, reload }) {
         </label>
       ))}
       <div className="attachments v2-packet-attachments">
+        <div
+          className={`v2-ats-recommendation ${
+            meetsAtsThreshold ? "recommended" : "manual"
+          }`}
+        >
+          {meetsAtsThreshold ? (
+            <CheckCircle2 size={16} />
+          ) : (
+            <ShieldCheck size={16} />
+          )}
+          <span>
+            <strong>
+              {meetsAtsThreshold
+                ? "ATS resume recommended"
+                : "Manual resume review recommended"}
+            </strong>
+            <small>
+              {job?.fitScore || 0}% role match · Your automatic threshold is{" "}
+              {atsThreshold}%
+            </small>
+          </span>
+        </div>
         <label>
           Resume attachment
           <select

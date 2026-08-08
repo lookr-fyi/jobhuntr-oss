@@ -5603,6 +5603,43 @@ main > header.integrated-page-header {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+.v2-ats-recommendation {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #475569;
+  background: #fff;
+}
+.v2-ats-recommendation.recommended {
+  border-color: #bbf7d0;
+  color: #166534;
+  background: #f0fdf4;
+}
+.v2-ats-recommendation.manual {
+  border-color: #fde68a;
+  color: #92400e;
+  background: #fffbeb;
+}
+.attachments .v2-ats-recommendation > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+}
+.v2-ats-recommendation strong {
+  font-size: 12px;
+}
+.v2-ats-recommendation small {
+  color: inherit;
+  font-size: 10px;
+}
 .v2-packet-attachments label {
   display: grid;
   gap: 6px;
