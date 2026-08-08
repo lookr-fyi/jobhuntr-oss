@@ -1382,6 +1382,9 @@ function Tracker({ state, reload }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const funnelCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
+  const jobSubmission = state.submissions.find(
+    (item) => item.jobId === selected,
+  );
   const filtered = state.jobs.filter((item) => {
     const matchesStatus = visibleStages.has(item.status);
     const matchesRun =
@@ -1913,6 +1916,11 @@ function Tracker({ state, reload }) {
                     <span key={tag}>{tag}</span>
                   ))}
                 </div>
+                <TrackerApplicationInsights
+                  job={job}
+                  submission={jobSubmission}
+                  profile={state.profile}
+                />
                 {["interview", "offer", "rejected"].includes(job.status) && (
                   <InterviewRounds job={job} reload={reload} />
                 )}
@@ -2097,6 +2105,106 @@ function Tracker({ state, reload }) {
         </div>
       )}
     </section>
+  );
+}
+function TrackerApplicationInsights({ job, submission, profile }) {
+  const threshold = Number(
+    submission?.atsThreshold ?? profile.preferences?.atsThreshold ?? 80,
+  );
+  const score = Number(submission?.atsScore ?? job.fitScore ?? 0);
+  const profileSkills = new Set(
+    (profile.skills || []).map((skill) => String(skill).toLowerCase()),
+  );
+  const keywords = [...new Set(job.tags || [])];
+  const matched = keywords.filter((keyword) =>
+    profileSkills.has(String(keyword).toLowerCase()),
+  );
+  const missing = submission?.missingKeywords?.length
+    ? submission.missingKeywords
+    : keywords.filter(
+        (keyword) => !profileSkills.has(String(keyword).toLowerCase()),
+      );
+  const questions = submission?.applicationQuestions || [];
+  return (
+    <div className="v2-tracker-insights">
+      <section className="v2-tracker-info-section" aria-label="ATS Analysis">
+        <div className="v2-tracker-info-head">
+          <h3>ATS Analysis</h3>
+          <span
+            className={`v2-ats-detail-score ${score >= threshold ? "high" : score >= 60 ? "medium" : "low"}`}
+          >
+            {score}%
+          </span>
+        </div>
+        <div className="v2-ats-score-track" aria-hidden="true">
+          <i style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
+          <b style={{ left: `${Math.min(100, Math.max(0, threshold))}%` }} />
+        </div>
+        <p>
+          {score >= threshold
+            ? "This resume meets your ATS application threshold."
+            : `Below your ${threshold}% threshold—review the suggested keywords before applying.`}
+        </p>
+        {submission?.atsDecision && (
+          <div className="v2-ats-document-choice">
+            <CheckCircle2 size={15} />
+            {submission.atsDecision === "optimized"
+              ? "Optimized ATS resume selected"
+              : "Original resume selected"}
+          </div>
+        )}
+        {(matched.length > 0 || missing.length > 0) && (
+          <div className="v2-ats-keyword-groups">
+            {matched.length > 0 && (
+              <div>
+                <span>Matched keywords</span>
+                <div className="chips">
+                  {matched.map((keyword) => (
+                    <span key={keyword}>{keyword}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {missing.length > 0 && (
+              <div>
+                <span>Keywords to add truthfully</span>
+                <div className="chips missing">
+                  {missing.slice(0, 8).map((keyword) => (
+                    <span key={keyword}>{keyword}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+      {questions.length > 0 && (
+        <section
+          className="v2-tracker-info-section"
+          aria-label="Application Questions"
+        >
+          <div className="v2-tracker-info-head">
+            <h3>Application Questions</h3>
+            <span>{questions.length}</span>
+          </div>
+          <div className="v2-tracker-qa-list">
+            {questions.map((item) => (
+              <article key={item.id || item.question}>
+                <strong>{item.question}</strong>
+                <p>{item.answer || "No answer saved"}</p>
+                <small className={item.confident ? "confident" : "uncertain"}>
+                  {item.answer
+                    ? item.confident
+                      ? "✓ Confident"
+                      : "Review answer"
+                    : "Unanswered"}
+                </small>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
   );
 }
 function InterviewRounds({ job, reload }) {

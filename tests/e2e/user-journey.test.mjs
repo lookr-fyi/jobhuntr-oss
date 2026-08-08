@@ -690,6 +690,23 @@ test(
         "hidden tracker statuses should remove their board columns",
       );
       await page.getByRole("button", { name: "Reset filters" }).click();
+      const trackerInsightsState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const insightsJobId = trackerInsightsState.submissions[0].jobId;
+      await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
+      const atsAnalysis = page.getByRole("region", { name: "ATS Analysis" });
+      await atsAnalysis.waitFor();
+      await atsAnalysis
+        .getByText(/ATS application threshold|Below your/)
+        .waitFor();
+      const applicationQuestions = page.getByRole("region", {
+        name: "Application Questions",
+      });
+      await applicationQuestions.waitFor();
+      await applicationQuestions
+        .getByText("Why are you interested in this role?", { exact: true })
+        .waitFor();
       await page.getByRole("button", { name: "Funnel Analysis" }).click();
       const funnelDialog = page.getByRole("dialog", {
         name: "Job Application Funnel Analysis",
