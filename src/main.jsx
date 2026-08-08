@@ -1692,6 +1692,9 @@ function Tracker({ state, reload }) {
                 <span key={tag}>{tag}</span>
               ))}
             </div>
+            {["interview", "offer", "rejected"].includes(job.status) && (
+              <InterviewRounds job={job} reload={reload} />
+            )}
             <Actions job={job} reload={reload} />
             <h3>Status timeline</h3>
             <div className="status-history">
@@ -1828,6 +1831,142 @@ function Tracker({ state, reload }) {
           </div>
         </div>
       )}
+    </section>
+  );
+}
+function InterviewRounds({ job, reload }) {
+  const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [number, setNumber] = useState("");
+  const [notes, setNotes] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const rounds = job.interviewRounds || [];
+  const reset = () => {
+    setEditingId(null);
+    setShowForm(false);
+    setNumber("");
+    setNotes("");
+  };
+  const persist = async (next) => {
+    setBusy(true);
+    try {
+      await api(`/api/jobs/${job.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ interviewRounds: next }),
+      });
+      await reload();
+      reset();
+    } finally {
+      setBusy(false);
+    }
+  };
+  const save = async () => {
+    if (!number.trim() || !notes.trim()) return;
+    const now = new Date().toISOString();
+    const round = {
+      id: editingId || `round-${Date.now()}`,
+      roundType: `Interview Round ${number.trim()}`,
+      notes: notes.trim(),
+      status: "scheduled",
+      outcome: "pending",
+      createdAt: rounds.find((item) => item.id === editingId)?.createdAt || now,
+      updatedAt: now,
+    };
+    await persist(
+      editingId
+        ? rounds.map((item) => (item.id === editingId ? round : item))
+        : [...rounds, round],
+    );
+  };
+  const edit = (round) => {
+    setEditingId(round.id);
+    setNumber(round.roundType?.match(/\d+/)?.[0] || "");
+    setNotes(round.notes || "");
+    setShowForm(true);
+  };
+  return (
+    <section className="interview-rounds">
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        title="Delete interview round?"
+        description="This interview round and its notes will be permanently removed."
+        onClose={() => setDeleteId(null)}
+        onConfirm={async () => {
+          await persist(rounds.filter((round) => round.id !== deleteId));
+          setDeleteId(null);
+        }}
+      />
+      <div className="row">
+        <h3>Interview Rounds</h3>
+        {!showForm && (
+          <button className="secondary small" onClick={() => setShowForm(true)}>
+            <Plus size={14} /> Add Round
+          </button>
+        )}
+      </div>
+      {showForm && (
+        <div className="interview-round-form">
+          <strong>
+            {editingId ? "Edit Interview Round" : "Add New Interview Round"}
+          </strong>
+          <label>
+            Round number
+            <input
+              type="number"
+              min="1"
+              value={number}
+              onChange={(event) => setNumber(event.target.value)}
+              placeholder="e.g., 1, 2, 3"
+            />
+          </label>
+          <label>
+            Notes
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Add details about this interview round…"
+            />
+          </label>
+          <div className="inline">
+            <button
+              disabled={busy || !number.trim() || !notes.trim()}
+              onClick={save}
+            >
+              {busy ? "Saving…" : editingId ? "Update" : "Add"}
+            </button>
+            <button className="secondary" disabled={busy} onClick={reset}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="interview-round-list">
+        {rounds.map((round) => (
+          <article key={round.id}>
+            <div className="row">
+              <strong>{round.roundType}</strong>
+              <span className="inline">
+                <button className="text-button" onClick={() => edit(round)}>
+                  Edit
+                </button>
+                <button
+                  className="text-button danger"
+                  onClick={() => setDeleteId(round.id)}
+                >
+                  Delete
+                </button>
+              </span>
+            </div>
+            <p>{round.notes}</p>
+          </article>
+        ))}
+        {!rounds.length && !showForm && (
+          <p className="interview-round-empty">
+            No interview rounds yet. Add a round to track your progress.
+          </p>
+        )}
+      </div>
     </section>
   );
 }

@@ -68,6 +68,22 @@ test("can add and update a tracked job", async () => {
   });
   assert.equal(patch.body.status, "applied");
   assert.equal(patch.body.statusHistory[0].status, "applied");
+  const interview = await req(`/api/jobs/${create.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      status: "interview",
+      interviewRounds: [
+        {
+          id: "round-api-1",
+          roundType: "Interview Round 1",
+          notes: "Technical screen",
+          status: "scheduled",
+          outcome: "pending",
+        },
+      ],
+    }),
+  });
+  assert.equal(interview.body.interviewRounds[0].notes, "Technical screen");
   const contact = await req(`/api/jobs/${create.body.id}/contacts`, {
     method: "POST",
     body: JSON.stringify({

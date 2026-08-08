@@ -554,6 +554,19 @@ test(
       await page.keyboard.press("Escape");
       await funnelDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Job status").selectOption("interview");
+      await page.getByRole("button", { name: "Add Round" }).click();
+      const roundForm = page.locator(".interview-round-form");
+      await roundForm.getByLabel("Round number").fill("1");
+      await roundForm
+        .getByLabel("Notes")
+        .fill("Technical interview with the engineering manager");
+      await roundForm.getByRole("button", { name: "Add", exact: true }).click();
+      await page.getByText("Interview Round 1", { exact: true }).waitFor();
+      await page
+        .getByText("Technical interview with the engineering manager", {
+          exact: true,
+        })
+        .waitFor();
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
