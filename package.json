@@ -47,6 +47,7 @@
       "electron/**/*",
       "server/**/*",
       "dist/public/**/*",
+      "src/jobhuntr-logo.png",
       "package.json"
     ],
     "mac": {

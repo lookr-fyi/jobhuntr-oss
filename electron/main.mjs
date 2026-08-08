@@ -6,6 +6,17 @@ let mainWindow;
 let localUrl;
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
+const iconPath = path.join(projectRoot, "src", "jobhuntr-logo.png");
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!hasSingleInstanceLock) app.quit();
+
+app.on("second-instance", () => {
+  if (!mainWindow) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+});
 
 const freePort = () =>
   new Promise((resolve, reject) => {
@@ -55,6 +66,7 @@ const createWindow = async () => {
     minWidth: 390,
     minHeight: 640,
     backgroundColor: "#ffffff",
+    icon: iconPath,
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -69,11 +81,18 @@ const createWindow = async () => {
     void shell.openExternal(target);
     return { action: "deny" };
   });
+  mainWindow.webContents.on("will-navigate", (event, target) => {
+    if (target.startsWith(url)) return;
+    event.preventDefault();
+    void shell.openExternal(target);
+  });
   mainWindow.once("ready-to-show", () => mainWindow.show());
   await mainWindow.loadURL(url);
 };
 
 app.whenReady().then(async () => {
+  app.setName("JobHuntr");
+  if (process.platform === "darwin") app.dock.setIcon(iconPath);
   try {
     await createWindow();
   } catch (error) {
