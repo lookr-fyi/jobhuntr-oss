@@ -13,10 +13,19 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const req = async (url, options={}) => { const res = await fetch(base + url, { headers: {'Content-Type':'application/json'}, ...options }); return { res, body: res.status === 204 ? null : await res.json() }; };
 
 test('health and initial state are local-only', async () => {
-  const { body } = await req('/api/health');
+  const { res, body } = await req('/api/health');
   assert.equal(body.ok, true); assert.equal(body.mode, 'local-only');
+  assert.equal(body.host, '127.0.0.1'); assert.equal(res.headers.get('x-frame-options'), 'DENY'); assert.equal(res.headers.get('x-powered-by'), null);
   const state = (await req('/api/state')).body;
   assert.ok(state.jobs.length >= 4); assert.ok(state.summary.totalJobs >= 4);
+});
+
+test('serialized local writes do not lose concurrent jobs', async () => {
+  const jobs = Array.from({ length: 12 }, (_, i) => ({ company: `Concurrent ${i}`, title: 'Engineer', url: `https://concurrent.example/${i}` }));
+  const results = await Promise.all(jobs.map((job) => req('/api/jobs', { method: 'POST', body: JSON.stringify(job) })));
+  assert.ok(results.every(({ res }) => res.status === 201));
+  const state = (await req('/api/state')).body;
+  assert.equal(state.jobs.filter((job) => job.company.startsWith('Concurrent ')).length, jobs.length);
 });
 
 test('can add and update a tracked job', async () => {
@@ -75,6 +84,22 @@ test('coach and outreach create private role-specific drafts', async () => {
   assert.equal(coach.res.status, 201); assert.equal(coach.body.questions.length, 4); assert.match(coach.body.questions[0], new RegExp(job.company));
   const outreach = await req('/api/outreach/draft', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });
   assert.equal(outreach.res.status, 201); assert.match(outreach.body.body, new RegExp(job.company));
+});
+
+test('full restore accepts only bounded JobHuntr backup keys', async () => {
+  const state = (await req('/api/state')).body;
+  const restored = await req('/api/import', { method: 'POST', body: JSON.stringify({ ...state, unexpectedCloudConfig: { token: 'not-copied' } }) });
+  assert.equal(restored.res.status, 200);
+  const after = (await req('/api/state')).body;
+  assert.equal(after.unexpectedCloudConfig, undefined);
+});
+
+test('malformed primary storage recovers from the local backup', async () => {
+  await req('/api/profile', { method: 'PUT', body: JSON.stringify({ headline: 'Recovery checkpoint' }) });
+  await fs.writeFile(path.join(dir, 'jobhuntr.json'), '{malformed json');
+  const recovered = await req('/api/state');
+  assert.equal(recovered.res.status, 200); assert.ok(Array.isArray(recovered.body.jobs));
+  const files = await fs.readdir(dir); assert.ok(files.some((name) => name.startsWith('jobhuntr.corrupt-')));
 });
 
 test.after(async () => { await new Promise((resolve)=>server.close(resolve)); await fs.rm(dir, { recursive: true, force: true }); });

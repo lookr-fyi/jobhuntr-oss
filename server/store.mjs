@@ -4,6 +4,7 @@ import { nanoid } from 'nanoid';
 
 export const DATA_DIR = path.resolve(process.env.JOBHUNTR_DATA_DIR || './data');
 export const DB_PATH = path.join(DATA_DIR, 'jobhuntr.json');
+export const BACKUP_PATH = path.join(DATA_DIR, 'jobhuntr.backup.json');
 
 const now = () => new Date().toISOString();
 
@@ -19,6 +20,7 @@ export function emptyDb() {
   return {
     meta: { version: 2, createdAt, updatedAt: createdAt },
     profile: {
+      onboarded: false,
       name: 'Local Job Hunter',
       headline: 'Full-stack builder looking for high-impact teams',
       location: 'United States',
@@ -76,8 +78,15 @@ async function ensure() {
 export async function readDb() {
   await ensure();
   const raw = await fs.readFile(DB_PATH, 'utf8');
-  const db = migrate(JSON.parse(raw));
-  return db;
+  try { return migrate(JSON.parse(raw)); }
+  catch (error) {
+    try {
+      const backup = migrate(JSON.parse(await fs.readFile(BACKUP_PATH, 'utf8')));
+      await fs.rename(DB_PATH, path.join(DATA_DIR, `jobhuntr.corrupt-${Date.now()}.json`));
+      await fs.copyFile(BACKUP_PATH, DB_PATH);
+      return backup;
+    } catch { throw new Error(`Local JobHuntr data is unreadable: ${error.message}`); }
+  }
 }
 
 export async function writeDb(db) {
@@ -86,15 +95,21 @@ export async function writeDb(db) {
   db.meta.updatedAt = now();
   const tmp = `${DB_PATH}.tmp`;
   await fs.writeFile(tmp, JSON.stringify(db, null, 2));
+  try { await fs.copyFile(DB_PATH, BACKUP_PATH); } catch {}
   await fs.rename(tmp, DB_PATH);
   return db;
 }
 
-export async function mutate(fn) {
-  const db = await readDb();
-  const result = await fn(db);
-  await writeDb(db);
-  return result ?? db;
+let mutationQueue = Promise.resolve();
+export function mutate(fn) {
+  const operation = mutationQueue.then(async () => {
+    const db = await readDb();
+    const result = await fn(db);
+    await writeDb(db);
+    return result ?? db;
+  });
+  mutationQueue = operation.catch(() => {});
+  return operation;
 }
 
 export function auditEvent(db, type, message, data = {}) {

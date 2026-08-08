@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import net from 'node:net';
+import { spawn } from 'node:child_process';
+
+const freePort = () => new Promise((resolve) => { const server = net.createServer(); server.listen(0, '127.0.0.1', () => { const { port } = server.address(); server.close(() => resolve(port)); }); });
+
+test('one-line launcher builds and serves the complete local app', { timeout: 30000 }, async () => {
+  const port = await freePort(); const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jobhuntr-launch-'));
+  const child = spawn(process.execPath, ['scripts/one-line-run.mjs'], { cwd: process.cwd(), env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', JOBHUNTR_DATA_DIR: dataDir, JOBHUNTR_NO_OPEN: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  let output = ''; child.stdout.on('data', (d) => output += d); child.stderr.on('data', (d) => output += d);
+  try {
+    let response;
+    for (let i = 0; i < 80; i++) { try { response = await fetch(`http://127.0.0.1:${port}/api/health`); if (response.ok) break; } catch {} await new Promise((r) => setTimeout(r, 200)); }
+    assert.ok(response?.ok, `launcher did not become healthy:\n${output}`);
+    const page = await fetch(`http://127.0.0.1:${port}/`); assert.equal(page.status, 200); assert.match(await page.text(), /JobHuntr OSS/);
+  } finally {
+    child.kill('SIGTERM'); await new Promise((resolve) => { child.once('exit', resolve); setTimeout(resolve, 3000); }); await fs.rm(dataDir, { recursive: true, force: true });
+  }
+});

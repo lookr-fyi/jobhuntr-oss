@@ -2,7 +2,9 @@
 
 ## Local-first guarantee
 
-The default app does not send user data to any cloud service. It uses a local Express API and writes JSON to `./data/jobhuntr.json`.
+The default app does not send user data to any cloud service. It uses a local Express API and writes JSON to `./data/jobhuntr.json` with atomic serialized updates and a local recovery backup.
+
+The production and development servers bind to `127.0.0.1` by default. API responses include restrictive browser security headers, and imports copy only documented JobHuntr data keys with bounded collection sizes.
 
 ## Before publishing
 

@@ -14,10 +14,10 @@ or, equivalently:
 npm run jobhuntr
 ```
 
-That command installs dependencies on first run, starts the local API and frontend, and opens the app at:
+That command installs locked dependencies on first run, builds the frontend, starts the local backend, and opens the complete app at:
 
-- Frontend: <http://localhost:5173>
-- Backend API: <http://localhost:8787/api/health>
+- App: <http://127.0.0.1:8787>
+- Health check: <http://127.0.0.1:8787/api/health>
 
 No account, hosted database, cloud storage, analytics, object store, or third-party API key is required.
 
@@ -44,6 +44,8 @@ All user data is stored locally in:
 
 Delete `./data` to reset. Back up `/api/export` before deleting if you need your data.
 
+Writes are atomic and serialized. JobHuntr also maintains `./data/jobhuntr.backup.json`; if the primary JSON file becomes malformed, the server automatically restores the last readable backup and preserves the damaged file for inspection.
+
 ## Developer commands
 
 ```bash
@@ -55,8 +57,14 @@ npm run secret:scan  # scan repository for obvious secrets before publishing
 npm run verify       # secret scan + tests + production build
 ```
 
+The server binds to `127.0.0.1` by default so other devices on the network cannot access personal job-search data. Set `HOST` explicitly only if you understand the exposure.
+
 ## Why this is not a direct v2 source dump
 
 JobHuntr v2 contains private infrastructure, deployment scripts, paid-service integrations, env files, and cloud-specific resources. This repository intentionally rebuilds the product as local-first OSS instead of copying private implementation wholesale.
 
 See [`docs/OPEN_SOURCE_SCOPE.md`](docs/OPEN_SOURCE_SCOPE.md) and [`docs/SECURITY.md`](docs/SECURITY.md).
+
+## Contributing and license
+
+Contributions are welcome under the privacy and local-first requirements in [`CONTRIBUTING.md`](CONTRIBUTING.md). JobHuntr OSS is licensed under the [GNU Affero General Public License v3.0](LICENSE).

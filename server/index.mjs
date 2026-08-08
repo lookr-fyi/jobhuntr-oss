@@ -7,8 +7,19 @@ import { fileURLToPath } from 'node:url';
 import { readDb, mutate, auditEvent, scoreJob, summarize, seedJobs, DB_PATH } from './store.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const APP_VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
 const app = express();
 const PORT = Number(process.env.PORT || 8787);
+const HOST = process.env.HOST || '127.0.0.1';
+app.disable('x-powered-by');
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+  next();
+});
 app.use(express.json({ limit: '2mb' }));
 
 const timestamp = () => new Date().toISOString();
@@ -20,7 +31,7 @@ const JobSchema = z.object({
   description: z.string().optional().default(''), tags: z.array(z.string()).optional().default([]), status: z.string().optional().default('saved')
 });
 
-app.get('/api/health', async (_req, res) => res.json({ ok: true, storage: DB_PATH, mode: 'local-only' }));
+app.get('/api/health', async (_req, res) => res.json({ ok: true, storage: DB_PATH, mode: 'local-only', host: HOST, version: APP_VERSION }));
 app.get('/api/state', async (_req, res) => { const db = await readDb(); res.json({ ...db, summary: summarize(db) }); });
 app.get('/api/summary', async (_req, res) => { const db = await readDb(); res.json(summarize(db)); });
 app.put('/api/profile', async (req, res) => {
@@ -170,8 +181,11 @@ app.post('/api/import/jobs', async (req, res) => {
 
 app.get('/api/export', async (_req, res) => { const db = await readDb(); res.setHeader('Content-Disposition', 'attachment; filename="jobhuntr-export.json"'); res.json(db); });
 app.post('/api/import', async (req, res) => {
-  const imported = req.body; if (!imported || !Array.isArray(imported.jobs)) return res.status(400).json({ error: 'Expected a JobHuntr export with jobs[]' });
-  await mutate((db) => { Object.assign(db, imported); auditEvent(db, 'import', 'Imported local JobHuntr data.'); }); res.json({ ok: true });
+  const imported = req.body;
+  if (!imported || typeof imported !== 'object' || Array.isArray(imported) || !Array.isArray(imported.jobs)) return res.status(400).json({ error: 'Expected a JobHuntr export with jobs[]' });
+  if (imported.jobs.length > 5000 || (imported.activities?.length || 0) > 10000) return res.status(400).json({ error: 'Backup exceeds safe local import limits' });
+  const allowed = ['meta','profile','jobs','resumes','coverLetters','templates','submissions','coachingSessions','outreachDrafts','agentRuns','activities'];
+  await mutate((db) => { for (const key of allowed) if (imported[key] !== undefined) db[key] = imported[key]; auditEvent(db, 'import', 'Imported and migrated a local JobHuntr backup.'); }); res.json({ ok: true });
 });
 
 app.use((err, _req, res, _next) => { if (err instanceof z.ZodError) return res.status(400).json({ error: 'Invalid request', details: err.issues }); console.error(err); res.status(500).json({ error: 'Local server error' }); });
@@ -179,5 +193,5 @@ app.use((err, _req, res, _next) => { if (err instanceof z.ZodError) return res.s
 const publicDir = path.join(__dirname, '..', 'dist', 'public');
 if (fs.existsSync(publicDir)) { app.use(express.static(publicDir)); app.use((req, res, next) => { if (req.path.startsWith('/api')) return next(); res.sendFile(path.join(publicDir, 'index.html')); }); }
 
-if (process.env.NODE_ENV !== 'test') app.listen(PORT, () => console.log(`JobHuntr OSS running at http://localhost:${PORT} (local data: ${DB_PATH})`));
+if (process.env.NODE_ENV !== 'test') app.listen(PORT, HOST, () => console.log(`JobHuntr OSS running at http://${HOST}:${PORT} (local data: ${DB_PATH})`));
 export default app;
