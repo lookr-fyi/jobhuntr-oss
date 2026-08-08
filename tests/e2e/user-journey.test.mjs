@@ -683,7 +683,10 @@ test(
         await page.getByLabel("Filter by agent run").inputValue(),
         "automated",
       );
-      await page.getByLabel("rejected", { exact: true }).uncheck();
+      await page.getByLabel("Rejected", { exact: true }).uncheck();
+      await page
+        .locator(".kanban-column .column-title", { hasText: "Queued" })
+        .waitFor();
       assert.equal(
         await page.locator(".kanban-column", { hasText: /^rejected/i }).count(),
         0,

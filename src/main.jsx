@@ -63,6 +63,15 @@ const TRACKER_STAGES = [
   "offer",
   "rejected",
 ];
+const TRACKER_STAGE_LABELS = {
+  saved: "Started",
+  interested: "Queued",
+  applied: "Applied",
+  interview: "Interviewing",
+  offer: "Offer",
+  rejected: "Rejected",
+};
+const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
 const maximumListedSalary = (job) => {
   const values = String(job.salary || "")
     .match(/\d+(?:\.\d+)?\s*k?/gi)
@@ -1632,7 +1641,7 @@ function Tracker({ state, reload }) {
                     onChange={() => toggleStage(stage)}
                   />
                   <span className={`tracker-status-dot ${stage}`} />
-                  {stage}
+                  {trackerStageLabel(stage)}
                 </label>
               ))}
             </div>
@@ -1723,7 +1732,7 @@ function Tracker({ state, reload }) {
                   }
                 >
                   <div className="column-title">
-                    <b>{stage}</b>
+                    <b>{trackerStageLabel(stage)}</b>
                     <span>
                       {filtered.filter((item) => item.status === stage).length}
                     </span>
@@ -1771,7 +1780,9 @@ function Tracker({ state, reload }) {
                     {item.company} · {item.location}
                   </small>
                 </span>
-                <span className={`pill ${item.status}`}>{item.status}</span>
+                <span className={`pill ${item.status}`}>
+                  {trackerStageLabel(item.status)}
+                </span>
                 <strong>{item.fitScore}%</strong>
                 <time>{new Date(item.updatedAt).toLocaleDateString()}</time>
               </button>
@@ -1782,7 +1793,7 @@ function Tracker({ state, reload }) {
           <div className="job-drawer">
             <div className="row">
               <span className={`pill ${editForm?.status || job.status}`}>
-                {editForm?.status || job.status}
+                {trackerStageLabel(editForm?.status || job.status)}
               </span>
               <div className="inline">
                 {!job.workflowRunId && !editForm && (
@@ -1854,7 +1865,9 @@ function Tracker({ state, reload }) {
                     }
                   >
                     {stages.map((stage) => (
-                      <option key={stage}>{stage}</option>
+                      <option value={stage} key={stage}>
+                        {trackerStageLabel(stage)}
+                      </option>
                     ))}
                   </select>
                 </label>
@@ -1902,7 +1915,9 @@ function Tracker({ state, reload }) {
                   onChange={(e) => patch(job.id, { status: e.target.value })}
                 >
                   {stages.map((s) => (
-                    <option key={s}>{s}</option>
+                    <option value={s} key={s}>
+                      {trackerStageLabel(s)}
+                    </option>
                   ))}
                 </select>
                 {job.url && (
@@ -1933,7 +1948,7 @@ function Tracker({ state, reload }) {
                 <div className="status-history">
                   {(job.statusHistory || []).map((event, index) => (
                     <p key={`${event.at}-${index}`}>
-                      <b>{event.status}</b>
+                      <b>{trackerStageLabel(event.status)}</b>
                       <small>{new Date(event.at).toLocaleString()}</small>
                     </p>
                   ))}
