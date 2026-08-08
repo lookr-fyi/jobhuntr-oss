@@ -238,6 +238,10 @@ test(
       await page
         .locator(".v2-run-row .pill", { hasText: "Completed" })
         .waitFor();
+      await page.getByText("Action required", { exact: true }).waitFor();
+      await page.getByLabel("Action required only").check();
+      await page.getByText("Showing 1 of 1 runs").waitFor();
+      await page.getByLabel("Action required only").uncheck();
       await page.getByLabel("Search runs").fill("Software Engineer");
       await page.getByText("Showing 1 of 1 runs").waitFor();
       const runTrigger = page.getByRole("button", {

@@ -4583,7 +4583,7 @@ select:focus {
 }
 .v2-runs-toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto;
+  grid-template-columns: minmax(260px, 1fr) auto auto auto;
   gap: 18px;
   align-items: center;
   margin-bottom: 14px;
@@ -4692,6 +4692,17 @@ select:focus {
 .v2-run-row small {
   margin-top: 3px;
   color: var(--v2-secondary);
+}
+.v2-run-row .v2-run-action-required {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 7px;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  border-radius: 999px;
+  background: #fff7ed;
+  font-size: 10px;
+  font-weight: 700;
 }
 .v2-run-row time {
   color: var(--v2-secondary);

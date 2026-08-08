@@ -7355,19 +7355,40 @@ function RunsPage({ state, setTab, reload }) {
   ).get("run");
   const [query, setQuery] = useState("");
   const [hideZero, setHideZero] = useState(false);
+  const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [selectedRun, setSelectedRun] = useState(
     () => runs.find((run) => run.id === linkedRunId) || null,
   );
   const [deleteIds, setDeleteIds] = useState([]);
   const runCloseRef = useRef(null);
-  const visibleRuns = runs.filter((run) => {
-    const matchesSearch =
-      `${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
-        .toLowerCase()
-        .includes(query.toLowerCase());
-    return matchesSearch && (!hideZero || (run.found || 0) > 0);
-  });
+  const actionRequiredRunIds = new Set(
+    state.submissions
+      .filter((submission) => ["draft", "ready"].includes(submission.status))
+      .map(
+        (submission) =>
+          submission.workflowRunId ||
+          state.jobs.find((job) => job.id === submission.jobId)?.workflowRunId,
+      )
+      .filter(Boolean),
+  );
+  const visibleRuns = runs
+    .filter((run) => {
+      const matchesSearch =
+        `${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
+          .toLowerCase()
+          .includes(query.toLowerCase());
+      return (
+        matchesSearch &&
+        (!hideZero || (run.found || 0) > 0) &&
+        (!showActionRequiredOnly || actionRequiredRunIds.has(run.id))
+      );
+    })
+    .sort(
+      (a, b) =>
+        Number(actionRequiredRunIds.has(b.id)) -
+        Number(actionRequiredRunIds.has(a.id)),
+    );
   const toggleRun = (id) => {
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -7486,6 +7507,18 @@ function RunsPage({ state, setTab, reload }) {
           />
           Hide runs with 0 matches
         </label>
+        {actionRequiredRunIds.size > 0 && (
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={showActionRequiredOnly}
+              onChange={(event) =>
+                setShowActionRequiredOnly(event.target.checked)
+              }
+            />
+            Action required only
+          </label>
+        )}
         <span>
           Showing {visibleRuns.length} of {runs.length} runs
         </span>
@@ -7539,6 +7572,11 @@ function RunsPage({ state, setTab, reload }) {
                 {run.search?.location || "All locations"} ·{" "}
                 {(run.workflows || []).join(", ") || "Local catalog"}
               </small>
+              {actionRequiredRunIds.has(run.id) && (
+                <small className="v2-run-action-required">
+                  Action required
+                </small>
+              )}
             </span>
             <span className="pill submitted">Completed</span>
             <strong>{run.inspected || run.found || 0}</strong>
