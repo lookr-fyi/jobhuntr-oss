@@ -957,12 +957,22 @@ test(
         ),
         gigDialog.getByLabel("Gig application status").selectOption("proposal"),
       ]);
+      await gigDialog
+        .getByLabel("Gig application status")
+        .selectOption("negotiation");
+      await gigDialog.getByRole("button", { name: "Start Work" }).click();
+      await gigDialog.getByText("Work started.").waitFor();
+      await gigDialog.getByRole("button", { name: "Submit Work" }).click();
+      await gigDialog.getByText("Work submitted for approval.").waitFor();
+      await gigDialog
+        .getByText("Waiting for approval", { exact: true })
+        .waitFor();
       await page.keyboard.press("Escape");
       await gigDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search my gigs").fill("Career Tools Lab");
       await page
         .locator(".v2-gig-applications")
-        .getByText("Application Submitted")
+        .getByText("Waiting for Approval")
         .waitFor();
       await assertAccessible(page, "Gigs");
 

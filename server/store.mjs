@@ -442,13 +442,23 @@ export function summarize(db) {
     Number(db.profile.preferences?.weeklyApplicationGoal || 5),
   );
   const activeGigs = db.gigs.filter((gig) =>
-    ["proposal", "negotiation", "won", "in-progress"].includes(gig.status),
+    [
+      "proposal",
+      "negotiation",
+      "won",
+      "in-progress",
+      "waiting-approval",
+    ].includes(gig.status),
   );
   const gigPipelineValue = db.gigs
     .filter((gig) => ["lead", "proposal", "negotiation"].includes(gig.status))
     .reduce((sum, gig) => sum + Number(gig.budget || 0), 0);
   const gigEarnings = db.gigs
-    .filter((gig) => ["won", "in-progress", "completed"].includes(gig.status))
+    .filter((gig) =>
+      ["won", "in-progress", "waiting-approval", "completed"].includes(
+        gig.status,
+      ),
+    )
     .reduce((sum, gig) => sum + Number(gig.earned || 0), 0);
   return {
     totalJobs: db.jobs.length,

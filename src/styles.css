@@ -1308,6 +1308,7 @@ button:disabled {
 }
 .v2-gig-status.won,
 .v2-gig-status.in-progress,
+.v2-gig-status.waiting-approval,
 .v2-gig-status.completed {
   color: #166534;
   background: #dcfce7;
@@ -1358,6 +1359,37 @@ button:disabled {
 }
 .v2-gig-detail-modal .gig-proposal {
   min-height: 150px;
+}
+.v2-gig-action-feedback,
+.v2-gig-next-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 14px 0 2px;
+  padding: 13px 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+  background: #f0fdf4;
+}
+.v2-gig-action-feedback {
+  justify-content: flex-start;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-gig-next-action p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+.v2-gig-next-action.pending {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+.v2-gig-next-action.paid {
+  border-color: #bfdbfe;
+  background: #eff6ff;
 }
 .v2-gig-modal-footer {
   display: flex;

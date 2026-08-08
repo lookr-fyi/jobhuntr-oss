@@ -6055,6 +6055,7 @@ function Gigs({ state, reload }) {
     "negotiation",
     "won",
     "in-progress",
+    "waiting-approval",
     "completed",
     "lost",
   ];
@@ -6079,6 +6080,7 @@ function Gigs({ state, reload }) {
   const [myGigQuery, setMyGigQuery] = useState("");
   const [myView, setMyView] = useState("table");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [actionFeedback, setActionFeedback] = useState("");
   const gigCloseRef = useRef(null);
   const campaignCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
@@ -6105,6 +6107,21 @@ function Gigs({ state, reload }) {
     });
     await reload();
   };
+  const advanceGig = async (id, status, message) => {
+    await patch(id, { status });
+    setActionFeedback(message);
+  };
+  const gigStatusLabel = (status) =>
+    ({
+      lead: "Reviewing Application",
+      proposal: "Application Submitted",
+      negotiation: "Application Approved",
+      won: "Ready to Start",
+      "in-progress": "In Progress",
+      "waiting-approval": "Waiting for Approval",
+      completed: "Payment Sent",
+      lost: "Closed",
+    })[status] || status;
   const availableGigs = [
     {
       client: "Career Tools Lab",
@@ -6445,19 +6462,7 @@ function Gigs({ state, reload }) {
               <strong>{money(item.earned || item.budget)}</strong>
               <time>{new Date(item.createdAt).toLocaleDateString()}</time>
               <em className={`v2-gig-status ${item.status}`}>
-                {item.status === "lead"
-                  ? "Reviewing Application"
-                  : item.status === "proposal"
-                    ? "Application Submitted"
-                    : item.status === "negotiation"
-                      ? "Application Approved"
-                      : item.status === "won"
-                        ? "Ready to Start"
-                        : item.status === "in-progress"
-                          ? "In Progress"
-                          : item.status === "completed"
-                            ? "Payment Sent"
-                            : "Closed"}
+                {gigStatusLabel(item.status)}
               </em>
               <span className="v2-gig-row-action">
                 View <ChevronRight size={15} />
@@ -6649,6 +6654,11 @@ function Gigs({ state, reload }) {
             <p className="muted">
               {gig.client} · {gig.source}
             </p>
+            {actionFeedback && (
+              <p className="v2-gig-action-feedback" role="status">
+                <CheckCircle2 size={16} /> {actionFeedback}
+              </p>
+            )}
             <label>
               Application status
               <select
@@ -6663,6 +6673,69 @@ function Gigs({ state, reload }) {
                 ))}
               </select>
             </label>
+            {["negotiation", "won"].includes(gig.status) && (
+              <div className="v2-gig-next-action">
+                <div>
+                  <strong>Your application was approved</strong>
+                  <p>Confirm when you are ready to begin this gig.</p>
+                </div>
+                <button
+                  onClick={() =>
+                    advanceGig(
+                      gig.id,
+                      "in-progress",
+                      "Work started. You can now submit your delivery.",
+                    )
+                  }
+                >
+                  Start Work
+                </button>
+              </div>
+            )}
+            {gig.status === "in-progress" && (
+              <div className="v2-gig-next-action">
+                <div>
+                  <strong>Ready to deliver?</strong>
+                  <p>
+                    Add delivery notes below, then submit your work for
+                    approval.
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    advanceGig(
+                      gig.id,
+                      "waiting-approval",
+                      "Work submitted for approval.",
+                    )
+                  }
+                >
+                  Submit Work
+                </button>
+              </div>
+            )}
+            {gig.status === "waiting-approval" && (
+              <div className="v2-gig-next-action pending">
+                <div>
+                  <strong>Waiting for approval</strong>
+                  <p>
+                    Your delivery was submitted. The campaign partner reviews it
+                    next.
+                  </p>
+                </div>
+              </div>
+            )}
+            {gig.status === "completed" && (
+              <div className="v2-gig-next-action paid">
+                <div>
+                  <strong>Payment sent</strong>
+                  <p>
+                    This gig is complete. Record the actual earning above for
+                    your totals.
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="double">
               <label>
                 Potential earning

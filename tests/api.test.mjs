@@ -522,6 +522,12 @@ test("local gigs track proposals, deadlines, status history, and earnings", asyn
   });
   assert.equal(updated.body.status, "won");
   assert.equal(updated.body.statusHistory[0].status, "won");
+  const submitted = await req(`/api/gigs/${created.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "waiting-approval" }),
+  });
+  assert.equal(submitted.body.status, "waiting-approval");
+  assert.equal(submitted.body.statusHistory[0].status, "waiting-approval");
   summary = (await req("/api/summary")).body;
   assert.ok(summary.gigs.earnings >= 3000);
   assert.ok(summary.gigs.active >= 1);

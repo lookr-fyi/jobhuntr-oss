@@ -91,6 +91,7 @@ const GigSchema = z.object({
       "negotiation",
       "won",
       "in-progress",
+      "waiting-approval",
       "completed",
       "lost",
     ])
