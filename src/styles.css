@@ -3736,6 +3736,24 @@ button.v2-workflow-card.selected {
   color: #0caa41;
   background: #ecfdf5;
 }
+.v2-platform-mark.hiringcafe,
+.v2-platform-mark.workatastartup {
+  color: #9a3412;
+  background: #fff7ed;
+}
+.v2-platform-mark.jobright,
+.v2-platform-mark.simplify {
+  color: #6d28d9;
+  background: #f5f3ff;
+}
+.v2-platform-mark.ziprecruiter {
+  color: #047857;
+  background: #ecfdf5;
+}
+.v2-platform-mark.dice {
+  color: #be123c;
+  background: #fff1f2;
+}
 .v2-platform-mark.company {
   color: #475569;
   background: #f1f5f9;

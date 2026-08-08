@@ -1140,9 +1140,22 @@ const HuntSchema = z.object({
   requiredKeywords: z.array(z.string().max(100)).max(20).optional(),
   excludeKeywords: z.array(z.string().max(100)).max(20).optional(),
   workflows: z
-    .array(z.enum(["linkedin", "indeed", "glassdoor", "company"]))
+    .array(
+      z.enum([
+        "linkedin",
+        "indeed",
+        "glassdoor",
+        "hiringcafe",
+        "jobright",
+        "simplify",
+        "workatastartup",
+        "ziprecruiter",
+        "dice",
+        "company",
+      ]),
+    )
     .min(1)
-    .max(4)
+    .max(10)
     .optional(),
   optimizeResume: z.boolean().optional(),
 });

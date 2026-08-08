@@ -58,6 +58,63 @@ const APP_ROUTES = [
   "settings",
   "privacy",
 ];
+const HUNT_WORKFLOWS = [
+  [
+    "linkedin",
+    "in",
+    "LinkedIn Jobs",
+    "Search jobs and prepare applications from LinkedIn.",
+  ],
+  ["indeed", "i", "Indeed", "Find matching roles across Indeed listings."],
+  [
+    "glassdoor",
+    "g",
+    "Glassdoor",
+    "Discover roles using company and salary context.",
+  ],
+  [
+    "hiringcafe",
+    "hc",
+    "HiringCafe",
+    "Search curated roles from company career pages.",
+  ],
+  [
+    "jobright",
+    "jr",
+    "Jobright",
+    "Find AI-matched roles across public listings.",
+  ],
+  [
+    "simplify",
+    "s",
+    "Simplify",
+    "Search application-ready roles from Simplify.",
+  ],
+  [
+    "workatastartup",
+    "w",
+    "Work at a Startup",
+    "Discover startup roles and founding-team opportunities.",
+  ],
+  [
+    "ziprecruiter",
+    "z",
+    "ZipRecruiter",
+    "Search broad job listings using your saved criteria.",
+  ],
+  [
+    "dice",
+    "d",
+    "Dice",
+    "Find technology roles using skill and location filters.",
+  ],
+  [
+    "company",
+    "↗",
+    "Company Career Page Search",
+    "Search verified company career pages directly.",
+  ],
+];
 const TRACKER_STAGES = [
   "saved",
   "interested",
@@ -8096,27 +8153,7 @@ function Agent({ state, reload, setTab }) {
       setSavingPreset(false);
     }
   };
-  const workflows = [
-    [
-      "linkedin",
-      "in",
-      "LinkedIn Jobs",
-      "Search jobs and prepare applications from LinkedIn.",
-    ],
-    ["indeed", "i", "Indeed", "Find matching roles across Indeed listings."],
-    [
-      "glassdoor",
-      "g",
-      "Glassdoor",
-      "Discover roles using company and salary context.",
-    ],
-    [
-      "company",
-      "↗",
-      "Company Career Page Search",
-      "Search verified company career pages directly.",
-    ],
-  ];
+  const workflows = HUNT_WORKFLOWS;
   const saveRunOrder = (runs) => {
     setSelectedRuns(runs);
     localStorage.setItem("jobhuntr-infinite-workflows", JSON.stringify(runs));
@@ -9064,32 +9101,7 @@ function RunsPage({ state, setTab, reload }) {
               role="radiogroup"
               aria-label="Run template"
             >
-              {[
-                [
-                  "linkedin",
-                  "in",
-                  "LinkedIn Auto Search",
-                  "Find matching roles and save them for review.",
-                ],
-                [
-                  "indeed",
-                  "i",
-                  "Indeed Auto Search",
-                  "Search Indeed-style listings using your preferences.",
-                ],
-                [
-                  "glassdoor",
-                  "g",
-                  "Glassdoor Auto Search",
-                  "Discover roles with company and salary context.",
-                ],
-                [
-                  "company",
-                  "↗",
-                  "Company Website Search",
-                  "Search verified company career-page listings.",
-                ],
-              ].map(([id, mark, name, description]) => (
+              {HUNT_WORKFLOWS.map(([id, mark, name, description]) => (
                 <button
                   type="button"
                   role="radio"
@@ -9100,7 +9112,11 @@ function RunsPage({ state, setTab, reload }) {
                 >
                   <span className={`v2-platform-mark ${id}`}>{mark}</span>
                   <span>
-                    <strong>{name}</strong>
+                    <strong>
+                      {id === "company"
+                        ? "Company Website Search"
+                        : `${name.replace(" Jobs", "")} Auto Search`}
+                    </strong>
                     <small>{description}</small>
                   </span>
                   <i>{newRunTemplate === id ? "✓" : ""}</i>

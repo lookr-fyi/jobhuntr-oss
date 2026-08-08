@@ -327,6 +327,15 @@ test(
       await newRunDialog.waitFor({ state: "hidden" });
       await page.getByRole("button", { name: "New Run" }).click();
       await newRunDialog
+        .getByRole("radio", { name: /Dice Auto Search/ })
+        .click();
+      assert.equal(
+        await newRunDialog
+          .getByRole("radio", { name: /Dice Auto Search/ })
+          .getAttribute("aria-checked"),
+        "true",
+      );
+      await newRunDialog
         .getByRole("radio", { name: /Company Website Search/ })
         .click();
       await newRunDialog.getByLabel("Run Name").fill("Platform Engineer");

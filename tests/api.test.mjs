@@ -99,7 +99,12 @@ test("can add and update a tracked job", async () => {
 test("agent run saves matches and logs actions", async () => {
   const run = await req("/api/agent-runs/start", {
     method: "POST",
-    body: JSON.stringify({ q: "engineer", minFit: 50, optimizeResume: true }),
+    body: JSON.stringify({
+      q: "engineer",
+      minFit: 50,
+      optimizeResume: true,
+      workflows: ["dice", "hiringcafe", "linkedin"],
+    }),
   });
   assert.equal(run.res.status, 201);
   assert.equal(run.body.status, "completed");
@@ -107,7 +112,7 @@ test("agent run saves matches and logs actions", async () => {
   assert.equal(run.body.runName, "engineer");
   assert.ok(run.body.actions.length > 0);
   assert.equal(run.body.steps.length, 6);
-  assert.deepEqual(run.body.workflows, ["linkedin", "indeed"]);
+  assert.deepEqual(run.body.workflows, ["dice", "hiringcafe", "linkedin"]);
   assert.ok(run.body.added >= 1);
   assert.equal(run.body.queued, run.body.added);
   assert.equal(

@@ -18,20 +18,20 @@ OSS replacement decisions:
 
 ## Current parity map
 
-| v2 product area       | Local OSS implementation                                                                                                                 |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Overview and pipeline | Weekly goals, funnel/conversion metrics, overdue and upcoming tasks, stale roles, and activity audit                                     |
-| Job tracker           | Draggable Kanban/list views, filters, status history, notes, tasks, contacts, scoring, manual entry                                      |
-| Job board             | Bundled offline board with profile-based scoring                                                                                         |
-| ATS templates         | Three transparent templates, named history, keyword/impact analysis, secure print preview and PDF-ready export                           |
-| Cover letters         | Editable deterministic drafts, persistent history, print preview and PDF-ready export                                                    |
-| Submission queue      | Local application packets, attachment visibility, mandatory review, submission history                                                   |
-| AI coach / About Me   | Persistent interview answers, research progress, private notes, session history, and reusable STAR evidence vault                        |
-| Outreach              | Local editable LinkedIn/email-style drafts with draft/sent/replied/archive workflow; no automatic sending                                |
-| LinkedIn audit        | Paste-only deterministic profile review with visible scoring and local history; no cookies, scraping, or account automation              |
-| Gigs                  | Local lead-to-delivery Kanban, proposals, deadlines, budgets, status history, pipeline value, and earnings; no marketplace account       |
-| Infinite Hunt         | Offline previews, role/location/keyword rules, exclusions, fit thresholding, presets, match explanations, deduplication, and run history |
-| User settings         | Local profile, role/skill criteria, locations, remote and salary preferences                                                             |
-| Data portability      | Full JSON backup/restore, CSV jobs export, bulk JSON jobs import                                                                         |
+| v2 product area       | Local OSS implementation                                                                                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview and pipeline | Weekly goals, funnel/conversion metrics, overdue and upcoming tasks, stale roles, and activity audit                                                                             |
+| Job tracker           | V2-style Kanban with complete queue/application lifecycle, filters, status history, notes, tasks, contacts, scoring, and manual entry                                            |
+| Job board             | Bundled offline board with advanced filters, profile scoring, chronology/applicant/contributor metadata, and privacy-safe leaderboard                                            |
+| ATS templates         | Three transparent templates, named history, keyword/impact analysis, secure print preview and PDF-ready export                                                                   |
+| Cover letters         | Five-step wizard with all 16 v2 template choices, editable deterministic drafts, persistent history, print preview and PDF-ready export                                          |
+| Submission queue      | Local application packets, attachment visibility, mandatory review, submission history                                                                                           |
+| AI coach / About Me   | Persistent interview answers, research progress, private notes, session history, and reusable STAR evidence vault                                                                |
+| Outreach              | Local editable LinkedIn/email-style drafts with draft/sent/replied/archive workflow; no automatic sending                                                                        |
+| LinkedIn audit        | Paste-only deterministic profile review with visible scoring and local history; no cookies, scraping, or account automation                                                      |
+| Gigs                  | Local lead-to-delivery Kanban, proposals, deadlines, budgets, status history, pipeline value, and earnings; no marketplace account                                               |
+| Infinite Hunt         | All v2 platform workflow choices, ordered loops, offline previews, role/location/keyword rules, ATS packet preparation, presets, deduplication, session details, and run history |
+| User settings         | Local profile, role/skill criteria, locations, remote and salary preferences                                                                                                     |
+| Data portability      | Full JSON backup/restore, CSV jobs export, bulk JSON jobs import                                                                                                                 |
 
 External account automation, scraping, billing, hosted authentication, and cloud AI are intentionally not bundled. They would violate the requirement that a fresh checkout run without accounts or cloud resources.
