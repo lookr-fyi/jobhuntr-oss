@@ -98,6 +98,10 @@ test("agent run saves matches and logs actions", async () => {
   );
   const state = (await req("/api/state")).body;
   assert.equal(
+    state.jobs.filter((job) => job.workflowRunId === run.body.id).length,
+    run.body.added,
+  );
+  assert.equal(
     state.submissions.filter((item) => item.atsDecision).length,
     run.body.queued,
   );

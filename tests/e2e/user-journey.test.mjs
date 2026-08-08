@@ -527,6 +527,20 @@ test(
       await assertAccessible(page, "Cover Letters");
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
+      await page.getByRole("button", { name: /Filters/ }).click();
+      await page.getByText("Show columns", { exact: true }).waitFor();
+      await page.getByLabel("Filter by agent run").selectOption("automated");
+      assert.equal(
+        await page.getByLabel("Filter by agent run").inputValue(),
+        "automated",
+      );
+      await page.getByLabel("rejected", { exact: true }).uncheck();
+      assert.equal(
+        await page.locator(".kanban-column", { hasText: /^rejected/i }).count(),
+        0,
+        "hidden tracker statuses should remove their board columns",
+      );
+      await page.getByRole("button", { name: "Reset filters" }).click();
       await page.getByRole("button", { name: "Funnel Analysis" }).click();
       const funnelDialog = page.getByRole("dialog", {
         name: "Job Application Funnel Analysis",

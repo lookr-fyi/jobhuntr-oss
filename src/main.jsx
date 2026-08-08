@@ -1296,7 +1296,19 @@ function Tracker({ state, reload }) {
   });
   const [selected, setSelected] = useState(state.jobs[0]?.id);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
+  const [visibleStages, setVisibleStages] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("jobTracker_visibleStatuses") || "null",
+      );
+      if (Array.isArray(saved) && saved.length) return new Set(saved);
+    } catch {}
+    return new Set(stages);
+  });
+  const [runFilter, setRunFilter] = useState(
+    () => localStorage.getItem("jobTracker_selectedAgentRun") || "all",
+  );
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [mode, setMode] = useState("board");
   const [showForm, setShowForm] = useState(false);
   const [funnelOpen, setFunnelOpen] = useState(false);
@@ -1304,11 +1316,33 @@ function Tracker({ state, reload }) {
   const funnelCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
   const filtered = state.jobs.filter((item) => {
-    const matchesStatus = status === "all" || item.status === status;
+    const matchesStatus = visibleStages.has(item.status);
+    const matchesRun =
+      runFilter === "all" ||
+      (runFilter === "manual" && !item.workflowRunId) ||
+      (runFilter === "automated" && Boolean(item.workflowRunId)) ||
+      item.workflowRunId === runFilter;
     const haystack =
       `${item.company} ${item.title} ${item.location} ${(item.tags || []).join(" ")}`.toLowerCase();
-    return matchesStatus && haystack.includes(query.toLowerCase());
+    return (
+      matchesStatus && matchesRun && haystack.includes(query.toLowerCase())
+    );
   });
+  useEffect(() => {
+    localStorage.setItem(
+      "jobTracker_visibleStatuses",
+      JSON.stringify([...visibleStages]),
+    );
+    localStorage.setItem("jobTracker_selectedAgentRun", runFilter);
+  }, [visibleStages, runFilter]);
+  const toggleStage = (stage) => {
+    setVisibleStages((current) => {
+      const next = new Set(current);
+      if (next.has(stage)) next.delete(stage);
+      else next.add(stage);
+      return next;
+    });
+  };
   const appliedStatuses = new Set([
     "applied",
     "interview",
@@ -1435,18 +1469,16 @@ function Tracker({ state, reload }) {
             placeholder="Search company, role, location, or tag"
           />
         </div>
-        <select
-          aria-label="Filter by status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
+        <button
+          className={`secondary ${filtersOpen ? "active" : ""}`}
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((open) => !open)}
         >
-          <option value="all">All stages</option>
-          {stages.map((s) => (
-            <option value={s} key={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          <Filter size={15} /> Filters
+          <span className="filter-count">
+            {stages.length - visibleStages.size + (runFilter === "all" ? 0 : 1)}
+          </span>
+        </button>
         <div className="segmented">
           <button
             className={mode === "board" ? "active" : ""}
@@ -1465,6 +1497,53 @@ function Tracker({ state, reload }) {
           <Plus size={16} /> Add role
         </button>
       </div>
+      {filtersOpen && (
+        <div className="card tracker-filter-panel">
+          <div>
+            <span className="tracker-filter-label">Show columns</span>
+            <div className="tracker-status-filters">
+              {stages.map((stage) => (
+                <label key={stage}>
+                  <input
+                    type="checkbox"
+                    checked={visibleStages.has(stage)}
+                    onChange={() => toggleStage(stage)}
+                  />
+                  <span className={`tracker-status-dot ${stage}`} />
+                  {stage}
+                </label>
+              ))}
+            </div>
+          </div>
+          <label>
+            <span className="tracker-filter-label">Run</span>
+            <select
+              aria-label="Filter by agent run"
+              value={runFilter}
+              onChange={(event) => setRunFilter(event.target.value)}
+            >
+              <option value="all">All runs</option>
+              <option value="manual">Manual applications only</option>
+              <option value="automated">Automated applications only</option>
+              {(state.agentRuns || []).map((run) => (
+                <option value={run.id} key={run.id}>
+                  {run.search?.q || "Local hunt"} —{" "}
+                  {new Date(run.createdAt).toLocaleDateString()}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            className="text-button"
+            onClick={() => {
+              setVisibleStages(new Set(stages));
+              setRunFilter("all");
+            }}
+          >
+            Reset filters
+          </button>
+        </div>
+      )}
       {showForm && (
         <div className="card add-panel">
           <div className="row">
@@ -1510,47 +1589,49 @@ function Tracker({ state, reload }) {
       >
         {mode === "board" ? (
           <div className="kanban">
-            {stages.map((stage) => (
-              <div
-                className="kanban-column"
-                key={stage}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) =>
-                  patch(e.dataTransfer.getData("jobId"), { status: stage })
-                }
-              >
-                <div className="column-title">
-                  <b>{stage}</b>
-                  <span>
-                    {filtered.filter((item) => item.status === stage).length}
-                  </span>
+            {stages
+              .filter((stage) => visibleStages.has(stage))
+              .map((stage) => (
+                <div
+                  className="kanban-column"
+                  key={stage}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) =>
+                    patch(e.dataTransfer.getData("jobId"), { status: stage })
+                  }
+                >
+                  <div className="column-title">
+                    <b>{stage}</b>
+                    <span>
+                      {filtered.filter((item) => item.status === stage).length}
+                    </span>
+                  </div>
+                  {filtered
+                    .filter((item) => item.status === stage)
+                    .map((item) => (
+                      <button
+                        draggable
+                        onDragStart={(e) =>
+                          e.dataTransfer.setData("jobId", item.id)
+                        }
+                        onClick={() => setSelected(item.id)}
+                        className={`kanban-card ${item.id === selected ? "selected" : ""}`}
+                        key={item.id}
+                      >
+                        <div className="fit-ring">{item.fitScore}</div>
+                        <b>{item.title}</b>
+                        <span>{item.company}</span>
+                        <small>{item.location || "Location not set"}</small>
+                        {item.tasks?.some((t) => !t.done) && (
+                          <em>
+                            {item.tasks.filter((t) => !t.done).length} open
+                            task(s)
+                          </em>
+                        )}
+                      </button>
+                    ))}
                 </div>
-                {filtered
-                  .filter((item) => item.status === stage)
-                  .map((item) => (
-                    <button
-                      draggable
-                      onDragStart={(e) =>
-                        e.dataTransfer.setData("jobId", item.id)
-                      }
-                      onClick={() => setSelected(item.id)}
-                      className={`kanban-card ${item.id === selected ? "selected" : ""}`}
-                      key={item.id}
-                    >
-                      <div className="fit-ring">{item.fitScore}</div>
-                      <b>{item.title}</b>
-                      <span>{item.company}</span>
-                      <small>{item.location || "Location not set"}</small>
-                      {item.tasks?.some((t) => !t.done) && (
-                        <em>
-                          {item.tasks.filter((t) => !t.done).length} open
-                          task(s)
-                        </em>
-                      )}
-                    </button>
-                  ))}
-              </div>
-            ))}
+              ))}
           </div>
         ) : (
           <div className="card tracker-list">

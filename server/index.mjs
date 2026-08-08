@@ -1064,6 +1064,7 @@ app.post("/api/agent-runs/preview", async (req, res) => {
 });
 app.post("/api/agent-runs/start", async (req, res) => {
   const run = await mutate((db) => {
+    const runId = nanoid();
     const options = huntOptions(req.body, db.profile);
     const matches = findLocalMatches(seedJobs, db.profile, options);
     let added = 0;
@@ -1082,6 +1083,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
       const savedJob = {
         ...job,
         id: nanoid(),
+        workflowRunId: runId,
         status: "saved",
         matchReasons: match.reasons,
         createdAt: timestamp(),
@@ -1195,7 +1197,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
       });
     }
     const item = {
-      id: nanoid(),
+      id: runId,
       status: "completed",
       createdAt: timestamp(),
       completedAt: timestamp(),

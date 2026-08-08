@@ -644,6 +644,77 @@ button:disabled {
 .tracker-toolbar select {
   margin: 0;
 }
+.tracker-toolbar > button.secondary.active {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.filter-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 999px;
+  background: #dbeafe;
+  font-size: 10px;
+}
+.tracker-filter-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr) auto;
+  gap: 24px;
+  align-items: end;
+  padding: 16px 18px;
+  animation: slide-in 0.18s ease;
+}
+.tracker-filter-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tracker-filter-panel select {
+  margin: 0;
+}
+.tracker-status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.tracker-status-filters label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.tracker-status-filters input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+.tracker-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #64748b;
+}
+.tracker-status-dot.applied {
+  background: #3b82f6;
+}
+.tracker-status-dot.interview {
+  background: #f59e0b;
+}
+.tracker-status-dot.offer {
+  background: #10b981;
+}
+.tracker-status-dot.rejected {
+  background: #ef4444;
+}
 .searchbox {
   display: flex;
   align-items: center;
@@ -879,6 +950,11 @@ button:disabled {
   }
   .searchbox {
     grid-column: span 2;
+  }
+  .tracker-filter-panel {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    align-items: stretch;
   }
   .form-grid {
     grid-template-columns: 1fr 1fr;
