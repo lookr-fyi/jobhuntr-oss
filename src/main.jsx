@@ -222,7 +222,12 @@ function Onboarding({ profile, reload }) {
       <div className="onboarding">
         {step === 0 && (
           <>
-            <span className="eyebrow">WELCOME TO JOBHUNTR OSS</span>
+            <img
+              className="v2-onboarding-logo"
+              src={jobHuntrLogo}
+              alt="JobHuntr"
+            />
+            <span className="eyebrow">WELCOME TO JOBHUNTR</span>
             <h2>Your job search stays yours.</h2>
             <p>
               No signup, telemetry, hosted database, or required AI key.

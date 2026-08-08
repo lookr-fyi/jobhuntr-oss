@@ -458,6 +458,15 @@ button:disabled {
   width: min(520px, 100%);
   box-sizing: border-box;
 }
+.v2-onboarding-logo {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+}
+.onboarding .eyebrow {
+  color: #64748b;
+}
 .onboarding h2 {
   font-size: 30px;
   margin-top: 10px;
