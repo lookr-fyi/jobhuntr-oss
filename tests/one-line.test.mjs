@@ -19,6 +19,6 @@ test('one-line launcher builds and serves the complete local app', { timeout: 30
     const page = await fetch(`http://127.0.0.1:${port}/`); assert.equal(page.status, 200); assert.match(await page.text(), /JobHuntr OSS/);
   } finally {
     try { process.platform === 'win32' ? child.kill('SIGTERM') : process.kill(-child.pid, 'SIGTERM'); } catch {}
-    await new Promise((resolve) => { child.once('exit', resolve); setTimeout(resolve, 3000); }); await fs.rm(dataDir, { recursive: true, force: true });
+    await new Promise((resolve) => { const timer = setTimeout(resolve, 3000); child.once('exit', () => { clearTimeout(timer); resolve(); }); }); await fs.rm(dataDir, { recursive: true, force: true });
   }
 });
