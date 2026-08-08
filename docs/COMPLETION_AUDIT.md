@@ -54,7 +54,7 @@ Their user-facing value is replaced with local profiles, deterministic scoring/g
 3. ESLint and React Hooks checks with zero warnings.
 4. API, persistence, concurrency, recovery, rendering, scoring, import/export, local-first architecture, and one-line-launch tests.
 5. Production frontend build.
-6. A no-mock Chrome journey covering onboarding, hunting, run history, ATS resume, submission, cover letter, tracker, profile audit, outreach, AI Coach, Gigs, persistence, and mobile layout.
+6. A no-mock Chrome journey covering onboarding, hunting, run history, ATS resume, submission, cover letter, tracker, profile audit, outreach, AI Coach, Gigs, settings, persistence, and mobile layout. Axe scans enforce no serious or critical WCAG 2 A/AA violations across every visited product surface.
 7. A real Electron launch test that also verifies renderer security boundaries.
 
 GitHub Actions runs the browser and Electron gate under Xvfb and independently launches `./run.sh` from a dependency-free checkout. `npm audit --omit=dev` is also expected to report zero production vulnerabilities at release time.

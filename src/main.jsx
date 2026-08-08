@@ -409,7 +409,11 @@ function Overview({ state, setTab }) {
               </span>
             </div>
           </div>
-          <div className="v2-chart" aria-label="Pipeline trend visualization">
+          <div
+            className="v2-chart"
+            role="img"
+            aria-label="Pipeline trend visualization"
+          >
             {[0, 1, 2, 3].map((i) => (
               <i className="gridline" key={i} />
             ))}
@@ -718,6 +722,7 @@ function Tracker({ state, reload }) {
               <span className={`pill ${job.status}`}>{job.status}</span>
               <button
                 className="drawer-close"
+                aria-label="Close gig details"
                 onClick={() => setSelected(null)}
               >
                 ×
@@ -814,7 +819,11 @@ function Actions({ job, reload }) {
       ))}
       <h3>Tasks</h3>
       <div className="task-compose">
-        <input value={task} onChange={(e) => setTask(e.target.value)} />
+        <input
+          aria-label="Task description"
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+        />
         <input
           type="date"
           aria-label="Task due date"
@@ -1109,12 +1118,16 @@ function Queue({ state, reload }) {
       </div>
       <div className="v2-queue-tabs" role="tablist">
         <button
+          role="tab"
+          aria-selected={queueTab === "apply"}
           className={queueTab === "apply" ? "active" : ""}
           onClick={() => setQueueTab("apply")}
         >
           <ClipboardListIcon /> Apply Jobs <em>{active.length}</em>
         </button>
         <button
+          role="tab"
+          aria-selected={queueTab === "search"}
           className={queueTab === "search" ? "active" : ""}
           onClick={() => setQueueTab("search")}
         >
@@ -1132,6 +1145,8 @@ function Queue({ state, reload }) {
           </em>
         </button>
         <button
+          role="tab"
+          aria-selected={queueTab === "manual"}
           className={queueTab === "manual" ? "active" : ""}
           onClick={() => setQueueTab("manual")}
         >
@@ -1830,7 +1845,11 @@ function OutreachPage({ state, reload }) {
             placeholder="Search contacts, companies, or roles"
           />
         </div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select
+          aria-label="Filter contacts by status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+        >
           <option value="all">All statuses</option>
           <option value="draft">Listed</option>
           <option value="sent">Outreached</option>
@@ -2006,6 +2025,7 @@ function Coach({ state, reload }) {
           </button>
         </div>
         <select
+          aria-label="Coaching role"
           value={jobId}
           onChange={(e) => {
             setJobId(e.target.value);
@@ -2441,6 +2461,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
       <div className="row">
         <h3>Edit outreach</h3>
         <select
+          aria-label="Outreach status"
           value={draft.status || "draft"}
           onChange={(e) => {
             setDraft({ ...draft, status: e.target.value });
@@ -2772,6 +2793,7 @@ function Gigs({ state, reload }) {
               {gig.client} · {gig.source}
             </p>
             <select
+              aria-label="Gig stage"
               value={gig.status}
               onChange={(e) => patch(gig.id, { status: e.target.value })}
             >
@@ -3854,6 +3876,7 @@ function Privacy() {
           <input
             type="file"
             accept=".json,application/json"
+            aria-label="Import JobHuntr JSON backup"
             onChange={(e) => setBackupFile(e.target.files?.[0])}
           />
           <button disabled={!backupFile} onClick={restore}>
@@ -3869,6 +3892,7 @@ function Privacy() {
           <input
             type="file"
             accept=".csv,text/csv"
+            aria-label="Import jobs CSV"
             onChange={(e) => {
               setCsvFile(e.target.files?.[0]);
               setResult(null);

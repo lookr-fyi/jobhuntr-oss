@@ -6,6 +6,7 @@ import path from "node:path";
 import net from "node:net";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
+import AxeBuilder from "@axe-core/playwright";
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
@@ -48,6 +49,25 @@ const waitForHealth = async (url, output) => {
   assert.fail(`JobHuntr did not become healthy:\n${output()}`);
 };
 
+const assertAccessible = async (page, surface) => {
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa"])
+    .analyze();
+  const serious = results.violations.filter((violation) =>
+    ["serious", "critical"].includes(violation.impact),
+  );
+  assert.deepEqual(
+    serious.map((violation) => ({
+      id: violation.id,
+      impact: violation.impact,
+      targets: violation.nodes.map((node) => node.target.join(" ")),
+      details: violation.nodes.map((node) => node.failureSummary),
+    })),
+    [],
+    `${surface} should have no serious WCAG A/AA violations`,
+  );
+};
+
 test(
   "a user can onboard, hunt, inspect runs, and persist outreach through the real UI",
   { timeout: 45_000 },
@@ -79,16 +99,22 @@ test(
         executablePath: chromePath,
         headless: true,
       });
-      const page = await browser.newPage({
+      const desktopContext = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
       });
+      const page = await desktopContext.newPage();
       await page.goto(baseUrl);
 
       await page.getByRole("button", { name: "Use demo profile" }).click();
+      await page
+        .getByRole("button", { name: "Use demo profile" })
+        .waitFor({ state: "hidden" });
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await assertAccessible(page, "Overview");
 
       await page.getByRole("button", { name: "Infinite Hunting" }).click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      await assertAccessible(page, "Infinite Hunting");
       await page
         .getByLabel("Generate an optimized resume for each job")
         .check();
@@ -102,6 +128,7 @@ test(
       await page
         .locator(".v2-run-row .pill", { hasText: "Completed" })
         .waitFor();
+      await assertAccessible(page, "All Runs");
 
       await page.getByRole("button", { name: "ATS Resume" }).click();
       await page.getByLabel("Resume version name").fill("E2E tailored resume");
@@ -114,12 +141,14 @@ test(
       await page.locator(".score", { hasText: "ATS alignment" }).waitFor();
       await page.getByRole("button", { name: "Save version" }).click();
       await page.getByText("E2E tailored resume").first().waitFor();
+      await assertAccessible(page, "ATS Resume");
 
-      await page.getByRole("button", { name: "Submission Queue" }).click();
-      await page.getByRole("button", { name: /Search Jobs/ }).click();
+      await page.locator('button[title="Submission Queue"]').click();
+      await page.getByRole("tab", { name: /Search Jobs/ }).click();
       await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
+      await assertAccessible(page, "Submission Queue");
       const checklistCount = await checklist.count();
       assert.ok(checklistCount > 0, "submission checklist should be visible");
       for (const item of [
@@ -140,7 +169,7 @@ test(
         ]);
       }
       await page.reload();
-      await page.getByRole("button", { name: "Submission Queue" }).click();
+      await page.locator('button[title="Submission Queue"]').click();
       await page.getByRole("button", { name: "Mark submitted" }).click();
       await page
         .getByRole("heading", { name: "Your queue is clear" })
@@ -164,12 +193,14 @@ test(
         );
       await page.getByRole("button", { name: "Save changes" }).click();
       await page.getByText("E2E product letter").first().waitFor();
+      await assertAccessible(page, "Cover Letters");
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
       await page.getByLabel("Job status").selectOption("interview");
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
+      await assertAccessible(page, "Job Tracker");
 
       await page.getByRole("button", { name: "LinkedIn Audit" }).click();
       await page
@@ -179,6 +210,7 @@ test(
         );
       await page.getByRole("button", { name: "Run private audit" }).click();
       await page.locator(".audit-score").waitFor();
+      await assertAccessible(page, "LinkedIn Audit");
 
       await page.getByRole("button", { name: "Outreach" }).click();
       await page.getByRole("button", { name: "Collect contacts" }).click();
@@ -189,12 +221,14 @@ test(
       await page.reload();
       await page.getByRole("button", { name: "Outreach" }).click();
       await page.getByText("E2E persisted outreach subject").first().waitFor();
+      await assertAccessible(page, "Outreach");
 
       await page.getByRole("button", { name: "AI Coach" }).click();
       await page
         .getByRole("button", { name: "Help me prepare for an interview" })
         .click();
       await page.getByText(/start by grounding your answer/).waitFor();
+      await assertAccessible(page, "AI Coach");
       await page.reload();
       await page.getByRole("button", { name: "AI Coach" }).click();
       await page
@@ -215,6 +249,16 @@ test(
         .getByRole("heading", { name: "Review an AI resume workflow" })
         .last()
         .waitFor();
+      await assertAccessible(page, "Gigs");
+
+      await page.locator('[title="Profile and settings"]').click();
+      await page
+        .getByRole("heading", { name: "Profile & preferences" })
+        .waitFor();
+      await assertAccessible(page, "Profile and preferences");
+      await page.locator('[title="Data and privacy"]').click();
+      await page.getByRole("heading", { name: "Settings & data" }).waitFor();
+      await assertAccessible(page, "Settings and data");
 
       const persisted = JSON.parse(
         await fs.readFile(path.join(dataDir, "jobhuntr.json"), "utf8"),
@@ -242,9 +286,10 @@ test(
         "E2E persisted outreach subject",
       );
 
-      const mobile = await browser.newPage({
+      const mobileContext = await browser.newContext({
         viewport: { width: 390, height: 844 },
       });
+      const mobile = await mobileContext.newPage();
       await mobile.goto(baseUrl);
       await mobile.getByRole("heading", { name: /Welcome back/ }).waitFor();
       const navigationBox = await mobile.locator(".v2-sidebar").boundingBox();
@@ -255,6 +300,7 @@ test(
       );
       await mobile.getByRole("button", { name: "Job Board" }).click();
       await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      await assertAccessible(mobile, "Mobile Job Board");
       const hasPageOverflow = await mobile.evaluate(
         () => document.documentElement.scrollWidth > window.innerWidth + 1,
       );
@@ -263,7 +309,7 @@ test(
         false,
         "mobile page should not overflow horizontally",
       );
-      await mobile.close();
+      await mobileContext.close();
     } finally {
       await browser?.close();
       try {
