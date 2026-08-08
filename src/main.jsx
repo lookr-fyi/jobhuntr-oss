@@ -975,9 +975,18 @@ function Overview({ state, setTab, reload }) {
   const s = state.summary;
   const firstName = (state.profile.name || "there").split(" ")[0];
   const submitted = s.byStatus.applied || 0;
+  const now = new Date();
+  const submittedToday = state.jobs.filter((job) => {
+    if (job.status !== "applied") return false;
+    const date = new Date(job.updatedAt || job.createdAt);
+    return (
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate()
+    );
+  }).length;
   const interviews = (s.byStatus.interview || 0) + (s.byStatus.offer || 0);
   const collected = s.totalJobs;
-  const now = new Date();
   const monthLabel = now.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
@@ -991,10 +1000,23 @@ function Overview({ state, setTab, reload }) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-  const chartData = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(now);
+  const chartStart = new Date(
+    state.meta?.createdAt ||
+      state.jobs
+        .map((job) => job.createdAt || job.updatedAt)
+        .filter(Boolean)
+        .sort()[0] ||
+      now,
+  );
+  chartStart.setHours(0, 0, 0, 0);
+  const chartDays = Math.max(
+    1,
+    Math.floor((now.getTime() - chartStart.getTime()) / 86400000) + 1,
+  );
+  const chartData = Array.from({ length: chartDays }, (_, index) => {
+    const date = new Date(chartStart);
     date.setHours(23, 59, 59, 999);
-    date.setDate(date.getDate() - (6 - index));
+    date.setDate(date.getDate() + index);
     const through = date.getTime();
     const available = state.jobs.filter(
       (job) => new Date(job.createdAt || job.updatedAt).getTime() <= through,
@@ -1103,7 +1125,7 @@ function Overview({ state, setTab, reload }) {
           <div className="v2-kpi">
             <strong>{submitted}</strong>
             <b>Total submitted</b>
-            <span>{s.applicationsThisWeek} sent this week</span>
+            <span>{submittedToday} sent today</span>
           </div>
           <div className="v2-kpi">
             <strong>{interviews}</strong>
@@ -1115,7 +1137,7 @@ function Overview({ state, setTab, reload }) {
           <div className="v2-card-head">
             <div>
               <h3>Pipeline over time</h3>
-              <p>From your first application to today.</p>
+              <p>From your first signup to today.</p>
             </div>
             <div
               className="v2-chart-toggles"
@@ -1205,7 +1227,13 @@ function Overview({ state, setTab, reload }) {
                 className="v2-chart-tooltip"
                 role="status"
                 style={{
-                  left: `${Math.max(8, Math.min(92, (chartHover / 6) * 100))}%`,
+                  left: `${Math.max(
+                    8,
+                    Math.min(
+                      92,
+                      (chartHover / Math.max(chartData.length - 1, 1)) * 100,
+                    ),
+                  )}%`,
                 }}
               >
                 <b>

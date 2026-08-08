@@ -114,6 +114,8 @@ test(
         .getByRole("heading", { name: /Top Contributors of/ })
         .waitFor();
       await page.getByText(/jobs? contributed/).waitFor();
+      await page.getByText(/sent today/).waitFor();
+      await page.getByText("From your first signup to today.").waitFor();
       const navigationIconBounds = await page
         .locator(".v2-nav button > svg")
         .evaluateAll((icons) =>
