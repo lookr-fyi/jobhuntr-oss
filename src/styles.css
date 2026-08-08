@@ -845,6 +845,14 @@ button:disabled {
 .v2-board-page { max-width: 1180px; margin: 0 auto; padding: 8px 24px 48px; }
 .v2-outreach-page { max-width: 1240px; margin: 0 auto; padding: 8px 24px 48px; }
 .v2-audit-page { max-width: 1200px; margin: 0 auto; padding: 8px 24px 48px; }
+.v2-gigs-intro { margin-bottom: 28px; }
+.v2-gigs-section-title { display: flex; justify-content: space-between; margin-bottom: 14px; }
+.v2-gigs-section-title h3 { margin: 0 0 4px; }.v2-gigs-section-title p { margin: 0; color: #64748b; font-size: 13px; }
+.v2-gig-privacy { display: flex; align-items: center; gap: 10px; padding: 16px; color: #334155; }
+.v2-coach-hero { display: flex; align-items: center; gap: 14px; max-width: 1440px; margin: 0 auto 18px; padding: 6px 2px; }
+.v2-coach-hero h2 { margin: 0 0 5px; font-size: 23px; }.v2-coach-hero p { margin: 0; color: #64748b; }
+.v2-coach-avatar { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; background: #18181a; color: #ffe600; }
+.v2-gig-privacy svg { color: #16a34a; }.v2-gig-privacy p { margin: 3px 0 0; }
 .v2-audit-url { display: grid; grid-template-columns: 1fr auto; gap: 12px; margin: 18px 0 12px; }
 .v2-audit-url input { min-height: 44px; }
 .v2-local-notice { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; margin-bottom: 14px; border: 1px solid #dbeafe; border-radius: 8px; background: #eff6ff; color: #475569; font-size: 13px; }

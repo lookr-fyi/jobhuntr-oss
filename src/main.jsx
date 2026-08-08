@@ -151,6 +151,8 @@ function App() {
               "board",
               "outreach",
               "audit",
+              "gigs",
+              "coach",
             ].includes(tab)
               ? "integrated-page-header"
               : ""
@@ -1594,6 +1596,7 @@ function Coach({ state, reload }) {
   };
   return (
     <section className="coach-page">
+      <div className="v2-coach-hero"><div className="v2-coach-avatar"><Sparkles size={22} /></div><div><h2>Hi, I'm AI Coach!</h2><p>Turn your experience into stronger interview answers, career stories, and role-specific preparation.</p></div></div>
       <div className="card coach-toolbar">
         <div className="segmented">
           <button
@@ -2066,6 +2069,8 @@ function Gigs({ state, reload }) {
   };
   return (
     <section className="gigs-page">
+      <div className="v2-page-intro v2-gigs-intro"><div><h2>Gigs</h2><p>All tasks listed here are designed for quick skill validation and fast earnings, typically completed within a few days.</p></div><button onClick={() => setShowForm(!showForm)}><Plus size={16} /> Add gig</button></div>
+      <div className="v2-gigs-section-title"><div><h3>My Gigs</h3><p>Track freelance opportunities, applications, delivery, and earnings locally.</p></div></div>
       <div className="gig-metrics">
         <div className="card metric">
           <span>ACTIVE GIGS</span>
@@ -2082,14 +2087,7 @@ function Gigs({ state, reload }) {
           <strong>{money(state.summary.gigs.earnings)}</strong>
           <small>won through completed</small>
         </div>
-        <div className="card">
-          <button onClick={() => setShowForm(!showForm)}>
-            <Plus size={16} /> Add gig
-          </button>
-          <p className="hint">
-            No marketplace account or external service required.
-          </p>
-        </div>
+        <div className="card v2-gig-privacy"><ShieldCheck size={20} /><div><strong>Private workspace</strong><p className="hint">No marketplace account or external service required.</p></div></div>
       </div>
       {showForm && (
         <div className="card add-panel">
