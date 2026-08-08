@@ -6845,11 +6845,172 @@ main > header.integrated-page-header {
   position: relative;
   z-index: 1;
   box-sizing: border-box;
-  width: min(560px, 100%);
+  width: min(760px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
   padding: 28px;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+.v2-template-wizard-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.v2-template-wizard-head > div > span {
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.v2-template-wizard-head small {
+  color: #64748b;
+  font-size: 11px;
+}
+.v2-template-progress {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 22px 0;
+  padding: 0;
+  list-style: none;
+}
+.v2-template-progress li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+.v2-template-progress li:not(:last-child)::after {
+  position: absolute;
+  right: 9px;
+  left: 32px;
+  bottom: -9px;
+  height: 2px;
+  background: #e2e8f0;
+  content: "";
+}
+.v2-template-progress li.active {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+.v2-template-progress li.active:not(:last-child)::after {
+  background: #93c5fd;
+}
+.v2-template-progress i {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  flex: none;
+  place-items: center;
+  border-radius: 999px;
+  background: #e2e8f0;
+  font-style: normal;
+  font-size: 10px;
+}
+.v2-template-progress li.active i {
+  color: #fff;
+  background: #2563eb;
+}
+.v2-template-step {
+  display: grid;
+  gap: 13px;
+  min-height: 310px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.v2-template-step h4,
+.v2-template-step p {
+  margin: 0;
+}
+.v2-template-step > div:first-child p {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+.v2-template-sections {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+.v2-template-sections > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+}
+.v2-template-sections > div > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.v2-template-sections b {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 5px;
+  color: #475569;
+  background: #f1f5f9;
+  font-size: 9px;
+}
+.v2-template-sections button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #475569;
+  background: #f8fafc;
+}
+.v2-template-add-section input {
+  margin: 0;
+}
+.v2-template-review article {
+  width: min(360px, 100%);
+  margin: 0 auto;
+  padding: 24px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  box-shadow: 0 8px 20px #0f172a0d;
+}
+.v2-template-review header {
+  display: flex;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #334155;
+}
+.v2-template-review header span,
+.v2-template-review header small {
+  display: block;
+}
+.v2-template-review header small {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 9px;
+}
+.v2-template-review article section {
+  display: grid;
+  gap: 5px;
+  margin-top: 12px;
+}
+.v2-template-review article section b {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.v2-template-review article section i {
+  width: 100%;
+  height: 3px;
+  background: #e2e8f0;
 }
 .v2-template-modal-content h3 {
   margin: 0 0 6px;

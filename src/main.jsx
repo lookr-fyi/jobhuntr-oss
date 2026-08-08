@@ -3557,11 +3557,13 @@ function Resume({ state, reload, mode = "resume" }) {
   const openTemplateDialog = (template = null) =>
     setTemplateDialog({
       id: template?.id || null,
+      step: 1,
       name: template?.name || "",
       description: template?.description || "",
       sections: (
         template?.sections || ["Summary", "Skills", "Experience", "Education"]
       ).join(", "),
+      newSection: "",
     });
   const saveTemplate = async () => {
     const payload = {
@@ -4384,63 +4386,238 @@ function Resume({ state, reload, mode = "resume" }) {
             onClick={() => setTemplateDialog(null)}
           />
           <div className="v2-template-modal-content">
-            <h3 id="template-dialog-title">
-              {templateDialog.id ? "Edit Template" : "Create New Template"}
-            </h3>
-            <p>
-              Define a reusable ATS-friendly structure for future resume
-              versions.
-            </p>
-            <label>
-              Template name
-              <input
-                value={templateDialog.name}
-                onChange={(event) =>
-                  setTemplateDialog({
-                    ...templateDialog,
-                    name: event.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Description
-              <textarea
-                value={templateDialog.description}
-                onChange={(event) =>
-                  setTemplateDialog({
-                    ...templateDialog,
-                    description: event.target.value,
-                  })
-                }
-              />
-            </label>
-            <label>
-              Sections (comma separated)
-              <input
-                value={templateDialog.sections}
-                onChange={(event) =>
-                  setTemplateDialog({
-                    ...templateDialog,
-                    sections: event.target.value,
-                  })
-                }
-              />
-            </label>
+            <div className="v2-template-wizard-head">
+              <div>
+                <span>ATS TEMPLATE WIZARD</span>
+                <h3 id="template-dialog-title">
+                  {templateDialog.id ? "Edit Template" : "Create New Template"}
+                </h3>
+              </div>
+              <small>Step {templateDialog.step} of 3</small>
+            </div>
+            <ol
+              className="v2-template-progress"
+              aria-label="Template setup progress"
+            >
+              {["Template details", "Resume sections", "Review"].map(
+                (label, index) => (
+                  <li
+                    key={label}
+                    className={templateDialog.step >= index + 1 ? "active" : ""}
+                    aria-current={
+                      templateDialog.step === index + 1 ? "step" : undefined
+                    }
+                  >
+                    <i>{index + 1}</i>
+                    <span>{label}</span>
+                  </li>
+                ),
+              )}
+            </ol>
+            {templateDialog.step === 1 && (
+              <div className="v2-template-step">
+                <div>
+                  <h4>Name your template</h4>
+                  <p>Give this reusable resume structure a clear purpose.</p>
+                </div>
+                <label>
+                  Template name
+                  <input
+                    autoFocus
+                    value={templateDialog.name}
+                    onChange={(event) =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        name: event.target.value,
+                      })
+                    }
+                    placeholder="e.g., Senior product engineer"
+                  />
+                </label>
+                <label>
+                  Description
+                  <textarea
+                    value={templateDialog.description}
+                    onChange={(event) =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        description: event.target.value,
+                      })
+                    }
+                    placeholder="When and how you plan to use this template"
+                  />
+                </label>
+              </div>
+            )}
+            {templateDialog.step === 2 && (
+              <div className="v2-template-step">
+                <div>
+                  <h4>Arrange resume sections</h4>
+                  <p>Keep the highest-value ATS content near the top.</p>
+                </div>
+                <div className="v2-template-sections">
+                  {templateDialog.sections
+                    .split(",")
+                    .map((section) => section.trim())
+                    .filter(Boolean)
+                    .map((section, index, sections) => (
+                      <div key={`${section}-${index}`}>
+                        <span>
+                          <b>{index + 1}</b>
+                          {section}
+                        </span>
+                        <span>
+                          <button
+                            aria-label={`Move ${section} up`}
+                            disabled={index === 0}
+                            onClick={() => {
+                              const next = [...sections];
+                              [next[index - 1], next[index]] = [
+                                next[index],
+                                next[index - 1],
+                              ];
+                              setTemplateDialog({
+                                ...templateDialog,
+                                sections: next.join(", "),
+                              });
+                            }}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            aria-label={`Move ${section} down`}
+                            disabled={index === sections.length - 1}
+                            onClick={() => {
+                              const next = [...sections];
+                              [next[index], next[index + 1]] = [
+                                next[index + 1],
+                                next[index],
+                              ];
+                              setTemplateDialog({
+                                ...templateDialog,
+                                sections: next.join(", "),
+                              });
+                            }}
+                          >
+                            ↓
+                          </button>
+                          <button
+                            aria-label={`Remove ${section}`}
+                            disabled={sections.length <= 1}
+                            onClick={() =>
+                              setTemplateDialog({
+                                ...templateDialog,
+                                sections: sections
+                                  .filter((_, itemIndex) => itemIndex !== index)
+                                  .join(", "),
+                              })
+                            }
+                          >
+                            ×
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                </div>
+                <div className="inline v2-template-add-section">
+                  <input
+                    aria-label="New resume section"
+                    value={templateDialog.newSection}
+                    onChange={(event) =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        newSection: event.target.value,
+                      })
+                    }
+                    placeholder="Add another section"
+                  />
+                  <button
+                    className="secondary"
+                    disabled={!templateDialog.newSection.trim()}
+                    onClick={() =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        sections: `${templateDialog.sections}, ${templateDialog.newSection.trim()}`,
+                        newSection: "",
+                      })
+                    }
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+            {templateDialog.step === 3 && (
+              <div className="v2-template-step v2-template-review">
+                <div>
+                  <h4>Review your ATS structure</h4>
+                  <p>Confirm the reusable layout before saving it locally.</p>
+                </div>
+                <article>
+                  <header>
+                    <FileText size={22} />
+                    <span>
+                      <b>{templateDialog.name}</b>
+                      <small>
+                        {templateDialog.description ||
+                          "Reusable ATS resume template"}
+                      </small>
+                    </span>
+                  </header>
+                  {templateDialog.sections
+                    .split(",")
+                    .map((section) => section.trim())
+                    .filter(Boolean)
+                    .map((section) => (
+                      <section key={section}>
+                        <b>{section}</b>
+                        <i />
+                        <i />
+                      </section>
+                    ))}
+                </article>
+              </div>
+            )}
             <div className="v2-template-modal-actions">
               <button
                 ref={templateDialogCloseRef}
                 className="secondary"
-                onClick={() => setTemplateDialog(null)}
+                onClick={() =>
+                  templateDialog.step === 1
+                    ? setTemplateDialog(null)
+                    : setTemplateDialog({
+                        ...templateDialog,
+                        step: templateDialog.step - 1,
+                      })
+                }
               >
-                Cancel
+                {templateDialog.step === 1 ? "Cancel" : "Previous"}
               </button>
-              <button
-                disabled={!templateDialog.name.trim()}
-                onClick={saveTemplate}
-              >
-                <Save size={16} /> Save Template
-              </button>
+              {templateDialog.step < 3 ? (
+                <button
+                  disabled={
+                    (templateDialog.step === 1 &&
+                      !templateDialog.name.trim()) ||
+                    (templateDialog.step === 2 &&
+                      !templateDialog.sections.trim())
+                  }
+                  onClick={() =>
+                    setTemplateDialog({
+                      ...templateDialog,
+                      step: templateDialog.step + 1,
+                    })
+                  }
+                >
+                  Continue <ChevronRight size={15} />
+                </button>
+              ) : (
+                <button
+                  disabled={!templateDialog.name.trim()}
+                  onClick={saveTemplate}
+                >
+                  <Save size={16} /> Save Template
+                </button>
+              )}
             </div>
           </div>
         </div>

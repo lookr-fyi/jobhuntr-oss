@@ -335,9 +335,18 @@ test(
       await templateDialog
         .getByLabel("Description")
         .fill("Highlights technical leadership and measurable outcomes.");
+      await templateDialog.getByRole("button", { name: /Continue/ }).click();
+      await templateDialog.getByText("Arrange resume sections").waitFor();
+      await templateDialog.getByLabel("New resume section").fill("Leadership");
       await templateDialog
-        .getByLabel("Sections (comma separated)")
-        .fill("Summary, Leadership, Experience, Education");
+        .getByRole("button", { name: "Add", exact: true })
+        .click();
+      await templateDialog
+        .getByRole("button", { name: "Move Leadership up" })
+        .click();
+      await templateDialog.getByRole("button", { name: /Continue/ }).click();
+      await templateDialog.getByText("Review your ATS structure").waitFor();
+      await templateDialog.getByText("Leadership", { exact: true }).waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) =>
