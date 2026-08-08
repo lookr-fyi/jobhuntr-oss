@@ -657,9 +657,35 @@ test(
         .getByRole("heading", { name: "Founding Principal Product Engineer" })
         .waitFor();
       await page.getByText("$175k-$225k", { exact: false }).waitFor();
+      const trackerState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const editedJobId = trackerState.jobs.find(
+        (job) => job.title === "Founding Principal Product Engineer",
+      ).id;
+      await page.goto(`${baseUrl}/#/tracker?job=${editedJobId}&run=manual`);
+      await page
+        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .waitFor();
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .waitFor();
+      assert.match(page.url(), new RegExp(`job=${editedJobId}`));
       await assertAccessible(page, "Job Tracker");
 
       await page.getByRole("button", { name: "LinkedIn Audit" }).click();
+      await page
+        .getByRole("heading", { name: "LinkedIn Profile Audit" })
+        .waitFor();
+      await page.goBack();
+      await page
+        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .waitFor();
+      await page.goForward();
+      await page
+        .getByRole("heading", { name: "LinkedIn Profile Audit" })
+        .waitFor();
       await page
         .getByLabel("About section")
         .fill(

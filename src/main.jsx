@@ -54,6 +54,14 @@ const APP_ROUTES = [
   "settings",
   "privacy",
 ];
+const TRACKER_STAGES = [
+  "saved",
+  "interested",
+  "applied",
+  "interview",
+  "offer",
+  "rejected",
+];
 
 const api = async (path, options = {}) => {
   try {
@@ -333,7 +341,7 @@ function GettingStarted({ state, onNavigate }) {
 }
 function App() {
   const [state, setState] = useState(null);
-  const initialRoute = window.location.hash.replace(/^#\/?/, "");
+  const initialRoute = window.location.hash.replace(/^#\/?/, "").split("?")[0];
   const [tab, setTab] = useState(() =>
     APP_ROUTES.includes(initialRoute)
       ? initialRoute
@@ -379,12 +387,14 @@ function App() {
   useEffect(() => {
     localStorage.setItem("jobhuntr-active-route", tab);
     const nextHash = `#/${tab}`;
-    if (window.location.hash !== nextHash)
-      window.history.pushState({ tab }, "", nextHash);
+    const currentRoute = window.location.hash
+      .replace(/^#\/?/, "")
+      .split("?")[0];
+    if (currentRoute !== tab) window.history.pushState({ tab }, "", nextHash);
   }, [tab]);
   useEffect(() => {
     const followHistory = () => {
-      const route = window.location.hash.replace(/^#\/?/, "");
+      const route = window.location.hash.replace(/^#\/?/, "").split("?")[0];
       if (APP_ROUTES.includes(route)) setTab(route);
     };
     window.addEventListener("popstate", followHistory);
@@ -1277,14 +1287,10 @@ function Overview({ state, setTab, reload }) {
   );
 }
 function Tracker({ state, reload }) {
-  const stages = [
-    "saved",
-    "interested",
-    "applied",
-    "interview",
-    "offer",
-    "rejected",
-  ];
+  const stages = TRACKER_STAGES;
+  const trackerParams = new URLSearchParams(
+    window.location.hash.split("?")[1] || "",
+  );
   const [form, setForm] = useState({
     company: "",
     title: "",
@@ -1294,9 +1300,16 @@ function Tracker({ state, reload }) {
     description: "",
     tags: "",
   });
-  const [selected, setSelected] = useState(state.jobs[0]?.id);
+  const [selected, setSelected] = useState(
+    trackerParams.get("job") || state.jobs[0]?.id,
+  );
   const [query, setQuery] = useState("");
   const [visibleStages, setVisibleStages] = useState(() => {
+    const linkedStages = trackerParams
+      .get("statuses")
+      ?.split(",")
+      .filter((stage) => TRACKER_STAGES.includes(stage));
+    if (linkedStages?.length) return new Set(linkedStages);
     try {
       const saved = JSON.parse(
         localStorage.getItem("jobTracker_visibleStatuses") || "null",
@@ -1306,7 +1319,10 @@ function Tracker({ state, reload }) {
     return new Set(stages);
   });
   const [runFilter, setRunFilter] = useState(
-    () => localStorage.getItem("jobTracker_selectedAgentRun") || "all",
+    () =>
+      trackerParams.get("run") ||
+      localStorage.getItem("jobTracker_selectedAgentRun") ||
+      "all",
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [mode, setMode] = useState("board");
@@ -1336,7 +1352,15 @@ function Tracker({ state, reload }) {
       JSON.stringify([...visibleStages]),
     );
     localStorage.setItem("jobTracker_selectedAgentRun", runFilter);
-  }, [visibleStages, runFilter]);
+    const params = new URLSearchParams();
+    if (selected) params.set("job", selected);
+    if (visibleStages.size !== TRACKER_STAGES.length)
+      params.set("statuses", [...visibleStages].join(","));
+    if (runFilter !== "all") params.set("run", runFilter);
+    const hash = `#/tracker${params.size ? `?${params}` : ""}`;
+    if (window.location.hash !== hash)
+      window.history.replaceState({ tab: "tracker" }, "", hash);
+  }, [visibleStages, runFilter, selected]);
   const toggleStage = (stage) => {
     setVisibleStages((current) => {
       const next = new Set(current);
