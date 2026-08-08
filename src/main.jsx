@@ -723,6 +723,7 @@ function Tracker({ state, reload }) {
               {job.company} · {job.location} · {job.salary}
             </p>
             <select
+              aria-label="Job status"
               value={job.status}
               onChange={(e) => patch(job.id, { status: e.target.value })}
             >
@@ -781,6 +782,7 @@ function Actions({ job, reload }) {
       <h3>Notes</h3>
       <div className="inline">
         <input
+          aria-label="Private job note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a private note"
@@ -1312,7 +1314,11 @@ function Resume({ state, reload, mode = "resume" }) {
             </p>
           </div>
           <div className="v2-document-actions">
-            <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
+            <select
+              aria-label="Cover letter target job"
+              value={jobId}
+              onChange={(e) => setJobId(e.target.value)}
+            >
               {state.jobs.map((job) => (
                 <option key={job.id} value={job.id}>
                   {job.company} — {job.title}
@@ -1370,12 +1376,14 @@ function Resume({ state, reload, mode = "resume" }) {
                   </a>
                 </div>
                 <input
+                  aria-label="Cover letter title"
                   value={letter.title}
                   onChange={(e) =>
                     setLetter({ ...letter, title: e.target.value })
                   }
                 />
                 <textarea
+                  aria-label="Cover letter content"
                   className="letter"
                   value={letter.body}
                   onChange={(e) =>

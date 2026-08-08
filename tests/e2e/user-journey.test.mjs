@@ -123,6 +123,40 @@ test(
         .getByRole("heading", { name: "Your queue is clear" })
         .waitFor();
 
+      await page.getByRole("button", { name: "Cover Letter" }).click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/cover-letters") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Create Cover Letter" }).click(),
+      ]);
+      await page.getByLabel("Cover letter title").fill("E2E product letter");
+      await page
+        .getByLabel("Cover letter content")
+        .fill(
+          "Dear hiring team,\n\nI shipped measurable product improvements.",
+        );
+      await page.getByRole("button", { name: "Save changes" }).click();
+      await page.getByText("E2E product letter").first().waitFor();
+
+      await page.getByRole("button", { name: "Job Tracker" }).click();
+      await page.getByLabel("Job status").selectOption("interview");
+      await page.getByLabel("Private job note").fill("E2E tracker note");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await page.getByText("E2E tracker note").waitFor();
+
+      await page.getByRole("button", { name: "LinkedIn Audit" }).click();
+      await page
+        .getByLabel("About section")
+        .fill(
+          "I build customer-facing products and improved conversion by 42% through measurable experiments.",
+        );
+      await page.getByRole("button", { name: "Run private audit" }).click();
+      await page.locator(".audit-score").waitFor();
+
       await page.getByRole("button", { name: "Outreach" }).click();
       await page.getByRole("button", { name: "Collect contacts" }).click();
       const subject = page.getByLabel("Subject");
@@ -165,11 +199,43 @@ test(
       assert.equal(persisted.agentRuns.length, 1);
       assert.equal(persisted.resumes[0].name, "E2E tailored resume");
       assert.equal(persisted.submissions[0].status, "submitted");
+      assert.equal(persisted.coverLetters[0].title, "E2E product letter");
+      assert.equal(persisted.profileAudits.length, 1);
+      assert.ok(
+        persisted.jobs.some(
+          (job) =>
+            job.status === "interview" &&
+            job.notes.some((note) => note.text === "E2E tracker note"),
+        ),
+      );
       assert.equal(persisted.gigs[0].title, "Review an AI resume workflow");
       assert.equal(
         persisted.outreachDrafts[0].subject,
         "E2E persisted outreach subject",
       );
+
+      const mobile = await browser.newPage({
+        viewport: { width: 390, height: 844 },
+      });
+      await mobile.goto(baseUrl);
+      await mobile.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      const navigationBox = await mobile.locator(".v2-sidebar").boundingBox();
+      assert.ok(navigationBox, "mobile navigation should be rendered");
+      assert.ok(
+        navigationBox.y >= 780,
+        "mobile navigation should be bottom-fixed",
+      );
+      await mobile.getByRole("button", { name: "Job Board" }).click();
+      await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      const hasPageOverflow = await mobile.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth + 1,
+      );
+      assert.equal(
+        hasPageOverflow,
+        false,
+        "mobile page should not overflow horizontally",
+      );
+      await mobile.close();
     } finally {
       await browser?.close();
       try {
