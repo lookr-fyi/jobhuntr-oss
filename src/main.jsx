@@ -16,6 +16,7 @@ import {
   Save,
   ListChecks,
   MessageSquare,
+  BadgeCheck,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -44,6 +45,7 @@ function App() {
     ["queue", ListChecks],
     ["resume", FileText],
     ["coach", MessageSquare],
+    ["audit", BadgeCheck],
     ["agent", Bot],
     ["settings", Settings],
     ["privacy", ShieldCheck],
@@ -96,6 +98,7 @@ function App() {
         {tab === "queue" && <Queue state={state} reload={load} />}{" "}
         {tab === "resume" && <Resume state={state} reload={load} />}{" "}
         {tab === "coach" && <Coach state={state} reload={load} />}{" "}
+        {tab === "audit" && <ProfileAudit state={state} reload={load} />}
         {tab === "agent" && <Agent state={state} reload={load} />}{" "}
         {tab === "settings" && <SettingsPage state={state} reload={load} />}{" "}
         {tab === "privacy" && <Privacy />}
@@ -201,6 +204,7 @@ function title(t) {
     queue: "Submission queue",
     resume: "Resume studio",
     coach: "Interview coach",
+    audit: "Professional profile audit",
     agent: "Autonomous hunt",
     settings: "Profile & preferences",
     privacy: "Privacy & safety",
@@ -216,6 +220,8 @@ function subtitle(t) {
     resume:
       "Create versions, score ATS alignment, and draft cover letters offline.",
     coach: "Prepare interview questions, talking points, and outreach locally.",
+    audit:
+      "Paste your profile sections for a deterministic, private quality review.",
     agent: "Run a transparent local workflow using your preferences.",
     settings: "Control the profile and criteria used for matching.",
     privacy: "Back up and restore a workspace with no cloud dependency.",
@@ -1670,6 +1676,200 @@ function OutreachEditor({ draft, setDraft, reload }) {
         by JobHuntr.
       </p>
     </div>
+  );
+}
+function ProfileAudit({ state, reload }) {
+  const [form, setForm] = useState({
+    headline: state.profile.headline || "",
+    about: "",
+    experience: state.profile.resumeText || "",
+    skills: (state.profile.skills || []).join(", "),
+  });
+  const [audit, setAudit] = useState(state.profileAudits[0] || null);
+  const [running, setRunning] = useState(false);
+  const run = async () => {
+    setRunning(true);
+    try {
+      const result = await api("/api/profile-audits", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
+      setAudit(result);
+      await reload();
+    } finally {
+      setRunning(false);
+    }
+  };
+  return (
+    <section className="audit-layout">
+      <div className="card audit-form">
+        <span className="eyebrow">PASTE-ONLY · NO SCRAPING</span>
+        <h2>Professional profile review</h2>
+        <p>
+          Paste only the sections you want reviewed. Analysis is deterministic
+          and stays in your local JSON workspace.
+        </p>
+        <label>
+          Headline
+          <input
+            value={form.headline}
+            maxLength="1000"
+            onChange={(e) => setForm({ ...form, headline: e.target.value })}
+            placeholder="Product engineer | AI workflows | Shipped 0→1 products"
+          />
+        </label>
+        <label>
+          About section
+          <textarea
+            value={form.about}
+            onChange={(e) => setForm({ ...form, about: e.target.value })}
+            placeholder="Your positioning, evidence, motivation, and call to action…"
+          />
+        </label>
+        <label>
+          Experience highlights
+          <textarea
+            className="audit-experience"
+            value={form.experience}
+            onChange={(e) => setForm({ ...form, experience: e.target.value })}
+            placeholder="Paste representative experience bullets…"
+          />
+        </label>
+        <label>
+          Skills, comma-separated
+          <input
+            value={form.skills}
+            onChange={(e) => setForm({ ...form, skills: e.target.value })}
+          />
+        </label>
+        <button disabled={running || !form.headline.trim()} onClick={run}>
+          <BadgeCheck size={16} />
+          {running ? "Auditing…" : "Run private audit"}
+        </button>
+        <p className="hint">
+          JobHuntr does not open LinkedIn, use cookies, or transmit this
+          content.
+        </p>
+      </div>
+      <div className="audit-results">
+        {audit ? (
+          <div className="card">
+            <div className="audit-score">
+              <div
+                className={`score-orb ${audit.total >= 75 ? "strong" : audit.total >= 50 ? "fair" : "weak"}`}
+              >
+                <strong>{audit.total}</strong>
+                <span>/ 100</span>
+              </div>
+              <div>
+                <span className="eyebrow">PROFILE STRENGTH</span>
+                <h2>
+                  {audit.total >= 75
+                    ? "Strong foundation"
+                    : audit.total >= 50
+                      ? "Good start, with gaps"
+                      : "Needs focused revision"}
+                </h2>
+                <p>
+                  {audit.matchedTerms.length} target-role terms matched ·{" "}
+                  {audit.metrics} quantified outcomes
+                </p>
+              </div>
+            </div>
+            <div className="audit-checks">
+              {audit.checks.map((check) => (
+                <div
+                  className={`audit-check ${check.status}`}
+                  key={check.section}
+                >
+                  <div className="row">
+                    <b>{check.section}</b>
+                    <strong>{check.score}</strong>
+                  </div>
+                  <div className="mini-progress">
+                    <i style={{ width: `${check.score}%` }} />
+                  </div>
+                  <p>{check.detail}</p>
+                </div>
+              ))}
+            </div>
+            <h3>Prioritized recommendations</h3>
+            {audit.suggestions.length ? (
+              audit.suggestions.map((suggestion) => (
+                <p className="recommendation" key={suggestion}>
+                  → {suggestion}
+                </p>
+              ))
+            ) : (
+              <p className="success-message">
+                Every baseline check passed. Keep claims specific and current.
+              </p>
+            )}
+            <h3>Matched positioning terms</h3>
+            <div className="chips">
+              {audit.matchedTerms.map((term) => (
+                <span key={term}>{term}</span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="card empty-state">
+            <BadgeCheck />
+            <h3>Get an inspectable score</h3>
+            <p>
+              No generative AI or hidden rubric. Every section score maps to
+              visible evidence.
+            </p>
+          </div>
+        )}
+        <div className="card">
+          <h3>Audit history · {state.profileAudits.length}</h3>
+          {state.profileAudits.length ? (
+            state.profileAudits.map((item) => (
+              <div
+                className={
+                  audit?.id === item.id
+                    ? "audit-history selected"
+                    : "audit-history"
+                }
+                key={item.id}
+              >
+                <button
+                  onClick={() => {
+                    setAudit(item);
+                    setForm({
+                      ...item.input,
+                      skills: Array.isArray(item.input.skills)
+                        ? item.input.skills.join(", ")
+                        : item.input.skills,
+                    });
+                  }}
+                >
+                  <strong>{item.total}</strong>
+                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                  <small>{item.suggestions.length} recommendation(s)</small>
+                </button>
+                <button
+                  className="danger"
+                  aria-label="Delete profile audit"
+                  onClick={async () => {
+                    await api(`/api/profile-audits/${item.id}`, {
+                      method: "DELETE",
+                    });
+                    if (audit?.id === item.id) setAudit(null);
+                    reload();
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="empty">No saved audits yet.</p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 function Agent({ state, reload }) {

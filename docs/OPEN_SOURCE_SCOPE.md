@@ -28,6 +28,7 @@ OSS replacement decisions:
 | Submission queue      | Local application packets, attachment visibility, mandatory review, submission history                                                   |
 | AI coach / About Me   | Persistent interview answers, research progress, private notes, session history, and reusable STAR evidence vault                        |
 | Outreach              | Local editable LinkedIn/email-style drafts with draft/sent/replied/archive workflow; no automatic sending                                |
+| LinkedIn audit        | Paste-only deterministic profile review with visible scoring and local history; no cookies, scraping, or account automation              |
 | Infinite Hunt         | Offline previews, role/location/keyword rules, exclusions, fit thresholding, presets, match explanations, deduplication, and run history |
 | User settings         | Local profile, role/skill criteria, locations, remote and salary preferences                                                             |
 | Data portability      | Full JSON backup/restore, CSV jobs export, bulk JSON jobs import                                                                         |

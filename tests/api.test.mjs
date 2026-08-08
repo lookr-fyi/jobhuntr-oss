@@ -372,6 +372,31 @@ test("outreach drafts persist edits and manual delivery status", async () => {
   assert.equal(updated.body.status, "sent");
 });
 
+test("professional profile audits stay local, persist history, and validate limits", async () => {
+  const created = await req("/api/profile-audits", {
+    method: "POST",
+    body: JSON.stringify({
+      headline: "Product Engineer | TypeScript automation",
+      about: "I improved activation 24%. Connect with me.",
+      experience: "Built React products and reduced incidents 35%.",
+      skills: "TypeScript, React, Automation",
+    }),
+  });
+  assert.equal(created.res.status, 201);
+  assert.ok(created.body.total > 0);
+  const state = (await req("/api/state")).body;
+  assert.ok(state.profileAudits.some((audit) => audit.id === created.body.id));
+  const invalid = await req("/api/profile-audits", {
+    method: "POST",
+    body: JSON.stringify({ headline: "x".repeat(1001) }),
+  });
+  assert.equal(invalid.res.status, 400);
+  const removed = await req(`/api/profile-audits/${created.body.id}`, {
+    method: "DELETE",
+  });
+  assert.equal(removed.res.status, 204);
+});
+
 test("cover letters can be edited, printed safely, and removed", async () => {
   const state = (await req("/api/state")).body;
   const job = state.jobs[0];

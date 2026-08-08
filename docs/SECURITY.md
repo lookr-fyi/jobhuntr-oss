@@ -8,6 +8,8 @@ The production and development servers bind to `127.0.0.1` by default. API respo
 
 Resume and cover-letter print pages escape all user-controlled values before generating HTML. Documents are rendered locally and PDF creation uses the browser’s native Print dialog; no document is uploaded to a conversion service.
 
+Professional profile audits are paste-only and deterministic. JobHuntr does not sign into LinkedIn, reuse browser cookies, scrape a profile, or transmit pasted headline, about, experience, or skill content. Audit inputs and history are part of the local backup, so exported JSON should be treated as sensitive.
+
 ## Before publishing
 
 Run:

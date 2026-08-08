@@ -15,6 +15,7 @@ import {
   DB_PATH,
 } from "./store.mjs";
 import { renderResumeDocument, renderCoverLetterDocument } from "./render.mjs";
+import { auditProfessionalProfile } from "./profile-audit.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const APP_VERSION = JSON.parse(
@@ -684,6 +685,42 @@ app.post("/api/outreach/draft", async (req, res) => {
   if (!draft) return res.status(404).json({ error: "Job not found" });
   res.status(201).json(draft);
 });
+const ProfileAuditSchema = z.object({
+  headline: z.string().max(1000).optional().default(""),
+  about: z.string().max(30000).optional().default(""),
+  experience: z.string().max(100000).optional().default(""),
+  skills: z
+    .union([z.string().max(10000), z.array(z.string().max(200)).max(100)])
+    .optional()
+    .default(""),
+});
+app.post("/api/profile-audits", async (req, res) => {
+  const input = ProfileAuditSchema.parse(req.body);
+  const audit = await mutate((db) => {
+    const result = auditProfessionalProfile(input, db.profile);
+    const item = { id: nanoid(), createdAt: timestamp(), input, ...result };
+    db.profileAudits.unshift(item);
+    db.profileAudits = db.profileAudits.slice(0, 50);
+    auditEvent(
+      db,
+      "profile-audit",
+      `Completed local professional profile audit: ${item.total}/100.`,
+      { auditId: item.id },
+    );
+    return item;
+  });
+  res.status(201).json(audit);
+});
+app.delete("/api/profile-audits/:id", async (req, res) => {
+  const removed = await mutate((db) => {
+    const before = db.profileAudits.length;
+    db.profileAudits = db.profileAudits.filter(
+      (audit) => audit.id !== req.params.id,
+    );
+    return before !== db.profileAudits.length;
+  });
+  res.status(removed ? 204 : 404).end();
+});
 app.patch("/api/outreach/:id", async (req, res) => {
   const draft = await mutate((db) => {
     const item = db.outreachDrafts.find((x) => x.id === req.params.id);
@@ -1010,6 +1047,7 @@ app.post("/api/import", async (req, res) => {
     "outreachDrafts",
     "huntPresets",
     "careerStories",
+    "profileAudits",
     "agentRuns",
     "activities",
   ];

@@ -54,7 +54,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 6, createdAt, updatedAt: createdAt },
+    meta: { version: 7, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: "Local Job Hunter",
@@ -97,6 +97,7 @@ export function emptyDb() {
     outreachDrafts: [],
     huntPresets: [],
     careerStories: [],
+    profileAudits: [],
     agentRuns: [],
     activities: [
       {
@@ -156,6 +157,7 @@ function migrate(db) {
   db.outreachDrafts ||= [];
   db.huntPresets ||= [];
   db.careerStories ||= [];
+  db.profileAudits ||= [];
   for (const draft of db.outreachDrafts) draft.status ||= "draft";
   for (const session of db.coachingSessions) {
     session.status ||= "in-progress";
@@ -176,7 +178,7 @@ function migrate(db) {
       { status: job.status || "saved", at: job.createdAt || now() },
     ];
   }
-  db.meta.version = 6;
+  db.meta.version = 7;
   return db;
 }
 
