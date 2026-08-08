@@ -17,22 +17,22 @@ This audit maps the original open-source objective to current, verifiable reposi
 
 ## Product parity audit
 
-| Product capability               | Local OSS evidence                                                                                                                               |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Overview                         | Weekly goals, funnel and response metrics, priorities, stale opportunities, gig metrics, and activity audit                                      |
-| Job tracker                      | Searchable Kanban/list views, status history, notes, dated tasks, contacts, fit scoring, and safe cascading deletion                             |
-| Job board                        | Bundled offline catalog, role/location search, profile scoring, and URL deduplication                                                            |
-| Submission queue                 | Resume/letter packets, mandatory human checklist, and local submitted-status recording                                                           |
-| ATS templates and resume history | Three transparent templates, named versions, ATS keyword/impact checks, sanitized print preview, and PDF-ready browser output                    |
-| Cover letters                    | Deterministic generation, persistent editing/history, sanitized print preview, and PDF-ready output                                              |
-| Infinite Hunt / agent runs       | Real role/location/required/excluded keyword filtering, thresholds, preview, reasons, presets, deduplication, and run history                    |
-| AI Coach / About Me              | Persistent local coaching chat, interview answers, notes, research progress, STAR story vault, evidence matching, and session history            |
-| Outreach                         | Editable local drafts and draft/sent/replied/archived lifecycle without automatic sending                                                        |
-| LinkedIn audit                   | Paste-only deterministic professional-profile audit with visible rubric and local history; no login, cookie access, or scraping                  |
-| Gigs                             | Available campaign cards plus lead-to-delivery Kanban, proposals, deadlines, budgets, earnings, and command-center rollups                       |
-| User settings                    | Local identity, role/skill targets, locations, salary, remote preference, and weekly goal                                                        |
-| Data portability                 | Full JSON backup/restore, automatic corruption recovery, CSV export/import, bounded imports, and schema migration                                |
-| Privacy controls                 | Localhost-only default, no account, no telemetry, restrictive headers, ignored personal data, dependency guard, and history-wide secret scanning |
+| Product capability               | Local OSS evidence                                                                                                                                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview                         | Weekly goals, funnel and response metrics, priorities, stale opportunities, gig metrics, and activity audit                                                                                                               |
+| Job tracker                      | Searchable v2-style Kanban, full queue/application lifecycle, status history, notes, dated tasks, contacts, fit scoring, and safe cascading deletion                                                                      |
+| Job board                        | Bundled offline catalog, role/location and advanced filters, profile scoring, chronology/applicant/contributor metadata, privacy-safe leaderboard, and URL deduplication                                                  |
+| Submission queue                 | Resume/letter packets, mandatory human checklist, and local submitted-status recording                                                                                                                                    |
+| ATS templates and resume history | Three transparent templates, named versions, ATS keyword/impact checks, sanitized print preview, and PDF-ready browser output                                                                                             |
+| Cover letters                    | Five-step v2 wizard, all 16 v2 template choices, deterministic generation, persistent editing/history, sanitized print preview, and PDF-ready output                                                                      |
+| Infinite Hunt / agent runs       | Real role/location/required/excluded keyword filtering, ordered multi-workflow loops, ATS packet preparation, thresholds, preview, reasons, presets, deduplication, session details, and searchable paginated run history |
+| AI Coach / About Me              | Persistent local coaching chat, interview answers, notes, research progress, STAR story vault, evidence matching, and session history                                                                                     |
+| Outreach                         | Editable local drafts and draft/sent/replied/archived lifecycle without automatic sending                                                                                                                                 |
+| LinkedIn audit                   | Paste-only deterministic professional-profile audit with visible rubric and local history; no login, cookie access, or scraping                                                                                           |
+| Gigs                             | Available campaign cards plus lead-to-delivery Kanban, proposals, deadlines, budgets, earnings, and command-center rollups                                                                                                |
+| User settings                    | Local identity, role/skill targets, locations, salary, remote preference, and weekly goal                                                                                                                                 |
+| Data portability                 | Full JSON backup/restore, automatic corruption recovery, CSV export/import, bounded imports, and schema migration                                                                                                         |
+| Privacy controls                 | Localhost-only default, no account, no telemetry, restrictive headers, ignored personal data, dependency guard, and history-wide secret scanning                                                                          |
 
 ## Intentional local-first replacements
 
