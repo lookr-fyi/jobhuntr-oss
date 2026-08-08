@@ -1,6 +1,6 @@
 {
   "name": "jobhuntr-oss",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Self-contained open-source JobHuntr: local-first job search CRM, resume/cover-letter assistant, and autonomous hunt simulator.",
   "type": "module",
@@ -14,9 +14,19 @@
     "secret:scan": "node scripts/secret-scan.mjs",
     "verify": "npm run secret:scan && npm test && npm run build"
   },
-  "keywords": ["jobs", "job-search", "career", "crm", "resume", "cover-letter", "local-first"],
+  "keywords": [
+    "jobs",
+    "job-search",
+    "career",
+    "crm",
+    "resume",
+    "cover-letter",
+    "local-first"
+  ],
   "license": "AGPL-3.0-or-later",
-  "engines": {"node": ">=20"},
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "vite": "latest",

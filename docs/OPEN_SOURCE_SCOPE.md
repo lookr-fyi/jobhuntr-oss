@@ -15,3 +15,18 @@ OSS replacement decisions:
 - Replace external job-board automation with a deterministic local seed board and manual job entry.
 - Replace paid LLM-dependent generation with transparent local templates/scoring.
 - Keep core user value: plan the search, track applications, prepare resumes/cover letters, and run an autonomous local hunt workflow.
+
+## Current parity map
+
+| v2 product area | Local OSS implementation |
+| --- | --- |
+| Overview and pipeline | Command center, funnel, weekly application/interview metrics, tasks, activity audit |
+| Job tracker | Status history, notes, tasks, contacts, scoring, manual entry |
+| Job board | Bundled offline board with profile-based scoring |
+| ATS templates | Three transparent templates, named resume versions, keyword and impact analysis |
+| Cover letters | Editable deterministic drafts persisted in the local workspace |
+| Infinite Hunt | Explainable multi-step local run, thresholding, deduplication, and run history |
+| User settings | Local profile, role/skill criteria, locations, remote and salary preferences |
+| Data portability | Full JSON backup/restore, CSV jobs export, bulk JSON jobs import |
+
+External account automation, scraping, billing, hosted authentication, and cloud AI are intentionally not bundled. They would violate the requirement that a fresh checkout run without accounts or cloud resources.

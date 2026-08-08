@@ -17,7 +17,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 1, createdAt, updatedAt: createdAt },
+    meta: { version: 2, createdAt, updatedAt: createdAt },
     profile: {
       name: 'Local Job Hunter',
       headline: 'Full-stack builder looking for high-impact teams',
@@ -28,10 +28,37 @@ export function emptyDb() {
       preferences: { remote: true, locations: ['Remote'], minSalary: 120000 }
     },
     jobs: seedJobs.map((job, index) => ({ id: nanoid(), status: index === 0 ? 'interested' : 'saved', fitScore: 75 + index * 4, createdAt, updatedAt: createdAt, notes: [], tasks: [], contacts: [], ...job })),
+    resumes: [],
     coverLetters: [],
+    templates: defaultTemplates(),
     agentRuns: [],
     activities: [{ id: nanoid(), at: createdAt, type: 'system', message: 'Initialized local JobHuntr workspace.' }]
   };
+}
+
+export function defaultTemplates() {
+  return [
+    { id: 'clean-ats', name: 'Clean ATS', description: 'Single-column, keyword-forward resume structure.', sections: ['Summary', 'Skills', 'Experience', 'Projects', 'Education'] },
+    { id: 'impact', name: 'Impact Builder', description: 'Prioritizes quantified outcomes and ownership.', sections: ['Headline', 'Selected impact', 'Experience', 'Skills', 'Education'] },
+    { id: 'career-switch', name: 'Career Switch', description: 'Leads with transferable skills and relevant projects.', sections: ['Target summary', 'Relevant skills', 'Projects', 'Experience', 'Education'] }
+  ];
+}
+
+function migrate(db) {
+  db.meta ||= {};
+  db.profile ||= emptyDb().profile;
+  db.jobs ||= [];
+  db.resumes ||= [];
+  db.coverLetters ||= [];
+  db.templates ||= defaultTemplates();
+  db.agentRuns ||= [];
+  db.activities ||= [];
+  for (const job of db.jobs) {
+    job.notes ||= []; job.tasks ||= []; job.contacts ||= []; job.tags ||= [];
+    job.statusHistory ||= [{ status: job.status || 'saved', at: job.createdAt || now() }];
+  }
+  db.meta.version = 2;
+  return db;
 }
 
 async function ensure() {
@@ -43,7 +70,8 @@ async function ensure() {
 export async function readDb() {
   await ensure();
   const raw = await fs.readFile(DB_PATH, 'utf8');
-  return JSON.parse(raw);
+  const db = migrate(JSON.parse(raw));
+  return db;
 }
 
 export async function writeDb(db) {
@@ -82,5 +110,7 @@ export function summarize(db) {
   const byStatus = db.jobs.reduce((acc, job) => { acc[job.status] = (acc[job.status] || 0) + 1; return acc; }, {});
   const openTasks = db.jobs.flatMap((j) => (j.tasks || []).filter((t) => !t.done).map((t) => ({ ...t, jobId: j.id, company: j.company, title: j.title })));
   const avgFit = db.jobs.length ? Math.round(db.jobs.reduce((sum, j) => sum + (j.fitScore || 0), 0) / db.jobs.length) : 0;
-  return { totalJobs: db.jobs.length, byStatus, openTasks, avgFit, recentActivities: db.activities.slice(0, 12), activeRuns: db.agentRuns.filter((r) => ['running', 'paused'].includes(r.status)) };
+  const applicationsThisWeek = db.jobs.filter((j) => j.statusHistory?.some((h) => h.status === 'applied' && Date.now() - new Date(h.at).getTime() < 7 * 864e5)).length;
+  const interviews = db.jobs.filter((j) => j.status === 'interview').length;
+  return { totalJobs: db.jobs.length, byStatus, openTasks, avgFit, applicationsThisWeek, interviews, recentActivities: db.activities.slice(0, 12), activeRuns: db.agentRuns.filter((r) => ['running', 'paused'].includes(r.status)) };
 }

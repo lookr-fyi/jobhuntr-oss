@@ -23,12 +23,13 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 
 ## What is included
 
-- **Application tracker**: CRUD jobs, statuses, fit scores, notes, tasks.
+- **Application tracker**: CRUD jobs, status history, fit scores, notes, tasks, and contacts.
 - **Local job board**: seed jobs and local search without scraping or external services.
-- **Resume tools**: local profile/resume storage and role-fit scoring.
+- **Resume studio**: reusable ATS templates, named resume versions, keyword analysis, and quantified-impact checks.
 - **Cover letters**: offline editable first drafts.
-- **Autonomous hunt simulator**: deterministic local workflow inspired by JobHuntr v2 Infinite Hunt.
-- **Import/export**: JSON backup from `/api/export` and restore via `/api/import`.
+- **Autonomous hunt**: deterministic, explainable workflow with thresholds, run steps, and action history.
+- **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.
+- **Import/export**: one-click JSON backup/restore, CSV job export, and bulk job import API.
 - **Public-repo safety**: `.gitignore`, `.env.example`, and `npm run secret:scan`.
 
 ## Data model and storage
