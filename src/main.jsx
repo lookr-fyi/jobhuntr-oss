@@ -710,6 +710,8 @@ function Tracker({ state, reload }) {
   const [status, setStatus] = useState("all");
   const [mode, setMode] = useState("board");
   const [showForm, setShowForm] = useState(false);
+  const [funnelOpen, setFunnelOpen] = useState(false);
+  const funnelCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
   const filtered = state.jobs.filter((item) => {
     const matchesStatus = status === "all" || item.status === status;
@@ -717,6 +719,55 @@ function Tracker({ state, reload }) {
       `${item.company} ${item.title} ${item.location} ${(item.tags || []).join(" ")}`.toLowerCase();
     return matchesStatus && haystack.includes(query.toLowerCase());
   });
+  const appliedStatuses = new Set([
+    "applied",
+    "interview",
+    "offer",
+    "rejected",
+  ]);
+  const funnelStages = [
+    {
+      id: "total",
+      label: "All tracked",
+      color: "#475569",
+      jobs: filtered,
+    },
+    {
+      id: "applied",
+      label: "Applied",
+      color: "#1d4ed8",
+      jobs: filtered.filter((item) => appliedStatuses.has(item.status)),
+    },
+    {
+      id: "interview",
+      label: "Interviewing",
+      color: "#b45309",
+      jobs: filtered.filter((item) =>
+        ["interview", "offer"].includes(item.status),
+      ),
+    },
+    {
+      id: "offer",
+      label: "Offers",
+      color: "#047857",
+      jobs: filtered.filter((item) => item.status === "offer"),
+    },
+    {
+      id: "rejected",
+      label: "Rejected",
+      color: "#b91c1c",
+      jobs: filtered.filter((item) => item.status === "rejected"),
+    },
+  ];
+  useEffect(() => {
+    if (!funnelOpen) return undefined;
+    funnelCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setFunnelOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [funnelOpen]);
   const patch = async (id, body) => {
     await api(`/api/jobs/${id}`, {
       method: "PATCH",
@@ -761,7 +812,7 @@ function Tracker({ state, reload }) {
         <h2>Job Tracker</h2>
         <div>
           <span>{filtered.length} applications</span>
-          <button className="secondary" onClick={() => setMode("board")}>
+          <button className="secondary" onClick={() => setFunnelOpen(true)}>
             Funnel Analysis
           </button>
           <a className="button secondary" href="/api/export/jobs.csv">
@@ -925,7 +976,7 @@ function Tracker({ state, reload }) {
               <span className={`pill ${job.status}`}>{job.status}</span>
               <button
                 className="drawer-close"
-                aria-label="Close gig details"
+                aria-label="Close job details"
                 onClick={() => setSelected(null)}
               >
                 ×
@@ -976,6 +1027,118 @@ function Tracker({ state, reload }) {
           <Search />
           <h3>No matching roles</h3>
           <p>Try a different filter or add a new opportunity.</p>
+        </div>
+      )}
+      {funnelOpen && (
+        <div
+          className="v2-funnel-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="funnel-title"
+        >
+          <button
+            className="v2-funnel-backdrop"
+            aria-label="Close funnel analysis"
+            onClick={() => setFunnelOpen(false)}
+          />
+          <div className="v2-funnel-content">
+            <div className="v2-funnel-head">
+              <div>
+                <span>PIPELINE PERFORMANCE</span>
+                <h2 id="funnel-title">Job Application Funnel Analysis</h2>
+                <p>See how tracked opportunities progress toward offers.</p>
+              </div>
+              <button
+                ref={funnelCloseRef}
+                className="drawer-close"
+                aria-label="Close funnel analysis"
+                onClick={() => setFunnelOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="v2-funnel-legend">
+              {funnelStages.slice(1).map((stage) => (
+                <span key={stage.id}>
+                  <i style={{ background: stage.color }} /> {stage.label} ({" "}
+                  {stage.jobs.length})
+                </span>
+              ))}
+            </div>
+            <div className="v2-funnel-chart">
+              {funnelStages.slice(0, 4).map((stage, index) => {
+                const width = Math.max(
+                  18,
+                  (stage.jobs.length / Math.max(filtered.length, 1)) * 100,
+                );
+                return (
+                  <div className="v2-funnel-stage" key={stage.id}>
+                    <div>
+                      <b>{stage.label}</b>
+                      <span>{stage.jobs.length}</span>
+                    </div>
+                    <button
+                      style={{
+                        width: `${width}%`,
+                        background: stage.color,
+                      }}
+                      title={
+                        stage.jobs.length
+                          ? stage.jobs
+                              .slice(0, 10)
+                              .map((item) => `${item.company}: ${item.title}`)
+                              .join("\n")
+                          : `No jobs reached ${stage.label.toLowerCase()}`
+                      }
+                    >
+                      {index > 0 && filtered.length
+                        ? `${Math.round((stage.jobs.length / filtered.length) * 100)}%`
+                        : "100%"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="v2-funnel-summary">
+              <div>
+                <span>Application rate</span>
+                <strong>
+                  {filtered.length
+                    ? Math.round(
+                        (funnelStages[1].jobs.length / filtered.length) * 100,
+                      )
+                    : 0}
+                  %
+                </strong>
+              </div>
+              <div>
+                <span>Interview rate</span>
+                <strong>
+                  {funnelStages[1].jobs.length
+                    ? Math.round(
+                        (funnelStages[2].jobs.length /
+                          funnelStages[1].jobs.length) *
+                          100,
+                      )
+                    : 0}
+                  %
+                </strong>
+              </div>
+              <div>
+                <span>Offer rate</span>
+                <strong>
+                  {funnelStages[1].jobs.length
+                    ? Math.round(
+                        (funnelStages[3].jobs.length /
+                          funnelStages[1].jobs.length) *
+                          100,
+                      )
+                    : 0}
+                  %
+                </strong>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </section>

@@ -322,6 +322,18 @@ test(
       await assertAccessible(page, "Cover Letters");
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
+      await page.getByRole("button", { name: "Funnel Analysis" }).click();
+      const funnelDialog = page.getByRole("dialog", {
+        name: "Job Application Funnel Analysis",
+      });
+      await funnelDialog.waitFor();
+      await funnelDialog
+        .getByText("Application rate", { exact: true })
+        .waitFor();
+      await funnelDialog.getByText("Interview rate", { exact: true }).waitFor();
+      await funnelDialog.getByText("Offer rate", { exact: true }).waitFor();
+      await page.keyboard.press("Escape");
+      await funnelDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Job status").selectOption("interview");
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();

@@ -4709,6 +4709,135 @@ main > header.integrated-page-header {
   box-sizing: border-box;
   text-decoration: none;
 }
+.v2-funnel-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.v2-funnel-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(15, 23, 42, 0.5);
+}
+.v2-funnel-backdrop:hover {
+  border: 0;
+  background: rgba(15, 23, 42, 0.5);
+}
+.v2-funnel-content {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: min(900px, 100%);
+  max-height: calc(100vh - 40px);
+  padding: 28px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.3);
+}
+.v2-funnel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.v2-funnel-head > div > span {
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.v2-funnel-head h2 {
+  margin: 7px 0 5px;
+  font-size: 24px;
+}
+.v2-funnel-head p {
+  margin: 0;
+  color: #475569;
+}
+.v2-funnel-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 24px 0 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+}
+.v2-funnel-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.v2-funnel-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.v2-funnel-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+.v2-funnel-stage > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: #334155;
+  font-size: 12px;
+}
+.v2-funnel-stage > button {
+  min-width: 70px;
+  height: 38px;
+  justify-content: flex-end;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  transition: width 0.25s ease;
+}
+.v2-funnel-stage > button:hover {
+  border: 0;
+  filter: brightness(0.95);
+}
+.v2-funnel-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 18px;
+}
+.v2-funnel-summary > div {
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.v2-funnel-summary span,
+.v2-funnel-summary strong {
+  display: block;
+}
+.v2-funnel-summary span {
+  color: #475569;
+  font-size: 11px;
+}
+.v2-funnel-summary strong {
+  margin-top: 5px;
+  font-size: 24px;
+}
 @media (max-width: 700px) {
   .v2-tracker-header {
     align-items: flex-start;
@@ -4717,5 +4846,11 @@ main > header.integrated-page-header {
   }
   .v2-tracker-header > div {
     flex-wrap: wrap;
+  }
+  .v2-funnel-content {
+    padding: 20px;
+  }
+  .v2-funnel-summary {
+    grid-template-columns: 1fr;
   }
 }
