@@ -158,11 +158,13 @@ test("resume versions and ATS details are persisted locally", async () => {
     body: JSON.stringify({
       name: "Product version",
       templateId: "impact",
+      jobId: state.jobs[0].id,
       content: "React TypeScript improved conversion 25%",
     }),
   });
   assert.equal(created.res.status, 201);
   assert.equal(created.body.templateId, "impact");
+  assert.equal(created.body.jobId, state.jobs[0].id);
   const score = await req("/api/resume/score", {
     method: "POST",
     body: JSON.stringify({

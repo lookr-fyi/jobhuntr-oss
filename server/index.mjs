@@ -361,6 +361,7 @@ app.post("/api/resumes", async (req, res) => {
       id: nanoid(),
       name: safeText(req.body.name, 120) || `Resume ${db.resumes.length + 1}`,
       templateId: safeText(req.body.templateId, 50) || "clean-ats",
+      jobId: safeText(req.body.jobId, 50),
       content: safeText(req.body.content || db.profile.resumeText, 100000),
       createdAt: timestamp(),
       updatedAt: timestamp(),
@@ -379,6 +380,7 @@ app.patch("/api/resumes/:id", async (req, res) => {
     if (req.body.name !== undefined) item.name = safeText(req.body.name, 120);
     if (req.body.templateId !== undefined)
       item.templateId = safeText(req.body.templateId, 50);
+    if (req.body.jobId !== undefined) item.jobId = safeText(req.body.jobId, 50);
     if (req.body.content !== undefined)
       item.content = safeText(req.body.content, 100000);
     item.updatedAt = timestamp();

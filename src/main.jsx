@@ -1620,6 +1620,9 @@ function Resume({ state, reload, mode = "resume" }) {
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
   const [templateDialog, setTemplateDialog] = useState(null);
+  const [historyQuery, setHistoryQuery] = useState("");
+  const [historyTemplate, setHistoryTemplate] = useState("all");
+  const [showAllResumes, setShowAllResumes] = useState(false);
   const templateDialogCloseRef = useRef(null);
   const visibleTemplates = state.templates
     .filter((template) =>
@@ -1633,6 +1636,32 @@ function Resume({ state, reload, mode = "resume" }) {
           new Date(a.updatedAt || a.createdAt || 0)
         : a.name.localeCompare(b.name),
     );
+  const filteredResumes = state.resumes.filter((item) => {
+    const template = state.templates.find(
+      (candidate) => candidate.id === item.templateId,
+    );
+    const job = state.jobs.find((candidate) => candidate.id === item.jobId);
+    const matchesQuery =
+      `${item.name} ${template?.name || ""} ${job?.title || ""} ${job?.company || ""} ${job?.location || ""}`
+        .toLowerCase()
+        .includes(historyQuery.toLowerCase());
+    const matchesTemplate =
+      historyTemplate === "all" || item.templateId === historyTemplate;
+    const created = new Date(item.createdAt || item.updatedAt);
+    const matchesMonth =
+      showAllResumes ||
+      (created.getMonth() === new Date().getMonth() &&
+        created.getFullYear() === new Date().getFullYear());
+    return matchesQuery && matchesTemplate && matchesMonth;
+  });
+  const resumeGroups = state.templates
+    .map((template) => ({
+      template,
+      resumes: filteredResumes.filter(
+        (item) => item.templateId === template.id,
+      ),
+    }))
+    .filter((group) => group.resumes.length > 0);
   useEffect(() => {
     if (!templateDialog) return undefined;
     templateDialogCloseRef.current?.focus();
@@ -1682,7 +1711,7 @@ function Resume({ state, reload, mode = "resume" }) {
     });
     const saved = await api("/api/resumes", {
       method: "POST",
-      body: JSON.stringify({ name, templateId, content }),
+      body: JSON.stringify({ name, templateId, jobId, content }),
     });
     setPreview(saved);
     await reload();
@@ -2000,52 +2029,126 @@ function Resume({ state, reload, mode = "resume" }) {
         )}
       </div>
       <div className="card document-library">
-        <h3>Resume history</h3>
-        {state.resumes.length ? (
-          state.resumes.map((r) => (
-            <div
-              className={
-                preview?.id === r.id ? "document-row selected" : "document-row"
-              }
-              key={r.id}
-            >
-              <button
-                onClick={() => {
-                  setPreview(r);
-                  setResume(r.content);
-                  setName(r.name);
-                  setTemplateId(r.templateId);
-                }}
-              >
-                <b>{r.name}</b>
-                <small>
-                  {state.templates.find((t) => t.id === r.templateId)?.name ||
-                    r.templateId}{" "}
-                  · {new Date(r.updatedAt).toLocaleDateString()}
-                </small>
-              </button>
-              <a
-                href={`/print/resume/${r.id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Print
-              </a>
-              <button
-                className="icon danger"
-                title="Delete resume"
-                onClick={async () => {
-                  await api(`/api/resumes/${r.id}`, { method: "DELETE" });
-                  if (preview?.id === r.id) setPreview(null);
-                  reload();
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))
+        <div className="v2-resume-history-head">
+          <div>
+            <h3>AI Resumes</h3>
+            <p>{state.resumes.length} locally generated resumes</p>
+          </div>
+          <button className="secondary" onClick={reload}>
+            <RefreshCcw size={15} /> Refresh
+          </button>
+        </div>
+        <div className="v2-resume-history-toolbar">
+          <div className="searchbox">
+            <Search size={16} />
+            <input
+              aria-label="Search resume history"
+              value={historyQuery}
+              onChange={(event) => setHistoryQuery(event.target.value)}
+              placeholder="Search by company, job title, or location..."
+            />
+          </div>
+          <select
+            aria-label="Filter resume history by template"
+            value={historyTemplate}
+            onChange={(event) => setHistoryTemplate(event.target.value)}
+          >
+            <option value="all">All templates</option>
+            {state.templates.map((template) => (
+              <option value={template.id} key={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+          <button
+            className="text-button"
+            onClick={() => setShowAllResumes((current) => !current)}
+          >
+            {showAllResumes ? "Show This Month" : "Show All"}
+          </button>
+        </div>
+        {resumeGroups.length ? (
+          <div className="v2-resume-groups">
+            {resumeGroups.map(({ template, resumes }) => (
+              <section key={template.id}>
+                <div className="v2-resume-group-head">
+                  <div>
+                    <h4>{template.name}</h4>
+                    <span>
+                      {resumes.length} AI resume
+                      {resumes.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                </div>
+                {resumes.map((item) => {
+                  const job = state.jobs.find(
+                    (candidate) => candidate.id === item.jobId,
+                  );
+                  return (
+                    <div
+                      className={`v2-resume-history-row ${
+                        preview?.id === item.id ? "selected" : ""
+                      }`}
+                      key={item.id}
+                    >
+                      <button
+                        onClick={() => {
+                          setPreview(item);
+                          setResume(item.content);
+                          setName(item.name);
+                          setTemplateId(item.templateId);
+                          if (item.jobId) setJobId(item.jobId);
+                        }}
+                      >
+                        <b>
+                          {job
+                            ? `${job.title} @ ${job.company}`
+                            : item.name || "AI Resume"}
+                        </b>
+                        <span>
+                          {job?.location || "Local resume"} · Created{" "}
+                          {new Date(
+                            item.createdAt || item.updatedAt,
+                          ).toLocaleDateString()}
+                        </span>
+                        <small>{item.name}</small>
+                      </button>
+                      <a
+                        className="v2-resume-download"
+                        aria-label={`Download ${item.name} PDF`}
+                        href={`/print/resume/${item.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Download size={16} />
+                      </a>
+                      <button
+                        className="icon danger"
+                        title={`Delete ${item.name}`}
+                        onClick={async () => {
+                          await api(`/api/resumes/${item.id}`, {
+                            method: "DELETE",
+                          });
+                          if (preview?.id === item.id) setPreview(null);
+                          reload();
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
+              </section>
+            ))}
+          </div>
         ) : (
-          <p className="empty">Save your first tailored version.</p>
+          <div className="v2-resume-history-empty">
+            <FileText size={28} />
+            <p>No AI resumes found.</p>
+            <span>
+              Generate a resume from one of your templates to see it here.
+            </span>
+          </div>
         )}
       </div>
       {preview && (

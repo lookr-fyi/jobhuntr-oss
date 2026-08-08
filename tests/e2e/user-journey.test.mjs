@@ -229,6 +229,16 @@ test(
       await page.locator(".score", { hasText: "ATS alignment" }).waitFor();
       await page.getByRole("button", { name: "Save version" }).click();
       await page.getByText("E2E tailored resume").first().waitFor();
+      await page
+        .getByLabel("Filter resume history by template")
+        .selectOption({ label: "E2E Leadership" });
+      await page
+        .locator(".v2-resume-groups")
+        .getByText("E2E tailored resume", { exact: true })
+        .waitFor();
+      await page.getByLabel("Search resume history").fill("no such resume");
+      await page.getByText("No AI resumes found.", { exact: true }).waitFor();
+      await page.getByLabel("Search resume history").fill("");
       await assertAccessible(page, "ATS Resume");
 
       await page.locator('button[title="Submission Queue"]').click();
