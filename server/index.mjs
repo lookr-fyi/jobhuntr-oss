@@ -517,6 +517,7 @@ app.post("/api/cover-letters", async (req, res) => {
     const templateName =
       safeText(req.body.templateName, 100) || "Classic Professional";
     const templateContent = safeText(req.body.templateContent, 20000);
+    const jobDescription = safeText(req.body.jobDescription, 5000);
     const resume = db.resumes.find((item) => item.id === req.body.resumeId);
     const skills = (db.profile.skills || []).slice(0, 4).join(", ");
     const styleOpening = {
@@ -553,6 +554,7 @@ app.post("/api/cover-letters", async (req, res) => {
       templateId,
       templateName,
       templateContent: templateContent || defaultTemplate,
+      jobDescription: jobDescription || job.description || "",
       opening,
       emphasis,
       createdAt: new Date().toISOString(),

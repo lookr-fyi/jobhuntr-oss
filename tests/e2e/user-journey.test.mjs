@@ -714,10 +714,13 @@ test(
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("button", { name: /E2E tailored resume/ }).click();
       await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("heading", { name: "Job Information" }).waitFor();
       await page
-        .getByRole("heading", { name: "Choose the target job" })
-        .waitFor();
-      await Promise.all([
+        .getByLabel("Job Description")
+        .fill(
+          "Build accessible React product experiences and improve customer conversion.",
+        );
+      const [coverLetterResponse] = await Promise.all([
         page.waitForResponse(
           (response) =>
             response.url().endsWith("/api/cover-letters") &&
@@ -726,6 +729,10 @@ test(
         ),
         page.getByRole("button", { name: "Generate Cover Letter" }).click(),
       ]);
+      assert.equal(
+        (await coverLetterResponse.json()).jobDescription,
+        "Build accessible React product experiences and improve customer conversion.",
+      );
       await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
       await page.getByLabel("Cover letter title").fill("E2E product letter");
       await page

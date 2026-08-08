@@ -7750,6 +7750,28 @@ main > header.integrated-page-header {
   margin-top: 5px;
   color: #475569;
 }
+.v2-cover-job-description {
+  display: grid !important;
+  gap: 8px;
+  margin-top: 18px !important;
+}
+.v2-cover-job-description > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.v2-cover-job-description > span small,
+.v2-cover-job-description > small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
+.v2-cover-job-description textarea {
+  min-height: 300px;
+  resize: vertical;
+  line-height: 1.6;
+}
 .v2-cover-review {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

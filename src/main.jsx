@@ -4540,6 +4540,9 @@ function Resume({ state, reload, mode = "resume" }) {
       templateContent: COVER_LETTER_TEMPLATES[0].content,
       resumeId: state.resumes[0]?.id || "",
       jobId: jobId || state.jobs[0]?.id || "",
+      jobDescription:
+        state.jobs.find((item) => item.id === (jobId || state.jobs[0]?.id))
+          ?.description || "",
     });
   const generateLetter = async (wizard = null, keepWizard = false) => {
     const options = wizard || { jobId };
@@ -4859,27 +4862,37 @@ function Resume({ state, reload, mode = "resume" }) {
               <>
                 <div className="v2-cover-step-head">
                   <span>STEP 4 OF 5</span>
-                  <h3>Choose the target job</h3>
-                  <p>Job details personalize the company and role context.</p>
+                  <h3>Job Information</h3>
+                  <p>
+                    Provide job details to personalize your cover letter and
+                    match the position requirements.
+                  </p>
                 </div>
-                <label>
-                  Target job
-                  <select
-                    value={letterWizard.jobId}
-                    onChange={(event) =>
-                      setLetterWizard({
-                        ...letterWizard,
-                        jobId: event.target.value,
-                      })
-                    }
-                  >
-                    {state.jobs.map((item) => (
-                      <option value={item.id} key={item.id}>
-                        {item.company} — {item.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {state.jobs.length > 0 && (
+                  <label>
+                    Use a tracked job
+                    <select
+                      value={letterWizard.jobId}
+                      onChange={(event) => {
+                        const job = state.jobs.find(
+                          (item) => item.id === event.target.value,
+                        );
+                        setLetterWizard({
+                          ...letterWizard,
+                          jobId: event.target.value,
+                          jobDescription: job?.description || "",
+                        });
+                      }}
+                    >
+                      <option value="">Enter job information manually</option>
+                      {state.jobs.map((item) => (
+                        <option value={item.id} key={item.id}>
+                          {item.company} — {item.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 {selectedJob && (
                   <div className="v2-cover-job-summary">
                     <b>{selectedJob.title}</b>
@@ -4889,6 +4902,34 @@ function Resume({ state, reload, mode = "resume" }) {
                     <p>{selectedJob.description}</p>
                   </div>
                 )}
+                <label className="v2-cover-job-description">
+                  <span>
+                    <b>Job Description</b>
+                    <small>
+                      {(letterWizard.jobDescription || "").length}/5000
+                      characters
+                    </small>
+                  </span>
+                  <textarea
+                    aria-label="Job Description"
+                    maxLength={5000}
+                    value={letterWizard.jobDescription || ""}
+                    onChange={(event) =>
+                      setLetterWizard({
+                        ...letterWizard,
+                        jobDescription: event.target.value,
+                      })
+                    }
+                    placeholder={
+                      "Paste the complete job description here, including:\n• Job title and company\n• Required qualifications and skills\n• Responsibilities and duties\n• Preferred experience and education"
+                    }
+                  />
+                  <small>
+                    Paste the complete description so JobHuntr can tailor the
+                    letter to the exact role. Changes are saved in this local
+                    wizard session.
+                  </small>
+                </label>
               </>
             )}
             {letterWizard.step === 5 && (
@@ -4979,7 +5020,9 @@ function Resume({ state, reload, mode = "resume" }) {
                 </button>
               ) : letterWizard.step === 4 ? (
                 <button
-                  disabled={!letterWizard.jobId}
+                  disabled={
+                    !letterWizard.jobId && !letterWizard.jobDescription?.trim()
+                  }
                   onClick={() => generateLetter(letterWizard, true)}
                 >
                   <Sparkles size={16} /> Generate Cover Letter
