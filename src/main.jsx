@@ -209,12 +209,30 @@ function App() {
         : "overview",
   );
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const [err, setErr] = useState("");
   const load = () =>
     api("/api/state")
       .then(setState)
       .catch((e) => setErr(e.message));
   useEffect(load, []);
+  useEffect(() => {
+    if (!userMenuOpen) return undefined;
+    const close = (event) => {
+      if (
+        event.key === "Escape" ||
+        !userMenuRef.current?.contains(event.target)
+      )
+        setUserMenuOpen(false);
+    };
+    window.addEventListener("keydown", close);
+    window.addEventListener("mousedown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      window.removeEventListener("mousedown", close);
+    };
+  }, [userMenuOpen]);
   useEffect(() => {
     localStorage.setItem("jobhuntr-active-route", tab);
     const nextHash = `#/${tab}`;
@@ -305,12 +323,60 @@ function App() {
             </div>
           ))}
         </nav>
-        <div className="v2-user">
+        <div className="v2-user" ref={userMenuRef}>
+          {userMenuOpen && (
+            <div
+              className="v2-user-menu"
+              role="menu"
+              aria-label="Local workspace menu"
+            >
+              <div className="v2-user-menu-identity">
+                <span className="v2-avatar">
+                  {state.profile.name?.slice(0, 1).toUpperCase() || (
+                    <User size={15} />
+                  )}
+                </span>
+                <span>
+                  <strong>{state.profile.name || "Job Hunter"}</strong>
+                  <small>Private local workspace</small>
+                </span>
+              </div>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setTab("settings");
+                  setUserMenuOpen(false);
+                }}
+              >
+                <User size={16} />
+                <span>Profile & usage</span>
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setTab("privacy");
+                  setUserMenuOpen(false);
+                }}
+              >
+                <ShieldCheck size={16} />
+                <span>Settings & data</span>
+              </button>
+              <div className="v2-user-menu-status">
+                <i /> Local data protected
+              </div>
+            </div>
+          )}
           <button
-            onClick={() => setTab("settings")}
+            onClick={() => {
+              if (window.matchMedia("(max-width: 760px)").matches)
+                setTab("settings");
+              else setUserMenuOpen((open) => !open);
+            }}
             className={tab === "settings" ? "active" : ""}
             title="Profile and settings"
             aria-current={tab === "settings" ? "page" : undefined}
+            aria-haspopup="menu"
+            aria-expanded={userMenuOpen}
           >
             <span className="v2-avatar">
               <User size={15} />

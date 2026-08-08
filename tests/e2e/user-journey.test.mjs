@@ -549,6 +549,13 @@ test(
       await assertAccessible(page, "Gigs");
 
       await page.locator('[title="Profile and settings"]').click();
+      const workspaceMenu = page.getByRole("menu", {
+        name: "Local workspace menu",
+      });
+      await workspaceMenu.waitFor();
+      await workspaceMenu
+        .getByRole("menuitem", { name: "Profile & usage" })
+        .click();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
       assert.equal(new URL(page.url()).hash, "#/settings");
       await page.reload();
