@@ -2671,7 +2671,7 @@ button.v2-audit-toggle:hover {
 }
 .v2-outreach-filters {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr 1fr auto;
   gap: 12px;
   align-items: end;
   margin: -4px 0 14px;
@@ -2805,6 +2805,27 @@ button.v2-audit-toggle:hover {
 .v2-contact-profile p {
   margin: 0;
   color: #64748b;
+}
+.v2-contact-profile > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.v2-contact-metadata {
+  margin-top: 8px;
+  text-transform: capitalize;
+}
+.v2-delete-contact {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+}
+.v2-contact-email {
+  display: inline-block;
+  margin: -7px 0 14px;
+  color: #2563eb;
+  font-size: 12px;
 }
 .v2-message-hidden {
   display: grid;

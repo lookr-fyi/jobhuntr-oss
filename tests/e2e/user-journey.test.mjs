@@ -856,8 +856,9 @@ test(
       await page.getByText("E2E persisted outreach subject").first().waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Sort contacts").selectOption("company");
+      await page.getByLabel("Filter contacts by category").selectOption("peer");
       await page
-        .getByLabel(/Select hiring team at/)
+        .getByLabel(/Select hiring team at/i)
         .first()
         .check();
       await page.getByRole("button", { name: "Connect (1)" }).click();
@@ -878,6 +879,13 @@ test(
       ]);
       await connectDialog.waitFor({ state: "hidden" });
       await page.getByText("Outreached", { exact: true }).first().waitFor();
+      await page.getByRole("button", { name: "Delete Hiring team" }).click();
+      const deleteContactDialog = page.getByRole("alertdialog", {
+        name: "Delete outreach contact?",
+      });
+      await deleteContactDialog.waitFor();
+      await assertAccessible(page, "Delete outreach contact confirmation");
+      await deleteContactDialog.getByRole("button", { name: "Cancel" }).click();
       await assertAccessible(page, "Outreach");
 
       await page.getByRole("button", { name: "AI Coach" }).click();

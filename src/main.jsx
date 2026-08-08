@@ -5007,11 +5007,13 @@ function OutreachPage({ state, reload }) {
   );
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [category, setCategory] = useState("all");
   const [sort, setSort] = useState("newest");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [showMessages, setShowMessages] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [connectOpen, setConnectOpen] = useState(false);
+  const [deleteContact, setDeleteContact] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const connectCloseRef = useRef(null);
   const [draft, setDraft] = useState(
@@ -5044,6 +5046,7 @@ function OutreachPage({ state, reload }) {
       const job = state.jobs.find((candidate) => candidate.id === item.jobId);
       return (
         (status === "all" || (item.status || "draft") === status) &&
+        (category === "all" || (item.category || "peer") === category) &&
         `${item.subject} ${item.recipient || ""} ${job?.company || ""} ${job?.title || ""}`
           .toLowerCase()
           .includes(query.toLowerCase())
@@ -5093,6 +5096,24 @@ function OutreachPage({ state, reload }) {
   };
   return (
     <section className="v2-outreach-page">
+      <ConfirmDialog
+        open={Boolean(deleteContact)}
+        title="Delete outreach contact?"
+        description={
+          deleteContact
+            ? `“${deleteContact.recipient || "Hiring team"}” and the saved connection message will be permanently removed.`
+            : "This contact and saved connection message will be removed."
+        }
+        confirmLabel="Delete contact"
+        onClose={() => setDeleteContact(null)}
+        onConfirm={async () => {
+          await api(`/api/outreach/${deleteContact.id}`, { method: "DELETE" });
+          setSelectedId("");
+          setDraft(null);
+          setDeleteContact(null);
+          await reload();
+        }}
+      />
       <div className="v2-page-intro">
         <div>
           <h2>Outreach</h2>
@@ -5203,11 +5224,25 @@ function OutreachPage({ state, reload }) {
               <option value="company">Company A–Z</option>
             </select>
           </label>
+          <label>
+            Contact category
+            <select
+              aria-label="Filter contacts by category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
+              <option value="all">All categories</option>
+              <option value="recruiter">Recruiters</option>
+              <option value="hiring_manager">Hiring managers</option>
+              <option value="peer">Peers</option>
+            </select>
+          </label>
           <button
             className="secondary"
             onClick={() => {
               setQuery("");
               setStatus("all");
+              setCategory("all");
               setSort("newest");
             }}
           >
@@ -5309,8 +5344,34 @@ function OutreachPage({ state, reload }) {
                     ·{" "}
                     {state.jobs.find((job) => job.id === selected.jobId)?.title}
                   </p>
+                  <div className="chips v2-contact-metadata">
+                    <span>
+                      {(selected.category || "peer").replace("_", " ")}
+                    </span>
+                    <span>
+                      {selected.connectionDegree || "Company contact"}
+                    </span>
+                    {selected.contactRole && (
+                      <span>{selected.contactRole}</span>
+                    )}
+                  </div>
                 </div>
+                <button
+                  className="danger v2-delete-contact"
+                  aria-label={`Delete ${selected.recipient || "Hiring team"}`}
+                  onClick={() => setDeleteContact(selected)}
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
+              {selected.contactEmail && (
+                <a
+                  className="v2-contact-email"
+                  href={`mailto:${selected.contactEmail}`}
+                >
+                  {selected.contactEmail}
+                </a>
+              )}
               {showMessages ? (
                 <OutreachEditor
                   draft={selected}

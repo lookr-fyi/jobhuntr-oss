@@ -930,11 +930,22 @@ app.post("/api/outreach/draft", async (req, res) => {
     const contact =
       job.contacts.find((c) => c.id === req.body.contactId) || job.contacts[0];
     const recipient = contact?.name || "there";
+    const contactRole = safeText(contact?.role, 200);
+    const category = /recruit/i.test(contactRole)
+      ? "recruiter"
+      : /hiring|manager|director|head|lead/i.test(contactRole)
+        ? "hiring_manager"
+        : "peer";
     const body = `Hi ${recipient},\n\nI’m exploring the ${job.title} opportunity at ${job.company}. My background in ${(db.profile.skills || []).slice(0, 3).join(", ")} looks closely aligned, particularly with ${job.description || "the team’s product goals"}.\n\nIf you’re open to it, I’d appreciate hearing what the team values most in candidates for this role.\n\nBest,\n${db.profile.name}`;
     const item = {
       id: nanoid(),
       jobId: job.id,
       contactId: contact?.id || "",
+      recipient: contact?.name || "Hiring team",
+      contactRole: contactRole || "Hiring team",
+      contactEmail: safeText(contact?.email, 300),
+      category,
+      connectionDegree: contact ? "Known contact" : "Company contact",
       channel: req.body.channel === "email" ? "email" : "linkedin",
       subject: `Interest in ${job.title} at ${job.company}`,
       body,
@@ -996,6 +1007,14 @@ app.patch("/api/outreach/:id", async (req, res) => {
     if (req.body.subject !== undefined)
       item.subject = safeText(req.body.subject, 300);
     if (req.body.body !== undefined) item.body = safeText(req.body.body, 20000);
+    if (req.body.recipient !== undefined)
+      item.recipient = safeText(req.body.recipient, 200);
+    if (req.body.contactRole !== undefined)
+      item.contactRole = safeText(req.body.contactRole, 200);
+    if (req.body.contactEmail !== undefined)
+      item.contactEmail = safeText(req.body.contactEmail, 300);
+    if (["recruiter", "peer", "hiring_manager"].includes(req.body.category))
+      item.category = req.body.category;
     if (["draft", "sent", "replied", "archived"].includes(req.body.status))
       item.status = req.body.status;
     item.updatedAt = timestamp();
@@ -1004,6 +1023,18 @@ app.patch("/api/outreach/:id", async (req, res) => {
   if (!draft)
     return res.status(404).json({ error: "Outreach draft not found" });
   res.json(draft);
+});
+app.delete("/api/outreach/:id", async (req, res) => {
+  const removed = await mutate((db) => {
+    const before = db.outreachDrafts.length;
+    db.outreachDrafts = db.outreachDrafts.filter(
+      (item) => item.id !== req.params.id,
+    );
+    if (db.outreachDrafts.length !== before)
+      auditEvent(db, "outreach", "Deleted a local outreach contact and draft.");
+    return db.outreachDrafts.length !== before;
+  });
+  res.status(removed ? 204 : 404).end();
 });
 
 const scoreResumeAgainstJob = (text, job, profile) => {

@@ -460,6 +460,18 @@ test("outreach drafts persist edits and manual delivery status", async () => {
   assert.equal(updated.res.status, 200);
   assert.equal(updated.body.subject, "Personal note");
   assert.equal(updated.body.status, "sent");
+  assert.equal(
+    updated.body.recipient,
+    state.jobs[0].contacts[0]?.name || "Hiring team",
+  );
+  assert.ok(
+    ["recruiter", "hiring_manager", "peer"].includes(updated.body.category),
+  );
+  assert.equal(
+    (await req(`/api/outreach/${created.body.id}`, { method: "DELETE" })).res
+      .status,
+    204,
+  );
 });
 
 test("professional profile audits stay local, persist history, and validate limits", async () => {
