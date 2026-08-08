@@ -13,11 +13,17 @@ test(
       path.join(os.tmpdir(), "jobhuntr-electron-"),
     );
     let electronApp;
+    const windowStatePath = path.join(dataDir, "window-state.json");
+    const environment = {
+      ...process.env,
+      JOBHUNTR_DATA_DIR: dataDir,
+      JOBHUNTR_WINDOW_STATE_PATH: windowStatePath,
+    };
     try {
       electronApp = await electron.launch({
         args: ["electron/main.mjs"],
         cwd: process.cwd(),
-        env: { ...process.env, JOBHUNTR_DATA_DIR: dataDir },
+        env: environment,
       });
       const window = await electronApp.firstWindow();
       await window.getByRole("button", { name: "Set up my workspace" }).click();
@@ -51,6 +57,46 @@ test(
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+      });
+      const popupPromise = electronApp.waitForEvent("window");
+      await window.evaluate(() => window.open("/api/health", "_blank"));
+      const popup = await popupPromise;
+      await popup.waitForLoadState();
+      const popupSecurity = await electronApp.evaluate(({ BrowserWindow }) => {
+        const preferences = BrowserWindow.getAllWindows()
+          .at(-1)
+          .webContents.getLastWebPreferences();
+        return {
+          contextIsolation: preferences.contextIsolation,
+          nodeIntegration: preferences.nodeIntegration,
+          sandbox: preferences.sandbox,
+        };
+      });
+      assert.deepEqual(popupSecurity, security);
+      await popup.close();
+      await electronApp.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0].setBounds({
+          x: 80,
+          y: 90,
+          width: 1110,
+          height: 740,
+        });
+      });
+      await electronApp.close();
+      electronApp = await electron.launch({
+        args: ["electron/main.mjs"],
+        cwd: process.cwd(),
+        env: environment,
+      });
+      await electronApp.firstWindow();
+      const restoredBounds = await electronApp.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()[0].getBounds(),
+      );
+      assert.deepEqual(restoredBounds, {
+        x: 80,
+        y: 90,
+        width: 1110,
+        height: 740,
       });
     } finally {
       await electronApp?.close();

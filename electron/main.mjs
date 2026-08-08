@@ -1,4 +1,5 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, screen, shell } from "electron";
+import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
@@ -7,6 +8,76 @@ let localUrl;
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const iconPath = path.join(projectRoot, "src", "jobhuntr-logo.png");
+const windowStatePath = () =>
+  process.env.JOBHUNTR_WINDOW_STATE_PATH ||
+  path.join(app.getPath("userData"), "window-state.json");
+const readWindowState = () => {
+  try {
+    const state = JSON.parse(fs.readFileSync(windowStatePath(), "utf8"));
+    if (
+      Number.isFinite(state.width) &&
+      Number.isFinite(state.height) &&
+      state.width >= 390 &&
+      state.height >= 640
+    )
+      return state;
+  } catch {}
+  return { width: 1440, height: 900 };
+};
+const saveWindowState = (window) => {
+  try {
+    const target = windowStatePath();
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    const temporary = `${target}.tmp`;
+    fs.writeFileSync(
+      temporary,
+      JSON.stringify({
+        ...window.getNormalBounds(),
+        maximized: window.isMaximized(),
+      }),
+      { mode: 0o600 },
+    );
+    fs.renameSync(temporary, target);
+  } catch (error) {
+    console.warn("Could not save JobHuntr window state:", error.message);
+  }
+};
+const visibleWindowState = (state) => {
+  const display = screen.getDisplayMatching({
+    x: state.x || 0,
+    y: state.y || 0,
+    width: state.width,
+    height: state.height,
+  });
+  const area = display.workArea;
+  const width = Math.min(state.width, area.width);
+  const height = Math.min(state.height, area.height);
+  return {
+    ...state,
+    width,
+    height,
+    x: Number.isFinite(state.x)
+      ? Math.min(Math.max(state.x, area.x), area.x + area.width - width)
+      : undefined,
+    y: Number.isFinite(state.y)
+      ? Math.min(Math.max(state.y, area.y), area.y + area.height - height)
+      : undefined,
+  };
+};
+const isLocalTarget = (target, localOrigin) => {
+  try {
+    return new URL(target).origin === localOrigin;
+  } catch {
+    return false;
+  }
+};
+const openSafeExternal = (target) => {
+  try {
+    const parsed = new URL(target);
+    if (!["http:", "https:", "mailto:"].includes(parsed.protocol)) return;
+    void shell.openExternal(parsed.href);
+  } catch {}
+};
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 if (!hasSingleInstanceLock) app.quit();
@@ -58,11 +129,12 @@ const startServer = async () => {
 
 const createWindow = async () => {
   const url = await startServer();
+  const localOrigin = new URL(url).origin;
+  const windowState = visibleWindowState(readWindowState());
 
   mainWindow = new BrowserWindow({
     title: "JobHuntr",
-    width: 1440,
-    height: 900,
+    ...windowState,
     minWidth: 390,
     minHeight: 640,
     backgroundColor: "#ffffff",
@@ -77,15 +149,27 @@ const createWindow = async () => {
 
   mainWindow.removeMenu();
   mainWindow.webContents.setWindowOpenHandler(({ url: target }) => {
-    if (target.startsWith(url)) return { action: "allow" };
-    void shell.openExternal(target);
+    if (isLocalTarget(target, localOrigin))
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+          },
+        },
+      };
+    openSafeExternal(target);
     return { action: "deny" };
   });
   mainWindow.webContents.on("will-navigate", (event, target) => {
-    if (target.startsWith(url)) return;
+    if (isLocalTarget(target, localOrigin)) return;
     event.preventDefault();
-    void shell.openExternal(target);
+    openSafeExternal(target);
   });
+  mainWindow.on("close", () => saveWindowState(mainWindow));
+  if (windowState.maximized) mainWindow.maximize();
   mainWindow.once("ready-to-show", () => mainWindow.show());
   await mainWindow.loadURL(url);
 };
