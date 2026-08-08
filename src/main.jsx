@@ -38,6 +38,23 @@ import "./styles.css";
 import { parseCsv } from "./csv.js";
 import jobHuntrLogo from "./jobhuntr-logo.png";
 
+const APP_ROUTES = [
+  "overview",
+  "agent",
+  "queue",
+  "board",
+  "runs",
+  "resume",
+  "cover-letter",
+  "tracker",
+  "outreach",
+  "audit",
+  "gigs",
+  "coach",
+  "settings",
+  "privacy",
+];
+
 const api = async (path, options = {}) => {
   const res = await fetch(path, {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
@@ -48,7 +65,14 @@ const api = async (path, options = {}) => {
 };
 function App() {
   const [state, setState] = useState(null);
-  const [tab, setTab] = useState("overview");
+  const initialRoute = window.location.hash.replace(/^#\/?/, "");
+  const [tab, setTab] = useState(() =>
+    APP_ROUTES.includes(initialRoute)
+      ? initialRoute
+      : APP_ROUTES.includes(localStorage.getItem("jobhuntr-active-route"))
+        ? localStorage.getItem("jobhuntr-active-route")
+        : "overview",
+  );
   const [sidebarHovered, setSidebarHovered] = useState(false);
   const [err, setErr] = useState("");
   const load = () =>
@@ -56,6 +80,24 @@ function App() {
       .then(setState)
       .catch((e) => setErr(e.message));
   useEffect(load, []);
+  useEffect(() => {
+    localStorage.setItem("jobhuntr-active-route", tab);
+    const nextHash = `#/${tab}`;
+    if (window.location.hash !== nextHash)
+      window.history.pushState({ tab }, "", nextHash);
+  }, [tab]);
+  useEffect(() => {
+    const followHistory = () => {
+      const route = window.location.hash.replace(/^#\/?/, "");
+      if (APP_ROUTES.includes(route)) setTab(route);
+    };
+    window.addEventListener("popstate", followHistory);
+    window.addEventListener("hashchange", followHistory);
+    return () => {
+      window.removeEventListener("popstate", followHistory);
+      window.removeEventListener("hashchange", followHistory);
+    };
+  }, []);
   const tabs = [
     ["overview", LayoutDashboard, "Overview", "primary"],
     ["agent", InfinityIcon, "Infinite Hunting", "automation"],
@@ -88,6 +130,11 @@ function App() {
         }
         onMouseEnter={() => setSidebarHovered(true)}
         onMouseLeave={() => setSidebarHovered(false)}
+        onFocusCapture={() => setSidebarHovered(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget))
+            setSidebarHovered(false);
+        }}
       >
         <div className="brand">
           <img className="logo-image" src={jobHuntrLogo} alt="JobHuntr" />

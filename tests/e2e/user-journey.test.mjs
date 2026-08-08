@@ -128,6 +128,25 @@ test(
         ),
         "collapsed desktop navigation icons should remain inside the sidebar",
       );
+      await page.locator(".v2-sidebar").hover({ position: { x: 30, y: 100 } });
+      await page.waitForTimeout(200);
+      const expandedNavigationBox = await page
+        .locator(".v2-sidebar")
+        .boundingBox();
+      assert.ok(
+        expandedNavigationBox?.width >= 275,
+        "desktop navigation should expand to the v2 width on hover",
+      );
+      const overviewLabelBox = await page
+        .locator('.v2-nav button[title="Overview"] span')
+        .boundingBox();
+      assert.ok(
+        overviewLabelBox &&
+          overviewLabelBox.x + overviewLabelBox.width <=
+            expandedNavigationBox.x + expandedNavigationBox.width,
+        "expanded navigation labels should not clip outside the sidebar",
+      );
+      await page.locator("main").hover({ position: { x: 400, y: 200 } });
       await assertAccessible(page, "Overview");
       await page.getByLabel("Applications evaluated").uncheck();
       assert.equal(
@@ -405,14 +424,16 @@ test(
       await page.locator(".audit-score").waitFor();
       await assertAccessible(page, "LinkedIn Audit");
 
-      await page.getByRole("button", { name: "Outreach" }).click();
+      await page.locator('button[title="Outreach"]').click();
       await page.getByRole("button", { name: "Collect contacts" }).click();
       const subject = page.getByLabel("Subject");
       await subject.fill("E2E persisted outreach subject");
       await page.getByRole("button", { name: "Save locally" }).click();
 
       await page.reload();
-      await page.getByRole("button", { name: "Outreach" }).click();
+      await page
+        .getByRole("heading", { name: "Outreach", exact: true })
+        .waitFor();
       await page.getByText("E2E persisted outreach subject").first().waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Sort contacts").selectOption("company");
@@ -469,6 +490,9 @@ test(
       await assertAccessible(page, "Gigs");
 
       await page.locator('[title="Profile and settings"]').click();
+      await page.getByRole("heading", { name: "User Center" }).waitFor();
+      assert.equal(new URL(page.url()).hash, "#/settings");
+      await page.reload();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
       await page.getByRole("tab", { name: "About Me" }).click();
       await page
