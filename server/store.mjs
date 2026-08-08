@@ -18,7 +18,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 2, createdAt, updatedAt: createdAt },
+    meta: { version: 3, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: 'Local Job Hunter',
@@ -65,7 +65,7 @@ function migrate(db) {
     job.notes ||= []; job.tasks ||= []; job.contacts ||= []; job.tags ||= [];
     job.statusHistory ||= [{ status: job.status || 'saved', at: job.createdAt || now() }];
   }
-  db.meta.version = 2;
+  db.meta.version = 3;
   return db;
 }
 

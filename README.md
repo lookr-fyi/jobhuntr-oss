@@ -23,7 +23,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 
 ## What is included
 
-- **Application tracker**: CRUD jobs, status history, fit scores, notes, tasks, and contacts.
+- **Application tracker**: draggable Kanban and list views, search/status filters, status timeline, fit scores, notes, tasks, contacts, and cascading deletion.
 - **Local job board**: seed jobs and local search without scraping or external services.
 - **Resume studio**: reusable ATS templates, named resume versions, keyword analysis, and quantified-impact checks.
 - **Cover letters**: offline editable first drafts.
@@ -31,7 +31,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 - **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.
 - **Submission queue**: assemble resume/letter packets, enforce a review checklist, and record applications without external account automation.
 - **Interview coach and outreach**: role-specific practice plans, talking points, research checklists, and editable messages generated offline.
-- **Import/export**: one-click JSON backup/restore, CSV job export, and bulk job import API.
+- **Import/export**: one-click JSON backup/restore, CSV export, and user-facing CSV import with quoted-field support and URL deduplication.
 - **Public-repo safety**: `.gitignore`, `.env.example`, and `npm run secret:scan`.
 
 ## Data model and storage

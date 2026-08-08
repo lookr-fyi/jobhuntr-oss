@@ -21,7 +21,7 @@ OSS replacement decisions:
 | v2 product area | Local OSS implementation |
 | --- | --- |
 | Overview and pipeline | Command center, funnel, weekly application/interview metrics, tasks, activity audit |
-| Job tracker | Status history, notes, tasks, contacts, scoring, manual entry |
+| Job tracker | Draggable Kanban/list views, filters, status history, notes, tasks, contacts, scoring, manual entry |
 | Job board | Bundled offline board with profile-based scoring |
 | ATS templates | Three transparent templates, named resume versions, keyword and impact analysis |
 | Cover letters | Editable deterministic drafts persisted in the local workspace |

@@ -61,7 +61,7 @@ app.patch('/api/jobs/:id', async (req, res) => {
   if (!job) return res.status(404).json({ error: 'Job not found' }); res.json(job);
 });
 app.delete('/api/jobs/:id', async (req, res) => {
-  const ok = await mutate((db) => { const before = db.jobs.length; db.jobs = db.jobs.filter((j) => j.id !== req.params.id); if (db.jobs.length !== before) auditEvent(db, 'job', 'Deleted job.', { jobId: req.params.id }); return db.jobs.length !== before; });
+  const ok = await mutate((db) => { const before = db.jobs.length; db.jobs = db.jobs.filter((j) => j.id !== req.params.id); if (db.jobs.length !== before) { db.submissions = db.submissions.filter((x) => x.jobId !== req.params.id); db.coverLetters = db.coverLetters.filter((x) => x.jobId !== req.params.id); db.coachingSessions = db.coachingSessions.filter((x) => x.jobId !== req.params.id); db.outreachDrafts = db.outreachDrafts.filter((x) => x.jobId !== req.params.id); auditEvent(db, 'job', 'Deleted job and related local records.', { jobId: req.params.id }); } return db.jobs.length !== before; });
   res.status(ok ? 204 : 404).end();
 });
 app.post('/api/jobs/:id/notes', async (req, res) => {

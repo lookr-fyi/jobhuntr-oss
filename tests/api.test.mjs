@@ -86,6 +86,18 @@ test('coach and outreach create private role-specific drafts', async () => {
   assert.equal(outreach.res.status, 201); assert.match(outreach.body.body, new RegExp(job.company));
 });
 
+test('deleting a job cascades its private workflow records', async () => {
+  const created = await req('/api/jobs', { method: 'POST', body: JSON.stringify({ company: 'Delete Me', title: 'Temporary Role', url: 'https://delete.example/role' }) });
+  const jobId = created.body.id;
+  await req('/api/cover-letters', { method: 'POST', body: JSON.stringify({ jobId }) });
+  await req('/api/coach/prepare', { method: 'POST', body: JSON.stringify({ jobId }) });
+  await req('/api/outreach/draft', { method: 'POST', body: JSON.stringify({ jobId }) });
+  await req('/api/submissions', { method: 'POST', body: JSON.stringify({ jobId }) });
+  const removed = await req(`/api/jobs/${jobId}`, { method: 'DELETE' }); assert.equal(removed.res.status, 204);
+  const state = (await req('/api/state')).body;
+  for (const key of ['jobs','coverLetters','coachingSessions','outreachDrafts','submissions']) assert.equal(state[key].some((item) => item.id === jobId || item.jobId === jobId), false, `${key} retained deleted job data`);
+});
+
 test('full restore accepts only bounded JobHuntr backup keys', async () => {
   const state = (await req('/api/state')).body;
   const restored = await req('/api/import', { method: 'POST', body: JSON.stringify({ ...state, unexpectedCloudConfig: { token: 'not-copied' } }) });
