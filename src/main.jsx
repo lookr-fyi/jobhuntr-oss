@@ -1547,15 +1547,32 @@ function Queue({ state, reload }) {
   const [query, setQuery] = useState("");
   const [queueTab, setQueueTab] = useState("apply");
   const [sourceSelectedId, setSourceSelectedId] = useState("");
+  const [minimumFit, setMinimumFit] = useState(0);
+  const [queueSort, setQueueSort] = useState("time");
+  const [submitOpen, setSubmitOpen] = useState(false);
+  const [submittingReady, setSubmittingReady] = useState(false);
+  const submitCloseRef = useRef(null);
   const active = state.submissions.filter(
     (item) => !["archived", "submitted"].includes(item.status),
   );
-  const filtered = active.filter((item) => {
-    const job = state.jobs.find((candidate) => candidate.id === item.jobId);
-    return `${job?.title || ""} ${job?.company || ""}`
-      .toLowerCase()
-      .includes(query.toLowerCase());
-  });
+  const filtered = active
+    .filter((item) => {
+      const job = state.jobs.find((candidate) => candidate.id === item.jobId);
+      return (
+        (job?.fitScore || 0) >= minimumFit &&
+        `${job?.title || ""} ${job?.company || ""}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      );
+    })
+    .sort((a, b) => {
+      const aJob = state.jobs.find((job) => job.id === a.jobId);
+      const bJob = state.jobs.find((job) => job.id === b.jobId);
+      return queueSort === "fit"
+        ? (bJob?.fitScore || 0) - (aJob?.fitScore || 0)
+        : new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  const readySubmissions = active.filter((item) => item.status === "ready");
   const selected = active.find((item) => item.id === selectedId) || filtered[0];
   const queuedJobIds = new Set(active.map((item) => item.jobId));
   const sourceJobs = state.jobs.filter((job) => {
@@ -1606,6 +1623,33 @@ function Queue({ state, reload }) {
     setQueueTab("apply");
     await reload();
   };
+  useEffect(() => {
+    if (!submitOpen) return undefined;
+    submitCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSubmitOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [submitOpen]);
+  const recordReadySubmissions = async () => {
+    setSubmittingReady(true);
+    try {
+      await Promise.all(
+        readySubmissions.map((item) =>
+          api(`/api/submissions/${item.id}/submit`, {
+            method: "POST",
+            body: "{}",
+          }),
+        ),
+      );
+      setSubmitOpen(false);
+      setSelectedId("");
+      await reload();
+    } finally {
+      setSubmittingReady(false);
+    }
+  };
   return (
     <section className="v2-queue-page">
       <div className="v2-queue-title-row">
@@ -1616,9 +1660,32 @@ function Queue({ state, reload }) {
             submitting.
           </p>
         </div>
-        <button className="secondary" onClick={reload}>
-          Refresh
-        </button>
+        <div className="inline">
+          <button
+            disabled={!readySubmissions.length}
+            onClick={() => setSubmitOpen(true)}
+            title={
+              readySubmissions.length
+                ? "Record reviewed applications as submitted"
+                : "Complete every review item to enable submitting"
+            }
+          >
+            <InfinityIcon size={16} /> Start Submitting
+          </button>
+          <button className="secondary" onClick={reload}>
+            <RefreshCcw size={15} /> Refresh
+          </button>
+        </div>
+      </div>
+      <div className="v2-queue-info">
+        <ShieldCheck size={18} />
+        <div>
+          <strong>Review before you submit</strong>
+          <p>
+            Complete each packet checklist first. This local version records
+            your confirmation but never submits to an external website.
+          </p>
+        </div>
       </div>
       <div className="v2-queue-tabs" role="tablist">
         <button
@@ -1757,6 +1824,32 @@ function Queue({ state, reload }) {
               />
             </div>
             <div className="v2-create-packet">
+              <label>
+                Above match score
+                <select
+                  aria-label="Minimum queue match score"
+                  value={minimumFit}
+                  onChange={(event) =>
+                    setMinimumFit(Number(event.target.value))
+                  }
+                >
+                  <option value="0">All</option>
+                  <option value="40">Above 40</option>
+                  <option value="60">Above 60</option>
+                  <option value="80">Above 80</option>
+                </select>
+              </label>
+              <label>
+                Sort by
+                <select
+                  aria-label="Sort submission queue"
+                  value={queueSort}
+                  onChange={(event) => setQueueSort(event.target.value)}
+                >
+                  <option value="time">Queue time</option>
+                  <option value="fit">Match score</option>
+                </select>
+              </label>
               <select
                 aria-label="Tracked role"
                 value={jobId}
@@ -1836,6 +1929,60 @@ function Queue({ state, reload }) {
           </div>
         </>
       )}
+      {submitOpen && (
+        <div
+          className="v2-template-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="submit-ready-title"
+        >
+          <button
+            className="v2-template-backdrop"
+            aria-label="Close start submitting dialog"
+            onClick={() => setSubmitOpen(false)}
+          />
+          <div className="v2-template-modal-content v2-submit-ready-modal">
+            <span className="v2-connect-icon">
+              <CheckCircle2 size={22} />
+            </span>
+            <h3 id="submit-ready-title">Start submitting</h3>
+            <p>
+              Record {readySubmissions.length} fully reviewed application
+              {readySubmissions.length === 1 ? "" : "s"} as submitted?
+            </p>
+            <div className="v2-submit-ready-list">
+              {readySubmissions.map((item) => {
+                const job = state.jobs.find((entry) => entry.id === item.jobId);
+                return (
+                  <div key={item.id}>
+                    <strong>{job?.title}</strong>
+                    <span>{job?.company}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <small>
+              JobHuntr will update your local tracker only. No external form is
+              submitted.
+            </small>
+            <div className="v2-template-modal-actions">
+              <button
+                ref={submitCloseRef}
+                className="secondary"
+                onClick={() => setSubmitOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={submittingReady}
+                onClick={recordReadySubmissions}
+              >
+                {submittingReady ? "Recording…" : "Confirm submitted"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -1847,18 +1994,21 @@ function InboxIcon() {
 }
 function SubmissionCard({ submission: s, state, reload }) {
   const job = state.jobs.find((j) => j.id === s.jobId);
+  const updatePacket = async (body) => {
+    await api(`/api/submissions/${s.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    });
+    reload();
+  };
   const updateChecklist = async (id, done) => {
     const checklist = s.checklist.map((x) =>
       x.id === id ? { ...x, done } : x,
     );
-    await api(`/api/submissions/${s.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        checklist,
-        status: checklist.every((x) => x.done) ? "ready" : "draft",
-      }),
+    await updatePacket({
+      checklist,
+      status: checklist.every((x) => x.done) ? "ready" : "draft",
     });
-    reload();
   };
   return (
     <div className="packet">
@@ -1881,17 +2031,37 @@ function SubmissionCard({ submission: s, state, reload }) {
           {item.text}
         </label>
       ))}
-      <div className="attachments">
-        <span>
-          Resume:{" "}
-          {state.resumes.find((r) => r.id === s.resumeId)?.name ||
-            "not attached"}
-        </span>
-        <span>
-          Cover letter:{" "}
-          {state.coverLetters.find((c) => c.id === s.coverLetterId)?.title ||
-            "not attached"}
-        </span>
+      <div className="attachments v2-packet-attachments">
+        <label>
+          Resume attachment
+          <select
+            value={s.resumeId || ""}
+            onChange={(event) => updatePacket({ resumeId: event.target.value })}
+          >
+            <option value="">No resume attached</option>
+            {state.resumes.map((resume) => (
+              <option key={resume.id} value={resume.id}>
+                {resume.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Cover letter attachment
+          <select
+            value={s.coverLetterId || ""}
+            onChange={(event) =>
+              updatePacket({ coverLetterId: event.target.value })
+            }
+          >
+            <option value="">No cover letter attached</option>
+            {state.coverLetters.map((letter) => (
+              <option key={letter.id} value={letter.id}>
+                {letter.title}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <button
         className="success"

@@ -4045,6 +4045,29 @@ main > header.integrated-page-header {
   margin: 0;
   color: var(--v2-secondary);
 }
+.v2-queue-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.v2-queue-info svg {
+  flex: 0 0 auto;
+  color: #2563eb;
+}
+.v2-queue-info strong {
+  color: #334155;
+}
+.v2-queue-info p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .v2-queue-tabs {
   display: flex;
   gap: 4px;
@@ -4097,11 +4120,22 @@ main > header.integrated-page-header {
 }
 .v2-create-packet {
   display: flex;
+  align-items: end;
   gap: 8px;
 }
+.v2-create-packet label {
+  display: grid;
+  gap: 5px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+}
 .v2-create-packet select {
-  width: 300px;
+  width: 170px;
   margin: 0;
+}
+.v2-create-packet > select {
+  width: 260px;
 }
 .v2-queue-layout {
   display: grid;
@@ -4233,6 +4267,56 @@ main > header.integrated-page-header {
   border-radius: 8px;
   background: #f8fafc;
 }
+.v2-packet-attachments {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.v2-packet-attachments label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v2-packet-attachments select {
+  min-width: 0;
+  margin: 0;
+  background: #fff;
+}
+.v2-submit-ready-modal {
+  max-width: 500px;
+  text-align: center;
+}
+.v2-submit-ready-modal > h3 {
+  margin: 0 0 7px;
+}
+.v2-submit-ready-modal > p,
+.v2-submit-ready-modal > small {
+  color: #64748b;
+  line-height: 1.5;
+}
+.v2-submit-ready-list {
+  max-height: 190px;
+  margin: 18px 0 12px;
+  overflow: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  text-align: left;
+}
+.v2-submit-ready-list > div {
+  display: grid;
+  gap: 3px;
+  padding: 11px 13px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.v2-submit-ready-list > div:last-child {
+  border-bottom: 0;
+}
+.v2-submit-ready-list span {
+  color: #64748b;
+  font-size: 11px;
+}
 .v2-queue-empty,
 .v2-detail-empty,
 .v2-queue-placeholder {
@@ -4299,6 +4383,24 @@ main > header.integrated-page-header {
   .v2-create-packet select {
     flex: 1;
     width: auto;
+  }
+  .v2-create-packet {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .v2-create-packet > select,
+  .v2-create-packet label select {
+    width: 100%;
+  }
+}
+@media (max-width: 600px) {
+  .v2-queue-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .v2-packet-attachments {
+    grid-template-columns: 1fr;
   }
 }
 .v2-document-page {

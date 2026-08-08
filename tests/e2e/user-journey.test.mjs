@@ -267,6 +267,10 @@ test(
       await assertAccessible(page, "Submission Queue");
       const checklistCount = await checklist.count();
       assert.ok(checklistCount > 0, "submission checklist should be visible");
+      await page.getByLabel("Resume attachment").waitFor();
+      await page.getByLabel("Cover letter attachment").waitFor();
+      await page.getByLabel("Minimum queue match score").selectOption("40");
+      await page.getByLabel("Sort submission queue").selectOption("fit");
       for (const item of [
         "Review resume alignment",
         "Review cover letter",
@@ -284,9 +288,20 @@ test(
           checkbox.click(),
         ]);
       }
-      await page.reload();
-      await page.locator('button[title="Submission Queue"]').click();
-      await page.getByRole("button", { name: "Mark submitted" }).click();
+      await page.getByRole("button", { name: "Start Submitting" }).click();
+      const submitDialog = page.getByRole("dialog", {
+        name: "Start submitting",
+      });
+      await submitDialog.waitFor();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/submit") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        submitDialog.getByRole("button", { name: "Confirm submitted" }).click(),
+      ]);
       await page
         .getByRole("heading", { name: "Your queue is clear" })
         .waitFor();
