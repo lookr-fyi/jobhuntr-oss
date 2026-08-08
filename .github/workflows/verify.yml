@@ -55,7 +55,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run dist:desktop:dir
+      - run: npm run dist:desktop
       - name: Smoke-test packaged app (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a node --test tests/e2e/packaged-smoke.test.mjs
