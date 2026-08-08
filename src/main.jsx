@@ -586,6 +586,7 @@ function Onboarding({ profile, reload }) {
       role="dialog"
       aria-modal="true"
       aria-labelledby="onboarding-title"
+      onKeyDown={containDialogFocus}
     >
       <div className="onboarding-shell">
         <aside className="v2-onboarding-aside">
@@ -842,12 +843,16 @@ function Overview({ state, setTab, reload }) {
   const farewellCloseRef = useRef(null);
   useEffect(() => {
     if (!farewellOpen) return undefined;
+    const returnFocus = document.activeElement;
     farewellCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setFarewellOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [farewellOpen]);
   const s = state.summary;
   const firstName = (state.profile.name || "there").split(" ")[0];
@@ -1154,6 +1159,7 @@ function Overview({ state, setTab, reload }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="farewell-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-farewell-backdrop"
@@ -1257,12 +1263,16 @@ function Tracker({ state, reload }) {
   ];
   useEffect(() => {
     if (!funnelOpen) return undefined;
+    const returnFocus = document.activeElement;
     funnelCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setFunnelOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [funnelOpen]);
   const patch = async (id, body) => {
     await api(`/api/jobs/${id}`, {
@@ -1542,6 +1552,7 @@ function Tracker({ state, reload }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="funnel-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-funnel-backdrop"
@@ -2127,12 +2138,16 @@ function Queue({ state, reload }) {
   };
   useEffect(() => {
     if (!submitOpen) return undefined;
+    const returnFocus = document.activeElement;
     submitCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setSubmitOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [submitOpen]);
   const recordReadySubmissions = async () => {
     setSubmittingReady(true);
@@ -2437,6 +2452,7 @@ function Queue({ state, reload }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="submit-ready-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-template-backdrop"
@@ -2641,12 +2657,16 @@ function Resume({ state, reload, mode = "resume" }) {
     .filter((group) => group.resumes.length > 0);
   useEffect(() => {
     if (!templateDialog) return undefined;
+    const returnFocus = document.activeElement;
     templateDialogCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setTemplateDialog(null);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [templateDialog]);
   const openTemplateDialog = (template = null) =>
     setTemplateDialog({
@@ -3470,6 +3490,7 @@ function Resume({ state, reload, mode = "resume" }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="template-dialog-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-template-backdrop"
@@ -3560,12 +3581,16 @@ function OutreachPage({ state, reload }) {
   );
   useEffect(() => {
     if (!connectOpen) return undefined;
+    const returnFocus = document.activeElement;
     connectCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setConnectOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [connectOpen]);
   const generate = async () => {
     const created = await api("/api/outreach/draft", {
@@ -3882,6 +3907,7 @@ function OutreachPage({ state, reload }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="connect-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-template-backdrop"
@@ -5109,6 +5135,7 @@ function Gigs({ state, reload }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="gig-detail-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-template-backdrop"
@@ -5532,12 +5559,16 @@ function Agent({ state, reload, setTab }) {
   const latestRun = state.agentRuns[0] || null;
   useEffect(() => {
     if (!statusOpen) return undefined;
+    const returnFocus = document.activeElement;
     statusCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setStatusOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [statusOpen]);
   const payload = () => ({
     q: form.q,
@@ -6023,6 +6054,7 @@ function Agent({ state, reload, setTab }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="session-status-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-session-backdrop"
@@ -6098,12 +6130,16 @@ function RunsPage({ state, setTab }) {
   });
   useEffect(() => {
     if (!selectedRun) return undefined;
+    const returnFocus = document.activeElement;
     runCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape") setSelectedRun(null);
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
   }, [selectedRun]);
   return (
     <section className="v2-runs-page">
@@ -6222,6 +6258,7 @@ function RunsPage({ state, setTab }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="run-detail-title"
+          onKeyDown={containDialogFocus}
         >
           <button
             className="v2-session-backdrop"

@@ -226,15 +226,41 @@ test(
         .waitFor();
       await page.getByLabel("Search runs").fill("Software Engineer");
       await page.getByText("Showing 1 of 1 runs").waitFor();
-      await page.getByRole("button", { name: /Software Engineer/ }).click();
+      const runTrigger = page.getByRole("button", {
+        name: /Software Engineer/,
+      });
+      await runTrigger.click();
       const runDialog = page.getByRole("dialog", {
         name: "Software Engineer",
       });
       await runDialog.waitFor();
+      assert.equal(
+        await runDialog
+          .getByRole("button", { name: "Close", exact: true })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "run details should focus its close action",
+      );
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      assert.equal(
+        await runDialog
+          .getByRole("button", { name: "Close run details" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "Tab should wrap within run details",
+      );
       await runDialog.getByText("Workflow progress").waitFor();
       await runDialog.getByText("Matched jobs").waitFor();
       await page.keyboard.press("Escape");
       await runDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await runTrigger.evaluate(
+          (button) => button === document.activeElement,
+        ),
+        true,
+        "run details should restore focus to the selected run",
+      );
       await assertAccessible(page, "All Runs");
       const huntStatus = page.getByRole("button", {
         name: "Open Infinite Hunting status",
