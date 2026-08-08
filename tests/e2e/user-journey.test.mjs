@@ -182,6 +182,17 @@ test(
       await page
         .locator(".v2-run-row .pill", { hasText: "Completed" })
         .waitFor();
+      await page.getByLabel("Search runs").fill("Software Engineer");
+      await page.getByText("Showing 1 of 1 runs").waitFor();
+      await page.getByRole("button", { name: /Software Engineer/ }).click();
+      const runDialog = page.getByRole("dialog", {
+        name: "Software Engineer",
+      });
+      await runDialog.waitFor();
+      await runDialog.getByText("Workflow progress").waitFor();
+      await runDialog.getByText("Matched jobs").waitFor();
+      await page.keyboard.press("Escape");
+      await runDialog.waitFor({ state: "hidden" });
       await assertAccessible(page, "All Runs");
 
       await page.getByRole("button", { name: "Job Board" }).click();

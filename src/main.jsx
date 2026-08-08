@@ -5137,6 +5137,26 @@ function Agent({ state, reload, setTab }) {
 }
 function RunsPage({ state, setTab }) {
   const runs = state.agentRuns || [];
+  const [query, setQuery] = useState("");
+  const [hideZero, setHideZero] = useState(false);
+  const [selectedRun, setSelectedRun] = useState(null);
+  const runCloseRef = useRef(null);
+  const visibleRuns = runs.filter((run) => {
+    const matchesSearch =
+      `${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
+        .toLowerCase()
+        .includes(query.toLowerCase());
+    return matchesSearch && (!hideZero || (run.found || 0) > 0);
+  });
+  useEffect(() => {
+    if (!selectedRun) return undefined;
+    runCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSelectedRun(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [selectedRun]);
   return (
     <section className="v2-runs-page">
       <div className="v2-page-intro">
@@ -5146,9 +5166,18 @@ function RunsPage({ state, setTab }) {
             Review every job hunting workflow and the applications it evaluated.
           </p>
         </div>
-        <button onClick={() => setTab("agent")}>
-          <Plus size={16} /> New run
-        </button>
+        <div className="inline">
+          <button
+            className="secondary"
+            disabled={!runs.length}
+            onClick={() => setSelectedRun(runs[0])}
+          >
+            Open Latest Run
+          </button>
+          <button onClick={() => setTab("agent")}>
+            <Plus size={16} /> New run
+          </button>
+        </div>
       </div>
       <div className="v2-run-stats">
         <div>
@@ -5171,6 +5200,28 @@ function RunsPage({ state, setTab }) {
           </strong>
         </div>
       </div>
+      <div className="v2-runs-toolbar">
+        <div className="searchbox">
+          <Search size={16} />
+          <input
+            aria-label="Search runs"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search runs…"
+          />
+        </div>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={hideZero}
+            onChange={(event) => setHideZero(event.target.checked)}
+          />
+          Hide runs with 0 matches
+        </label>
+        <span>
+          Showing {visibleRuns.length} of {runs.length} runs
+        </span>
+      </div>
       <div className="card v2-runs-table">
         <div className="v2-table-head">
           <span>Run</span>
@@ -5179,11 +5230,18 @@ function RunsPage({ state, setTab }) {
           <span>Saved</span>
           <span>Started</span>
         </div>
-        {runs.map((run) => (
-          <div className="v2-run-row" key={run.id}>
+        {visibleRuns.map((run) => (
+          <button
+            className="v2-run-row"
+            key={run.id}
+            onClick={() => setSelectedRun(run)}
+          >
             <span>
               <b>{run.search?.q || "Local hunt"}</b>
-              <small>{run.search?.location || "All locations"}</small>
+              <small>
+                {run.search?.location || "All locations"} ·{" "}
+                {(run.workflows || []).join(", ") || "Local catalog"}
+              </small>
             </span>
             <span className="pill submitted">Completed</span>
             <strong>{run.inspected || run.found || 0}</strong>
@@ -5191,19 +5249,138 @@ function RunsPage({ state, setTab }) {
             <time>
               {new Date(run.completedAt || run.createdAt).toLocaleString()}
             </time>
-          </div>
+          </button>
         ))}
-        {!runs.length && (
+        {!visibleRuns.length && (
           <div className="v2-empty">
-            <Bot />
-            <h3>No runs yet</h3>
-            <p>Start an Infinite Hunt to see its progress and results here.</p>
-            <button onClick={() => setTab("agent")}>
-              Create your first run
-            </button>
+            {runs.length ? <Search /> : <Bot />}
+            <h3>{runs.length ? "No matching runs" : "No runs yet"}</h3>
+            <p>
+              {runs.length
+                ? "Try a broader search or show runs with zero matches."
+                : "Start an Infinite Hunt to see its progress and results here."}
+            </p>
+            {!runs.length && (
+              <button onClick={() => setTab("agent")}>
+                Create your first run
+              </button>
+            )}
           </div>
         )}
       </div>
+      {selectedRun && (
+        <div
+          className="v2-session-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="run-detail-title"
+        >
+          <button
+            className="v2-session-backdrop"
+            aria-label="Close run details"
+            onClick={() => setSelectedRun(null)}
+          />
+          <div className="v2-session-content v2-run-detail-modal">
+            <div className="v2-session-head">
+              <div>
+                <span>AGENT RUN</span>
+                <h3 id="run-detail-title">
+                  {selectedRun.search?.q || "Local hunt"}
+                </h3>
+              </div>
+              <span className="pill submitted">Completed</span>
+            </div>
+            <p className="v2-session-time">
+              {selectedRun.search?.location || "All locations"} · Started{" "}
+              {new Date(selectedRun.createdAt).toLocaleString()}
+            </p>
+            <div className="v2-session-stats">
+              <div>
+                <strong>{selectedRun.inspected || 0}</strong>
+                <span>Evaluated</span>
+              </div>
+              <div>
+                <strong>{selectedRun.found || 0}</strong>
+                <span>Matched</span>
+              </div>
+              <div>
+                <strong>{selectedRun.added || 0}</strong>
+                <span>Saved</span>
+              </div>
+              <div>
+                <strong>{selectedRun.duplicates || 0}</strong>
+                <span>Duplicates</span>
+              </div>
+            </div>
+            <div className="v2-run-config">
+              <span>
+                <b>Workflows</b>
+                {(selectedRun.workflows || []).join(" → ") || "Local catalog"}
+              </span>
+              <span>
+                <b>Minimum fit</b>
+                {selectedRun.minFit || selectedRun.options?.minFit || 0}%
+              </span>
+              <span>
+                <b>Resume optimization</b>
+                {selectedRun.optimizeResume ? "On" : "Off"}
+              </span>
+            </div>
+            <div className="v2-run-detail-columns">
+              <div>
+                <h4>Workflow progress</h4>
+                <div className="v2-session-steps">
+                  {(selectedRun.steps || []).map((step) => (
+                    <div key={step.name}>
+                      <CheckCircle2 size={16} />
+                      <span>
+                        <b>{step.name}</b>
+                        <small>{step.detail}</small>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4>Matched jobs</h4>
+                <div className="v2-run-matches">
+                  {(selectedRun.matches || []).map((match) => (
+                    <div key={match.url || `${match.company}-${match.title}`}>
+                      <span>
+                        <b>{match.title}</b>
+                        <small>
+                          {match.company} · {match.location}
+                        </small>
+                      </span>
+                      <strong>{match.fitScore}%</strong>
+                    </div>
+                  ))}
+                  {!selectedRun.matches?.length && (
+                    <p>No jobs matched this run.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="v2-session-actions">
+              <button
+                ref={runCloseRef}
+                className="secondary"
+                onClick={() => setSelectedRun(null)}
+              >
+                Close
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedRun(null);
+                  setTab("agent");
+                }}
+              >
+                Run again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

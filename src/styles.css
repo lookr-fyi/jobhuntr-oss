@@ -3418,6 +3418,24 @@ select:focus {
 .v2-run-stats strong {
   display: block;
 }
+.v2-runs-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.v2-runs-toolbar .check {
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.v2-runs-toolbar > span {
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
+}
 .v2-run-stats span {
   color: var(--v2-secondary);
   font-size: 12px;
@@ -3448,6 +3466,21 @@ select:focus {
 .v2-run-row {
   border-top: 1px solid var(--v2-border);
 }
+button.v2-run-row {
+  width: 100%;
+  color: var(--v2-text);
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+  background: #fff;
+  text-align: left;
+  box-shadow: none;
+}
+button.v2-run-row:hover {
+  background: #f8fafc;
+  transform: none;
+}
 .v2-run-row b,
 .v2-run-row small {
   display: block;
@@ -3460,6 +3493,75 @@ select:focus {
   color: var(--v2-secondary);
   font-size: 12px;
 }
+.v2-run-detail-modal {
+  width: min(1000px, calc(100vw - 40px));
+  max-width: 1000px;
+}
+.v2-run-detail-modal .v2-session-stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+.v2-run-config {
+  display: grid;
+  grid-template-columns: 1.5fr 0.7fr 0.8fr;
+  gap: 10px;
+  margin: 16px 0;
+}
+.v2-run-config > span {
+  display: grid;
+  gap: 3px;
+  padding: 11px 12px;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 11px;
+}
+.v2-run-config b {
+  color: #334155;
+}
+.v2-run-detail-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-height: 340px;
+  overflow: auto;
+}
+.v2-run-detail-columns h4 {
+  margin: 10px 0;
+}
+.v2-run-matches {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.v2-run-matches > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.v2-run-matches > div:last-child {
+  border-bottom: 0;
+}
+.v2-run-matches span,
+.v2-run-matches small {
+  display: block;
+  min-width: 0;
+}
+.v2-run-matches small {
+  margin-top: 3px;
+  color: #64748b;
+}
+.v2-run-matches strong {
+  color: #047857;
+}
+.v2-run-matches > p {
+  padding: 18px;
+  color: #64748b;
+  text-align: center;
+}
 .v2-empty {
   padding: 64px 20px;
   text-align: center;
@@ -3470,6 +3572,32 @@ select:focus {
 }
 .v2-empty h3 {
   color: var(--v2-text);
+}
+@media (max-width: 760px) {
+  .v2-runs-toolbar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .v2-run-detail-modal .v2-session-stats,
+  .v2-run-config,
+  .v2-run-detail-columns {
+    grid-template-columns: 1fr 1fr;
+  }
+  .v2-run-detail-columns {
+    grid-template-columns: 1fr;
+  }
+  .v2-table-head,
+  .v2-run-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .v2-table-head > :nth-child(3),
+  .v2-table-head > :nth-child(4),
+  .v2-table-head > :nth-child(5),
+  .v2-run-row > :nth-child(3),
+  .v2-run-row > :nth-child(4),
+  .v2-run-row > :nth-child(5) {
+    display: none;
+  }
 }
 .modal-backdrop {
   background: rgba(15, 23, 42, 0.48);
