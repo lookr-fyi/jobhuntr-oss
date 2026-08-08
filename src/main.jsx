@@ -1617,6 +1617,62 @@ function Resume({ state, reload, mode = "resume" }) {
   const [score, setScore] = useState(null);
   const [letter, setLetter] = useState(state.coverLetters[0] || null);
   const [preview, setPreview] = useState(state.resumes[0] || null);
+  const [templateQuery, setTemplateQuery] = useState("");
+  const [templateSort, setTemplateSort] = useState("name");
+  const [templateDialog, setTemplateDialog] = useState(null);
+  const templateDialogCloseRef = useRef(null);
+  const visibleTemplates = state.templates
+    .filter((template) =>
+      `${template.name} ${template.description}`
+        .toLowerCase()
+        .includes(templateQuery.toLowerCase()),
+    )
+    .sort((a, b) =>
+      templateSort === "newest"
+        ? new Date(b.updatedAt || b.createdAt || 0) -
+          new Date(a.updatedAt || a.createdAt || 0)
+        : a.name.localeCompare(b.name),
+    );
+  useEffect(() => {
+    if (!templateDialog) return undefined;
+    templateDialogCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setTemplateDialog(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [templateDialog]);
+  const openTemplateDialog = (template = null) =>
+    setTemplateDialog({
+      id: template?.id || null,
+      name: template?.name || "",
+      description: template?.description || "",
+      sections: (
+        template?.sections || ["Summary", "Skills", "Experience", "Education"]
+      ).join(", "),
+    });
+  const saveTemplate = async () => {
+    const payload = {
+      name: templateDialog.name,
+      description: templateDialog.description,
+      sections: templateDialog.sections
+        .split(",")
+        .map((section) => section.trim())
+        .filter(Boolean),
+    };
+    const saved = await api(
+      templateDialog.id
+        ? `/api/templates/${templateDialog.id}`
+        : "/api/templates",
+      {
+        method: templateDialog.id ? "PATCH" : "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+    setTemplateId(saved.id);
+    setTemplateDialog(null);
+    await reload();
+  };
   const saveResume = async () => {
     const content = resumeRef.current?.value ?? resume;
     setResume(content);
@@ -1781,25 +1837,84 @@ function Resume({ state, reload, mode = "resume" }) {
           {state.resumes.length === 1 ? "" : "s"}
         </span>
       </div>
+      <div className="v2-template-toolbar">
+        <div className="searchbox">
+          <Search size={16} />
+          <input
+            aria-label="Search resume templates"
+            value={templateQuery}
+            onChange={(event) => setTemplateQuery(event.target.value)}
+            placeholder="Search templates"
+          />
+        </div>
+        <select
+          aria-label="Sort resume templates"
+          value={templateSort}
+          onChange={(event) => setTemplateSort(event.target.value)}
+        >
+          <option value="name">Name</option>
+          <option value="newest">Newest</option>
+        </select>
+        <button onClick={() => openTemplateDialog()}>
+          <Plus size={16} /> Create New
+        </button>
+      </div>
       <div className="v2-resume-templates">
-        {state.templates.map((template) => (
-          <button
+        {visibleTemplates.map((template) => (
+          <div
             key={template.id}
             className={templateId === template.id ? "selected" : ""}
-            onClick={() => setTemplateId(template.id)}
           >
-            <span className="v2-template-preview">
-              <FileText size={26} />
-              <i />
-              <i />
-              <i />
-            </span>
-            <span>
-              <b>{template.name}</b>
-              <small>{template.description}</small>
-            </span>
-          </button>
+            <button
+              className="v2-template-select"
+              onClick={() => setTemplateId(template.id)}
+            >
+              <span className="v2-template-preview">
+                <FileText size={26} />
+                <i />
+                <i />
+                <i />
+              </span>
+              <span>
+                <b>{template.name}</b>
+                <small>{template.description}</small>
+              </span>
+            </button>
+            <div className="v2-template-actions">
+              <button
+                className="text-button"
+                aria-label={`Edit ${template.name} template`}
+                onClick={() => openTemplateDialog(template)}
+              >
+                Edit
+              </button>
+              <button
+                className="text-button danger"
+                aria-label={`Delete ${template.name} template`}
+                disabled={state.templates.length <= 1}
+                onClick={async () => {
+                  if (!window.confirm(`Delete “${template.name}”?`)) return;
+                  await api(`/api/templates/${template.id}`, {
+                    method: "DELETE",
+                  });
+                  if (templateId === template.id)
+                    setTemplateId(
+                      state.templates.find((item) => item.id !== template.id)
+                        ?.id || "",
+                    );
+                  await reload();
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         ))}
+        {!visibleTemplates.length && (
+          <div className="v2-template-empty">
+            <Search size={22} /> No templates match “{templateQuery}”.
+          </div>
+        )}
       </div>
       <div className="card resume-editor">
         <div className="row">
@@ -1950,6 +2065,80 @@ function Resume({ state, reload, mode = "resume" }) {
             title="Resume print preview"
             src={`/print/resume/${preview.id}`}
           />
+        </div>
+      )}
+      {templateDialog && (
+        <div
+          className="v2-template-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="template-dialog-title"
+        >
+          <button
+            className="v2-template-backdrop"
+            aria-label="Close template editor"
+            onClick={() => setTemplateDialog(null)}
+          />
+          <div className="v2-template-modal-content">
+            <h3 id="template-dialog-title">
+              {templateDialog.id ? "Edit Template" : "Create New Template"}
+            </h3>
+            <p>
+              Define a reusable ATS-friendly structure for future resume
+              versions.
+            </p>
+            <label>
+              Template name
+              <input
+                value={templateDialog.name}
+                onChange={(event) =>
+                  setTemplateDialog({
+                    ...templateDialog,
+                    name: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                value={templateDialog.description}
+                onChange={(event) =>
+                  setTemplateDialog({
+                    ...templateDialog,
+                    description: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <label>
+              Sections (comma separated)
+              <input
+                value={templateDialog.sections}
+                onChange={(event) =>
+                  setTemplateDialog({
+                    ...templateDialog,
+                    sections: event.target.value,
+                  })
+                }
+              />
+            </label>
+            <div className="v2-template-modal-actions">
+              <button
+                ref={templateDialogCloseRef}
+                className="secondary"
+                onClick={() => setTemplateDialog(null)}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!templateDialog.name.trim()}
+                onClick={saveTemplate}
+              >
+                <Save size={16} /> Save Template
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

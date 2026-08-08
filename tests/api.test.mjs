@@ -532,6 +532,34 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(after.unexpectedCloudConfig, undefined);
 });
 
+test("resume templates can be created, edited, and safely removed", async () => {
+  const created = await req("/api/templates", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Technical Leadership",
+      description: "Highlights architecture and team outcomes.",
+      sections: ["Summary", "Leadership", "Experience", "Education"],
+    }),
+  });
+  assert.equal(created.res.status, 201);
+  assert.equal(created.body.name, "Technical Leadership");
+  const updated = await req(`/api/templates/${created.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ name: "Engineering Leadership" }),
+  });
+  assert.equal(updated.res.status, 200);
+  assert.equal(updated.body.name, "Engineering Leadership");
+  const removed = await req(`/api/templates/${created.body.id}`, {
+    method: "DELETE",
+  });
+  assert.equal(removed.res.status, 204);
+  const templates = (await req("/api/templates")).body;
+  assert.equal(
+    templates.some((template) => template.id === created.body.id),
+    false,
+  );
+});
+
 test("malformed primary storage recovers from the local backup", async () => {
   await req("/api/profile", {
     method: "PUT",

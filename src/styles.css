@@ -4015,6 +4015,18 @@ main > header.integrated-page-header {
   color: #475569;
   font-size: 11px;
 }
+.v2-template-toolbar {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 150px auto;
+  gap: 10px;
+}
+.v2-template-toolbar .searchbox,
+.v2-template-toolbar input,
+.v2-template-toolbar select {
+  width: 100%;
+  margin: 0;
+}
 .v2-resume-templates {
   grid-column: 1/-1;
   display: grid;
@@ -4022,30 +4034,63 @@ main > header.integrated-page-header {
   gap: 14px;
   margin-bottom: 4px;
 }
-.v2-resume-templates > button {
+.v2-resume-templates > div {
+  position: relative;
+  border: 1px solid var(--v2-border);
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: none;
+}
+.v2-resume-templates > div:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+.v2-resume-templates > div.selected {
+  border-color: var(--v2-primary);
+  box-shadow: 0 0 0 1px var(--v2-primary);
+}
+.v2-template-select {
   display: flex;
   align-items: center;
   gap: 14px;
   width: 100%;
-  padding: 14px;
-  border: 1px solid var(--v2-border);
-  border-radius: 12px;
-  background: #fff;
+  min-height: 92px;
+  padding: 14px 14px 36px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--v2-text);
-  box-shadow: none;
   text-align: left;
 }
-.v2-resume-templates > button:hover {
-  border-color: #94a3b8;
+.v2-template-select:hover {
+  border: 0;
   background: #f8fafc;
-  transform: none;
 }
-.v2-resume-templates > button.selected {
-  border-color: var(--v2-primary);
-  box-shadow: 0 0 0 1px var(--v2-primary);
-}
-.v2-resume-templates > button > span:last-child {
+.v2-template-select > span:last-child {
   min-width: 0;
+}
+.v2-template-actions {
+  position: absolute;
+  right: 8px;
+  bottom: 5px;
+  display: flex;
+  gap: 3px;
+}
+.v2-template-actions button {
+  padding: 4px 7px;
+  font-size: 10px;
+}
+.v2-template-empty {
+  grid-column: 1/-1;
+  min-height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #475569;
 }
 .v2-resume-templates b,
 .v2-resume-templates small {
@@ -4085,6 +4130,64 @@ main > header.integrated-page-header {
   height: 2px;
   background: #cbd5e1;
 }
+.v2-template-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.v2-template-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+.v2-template-backdrop:hover {
+  border: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+.v2-template-modal-content {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: min(560px, 100%);
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+.v2-template-modal-content h3 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+.v2-template-modal-content > p {
+  margin: 0 0 20px;
+  color: #475569;
+  line-height: 1.5;
+}
+.v2-template-modal-content label {
+  display: block;
+  margin-top: 13px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+.v2-template-modal-content textarea {
+  min-height: 90px;
+}
+.v2-template-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
 .resume-studio > .resume-editor {
   grid-column: 1/2;
 }
@@ -4095,6 +4198,12 @@ main > header.integrated-page-header {
   grid-column: 1/-1;
 }
 @media (max-width: 900px) {
+  .v2-template-toolbar {
+    grid-template-columns: 1fr auto;
+  }
+  .v2-template-toolbar .searchbox {
+    grid-column: 1/-1;
+  }
   .v2-resume-templates {
     grid-template-columns: 1fr;
   }

@@ -60,6 +60,16 @@ const JobSchema = z.object({
   tags: z.array(z.string()).optional().default([]),
   status: z.string().optional().default("saved"),
 });
+const TemplateSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  description: z.string().trim().max(500).optional().default(""),
+  sections: z
+    .array(z.string().trim().min(1).max(100))
+    .min(1)
+    .max(20)
+    .optional()
+    .default(["Summary", "Skills", "Experience", "Education"]),
+});
 const GigSchema = z.object({
   client: z.string().min(1).max(200),
   title: z.string().min(1).max(300),
@@ -284,6 +294,65 @@ app.post("/api/jobs/:id/contacts", async (req, res) => {
 app.get("/api/templates", async (_req, res) => {
   const db = await readDb();
   res.json(db.templates);
+});
+
+app.post("/api/templates", async (req, res) => {
+  const parsed = TemplateSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({ error: "Invalid resume template" });
+  const template = await mutate((db) => {
+    const item = {
+      id: nanoid(),
+      ...parsed.data,
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+    db.templates.unshift(item);
+    auditEvent(db, "resume", `Created resume template “${item.name}”.`);
+    return item;
+  });
+  res.status(201).json(template);
+});
+
+app.patch("/api/templates/:id", async (req, res) => {
+  const template = await mutate((db) => {
+    const item = db.templates.find(
+      (candidate) => candidate.id === req.params.id,
+    );
+    if (!item) return null;
+    const parsed = TemplateSchema.safeParse({ ...item, ...req.body });
+    if (!parsed.success) return false;
+    Object.assign(item, parsed.data, { updatedAt: timestamp() });
+    auditEvent(db, "resume", `Updated resume template “${item.name}”.`);
+    return item;
+  });
+  if (template === false)
+    return res.status(400).json({ error: "Invalid resume template" });
+  if (!template)
+    return res.status(404).json({ error: "Resume template not found" });
+  res.json(template);
+});
+
+app.delete("/api/templates/:id", async (req, res) => {
+  const result = await mutate((db) => {
+    if (db.templates.length <= 1) return "last";
+    const index = db.templates.findIndex(
+      (candidate) => candidate.id === req.params.id,
+    );
+    if (index < 0) return "missing";
+    const [removed] = db.templates.splice(index, 1);
+    const fallbackId = db.templates[0].id;
+    for (const resume of db.resumes) {
+      if (resume.templateId === removed.id) resume.templateId = fallbackId;
+    }
+    auditEvent(db, "resume", `Deleted resume template “${removed.name}”.`);
+    return "deleted";
+  });
+  if (result === "last")
+    return res.status(409).json({ error: "Keep at least one resume template" });
+  if (result === "missing")
+    return res.status(404).json({ error: "Resume template not found" });
+  res.status(204).end();
 });
 
 app.post("/api/resumes", async (req, res) => {

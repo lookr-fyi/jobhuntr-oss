@@ -185,6 +185,40 @@ test(
       await assertAccessible(page, "All Runs");
 
       await page.getByRole("button", { name: "ATS Resume" }).click();
+      await page.getByRole("button", { name: "Create New" }).click();
+      const templateDialog = page.getByRole("dialog", {
+        name: "Create New Template",
+      });
+      await templateDialog.getByLabel("Template name").fill("E2E Leadership");
+      await templateDialog
+        .getByLabel("Description")
+        .fill("Highlights technical leadership and measurable outcomes.");
+      await templateDialog
+        .getByLabel("Sections (comma separated)")
+        .fill("Summary, Leadership, Experience, Education");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/templates") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        templateDialog.getByRole("button", { name: "Save Template" }).click(),
+      ]);
+      await page
+        .locator(".v2-resume-templates")
+        .getByText("E2E Leadership", { exact: true })
+        .waitFor();
+      await page.getByLabel("Search resume templates").fill("E2E Leadership");
+      assert.equal(
+        await page
+          .locator(".v2-resume-templates")
+          .getByText("Clean ATS", { exact: true })
+          .count(),
+        0,
+        "template search should filter unrelated templates",
+      );
+      await page.getByLabel("Search resume templates").fill("");
       await page.getByLabel("Resume version name").fill("E2E tailored resume");
       await page
         .getByLabel("Resume content")
