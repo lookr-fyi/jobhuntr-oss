@@ -3888,60 +3888,158 @@ main > header.integrated-page-header {
 }
 .v2-cover-layout {
   display: grid;
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 20px;
 }
 .v2-template-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
 }
-.v2-template-grid > button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px;
+.v2-template-grid > article {
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--v2-border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
-  color: var(--v2-text);
-  box-shadow: none;
-  text-align: left;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
 }
-.v2-template-grid > button:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: none;
+.v2-template-grid > article:hover {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  transform: translateY(-3px);
 }
-.v2-template-grid > button.selected {
+.v2-template-grid > article.selected {
   border-color: var(--v2-primary);
-  background: #f8fafc;
   box-shadow: 0 0 0 1px var(--v2-primary);
 }
-.v2-file-icon {
-  width: 42px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border-radius: 6px;
+.v2-letter-card-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 210/260;
+  display: block;
+  padding: 22px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
   background: #f1f5f9;
-  color: #475569;
+  color: #1e293b;
+  text-align: left;
 }
-.v2-template-grid > button b,
-.v2-template-grid > button small {
+.v2-letter-card-preview:hover {
+  border: 0;
+  background: #eef2f7;
+}
+.v2-letter-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  padding: 4px 7px;
+  border-radius: 4px;
+  background: #d1fae5;
+  color: #065f46;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.v2-letter-paper {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  display: block;
+  padding: 27px 24px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+.v2-letter-paper > b,
+.v2-letter-paper > em,
+.v2-letter-paper > span {
   display: block;
 }
-.v2-template-grid > button b {
-  font-size: 13px;
-}
-.v2-template-grid > button small {
-  margin-top: 5px;
-  color: var(--v2-secondary);
+.v2-letter-paper > b {
+  margin-bottom: 9px;
   font-size: 11px;
 }
+.v2-letter-paper > i {
+  width: 55%;
+  height: 2px;
+  display: block;
+  margin: 5px 0;
+  background: #cbd5e1;
+}
+.v2-letter-paper > em {
+  margin: 18px 0 12px;
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 700;
+}
+.v2-letter-paper > span {
+  color: #475569;
+  font-family: Georgia, serif;
+  font-size: 7px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.v2-template-grid > article footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 6px;
+  padding: 13px;
+  border-top: 1px solid #eef2f7;
+}
+.v2-template-grid > article footer > button:first-child {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1e293b;
+  text-align: left;
+}
+.v2-template-grid > article footer > button:first-child:hover {
+  border: 0;
+  background: transparent;
+}
+.v2-template-grid > article footer b,
+.v2-template-grid > article footer small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-template-grid > article footer b {
+  font-size: 13px;
+}
+.v2-template-grid > article footer small {
+  margin-top: 5px;
+  color: #475569;
+  font-size: 11px;
+}
+.v2-template-grid > article footer small svg {
+  display: inline;
+  vertical-align: -2px;
+}
+.v2-letter-delete {
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: #64748b;
+}
+.v2-letter-delete:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+}
 .v2-document-empty {
+  grid-column: 1/-1;
   padding: 60px 20px;
   border: 1px dashed #cbd5e1;
   border-radius: 12px;

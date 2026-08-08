@@ -26,6 +26,8 @@ import {
   ChevronRight,
   RefreshCcw,
   Medal,
+  Trash2,
+  Calendar,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -2038,24 +2040,50 @@ function Resume({ state, reload, mode = "resume" }) {
         <div className="v2-cover-layout">
           <div className="v2-template-grid">
             {state.coverLetters.map((item) => (
-              <button
+              <article
                 key={item.id}
                 className={letter?.id === item.id ? "selected" : ""}
-                onClick={() => setLetter(item)}
               >
-                <span className="v2-file-icon">
-                  <FileText size={22} />
-                </span>
-                <span>
-                  <b>{item.title}</b>
-                  <small>
-                    Updated{" "}
-                    {new Date(
-                      item.updatedAt || item.createdAt,
-                    ).toLocaleDateString()}
-                  </small>
-                </span>
-              </button>
+                <button
+                  className="v2-letter-card-preview"
+                  aria-label={`Edit ${item.title}`}
+                  onClick={() => setLetter(item)}
+                >
+                  <span className="v2-letter-status">Ready</span>
+                  <span className="v2-letter-paper">
+                    <b>{state.profile.name}</b>
+                    <i />
+                    <i />
+                    <em>{item.title}</em>
+                    <span>{item.body.slice(0, 460)}</span>
+                  </span>
+                </button>
+                <footer>
+                  <button onClick={() => setLetter(item)}>
+                    <b>{item.title}</b>
+                    <small>
+                      <Calendar size={13} />{" "}
+                      {new Date(
+                        item.updatedAt || item.createdAt,
+                      ).toLocaleDateString()}
+                    </small>
+                  </button>
+                  <button
+                    className="v2-letter-delete"
+                    aria-label={`Delete ${item.title}`}
+                    onClick={async () => {
+                      if (!window.confirm(`Delete “${item.title}”?`)) return;
+                      await api(`/api/cover-letters/${item.id}`, {
+                        method: "DELETE",
+                      });
+                      if (letter?.id === item.id) setLetter(null);
+                      await reload();
+                    }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </footer>
+              </article>
             ))}
             {!state.coverLetters.length && (
               <div className="v2-document-empty">

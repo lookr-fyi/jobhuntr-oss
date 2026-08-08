@@ -311,6 +311,14 @@ test(
         );
       await page.getByRole("button", { name: "Save changes" }).click();
       await page.getByText("E2E product letter").first().waitFor();
+      await page
+        .getByRole("button", { name: "Edit E2E product letter" })
+        .waitFor();
+      assert.equal(
+        await page.locator(".v2-letter-card-preview").count(),
+        1,
+        "saved cover letters should render as v2 document preview cards",
+      );
       await assertAccessible(page, "Cover Letters");
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
