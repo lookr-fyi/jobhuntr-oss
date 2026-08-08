@@ -110,7 +110,33 @@ test(
         .getByRole("button", { name: "Use demo profile" })
         .waitFor({ state: "hidden" });
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      const navigationIconBounds = await page
+        .locator(".v2-nav button > svg")
+        .evaluateAll((icons) =>
+          icons.map((icon) => {
+            const box = icon.getBoundingClientRect();
+            return { left: box.left, right: box.right };
+          }),
+        );
+      assert.ok(
+        navigationIconBounds.every(
+          ({ left, right }) => left >= 0 && right <= 64,
+        ),
+        "collapsed desktop navigation icons should remain inside the sidebar",
+      );
       await assertAccessible(page, "Overview");
+      await Promise.all([
+        page.waitForResponse(
+          (response) => response.url().endsWith("/api/state") && response.ok(),
+        ),
+        page.getByRole("button", { name: "Refresh" }).click(),
+      ]);
+      await page.getByRole("button", { name: /I got an offer/ }).click();
+      await page.getByRole("dialog", { name: "Congrats!" }).waitFor();
+      await page.keyboard.press("Escape");
+      await page.getByRole("dialog", { name: "Congrats!" }).waitFor({
+        state: "hidden",
+      });
 
       await page.getByRole("button", { name: "Infinite Hunting" }).click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();

@@ -24,6 +24,7 @@ import {
   Users,
   User,
   ChevronRight,
+  RefreshCcw,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -171,7 +172,9 @@ function App() {
           <button onClick={load}>Refresh</button>
         </header>
         {err && <div className="error">{err}</div>}
-        {tab === "overview" && <Overview state={state} setTab={setTab} />}{" "}
+        {tab === "overview" && (
+          <Overview state={state} setTab={setTab} reload={load} />
+        )}{" "}
         {tab === "tracker" && <Tracker state={state} reload={load} />}{" "}
         {tab === "board" && <Board reload={load} />}{" "}
         {tab === "queue" && <Queue state={state} reload={load} />}{" "}
@@ -328,7 +331,19 @@ function subtitle(t) {
     privacy: "Back up and restore a workspace with no cloud dependency.",
   }[t];
 }
-function Overview({ state, setTab }) {
+function Overview({ state, setTab, reload }) {
+  const [refreshing, setRefreshing] = useState(false);
+  const [farewellOpen, setFarewellOpen] = useState(false);
+  const farewellCloseRef = useRef(null);
+  useEffect(() => {
+    if (!farewellOpen) return undefined;
+    farewellCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setFarewellOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [farewellOpen]);
   const s = state.summary;
   const firstName = (state.profile.name || "there").split(" ")[0];
   const recent = (s.recentActivities || []).slice(0, 6);
@@ -342,6 +357,17 @@ function Overview({ state, setTab }) {
     Math.max(14, Math.round(collected * 0.72)),
     Math.max(18, collected),
   ];
+  const refresh = async () => {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  };
+  const exitJobHuntr = () => {
+    window.close();
+    window.setTimeout(() => {
+      window.location.href = "about:blank";
+    }, 120);
+  };
   return (
     <section className="v2-overview">
       <div className="v2-overview-hero">
@@ -369,7 +395,14 @@ function Overview({ state, setTab }) {
         </div>
         <div className="v2-overview-hero-meta">
           <span>JobHuntr is ready to help you find job opportunities.</span>
-          <button className="text-button">Refresh</button>
+          <button
+            className="v2-overview-refresh"
+            disabled={refreshing}
+            onClick={refresh}
+          >
+            <RefreshCcw size={15} />
+            {refreshing ? "Refreshing" : "Refresh"}
+          </button>
         </div>
       </div>
       <div className="v2-momentum">
@@ -481,6 +514,43 @@ function Overview({ state, setTab }) {
           </div>
         </div>
       </div>
+      <button
+        className="v2-farewell-button"
+        onClick={() => setFarewellOpen(true)}
+      >
+        I got an offer, bye 👋
+      </button>
+      {farewellOpen && (
+        <div
+          className="v2-farewell-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="farewell-title"
+        >
+          <button
+            className="v2-farewell-backdrop"
+            aria-label="Close congratulations dialog"
+            onClick={() => setFarewellOpen(false)}
+          />
+          <div className="v2-farewell-content">
+            <h3 id="farewell-title">Congrats!</h3>
+            <p>
+              This app was born to be deleted. We&apos;re so happy to hear you
+              found your next opportunity—and goodbye!
+            </p>
+            <div className="v2-farewell-actions">
+              <button
+                ref={farewellCloseRef}
+                className="secondary"
+                onClick={() => setFarewellOpen(false)}
+              >
+                Oops—bring me back
+              </button>
+              <button onClick={exitJobHuntr}>Bye</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
