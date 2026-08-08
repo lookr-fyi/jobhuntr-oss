@@ -7851,6 +7851,9 @@ main > header.integrated-page-header {
   display: grid;
   gap: 14px;
 }
+.v2-faq-question {
+  position: relative;
+}
 .v2-faq-list label {
   display: grid;
   gap: 7px;
@@ -7860,6 +7863,23 @@ main > header.integrated-page-header {
   color: #334155;
   font-size: 13px;
   font-weight: 700;
+}
+.v2-faq-header-actions {
+  display: flex;
+  gap: 8px;
+}
+.v2-faq-delete-question {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+}
+.v2-faq-question:has(.v2-faq-delete-question) label span {
+  padding-right: 38px;
 }
 .v2-faq-list textarea {
   min-height: 64px;

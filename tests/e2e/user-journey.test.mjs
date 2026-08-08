@@ -1017,6 +1017,57 @@ test(
           .inputValue(),
         "I enjoy building reliable user-facing products.",
       );
+      const faqPanel = page.locator(".v2-faq-panel");
+      assert.equal(
+        await faqPanel.count(),
+        1,
+        "About Me should render its FAQ panel",
+      );
+      await page
+        .getByLabel("Why are you interested in this role?")
+        .fill("Unsaved answer that should be discarded");
+      const refreshFaq = faqPanel.locator("button", { hasText: "Refresh" });
+      assert.equal(
+        await refreshFaq.count(),
+        1,
+        `FAQ actions were: ${JSON.stringify(await faqPanel.locator("button").allTextContents())}`,
+      );
+      await refreshFaq.click();
+      assert.equal(
+        await page
+          .getByLabel("Why are you interested in this role?")
+          .inputValue(),
+        "I enjoy building reliable user-facing products.",
+        "FAQ refresh should restore the persisted answer",
+      );
+      await faqPanel.locator("button", { hasText: "Delete" }).click();
+      const removableQuestion = "What are your salary expectations?";
+      await page
+        .getByRole("button", { name: `Delete ${removableQuestion}` })
+        .click();
+      const deleteFaqDialog = page.getByRole("alertdialog", {
+        name: "Delete FAQ question?",
+      });
+      await deleteFaqDialog.waitFor();
+      await assertAccessible(page, "Delete FAQ confirmation");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        deleteFaqDialog
+          .getByRole("button", { name: "Delete question" })
+          .click(),
+      ]);
+      await page.getByLabel(removableQuestion).waitFor({ state: "detached" });
+      await page.reload();
+      assert.equal(
+        await page.getByLabel(removableQuestion).count(),
+        0,
+        "deleted FAQ questions should remain deleted after reload",
+      );
       await page.getByRole("tab", { name: "Settings" }).click();
       assert.equal(new URL(page.url()).hash, "#/settings?tab=settings");
       await page.getByLabel("Weekly application goal").waitFor();

@@ -8132,6 +8132,8 @@ function SettingsPage({ state, reload }) {
         : "profile";
   });
   const [saved, setSaved] = useState(false);
+  const [faqDeleteMode, setFaqDeleteMode] = useState(false);
+  const [faqDeleteTarget, setFaqDeleteTarget] = useState(null);
   const [form, setForm] = useState({
     ...p,
     skills: (p.skills || []).join(", "),
@@ -8189,6 +8191,31 @@ function SettingsPage({ state, reload }) {
     ["Infinite Hunts", state.agentRuns.length, "runs completed"],
     ["Tracked Jobs", state.jobs.length, "opportunities saved"],
   ];
+  const generateFaq = () => {
+    const resume = `${form.resumeText} ${form.additionalInfo}`.toLowerCase();
+    const questions = [
+      "Why are you interested in this role?",
+      "What experience makes you a strong fit?",
+      "What are your salary expectations?",
+      "When are you available to start?",
+      "Will you require work authorization sponsorship?",
+      ...(resume.includes("lead") || resume.includes("manager")
+        ? ["Describe your leadership style and experience."]
+        : []),
+      ...(resume.includes("remote")
+        ? ["What is your preferred working arrangement?"]
+        : []),
+    ];
+    setForm({
+      ...form,
+      faqAnswers: questions.map((question, index) => ({
+        id: `faq-${Date.now()}-${index}`,
+        question,
+        answer: "",
+      })),
+    });
+    setFaqDeleteMode(false);
+  };
   useEffect(() => {
     const syncTabFromHistory = () => {
       const hashQuery = window.location.hash.split("?")[1] || "";
@@ -8216,6 +8243,31 @@ function SettingsPage({ state, reload }) {
   };
   return (
     <section className="v2-settings-page">
+      <ConfirmDialog
+        open={Boolean(faqDeleteTarget)}
+        title="Delete FAQ question?"
+        description={
+          faqDeleteTarget
+            ? `“${faqDeleteTarget.question}” and its saved answer will be removed from About Me.`
+            : "This saved FAQ answer will be removed."
+        }
+        confirmLabel="Delete question"
+        onClose={() => setFaqDeleteTarget(null)}
+        onConfirm={async () => {
+          const faqAnswers = form.faqAnswers.filter(
+            (_, index) => index !== faqDeleteTarget.index,
+          );
+          setForm((current) => ({ ...current, faqAnswers }));
+          setFaqDeleteTarget(null);
+          setSaved(false);
+          await api("/api/profile", {
+            method: "PUT",
+            body: JSON.stringify({ ...p, faqAnswers }),
+          });
+          await reload();
+          setSaved(true);
+        }}
+      />
       <div className="v2-page-intro">
         <div>
           <h2>User Center</h2>
@@ -8370,56 +8422,65 @@ function SettingsPage({ state, reload }) {
                 <h3>FAQ Questions</h3>
                 <p>Answer common application questions.</p>
               </div>
-              {!form.faqAnswers.length && (
-                <button
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      faqAnswers: [
-                        {
-                          question: "Why are you interested in this role?",
-                          answer: "",
-                        },
-                        {
-                          question: "What are your salary expectations?",
-                          answer: "",
-                        },
-                        {
-                          question: "When are you available to start?",
-                          answer: "",
-                        },
-                        {
-                          question:
-                            "Will you require work authorization sponsorship?",
-                          answer: "",
-                        },
-                      ],
-                    })
-                  }
-                >
+              {!form.faqAnswers.length ? (
+                <button onClick={generateFaq}>
                   <Plus size={15} /> Generate FAQ
                 </button>
+              ) : (
+                <div className="v2-faq-header-actions">
+                  <button
+                    className="secondary"
+                    onClick={() => {
+                      setForm({ ...form, faqAnswers: p.faqAnswers || [] });
+                      setSaved(false);
+                    }}
+                  >
+                    <RefreshCcw size={14} /> Refresh
+                  </button>
+                  <button
+                    className={faqDeleteMode ? "danger" : "secondary"}
+                    aria-pressed={faqDeleteMode}
+                    onClick={() => setFaqDeleteMode(!faqDeleteMode)}
+                  >
+                    <Trash2 size={14} /> {faqDeleteMode ? "Done" : "Delete"}
+                  </button>
+                </div>
               )}
             </div>
             {form.faqAnswers.length ? (
               <div className="v2-faq-list">
                 {form.faqAnswers.map((faq, index) => (
-                  <label key={faq.question}>
-                    <span>{faq.question}</span>
-                    <textarea
-                      rows={2}
-                      value={faq.answer}
-                      placeholder="Enter your answer…"
-                      onChange={(event) => {
-                        const faqAnswers = [...form.faqAnswers];
-                        faqAnswers[index] = {
-                          ...faq,
-                          answer: event.target.value,
-                        };
-                        setForm({ ...form, faqAnswers });
-                      }}
-                    />
-                  </label>
+                  <div
+                    className="v2-faq-question"
+                    key={faq.id || `${faq.question}-${index}`}
+                  >
+                    <label>
+                      <span>{faq.question}</span>
+                      <textarea
+                        aria-label={faq.question}
+                        rows={2}
+                        value={faq.answer}
+                        placeholder="Enter your answer…"
+                        onChange={(event) => {
+                          const faqAnswers = [...form.faqAnswers];
+                          faqAnswers[index] = {
+                            ...faq,
+                            answer: event.target.value,
+                          };
+                          setForm({ ...form, faqAnswers });
+                        }}
+                      />
+                    </label>
+                    {faqDeleteMode && (
+                      <button
+                        className="danger v2-faq-delete-question"
+                        aria-label={`Delete ${faq.question}`}
+                        onClick={() => setFaqDeleteTarget({ ...faq, index })}
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
                 ))}
                 <button onClick={save}>
                   <Save size={16} /> Save FAQ answers
