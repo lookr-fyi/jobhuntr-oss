@@ -133,6 +133,17 @@ test(
       await page.getByRole("button", { name: "Outreach" }).click();
       await page.getByText("E2E persisted outreach subject").first().waitFor();
 
+      await page.getByRole("button", { name: "AI Coach" }).click();
+      await page
+        .getByRole("button", { name: "Help me prepare for an interview" })
+        .click();
+      await page.getByText(/start by grounding your answer/).waitFor();
+      await page.reload();
+      await page.getByRole("button", { name: "AI Coach" }).click();
+      await page
+        .getByText("Help me prepare for an interview", { exact: true })
+        .waitFor();
+
       const persisted = JSON.parse(
         await fs.readFile(path.join(dataDir, "jobhuntr.json"), "utf8"),
       );

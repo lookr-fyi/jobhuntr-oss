@@ -905,6 +905,117 @@ button:disabled {
   background: #18181a;
   color: #ffe600;
 }
+.v2-coach-chat {
+  max-width: 1000px;
+  min-height: 650px;
+  margin: 16px auto 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.v2-coach-messages {
+  flex: 1;
+  padding: 42px 52px 24px;
+}
+.v2-coach-welcome {
+  max-width: 720px;
+  margin: 56px auto 0;
+  text-align: center;
+}
+.v2-coach-welcome .v2-coach-avatar {
+  margin: 0 auto 18px;
+}
+.v2-coach-welcome h2 {
+  margin-bottom: 22px;
+  font-size: 28px;
+}
+.v2-coach-welcome p {
+  max-width: 620px;
+  margin: 0 auto 18px;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.v2-coach-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+.v2-coach-prompts button {
+  font-weight: 500;
+}
+.v2-chat-message {
+  display: flex;
+  gap: 10px;
+  max-width: 760px;
+  margin: 0 auto 20px;
+}
+.v2-chat-message.user {
+  justify-content: flex-end;
+}
+.v2-chat-message p {
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #334155;
+  line-height: 1.6;
+}
+.v2-chat-message.assistant p {
+  padding: 2px 0;
+  background: transparent;
+}
+.v2-mini-coach {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #18181a;
+  color: #ffe600;
+}
+.v2-coach-input {
+  position: relative;
+  max-width: 820px;
+  width: calc(100% - 64px);
+  margin: 0 auto 10px;
+}
+.v2-coach-input textarea {
+  min-height: 104px;
+  margin: 0;
+  padding: 16px 150px 16px 16px;
+  resize: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+.v2-coach-input button {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+}
+.v2-coach-disclaimer {
+  padding-bottom: 16px;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .v2-coach-messages {
+    padding: 24px 18px;
+  }
+  .v2-coach-welcome {
+    margin-top: 20px;
+  }
+  .v2-coach-input {
+    width: calc(100% - 32px);
+  }
+  .v2-coach-input textarea {
+    padding-right: 16px;
+    padding-bottom: 60px;
+  }
+}
 .v2-settings-page,
 .v2-data-page {
   max-width: 1120px;

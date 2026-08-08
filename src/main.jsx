@@ -1788,7 +1788,15 @@ function OutreachPage({ state, reload }) {
   );
 }
 function Coach({ state, reload }) {
-  const [view, setView] = useState("practice");
+  const [view, setView] = useState("chat");
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("jobhuntr-coach-chat") || "[]");
+    } catch {
+      return [];
+    }
+  });
   const [jobId, setJobId] = useState(
     state.jobs.find((j) => j.status === "interview")?.id ||
       state.jobs[0]?.id ||
@@ -1812,22 +1820,34 @@ function Coach({ state, reload }) {
     setDraft(created);
     await reload();
   };
+  const sendCoachMessage = (message = chatInput) => {
+    const prompt = message.trim();
+    if (!prompt) return;
+    const role =
+      state.jobs.find((job) => job.id === jobId)?.title ||
+      state.profile.targetRoles?.[0] ||
+      "your target role";
+    const skills = (state.profile.skills || []).slice(0, 3).join(", ");
+    const answer = `For ${role}, start by grounding your answer in one specific outcome. Use a short situation-action-result structure${skills ? ` and connect it to ${skills}` : ""}. Next, quantify the result and finish by explaining how that experience applies to this opportunity.`;
+    const next = [
+      ...messages,
+      { role: "user", content: prompt },
+      { role: "assistant", content: answer },
+    ];
+    setMessages(next);
+    localStorage.setItem("jobhuntr-coach-chat", JSON.stringify(next));
+    setChatInput("");
+  };
   return (
     <section className="coach-page">
-      <div className="v2-coach-hero">
-        <div className="v2-coach-avatar">
-          <Sparkles size={22} />
-        </div>
-        <div>
-          <h2>Hi, I'm AI Coach!</h2>
-          <p>
-            Turn your experience into stronger interview answers, career
-            stories, and role-specific preparation.
-          </p>
-        </div>
-      </div>
       <div className="card coach-toolbar">
         <div className="segmented">
+          <button
+            className={view === "chat" ? "active" : ""}
+            onClick={() => setView("chat")}
+          >
+            AI Career Coach
+          </button>
           <button
             className={view === "practice" ? "active" : ""}
             onClick={() => setView("practice")}
@@ -1862,6 +1882,78 @@ function Coach({ state, reload }) {
           ))}
         </select>
       </div>
+      {view === "chat" && (
+        <div className="v2-coach-chat card">
+          <div className="v2-coach-messages">
+            {messages.length === 0 ? (
+              <div className="v2-coach-welcome">
+                <div className="v2-coach-avatar">
+                  <Sparkles size={24} />
+                </div>
+                <h2>Hi, I'm AI Coach!</h2>
+                <p>
+                  I'm your private and personal career coach. I can help you
+                  sharpen your story, prepare for interviews, and decide what to
+                  do next.
+                </p>
+                <strong>How can I help you today?</strong>
+                <div className="v2-coach-prompts">
+                  {[
+                    "Help me prepare for an interview",
+                    "Improve my career story",
+                    "What should I prioritize this week?",
+                  ].map((prompt) => (
+                    <button
+                      className="secondary"
+                      key={prompt}
+                      onClick={() => sendCoachMessage(prompt)}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              messages.map((message, index) => (
+                <div
+                  className={`v2-chat-message ${message.role}`}
+                  key={`${message.role}-${index}`}
+                >
+                  {message.role === "assistant" && (
+                    <span className="v2-mini-coach">
+                      <Sparkles size={14} />
+                    </span>
+                  )}
+                  <p>{message.content}</p>
+                </div>
+              ))
+            )}
+          </div>
+          <div className="v2-coach-input">
+            <textarea
+              aria-label="Message AI Coach"
+              value={chatInput}
+              onChange={(event) => setChatInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  sendCoachMessage();
+                }
+              }}
+              placeholder="Ask about your job search, interviews, or next career move…"
+            />
+            <button
+              disabled={!chatInput.trim()}
+              onClick={() => sendCoachMessage()}
+            >
+              Get Started <ChevronRight size={17} />
+            </button>
+          </div>
+          <small className="v2-coach-disclaimer">
+            Private local guidance. Review important career decisions yourself.
+          </small>
+        </div>
+      )}
       {view === "practice" && (
         <div className="coach-layout">
           <div className="card coach-sidebar">
