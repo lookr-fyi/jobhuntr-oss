@@ -549,6 +549,26 @@ test(
       await assertAccessible(page, "User Center");
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
+      await page.getByLabel("Import JobHuntr JSON backup").setInputFiles({
+        name: "e2e-backup.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(
+          JSON.stringify({
+            jobs: [{ id: "backup-job" }],
+            resumes: [{ id: "backup-resume" }],
+            coverLetters: [],
+            agentRuns: [],
+          }),
+        ),
+      });
+      await page.getByText(/Contains 1 jobs, 1 resumes/).waitFor();
+      await page.getByRole("button", { name: "Review restore" }).click();
+      const restoreDialog = page.getByRole("dialog", {
+        name: "Replace this workspace?",
+      });
+      await restoreDialog.waitFor();
+      await restoreDialog.getByRole("button", { name: "Cancel" }).click();
+      await restoreDialog.waitFor({ state: "hidden" });
       await assertAccessible(page, "Settings and data");
 
       const persisted = JSON.parse(

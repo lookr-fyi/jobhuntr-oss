@@ -248,7 +248,7 @@ function App() {
         {tab === "settings" && (
           <SettingsPage state={state} reload={load} />
         )}{" "}
-        {tab === "privacy" && <Privacy />}
+        {tab === "privacy" && <Privacy state={state} />}
       </main>
     </div>
   );
@@ -6302,14 +6302,36 @@ function SettingsPage({ state, reload }) {
     </section>
   );
 }
-function Privacy() {
+function Privacy({ state }) {
   const [backupFile, setBackupFile] = useState(null);
+  const [backupPreview, setBackupPreview] = useState(null);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoring, setRestoring] = useState(false);
   const [csvFile, setCsvFile] = useState(null);
   const [result, setResult] = useState(null);
   const restore = async () => {
     if (!backupFile) return;
+    setRestoring(true);
     await api("/api/import", { method: "POST", body: await backupFile.text() });
     location.reload();
+  };
+  const inspectBackup = async (file) => {
+    setBackupFile(file || null);
+    setBackupPreview(null);
+    setResult(null);
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data.jobs)) throw new Error("Missing jobs collection");
+      setBackupPreview({
+        jobs: data.jobs.length,
+        resumes: data.resumes?.length || 0,
+        runs: data.agentRuns?.length || 0,
+        letters: data.coverLetters?.length || 0,
+      });
+    } catch {
+      setResult({ error: "This file is not a valid JobHuntr JSON backup." });
+    }
   };
   const importCsv = async () => {
     if (!csvFile) return;
@@ -6334,8 +6356,32 @@ function Privacy() {
           <p>Manage local backups, imports, exports, and privacy controls.</p>
         </div>
       </div>
+      <div className="v2-data-health card">
+        <div className="v2-data-health-icon">
+          <ShieldCheck size={23} />
+        </div>
+        <div>
+          <span className="eyebrow">LOCAL WORKSPACE</span>
+          <h3>Your data is private and ready</h3>
+          <p>No cloud sync, telemetry, account, or API key is required.</p>
+        </div>
+        <dl>
+          <div>
+            <dt>Tracked jobs</dt>
+            <dd>{state.jobs.length}</dd>
+          </div>
+          <div>
+            <dt>Documents</dt>
+            <dd>{state.resumes.length + state.coverLetters.length}</dd>
+          </div>
+          <div>
+            <dt>Agent runs</dt>
+            <dd>{state.agentRuns.length}</dd>
+          </div>
+        </dl>
+      </div>
       <div className="grid v2-data-grid">
-        <div className="card">
+        <div className="card v2-data-card">
           <h3>
             <ShieldCheck /> Local-first guarantees
           </h3>
@@ -6344,48 +6390,86 @@ function Privacy() {
             There is no hosted database, telemetry, auth vendor, or required API
             key.
           </p>
+          <ul className="v2-data-checks">
+            <li>
+              <CheckCircle2 size={15} /> Stored on this device
+            </li>
+            <li>
+              <CheckCircle2 size={15} /> Zero third-party tracking
+            </li>
+            <li>
+              <CheckCircle2 size={15} /> Portable open JSON
+            </li>
+          </ul>
         </div>
-        <div className="card">
+        <div className="card v2-data-card">
           <h3>
             <Download /> Backup
           </h3>
           <p>Exports can contain private resume and note data.</p>
-          <a className="button" href="/api/export">
-            Download JSON
-          </a>{" "}
-          <a className="button secondary" href="/api/export/jobs.csv">
-            Download CSV
-          </a>
+          <div className="v2-data-actions">
+            <a className="button" href="/api/export">
+              <Download size={15} /> Download JSON
+            </a>
+            <a className="button secondary" href="/api/export/jobs.csv">
+              Download jobs CSV
+            </a>
+          </div>
         </div>
-        <div className="card">
+        <div className="card v2-data-card">
           <h3>
             <Upload /> Restore workspace
           </h3>
-          <input
-            type="file"
-            accept=".json,application/json"
-            aria-label="Import JobHuntr JSON backup"
-            onChange={(e) => setBackupFile(e.target.files?.[0])}
-          />
-          <button disabled={!backupFile} onClick={restore}>
-            Restore JSON
+          <p>Review a backup before replacing your current workspace.</p>
+          <label className="v2-file-drop">
+            <Upload size={20} />
+            <span>
+              <strong>{backupFile?.name || "Choose JSON backup"}</strong>
+              <small>JobHuntr export · up to 5,000 jobs</small>
+            </span>
+            <input
+              type="file"
+              accept=".json,application/json"
+              aria-label="Import JobHuntr JSON backup"
+              onChange={(e) => inspectBackup(e.target.files?.[0])}
+            />
+          </label>
+          {backupPreview && (
+            <div className="v2-backup-preview" role="status">
+              Contains {backupPreview.jobs} jobs, {backupPreview.resumes}{" "}
+              resumes, {backupPreview.letters} letters, and {backupPreview.runs}{" "}
+              runs.
+            </div>
+          )}
+          <button
+            disabled={!backupPreview}
+            onClick={() => setRestoreOpen(true)}
+          >
+            Review restore
           </button>
         </div>
-        <div className="card">
+        <div className="card v2-data-card">
           <h3>Import tracked jobs</h3>
           <p>
             Import a JobHuntr CSV or any CSV containing <code>company</code> and{" "}
             <code>title</code> headers. Matching URLs are skipped.
           </p>
-          <input
-            type="file"
-            accept=".csv,text/csv"
-            aria-label="Import jobs CSV"
-            onChange={(e) => {
-              setCsvFile(e.target.files?.[0]);
-              setResult(null);
-            }}
-          />
+          <label className="v2-file-drop">
+            <ListPlus size={20} />
+            <span>
+              <strong>{csvFile?.name || "Choose jobs CSV"}</strong>
+              <small>Requires company and title columns</small>
+            </span>
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              aria-label="Import jobs CSV"
+              onChange={(e) => {
+                setCsvFile(e.target.files?.[0]);
+                setResult(null);
+              }}
+            />
+          </label>
           <button disabled={!csvFile} onClick={importCsv}>
             Import CSV
           </button>
@@ -6396,7 +6480,7 @@ function Privacy() {
             </p>
           )}
         </div>
-        <div className="card">
+        <div className="card v2-data-card v2-data-wide">
           <h3>Secret scanning</h3>
           <p>
             <code>npm run secret:scan</code> blocks common private keys, tokens,
@@ -6404,6 +6488,47 @@ function Privacy() {
           </p>
         </div>
       </div>
+      {restoreOpen && (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setRestoreOpen(false)
+          }
+        >
+          <div
+            className="modal-card v2-restore-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="restore-title"
+          >
+            <span className="v2-warning-icon">
+              <RefreshCcw size={22} />
+            </span>
+            <h2 id="restore-title">Replace this workspace?</h2>
+            <p>
+              This will overwrite current JobHuntr data with{" "}
+              <strong>{backupFile.name}</strong>. Download a backup first if you
+              may need to undo this.
+            </p>
+            <div className="v2-backup-preview">
+              The backup contains {backupPreview.jobs} jobs and{" "}
+              {backupPreview.resumes + backupPreview.letters} documents.
+            </div>
+            <div className="modal-actions">
+              <button
+                className="secondary"
+                disabled={restoring}
+                onClick={() => setRestoreOpen(false)}
+              >
+                Cancel
+              </button>
+              <button disabled={restoring} onClick={restore}>
+                {restoring ? "Restoring…" : "Replace workspace"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
