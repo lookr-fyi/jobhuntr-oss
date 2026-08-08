@@ -248,6 +248,89 @@ function InfiniteHuntStatus({ runs, onOpen }) {
     </div>
   );
 }
+function GettingStarted({ state, onNavigate }) {
+  const [expanded, setExpanded] = useState(true);
+  const items = [
+    {
+      label: "Start Infinite Hunt",
+      detail: "Launch your first automated search",
+      complete: state.agentRuns.length > 0,
+      route: "agent",
+    },
+    {
+      label: "Track your first role",
+      detail: "Save an opportunity to your tracker",
+      complete: state.jobs.length > 0,
+      route: "tracker",
+    },
+    {
+      label: "Create an ATS resume",
+      detail: "Save a tailored resume version",
+      complete: state.resumes.length > 0,
+      route: "resume",
+    },
+    {
+      label: "Create a cover letter",
+      detail: "Build a reusable application letter",
+      complete: state.coverLetters.length > 0,
+      route: "cover-letter",
+    },
+    {
+      label: "Review an application",
+      detail: "Move a packet through submission",
+      complete: state.submissions.some((item) => item.status === "submitted"),
+      route: "queue",
+    },
+    {
+      label: "Reach out to a hiring team",
+      detail: "Prepare and record recruiter outreach",
+      complete: state.outreachDrafts.some((item) =>
+        ["sent", "replied", "archived"].includes(item.status),
+      ),
+      route: "outreach",
+    },
+  ];
+  const complete = items.filter((item) => item.complete).length;
+  if (complete === items.length) return null;
+  return (
+    <div className="v2-getting-started">
+      <button
+        className="v2-getting-started-head"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((open) => !open)}
+      >
+        <span>
+          <strong>Getting Started</strong>
+          <small>
+            {complete}/{items.length} completed (
+            {Math.round((complete / items.length) * 100)}%)
+          </small>
+        </span>
+        <ChevronRight size={14} />
+      </button>
+      <div className="v2-guidance-progress">
+        <i style={{ width: `${(complete / items.length) * 100}%` }} />
+      </div>
+      {expanded && (
+        <div className="v2-guidance-list">
+          {items.map((item) => (
+            <button
+              className={item.complete ? "complete" : ""}
+              key={item.label}
+              onClick={() => onNavigate(item.route)}
+            >
+              {item.complete ? <CheckCircle2 size={15} /> : <i />}
+              <span>
+                <strong>{item.label}</strong>
+                <small>{item.detail}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 function App() {
   const [state, setState] = useState(null);
   const initialRoute = window.location.hash.replace(/^#\/?/, "");
@@ -383,6 +466,7 @@ function App() {
             </div>
           ))}
         </nav>
+        {sidebarHovered && <GettingStarted state={state} onNavigate={setTab} />}
         <div className="v2-user" ref={userMenuRef}>
           {userMenuOpen && (
             <div

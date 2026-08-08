@@ -146,6 +146,20 @@ test(
             expandedNavigationBox.x + expandedNavigationBox.width,
         "expanded navigation labels should not clip outside the sidebar",
       );
+      const guidance = page.getByRole("button", { name: /Getting Started/ });
+      const firstGuidanceTask = page
+        .locator(".v2-guidance-list button")
+        .filter({ hasText: "Start Infinite Hunt" });
+      await guidance.waitFor();
+      await firstGuidanceTask.waitFor();
+      assert.match(
+        await guidance.innerText(),
+        /\d\/6 completed/,
+        "expanded v2 navigation should show live setup progress",
+      );
+      await guidance.click();
+      await firstGuidanceTask.waitFor({ state: "hidden" });
+      await guidance.click();
       await page.locator("main").hover({ position: { x: 400, y: 200 } });
       await assertAccessible(page, "Overview");
       await page.getByLabel("Applications evaluated").uncheck();
