@@ -418,6 +418,17 @@ test(
       await page.getByText("Application documents", { exact: true }).waitFor();
       await page.getByText("Job description", { exact: true }).waitFor();
       await page.getByRole("link", { name: /Apply manually/ }).waitFor();
+      const queueState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const linkedPacketId = queueState.submissions.find((submission) =>
+        ["draft", "ready"].includes(submission.status),
+      ).id;
+      await page.goto(`${baseUrl}/#/queue?packet=${linkedPacketId}`);
+      await page.getByText("Application documents", { exact: true }).waitFor();
+      await page.reload();
+      await page.getByText("Application documents", { exact: true }).waitFor();
+      assert.match(page.url(), new RegExp(`packet=${linkedPacketId}`));
       const interestAnswer = page.getByLabel(
         "Why are you interested in this role?",
       );
@@ -471,6 +482,14 @@ test(
       await archiveQueueDialog.waitFor();
       await archiveQueueDialog.getByRole("button", { name: "Cancel" }).click();
       await page.getByRole("tab", { name: /Search Jobs/ }).click();
+      assert.match(page.url(), /tab=search/);
+      await page.reload();
+      assert.equal(
+        await page
+          .getByRole("tab", { name: /Search Jobs/ })
+          .getAttribute("aria-selected"),
+        "true",
+      );
       await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
@@ -486,6 +505,7 @@ test(
       );
       await page.getByText("Resume ready for review").waitFor();
       await page.getByLabel("Cover letter attachment").waitFor();
+      await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Minimum queue match score").selectOption("40");
       await page.getByLabel("Sort submission queue").selectOption("fit");
       for (const item of [

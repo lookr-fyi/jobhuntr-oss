@@ -2678,17 +2678,26 @@ function Board({ state, reload }) {
   );
 }
 function Queue({ state, reload, setTab }) {
+  const queueParams = new URLSearchParams(
+    window.location.hash.split("?")[1] || "",
+  );
   const [jobId, setJobId] = useState(
     state.jobs.find((j) => !["applied", "rejected"].includes(j.status))?.id ||
       "",
   );
   const [selectedId, setSelectedId] = useState(
-    state.submissions.find(
-      (item) => !["archived", "submitted"].includes(item.status),
-    )?.id || "",
+    queueParams.get("packet") ||
+      state.submissions.find(
+        (item) => !["archived", "submitted"].includes(item.status),
+      )?.id ||
+      "",
   );
   const [query, setQuery] = useState("");
-  const [queueTab, setQueueTab] = useState("apply");
+  const [queueTab, setQueueTab] = useState(() =>
+    ["apply", "search", "manual"].includes(queueParams.get("tab"))
+      ? queueParams.get("tab")
+      : "apply",
+  );
   const [sourceSelectedId, setSourceSelectedId] = useState("");
   const [minimumFit, setMinimumFit] = useState(0);
   const [minimumAts, setMinimumAts] = useState(0);
@@ -2725,6 +2734,7 @@ function Queue({ state, reload, setTab }) {
   const readySubmissions = active.filter((item) => item.status === "ready");
   const selected =
     filtered.find((item) => item.id === selectedId) || filtered[0];
+  const selectedPacketId = selected?.id || "";
   const queuedJobIds = new Set(active.map((item) => item.jobId));
   const sourceJobs = state.jobs.filter((job) => {
     if (
@@ -2793,6 +2803,30 @@ function Queue({ state, reload, setTab }) {
       returnFocus?.focus?.();
     };
   }, [submitOpen]);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (queueTab !== "apply") params.set("tab", queueTab);
+    if (queueTab === "apply" && selectedPacketId)
+      params.set("packet", selectedPacketId);
+    const hash = `#/queue${params.size ? `?${params}` : ""}`;
+    if (window.location.hash !== hash)
+      window.history.replaceState({ tab: "queue" }, "", hash);
+  }, [queueTab, selectedPacketId]);
+  useEffect(() => {
+    const followQueueLink = () => {
+      const params = new URLSearchParams(
+        window.location.hash.split("?")[1] || "",
+      );
+      const linkedTab = params.get("tab");
+      setQueueTab(
+        ["apply", "search", "manual"].includes(linkedTab) ? linkedTab : "apply",
+      );
+      const packet = params.get("packet");
+      if (packet) setSelectedId(packet);
+    };
+    window.addEventListener("hashchange", followQueueLink);
+    return () => window.removeEventListener("hashchange", followQueueLink);
+  }, []);
   const recordReadySubmissions = async () => {
     setSubmittingReady(true);
     try {
