@@ -341,6 +341,20 @@ test(
       ]);
       await page.getByText("4 opportunities").waitFor();
       await page.getByRole("button", { name: "Saved" }).first().waitFor();
+      await page
+        .getByRole("button", { name: /Frontend Platform Engineer/ })
+        .click();
+      await page
+        .getByRole("heading", { name: "Frontend Platform Engineer" })
+        .waitFor();
+      assert.match(
+        page.url(),
+        /job=https%3A%2F%2Fexample.com%2Fnorthstar-frontend/,
+      );
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Frontend Platform Engineer" })
+        .waitFor();
       await assertAccessible(page, "Job Board");
 
       await page.getByRole("button", { name: "ATS Resume" }).click();

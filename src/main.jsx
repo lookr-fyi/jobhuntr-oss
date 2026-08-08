@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Briefcase,
@@ -62,6 +62,15 @@ const TRACKER_STAGES = [
   "offer",
   "rejected",
 ];
+const maximumListedSalary = (job) => {
+  const values = String(job.salary || "")
+    .match(/\d+(?:\.\d+)?\s*k?/gi)
+    ?.map((value) => {
+      const amount = Number.parseFloat(value);
+      return /k/i.test(value) ? amount * 1000 : amount;
+    });
+  return values?.length ? Math.max(...values) : 0;
+};
 
 const api = async (path, options = {}) => {
   try {
@@ -2333,7 +2342,12 @@ function Actions({ job, reload }) {
 function Board({ state, reload }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedUrl, setSelectedUrl] = useState(
+    () =>
+      new URLSearchParams(window.location.hash.split("?")[1] || "").get(
+        "job",
+      ) || "",
+  );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [location, setLocation] = useState("");
   const [minimumFit, setMinimumFit] = useState(0);
@@ -2350,7 +2364,7 @@ function Board({ state, reload }) {
       body: JSON.stringify({ q, location }),
     });
     setResults(jobs);
-    setSelectedIndex(0);
+    setSelectedUrl("");
   };
   useEffect(() => {
     api("/api/board/search", {
@@ -2362,36 +2376,52 @@ function Board({ state, reload }) {
     ...state.jobs.map((job) => job.url).filter(Boolean),
     ...newlyQueuedUrls,
   ]);
-  const salaryMaximum = (job) => {
-    const values = String(job.salary || "")
-      .match(/\d+(?:\.\d+)?\s*k?/gi)
-      ?.map((value) => {
-        const amount = Number.parseFloat(value);
-        return /k/i.test(value) ? amount * 1000 : amount;
-      });
-    return values?.length ? Math.max(...values) : 0;
-  };
-  const visibleResults = results
-    .filter(
-      (job) =>
-        job.fitScore >= minimumFit &&
-        salaryMaximum(job) >= minimumSalary &&
-        (remoteType === "all" ||
-          (remoteType === "remote"
-            ? /remote|anywhere/i.test(job.location)
-            : !/remote|anywhere/i.test(job.location))) &&
-        (source === "all" || job.source === source),
-    )
-    .sort((a, b) =>
-      sort === "fit"
-        ? b.fitScore - a.fitScore
-        : sort === "salary"
-          ? salaryMaximum(b) - salaryMaximum(a)
-          : sort === "company"
-            ? a.company.localeCompare(b.company)
-            : a.title.localeCompare(b.title),
-    );
-  const selected = visibleResults[selectedIndex] || visibleResults[0];
+  const visibleResults = useMemo(
+    () =>
+      results
+        .filter(
+          (job) =>
+            job.fitScore >= minimumFit &&
+            maximumListedSalary(job) >= minimumSalary &&
+            (remoteType === "all" ||
+              (remoteType === "remote"
+                ? /remote|anywhere/i.test(job.location)
+                : !/remote|anywhere/i.test(job.location))) &&
+            (source === "all" || job.source === source),
+        )
+        .sort((a, b) =>
+          sort === "fit"
+            ? b.fitScore - a.fitScore
+            : sort === "salary"
+              ? maximumListedSalary(b) - maximumListedSalary(a)
+              : sort === "company"
+                ? a.company.localeCompare(b.company)
+                : a.title.localeCompare(b.title),
+        ),
+    [results, minimumFit, minimumSalary, remoteType, source, sort],
+  );
+  const selected =
+    visibleResults.find((job) => job.url === selectedUrl) || visibleResults[0];
+  const selectedBoardUrl = selected?.url || "";
+  useEffect(() => {
+    if (!results.length) return;
+    const params = new URLSearchParams();
+    if (selectedBoardUrl) params.set("job", selectedBoardUrl);
+    const hash = `#/board${params.size ? `?${params}` : ""}`;
+    if (window.location.hash !== hash)
+      window.history.replaceState({ tab: "board" }, "", hash);
+  }, [selectedBoardUrl, results.length]);
+  useEffect(() => {
+    const followBoardLink = () => {
+      const url = new URLSearchParams(
+        window.location.hash.split("?")[1] || "",
+      ).get("job");
+      if (!url) return;
+      if (url) setSelectedUrl(url);
+    };
+    window.addEventListener("hashchange", followBoardLink);
+    return () => window.removeEventListener("hashchange", followBoardLink);
+  }, []);
   const activeFilterCount = [
     location,
     minimumFit > 0,
@@ -2573,7 +2603,7 @@ function Board({ state, reload }) {
                   body: JSON.stringify({ q: "", location: "" }),
                 }),
               );
-              setSelectedIndex(0);
+              setSelectedUrl("");
             }}
           >
             Clear all
@@ -2591,12 +2621,12 @@ function Board({ state, reload }) {
       </div>
       <div className="v2-board-layout">
         <div className="v2-board-list">
-          {visibleResults.map((j, i) => (
+          {visibleResults.map((j) => (
             <button
               type="button"
               className={`v2-board-row ${selected?.url === j.url ? "selected" : ""}`}
-              key={`${j.url}-${i}`}
-              onClick={() => setSelectedIndex(i)}
+              key={j.url}
+              onClick={() => setSelectedUrl(j.url)}
             >
               <span className="v2-job-logo">{j.company?.slice(0, 1)}</span>
               <span>
