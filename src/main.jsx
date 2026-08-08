@@ -3663,6 +3663,29 @@ function SubmissionCard({ submission: s, state, reload }) {
     </div>
   );
 }
+const COVER_LETTER_TEMPLATES = [
+  {
+    id: "classic",
+    name: "Classic Professional",
+    description: "A polished traditional letter with balanced spacing.",
+    content:
+      "Dear {{company}},\n\n{{opening}} My background in {{skills}} maps well to the {{role}} opportunity.\n\n{{evidence}}\n\n{{closing}}\n\nBest,\n{{name}}",
+  },
+  {
+    id: "modern",
+    name: "Modern Impact",
+    description: "A concise structure that leads with fit and evidence.",
+    content:
+      "{{name}}\nCandidate for {{role}}\n\nHello {{company}} team,\n\n{{opening}}\n\nWHY I’M A STRONG FIT\n{{evidence}}\n\nCORE STRENGTHS\n{{skills}}\n\n{{closing}}",
+  },
+  {
+    id: "minimal",
+    name: "Minimal Direct",
+    description: "A compact, straightforward letter for fast-moving teams.",
+    content:
+      "Dear {{company}},\n\nI’m applying for the {{role}} position. {{opening}}\n\n{{evidence}}\n\nMy relevant strengths include {{skills}}. {{closing}}\n\n{{name}}",
+  },
+];
 function Resume({ state, reload, mode = "resume" }) {
   const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
@@ -3822,9 +3845,9 @@ function Resume({ state, reload, mode = "resume" }) {
   const openLetterWizard = () =>
     setLetterWizard({
       step: 1,
-      style: "professional",
-      opening: "",
-      emphasis: "",
+      templateId: COVER_LETTER_TEMPLATES[0].id,
+      templateName: COVER_LETTER_TEMPLATES[0].name,
+      templateContent: COVER_LETTER_TEMPLATES[0].content,
       resumeId: state.resumes[0]?.id || "",
       jobId: jobId || state.jobs[0]?.id || "",
     });
@@ -3899,37 +3922,34 @@ function Resume({ state, reload, mode = "resume" }) {
               <>
                 <div className="v2-cover-step-head">
                   <span>STEP 1 OF 5</span>
-                  <h3>Choose a writing style</h3>
-                  <p>Select the tone that best fits this opportunity.</p>
+                  <h3>Choose a Template</h3>
+                  <p>Select a design and structure for your cover letter.</p>
                 </div>
-                <div className="v2-cover-style-grid">
-                  {[
-                    [
-                      "professional",
-                      "Professional",
-                      "Balanced, polished, and broadly applicable.",
-                    ],
-                    [
-                      "concise",
-                      "Concise",
-                      "Direct and compact for fast-moving hiring teams.",
-                    ],
-                    [
-                      "story-driven",
-                      "Story-driven",
-                      "Opens with motivation and a memorable narrative.",
-                    ],
-                  ].map(([value, label, description]) => (
+                <div className="v2-cover-style-grid v2-cover-template-grid">
+                  {COVER_LETTER_TEMPLATES.map((template) => (
                     <button
-                      className={letterWizard.style === value ? "selected" : ""}
-                      key={value}
+                      className={
+                        letterWizard.templateId === template.id
+                          ? "selected"
+                          : ""
+                      }
+                      key={template.id}
                       onClick={() =>
-                        setLetterWizard({ ...letterWizard, style: value })
+                        setLetterWizard({
+                          ...letterWizard,
+                          templateId: template.id,
+                          templateName: template.name,
+                          templateContent: template.content,
+                        })
                       }
                     >
-                      <FileText size={24} />
-                      <b>{label}</b>
-                      <span>{description}</span>
+                      <span
+                        className={`v2-cover-template-preview ${template.id}`}
+                      >
+                        <i /> <i /> <i /> <i />
+                      </span>
+                      <b>{template.name}</b>
+                      <span>{template.description}</span>
                     </button>
                   ))}
                 </div>
@@ -3939,35 +3959,39 @@ function Resume({ state, reload, mode = "resume" }) {
               <>
                 <div className="v2-cover-step-head">
                   <span>STEP 2 OF 5</span>
-                  <h3>Personalize the template</h3>
-                  <p>Add an optional opening and the evidence to emphasize.</p>
+                  <h3>Edit Your Cover Letter Template</h3>
+                  <p>
+                    Customize the selected template. Keep placeholders wrapped
+                    in double braces so JobHuntr can personalize it.
+                  </p>
                 </div>
                 <label>
-                  Custom opening
+                  Template content
                   <textarea
-                    value={letterWizard.opening}
+                    className="v2-cover-template-editor"
+                    value={letterWizard.templateContent}
                     onChange={(event) =>
                       setLetterWizard({
                         ...letterWizard,
-                        opening: event.target.value,
+                        templateContent: event.target.value,
                       })
                     }
-                    placeholder="What specifically drew you to this role?"
+                    placeholder="Enter your cover letter template…"
                   />
                 </label>
-                <label>
-                  Experience to emphasize
-                  <textarea
-                    value={letterWizard.emphasis}
-                    onChange={(event) =>
-                      setLetterWizard({
-                        ...letterWizard,
-                        emphasis: event.target.value,
-                      })
-                    }
-                    placeholder="A relevant outcome, project, or strength"
-                  />
-                </label>
+                <div className="v2-cover-placeholder-help">
+                  {[
+                    "{{company}}",
+                    "{{role}}",
+                    "{{opening}}",
+                    "{{skills}}",
+                    "{{evidence}}",
+                    "{{closing}}",
+                    "{{name}}",
+                  ].map((placeholder) => (
+                    <code key={placeholder}>{placeholder}</code>
+                  ))}
+                </div>
               </>
             )}
             {letterWizard.step === 3 && (
@@ -4066,8 +4090,8 @@ function Resume({ state, reload, mode = "resume" }) {
                 </div>
                 <div className="v2-cover-review">
                   <div>
-                    <span>Style</span>
-                    <b>{letterWizard.style}</b>
+                    <span>Template</span>
+                    <b>{letterWizard.templateName}</b>
                   </div>
                   <div>
                     <span>Resume</span>

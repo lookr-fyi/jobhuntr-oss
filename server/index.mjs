@@ -513,6 +513,10 @@ app.post("/api/cover-letters", async (req, res) => {
       : "professional";
     const opening = safeText(req.body.opening, 1000);
     const emphasis = safeText(req.body.emphasis, 2000);
+    const templateId = safeText(req.body.templateId, 50) || "classic";
+    const templateName =
+      safeText(req.body.templateName, 100) || "Classic Professional";
+    const templateContent = safeText(req.body.templateContent, 20000);
     const resume = db.resumes.find((item) => item.id === req.body.resumeId);
     const skills = (db.profile.skills || []).slice(0, 4).join(", ");
     const styleOpening = {
@@ -525,12 +529,30 @@ app.post("/api/cover-letters", async (req, res) => {
       .map((line) => line.trim())
       .find((line) => line.length > 30)
       ?.slice(0, 260);
-    const body = `Dear ${job.company || "Hiring Team"},\n\n${opening || styleOpening} My background in ${skills || "shipping user-focused software"} maps well to your needs, and I am especially interested in ${job.description || "the opportunity to contribute quickly and thoughtfully"}.\n\n${emphasis || resumeEvidence || "In prior work I have built reliable product workflows, improved user experience, and operated with strong ownership."}\n\nI would welcome the chance to discuss how I can help ${job.company || "your team"} deliver meaningful results.\n\nBest,\n${db.profile.name}`;
+    const values = {
+      "{{company}}": job.company || "Hiring Team",
+      "{{role}}": job.title || "role",
+      "{{opening}}": opening || styleOpening,
+      "{{skills}}": skills || "shipping user-focused software",
+      "{{evidence}}":
+        emphasis ||
+        resumeEvidence ||
+        "In prior work I have built reliable product workflows, improved user experience, and operated with strong ownership.",
+      "{{closing}}": `I would welcome the chance to discuss how I can help ${job.company || "your team"} deliver meaningful results.`,
+      "{{name}}": db.profile.name || "Job Hunter",
+    };
+    const defaultTemplate = `Dear {{company}},\n\n{{opening}} My background in {{skills}} maps well to the {{role}} opportunity.\n\n{{evidence}}\n\n{{closing}}\n\nBest,\n{{name}}`;
+    let body = templateContent || defaultTemplate;
+    for (const [placeholder, value] of Object.entries(values))
+      body = body.replaceAll(placeholder, value);
     const item = {
       id: nanoid(),
       jobId: job.id,
       resumeId: resume?.id || "",
       style,
+      templateId,
+      templateName,
+      templateContent: templateContent || defaultTemplate,
       opening,
       emphasis,
       createdAt: new Date().toISOString(),
