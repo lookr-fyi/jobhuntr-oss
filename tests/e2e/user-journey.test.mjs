@@ -81,6 +81,48 @@ test(
         .locator(".v2-run-row .pill", { hasText: "Completed" })
         .waitFor();
 
+      await page.getByRole("button", { name: "ATS Resume" }).click();
+      await page.getByLabel("Resume version name").fill("E2E tailored resume");
+      await page
+        .getByLabel("Resume content")
+        .fill(
+          "Senior product engineer. Increased conversion by 42%. React, TypeScript, and Python.",
+        );
+      await page.getByRole("button", { name: "Analyze ATS fit" }).click();
+      await page.locator(".score", { hasText: "ATS alignment" }).waitFor();
+      await page.getByRole("button", { name: "Save version" }).click();
+      await page.getByText("E2E tailored resume").first().waitFor();
+
+      await page.getByRole("button", { name: "Submission Queue" }).click();
+      await page.getByRole("button", { name: "Add to queue" }).click();
+      const checklist = page.locator(".packet input[type=checkbox]");
+      await checklist.first().waitFor();
+      const checklistCount = await checklist.count();
+      assert.ok(checklistCount > 0, "submission checklist should be visible");
+      for (const item of [
+        "Review resume alignment",
+        "Review cover letter",
+        "Confirm application details",
+      ]) {
+        const checkbox = page.getByLabel(item);
+        if (await checkbox.isChecked()) continue;
+        await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.url().includes("/api/submissions/") &&
+              response.request().method() === "PATCH" &&
+              response.ok(),
+          ),
+          checkbox.click(),
+        ]);
+      }
+      await page.reload();
+      await page.getByRole("button", { name: "Submission Queue" }).click();
+      await page.getByRole("button", { name: "Mark submitted" }).click();
+      await page
+        .getByRole("heading", { name: "Your queue is clear" })
+        .waitFor();
+
       await page.getByRole("button", { name: "Outreach" }).click();
       await page.getByRole("button", { name: "Collect contacts" }).click();
       const subject = page.getByLabel("Subject");
@@ -95,6 +137,8 @@ test(
         await fs.readFile(path.join(dataDir, "jobhuntr.json"), "utf8"),
       );
       assert.equal(persisted.agentRuns.length, 1);
+      assert.equal(persisted.resumes[0].name, "E2E tailored resume");
+      assert.equal(persisted.submissions[0].status, "submitted");
       assert.equal(
         persisted.outreachDrafts[0].subject,
         "E2E persisted outreach subject",

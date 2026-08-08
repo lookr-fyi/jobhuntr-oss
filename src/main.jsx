@@ -1454,11 +1454,13 @@ function Resume({ state, reload, mode = "resume" }) {
         </div>
         <div className="triple">
           <input
+            aria-label="Resume version name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Version name"
           />
           <select
+            aria-label="Resume template"
             value={templateId}
             onChange={(e) => setTemplateId(e.target.value)}
           >
@@ -1468,7 +1470,11 @@ function Resume({ state, reload, mode = "resume" }) {
               </option>
             ))}
           </select>
-          <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
+          <select
+            aria-label="Target job"
+            value={jobId}
+            onChange={(e) => setJobId(e.target.value)}
+          >
             {state.jobs.map((j) => (
               <option value={j.id} key={j.id}>
                 {j.company} — {j.title}
@@ -1477,6 +1483,7 @@ function Resume({ state, reload, mode = "resume" }) {
           </select>
         </div>
         <textarea
+          aria-label="Resume content"
           ref={resumeRef}
           className="resume"
           value={resume}
