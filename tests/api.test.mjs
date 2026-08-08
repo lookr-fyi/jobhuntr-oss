@@ -105,6 +105,25 @@ test('coach and outreach create private role-specific drafts', async () => {
   assert.equal(outreach.res.status, 201); assert.match(outreach.body.body, new RegExp(job.company));
 });
 
+test('career stories ground coach sessions and practice answers persist', async () => {
+  const story = await req('/api/career-stories', { method: 'POST', body: JSON.stringify({ title: 'Scaled TypeScript platform', situation: 'A slow platform', task: 'Improve reliability', action: 'Migrated critical services', result: 'Reduced incidents 35%', skills: ['TypeScript'] }) });
+  assert.equal(story.res.status, 201);
+  const state = (await req('/api/state')).body; const job = state.jobs.find((item) => `${item.title} ${item.description} ${(item.tags||[]).join(' ')}`.toLowerCase().includes('typescript')) || state.jobs[0];
+  const coach = await req('/api/coach/prepare', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });
+  assert.ok(coach.body.matchedStoryIds.includes(story.body.id));
+  const question = coach.body.questions[0]; const answers = { ...coach.body.answers, [question]: 'A specific saved answer.' };
+  const saved = await req(`/api/coach/sessions/${coach.body.id}`, { method: 'PATCH', body: JSON.stringify({ answers, notes: 'Ask about team structure', researchDone: [coach.body.companyResearch[0]], status: 'completed' }) });
+  assert.equal(saved.body.answers[question], 'A specific saved answer.'); assert.equal(saved.body.status, 'completed'); assert.equal(saved.body.researchDone.length, 1);
+  const edited = await req(`/api/career-stories/${story.body.id}`, { method: 'PATCH', body: JSON.stringify({ result: 'Reduced incidents 40%' }) }); assert.match(edited.body.result, /40%/);
+  await req(`/api/career-stories/${story.body.id}`, { method: 'DELETE' });
+});
+
+test('outreach drafts persist edits and manual delivery status', async () => {
+  const state = (await req('/api/state')).body; const created = await req('/api/outreach/draft', { method: 'POST', body: JSON.stringify({ jobId: state.jobs[0].id }) });
+  const updated = await req(`/api/outreach/${created.body.id}`, { method: 'PATCH', body: JSON.stringify({ subject: 'Personal note', body: 'Edited locally', status: 'sent' }) });
+  assert.equal(updated.res.status, 200); assert.equal(updated.body.subject, 'Personal note'); assert.equal(updated.body.status, 'sent');
+});
+
 test('cover letters can be edited, printed safely, and removed', async () => {
   const state = (await req('/api/state')).body; const job = state.jobs[0];
   const created = await req('/api/cover-letters', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });

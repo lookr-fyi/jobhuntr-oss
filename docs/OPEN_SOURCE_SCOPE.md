@@ -26,8 +26,8 @@ OSS replacement decisions:
 | ATS templates | Three transparent templates, named history, keyword/impact analysis, secure print preview and PDF-ready export |
 | Cover letters | Editable deterministic drafts, persistent history, print preview and PDF-ready export |
 | Submission queue | Local application packets, attachment visibility, mandatory review, submission history |
-| AI coach | Deterministic role-specific interview questions, talking points, and research checklist |
-| Outreach | Local editable LinkedIn/email-style draft generation; no automatic sending |
+| AI coach / About Me | Persistent interview answers, research progress, private notes, session history, and reusable STAR evidence vault |
+| Outreach | Local editable LinkedIn/email-style drafts with draft/sent/replied/archive workflow; no automatic sending |
 | Infinite Hunt | Offline previews, role/location/keyword rules, exclusions, fit thresholding, presets, match explanations, deduplication, and run history |
 | User settings | Local profile, role/skill criteria, locations, remote and salary preferences |
 | Data portability | Full JSON backup/restore, CSV jobs export, bulk JSON jobs import |

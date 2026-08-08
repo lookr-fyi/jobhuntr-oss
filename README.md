@@ -30,7 +30,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 - **Autonomous hunt**: truthful role/location filtering, required and excluded keywords, profile-fit thresholds, previews, reusable presets, deduplication, match explanations, and run history.
 - **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.
 - **Submission queue**: assemble resume/letter packets, enforce a review checklist, and record applications without external account automation.
-- **Interview coach and outreach**: role-specific practice plans, talking points, research checklists, and editable messages generated offline.
+- **Interview coach and outreach**: persistent role-specific practice answers, research checklists, private notes, reusable STAR story evidence, session history, and editable outreach statuses—all offline.
 - **Import/export**: one-click JSON backup/restore, CSV export, and user-facing CSV import with quoted-field support and URL deduplication.
 - **Public-repo safety**: `.gitignore`, `.env.example`, and `npm run secret:scan`.
 

@@ -18,7 +18,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 4, createdAt, updatedAt: createdAt },
+    meta: { version: 5, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: 'Local Job Hunter',
@@ -37,6 +37,7 @@ export function emptyDb() {
     coachingSessions: [],
     outreachDrafts: [],
     huntPresets: [],
+    careerStories: [],
     agentRuns: [],
     activities: [{ id: nanoid(), at: createdAt, type: 'system', message: 'Initialized local JobHuntr workspace.' }]
   };
@@ -61,13 +62,16 @@ function migrate(db) {
   db.coachingSessions ||= [];
   db.outreachDrafts ||= [];
   db.huntPresets ||= [];
+  db.careerStories ||= [];
+  for (const draft of db.outreachDrafts) draft.status ||= 'draft';
+  for (const session of db.coachingSessions) { session.status ||= 'in-progress'; session.answers ||= Object.fromEntries((session.questions || []).map((q) => [q, ''])); session.matchedStoryIds ||= []; session.researchDone ||= []; }
   db.agentRuns ||= [];
   db.activities ||= [];
   for (const job of db.jobs) {
     job.notes ||= []; job.tasks ||= []; job.contacts ||= []; job.tags ||= [];
     job.statusHistory ||= [{ status: job.status || 'saved', at: job.createdAt || now() }];
   }
-  db.meta.version = 4;
+  db.meta.version = 5;
   return db;
 }
 
