@@ -1679,7 +1679,7 @@ button.v2-workflow-card.selected {
 }
 .v2-loop-row {
   display: grid;
-  grid-template-columns: 28px 36px 1fr auto;
+  grid-template-columns: 28px 36px 1fr auto auto;
   gap: 10px;
   align-items: center;
   padding: 12px;
@@ -1709,6 +1709,15 @@ button.v2-workflow-card.selected {
 }
 .v2-loop-row button {
   padding: 6px 9px;
+}
+.v2-loop-order-actions {
+  display: flex;
+  gap: 2px;
+}
+.v2-loop-order-actions button {
+  min-width: 28px;
+  justify-content: center;
+  padding: 5px;
 }
 .v2-loop-empty {
   padding: 30px;
@@ -1761,11 +1770,18 @@ button.v2-workflow-card.selected {
     grid-template-columns: 1fr;
   }
   .v2-loop-row {
-    grid-template-columns: 28px 36px 1fr;
+    grid-template-columns: 28px 36px 1fr auto;
   }
   .v2-loop-row button {
     grid-column: 3;
     justify-self: start;
+  }
+  .v2-loop-order-actions {
+    grid-column: 4;
+    grid-row: 1;
+  }
+  .v2-loop-row > button:last-child {
+    grid-column: 3;
   }
 }
 .hunt-config {

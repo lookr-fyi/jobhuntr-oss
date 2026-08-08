@@ -3102,8 +3102,21 @@ function Agent({ state, reload }) {
   };
   const [form, setForm] = useState(defaults);
   const [preview, setPreview] = useState(null);
-  const [selectedRuns, setSelectedRuns] = useState(["linkedin", "indeed"]);
-  const [optimizeResume, setOptimizeResume] = useState(false);
+  const [selectedRuns, setSelectedRuns] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem("jobhuntr-infinite-workflows") || "null",
+      );
+      return Array.isArray(saved) && saved.length
+        ? saved
+        : ["linkedin", "indeed"];
+    } catch {
+      return ["linkedin", "indeed"];
+    }
+  });
+  const [optimizeResume, setOptimizeResume] = useState(
+    () => localStorage.getItem("jobhuntr-optimize-resume") === "true",
+  );
   const [running, setRunning] = useState(false);
   const payload = () => ({
     q: form.q,
@@ -3118,14 +3131,26 @@ function Agent({ state, reload }) {
       .split(",")
       .map((x) => x.trim())
       .filter(Boolean),
+    workflows: selectedRuns,
+    optimizeResume,
   });
-  const loadPreset = (preset) =>
+  const loadPreset = (preset) => {
     setForm({
       ...form,
       ...preset.options,
       required: (preset.options.requiredKeywords || []).join(", "),
       excluded: (preset.options.excludeKeywords || []).join(", "),
     });
+    if (preset.options.workflows?.length)
+      saveRunOrder(preset.options.workflows);
+    if (preset.options.optimizeResume !== undefined) {
+      setOptimizeResume(Boolean(preset.options.optimizeResume));
+      localStorage.setItem(
+        "jobhuntr-optimize-resume",
+        String(Boolean(preset.options.optimizeResume)),
+      );
+    }
+  };
   const run = async () => {
     setRunning(true);
     try {
@@ -3166,10 +3191,23 @@ function Agent({ state, reload }) {
       "Search verified company career pages directly.",
     ],
   ];
+  const saveRunOrder = (runs) => {
+    setSelectedRuns(runs);
+    localStorage.setItem("jobhuntr-infinite-workflows", JSON.stringify(runs));
+  };
   const toggleRun = (id) =>
-    setSelectedRuns((runs) =>
-      runs.includes(id) ? runs.filter((runId) => runId !== id) : [...runs, id],
+    saveRunOrder(
+      selectedRuns.includes(id)
+        ? selectedRuns.filter((runId) => runId !== id)
+        : [...selectedRuns, id],
     );
+  const moveRun = (index, offset) => {
+    const destination = index + offset;
+    if (destination < 0 || destination >= selectedRuns.length) return;
+    const next = [...selectedRuns];
+    [next[index], next[destination]] = [next[destination], next[index]];
+    saveRunOrder(next);
+  };
   return (
     <section className="v2-hunt-page">
       <div className="v2-page-intro v2-hunt-intro">
@@ -3232,7 +3270,13 @@ function Agent({ state, reload }) {
             <input
               type="checkbox"
               checked={optimizeResume}
-              onChange={(e) => setOptimizeResume(e.target.checked)}
+              onChange={(e) => {
+                setOptimizeResume(e.target.checked);
+                localStorage.setItem(
+                  "jobhuntr-optimize-resume",
+                  String(e.target.checked),
+                );
+              }}
             />
             <span>
               <strong>Generate an optimized resume for each job</strong>
@@ -3289,6 +3333,24 @@ function Agent({ state, reload }) {
                       <strong>{workflow[2]}</strong>
                       <small>Ready for local preview</small>
                     </div>
+                    <span className="v2-loop-order-actions">
+                      <button
+                        className="text-button"
+                        aria-label={`Move ${workflow[2]} up`}
+                        disabled={index === 0}
+                        onClick={() => moveRun(index, -1)}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        className="text-button"
+                        aria-label={`Move ${workflow[2]} down`}
+                        disabled={index === selectedRuns.length - 1}
+                        onClick={() => moveRun(index, 1)}
+                      >
+                        ↓
+                      </button>
+                    </span>
                     <button
                       className="text-button"
                       onClick={() => toggleRun(id)}

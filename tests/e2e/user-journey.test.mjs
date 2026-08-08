@@ -89,6 +89,10 @@ test(
 
       await page.getByRole("button", { name: "Infinite Hunting" }).click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      await page
+        .getByLabel("Generate an optimized resume for each job")
+        .check();
+      await page.getByRole("button", { name: "Move Indeed up" }).click();
       await page.getByRole("button", { name: "Start infinite hunt" }).click();
       await page.getByText(/eligible matches/).waitFor();
       await page.getByRole("heading", { name: "Run history" }).waitFor();
@@ -216,6 +220,11 @@ test(
         await fs.readFile(path.join(dataDir, "jobhuntr.json"), "utf8"),
       );
       assert.equal(persisted.agentRuns.length, 1);
+      assert.deepEqual(persisted.agentRuns[0].workflows, [
+        "indeed",
+        "linkedin",
+      ]);
+      assert.equal(persisted.agentRuns[0].optimizeResume, true);
       assert.equal(persisted.resumes[0].name, "E2E tailored resume");
       assert.equal(persisted.submissions[0].status, "submitted");
       assert.equal(persisted.coverLetters[0].title, "E2E product letter");

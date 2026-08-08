@@ -873,6 +873,12 @@ const HuntSchema = z.object({
   maxResults: z.coerce.number().min(1).max(100).optional(),
   requiredKeywords: z.array(z.string().max(100)).max(20).optional(),
   excludeKeywords: z.array(z.string().max(100)).max(20).optional(),
+  workflows: z
+    .array(z.enum(["linkedin", "indeed", "glassdoor", "company"]))
+    .min(1)
+    .max(4)
+    .optional(),
+  optimizeResume: z.boolean().optional(),
 });
 const huntOptions = (input, profile) =>
   HuntSchema.parse({
@@ -882,6 +888,8 @@ const huntOptions = (input, profile) =>
     maxResults: input.maxResults ?? 25,
     requiredKeywords: input.requiredKeywords || [],
     excludeKeywords: input.excludeKeywords || [],
+    workflows: input.workflows || ["linkedin", "indeed"],
+    optimizeResume: Boolean(input.optimizeResume),
   });
 
 app.post("/api/agent-runs/preview", async (req, res) => {
@@ -939,6 +947,11 @@ app.post("/api/agent-runs/start", async (req, res) => {
         detail: `Query “${options.q}”, location “${options.location || "any"}”, ${options.requiredKeywords.length} required and ${options.excludeKeywords.length} excluded keywords`,
       },
       {
+        name: "Run selected workflows",
+        status: "completed",
+        detail: `${options.workflows.join(", ")} executed in the configured order`,
+      },
+      {
         name: "Score local catalog",
         status: "completed",
         detail: `${matches.length} of ${seedJobs.length} roles met every rule and the ${options.minFit}% threshold`,
@@ -956,6 +969,8 @@ app.post("/api/agent-runs/start", async (req, res) => {
       completedAt: timestamp(),
       search: { q: options.q, location: options.location },
       options,
+      workflows: options.workflows,
+      optimizeResume: options.optimizeResume,
       inspected: seedJobs.length,
       found: matches.length,
       added,

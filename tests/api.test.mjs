@@ -88,7 +88,8 @@ test("agent run saves matches and logs actions", async () => {
   assert.equal(run.res.status, 201);
   assert.equal(run.body.status, "completed");
   assert.ok(run.body.actions.length > 0);
-  assert.equal(run.body.steps.length, 4);
+  assert.equal(run.body.steps.length, 5);
+  assert.deepEqual(run.body.workflows, ["linkedin", "indeed"]);
   assert.ok(run.body.added >= 1);
 });
 
