@@ -10328,6 +10328,7 @@ function Privacy({ state }) {
         resumes: data.resumes?.length || 0,
         runs: data.agentRuns?.length || 0,
         letters: data.coverLetters?.length || 0,
+        chats: data.coachConversations?.length || 0,
       });
     } catch {
       setResult({ error: "This file is not a valid JobHuntr JSON backup." });
@@ -10378,6 +10379,10 @@ function Privacy({ state }) {
             <dt>Agent runs</dt>
             <dd>{state.agentRuns.length}</dd>
           </div>
+          <div>
+            <dt>Coach chats</dt>
+            <dd>{state.coachConversations.length}</dd>
+          </div>
         </dl>
       </div>
       <div className="grid v2-data-grid">
@@ -10386,9 +10391,9 @@ function Privacy({ state }) {
             <ShieldCheck /> Local-first guarantees
           </h3>
           <p>
-            All personal data persists to <code>./data/jobhuntr.json</code>.
-            There is no hosted database, telemetry, auth vendor, or required API
-            key.
+            All personal data persists in JobHuntr&apos;s private local data
+            directory. There is no hosted database, telemetry, auth vendor, or
+            required API key.
           </p>
           <ul className="v2-data-checks">
             <li>
@@ -10437,8 +10442,8 @@ function Privacy({ state }) {
           {backupPreview && (
             <div className="v2-backup-preview" role="status">
               Contains {backupPreview.jobs} jobs, {backupPreview.resumes}{" "}
-              resumes, {backupPreview.letters} letters, and {backupPreview.runs}{" "}
-              runs.
+              resumes, {backupPreview.letters} letters, {backupPreview.runs}{" "}
+              runs, and {backupPreview.chats} coach chats.
             </div>
           )}
           <button
@@ -10513,7 +10518,8 @@ function Privacy({ state }) {
             </p>
             <div className="v2-backup-preview">
               The backup contains {backupPreview.jobs} jobs and{" "}
-              {backupPreview.resumes + backupPreview.letters} documents.
+              {backupPreview.resumes + backupPreview.letters} documents, plus{" "}
+              {backupPreview.chats} private coach chats.
             </div>
             <div className="modal-actions">
               <button

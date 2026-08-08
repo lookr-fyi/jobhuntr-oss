@@ -1396,10 +1396,12 @@ test(
             resumes: [{ id: "backup-resume" }],
             coverLetters: [],
             agentRuns: [],
+            coachConversations: [{ id: "backup-chat" }],
           }),
         ),
       });
       await page.getByText(/Contains 1 jobs, 1 resumes/).waitFor();
+      await page.getByText(/1 coach chats/).waitFor();
       await page.getByRole("button", { name: "Review restore" }).click();
       const restoreDialog = page.getByRole("dialog", {
         name: "Replace this workspace?",
@@ -1480,6 +1482,16 @@ test(
         navigationBox.y >= 780,
         "mobile navigation should be bottom-fixed",
       );
+      assert.equal(
+        await mobile.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth + 1,
+        ),
+        false,
+        "Overview should fit a 390px viewport",
+      );
+      await assertAccessible(mobile, "Mobile Overview");
       await mobile
         .locator('button[title="Job Board"]')
         .evaluate((button) => button.click());
@@ -1494,6 +1506,8 @@ test(
         "mobile page should not overflow horizontally",
       );
       for (const [navigation, heading] of [
+        ["Infinite Hunting", "Infinite Hunting"],
+        ["Agent Runs", "Agent Runs"],
         ["Submission Queue", "Submission Queue"],
         ["ATS Resume", "ATS Resume"],
         ["Cover Letter", "Cover Letters"],
