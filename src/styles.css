@@ -1491,8 +1491,23 @@ button:disabled {
   grid-template-columns: 1fr auto;
   gap: 12px;
   margin: 18px 0 12px;
+  align-items: end;
 }
-.v2-audit-url input {
+.v2-audit-url label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-audit-url label > span {
+  margin-left: 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 500;
+}
+.v2-audit-url input,
+.v2-audit-url button {
   min-height: 44px;
 }
 .v2-local-notice {
@@ -1535,6 +1550,89 @@ button.v2-audit-toggle:hover {
 }
 .v2-audit-page .audit-layout {
   margin-top: 14px;
+}
+.v2-field-count {
+  display: block;
+  margin-top: -8px;
+  color: #64748b;
+  font-size: 10px;
+  text-align: right;
+}
+.v2-target-context-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 16px;
+  padding: 11px 12px;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 12px;
+  text-align: left;
+}
+.v2-target-context-toggle svg {
+  transition: transform 0.2s;
+}
+.v2-target-context-toggle svg.rotated {
+  transform: rotate(90deg);
+}
+.v2-audit-loading {
+  display: grid;
+  min-height: 390px;
+  place-content: center;
+  justify-items: center;
+  padding: 34px;
+  text-align: center;
+}
+.v2-loading-orb {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  color: #2563eb;
+  border-radius: 50%;
+  background: #dbeafe;
+}
+.v2-audit-loading h3 {
+  margin: 15px 0 4px;
+}
+.v2-audit-loading p {
+  max-width: 400px;
+  margin: 0 0 18px;
+  color: #64748b;
+  line-height: 1.55;
+}
+.v2-audit-loading > i {
+  width: min(360px, 90%);
+  height: 10px;
+  margin: 5px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #e2e8f0, #f8fafc, #e2e8f0);
+  background-size: 200% 100%;
+  animation: audit-shimmer 1.2s linear infinite;
+}
+.v2-audit-loading > i:nth-of-type(2) {
+  width: min(300px, 76%);
+}
+.v2-audit-loading > i:nth-of-type(3) {
+  width: min(330px, 82%);
+}
+@keyframes audit-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-audit-loading > i {
+    animation: none;
+  }
+}
+@media (max-width: 620px) {
+  .v2-audit-url {
+    grid-template-columns: 1fr;
+  }
 }
 .v2-outreach-page .v2-page-intro > .inline select {
   min-width: 230px;

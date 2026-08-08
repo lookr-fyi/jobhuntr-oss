@@ -4508,7 +4508,10 @@ function Gigs({ state, reload }) {
 function ProfileAudit({ state, reload }) {
   const [profileUrl, setProfileUrl] = useState("");
   const [expanded, setExpanded] = useState(true);
+  const [contextExpanded, setContextExpanded] = useState(false);
   const [form, setForm] = useState({
+    profileUrl: "",
+    targetContext: "",
     headline: state.profile.headline || "",
     about: "",
     experience: state.profile.resumeText || "",
@@ -4521,7 +4524,7 @@ function ProfileAudit({ state, reload }) {
     try {
       const result = await api("/api/profile-audits", {
         method: "POST",
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, profileUrl }),
       });
       setAudit(result);
       await reload();
@@ -4541,11 +4544,15 @@ function ProfileAudit({ state, reload }) {
         </div>
       </div>
       <div className="v2-audit-url">
-        <input
-          value={profileUrl}
-          onChange={(e) => setProfileUrl(e.target.value)}
-          placeholder="https://www.linkedin.com/in/username"
-        />
+        <label>
+          LinkedIn profile URL <span>Optional reference</span>
+          <input
+            value={profileUrl}
+            onChange={(e) => setProfileUrl(e.target.value)}
+            placeholder="https://www.linkedin.com/in/username"
+            inputMode="url"
+          />
+        </label>
         <button disabled={running || !form.headline.trim()} onClick={run}>
           {running ? "Analyzing…" : "Analyze Profile"}
         </button>
@@ -4580,6 +4587,9 @@ function ProfileAudit({ state, reload }) {
                 placeholder="Product engineer | AI workflows | Shipped 0→1 products"
               />
             </label>
+            <small className="v2-field-count">
+              {form.headline.length} characters
+            </small>
             <label>
               About section
               <textarea
@@ -4588,6 +4598,9 @@ function ProfileAudit({ state, reload }) {
                 placeholder="Your positioning, evidence, motivation, and call to action…"
               />
             </label>
+            <small className="v2-field-count">
+              {form.about.trim().split(/\s+/).filter(Boolean).length} words
+            </small>
             <label>
               Experience highlights
               <textarea
@@ -4599,6 +4612,9 @@ function ProfileAudit({ state, reload }) {
                 placeholder="Paste representative experience bullets…"
               />
             </label>
+            <small className="v2-field-count">
+              {form.experience.trim().split(/\s+/).filter(Boolean).length} words
+            </small>
             <label>
               Skills, comma-separated
               <input
@@ -4606,10 +4622,32 @@ function ProfileAudit({ state, reload }) {
                 onChange={(e) => setForm({ ...form, skills: e.target.value })}
               />
             </label>
-            <button disabled={running || !form.headline.trim()} onClick={run}>
-              <BadgeCheck size={16} />
-              {running ? "Auditing…" : "Run private audit"}
+            <button
+              className="v2-target-context-toggle"
+              aria-expanded={contextExpanded}
+              onClick={() => setContextExpanded((value) => !value)}
+            >
+              <span>
+                {contextExpanded ? "Hide" : "Show"} Additional Context
+                (Optional)
+              </span>
+              <ChevronRight
+                className={contextExpanded ? "rotated" : ""}
+                size={17}
+              />
             </button>
+            {contextExpanded && (
+              <label>
+                How would you like to improve your LinkedIn profile?
+                <textarea
+                  value={form.targetContext}
+                  onChange={(event) =>
+                    setForm({ ...form, targetContext: event.target.value })
+                  }
+                  placeholder="Paste a target job description or describe the roles and positioning you want to optimize for…"
+                />
+              </label>
+            )}
             <p className="hint">
               JobHuntr does not open LinkedIn, use cookies, or transmit this
               content.
@@ -4617,7 +4655,21 @@ function ProfileAudit({ state, reload }) {
           </div>
         )}
         <div className="audit-results">
-          {audit ? (
+          {running ? (
+            <div className="card v2-audit-loading" role="status">
+              <span className="v2-loading-orb">
+                <Search size={22} />
+              </span>
+              <h3>Analyzing your profile…</h3>
+              <p>
+                Reviewing positioning, evidence, target language, and section
+                completeness.
+              </p>
+              <i />
+              <i />
+              <i />
+            </div>
+          ) : audit ? (
             <div className="card">
               <div className="audit-score">
                 <div
@@ -4702,7 +4754,11 @@ function ProfileAudit({ state, reload }) {
                   <button
                     onClick={() => {
                       setAudit(item);
+                      setProfileUrl(item.input.profileUrl || "");
+                      setContextExpanded(Boolean(item.input.targetContext));
                       setForm({
+                        profileUrl: item.input.profileUrl || "",
+                        targetContext: item.input.targetContext || "",
                         ...item.input,
                         skills: Array.isArray(item.input.skills)
                           ? item.input.skills.join(", ")

@@ -390,7 +390,18 @@ test(
         .fill(
           "I build customer-facing products and improved conversion by 42% through measurable experiments.",
         );
-      await page.getByRole("button", { name: "Run private audit" }).click();
+      await page
+        .getByLabel("LinkedIn profile URL Optional reference")
+        .fill("https://www.linkedin.com/in/e2e-profile");
+      await page
+        .getByRole("button", { name: /Show Additional Context/ })
+        .click();
+      await page
+        .getByLabel("How would you like to improve your LinkedIn profile?")
+        .fill(
+          "Target product engineering roles focused on conversion experiments and React.",
+        );
+      await page.getByRole("button", { name: "Analyze Profile" }).click();
       await page.locator(".audit-score").waitFor();
       await assertAccessible(page, "LinkedIn Audit");
 

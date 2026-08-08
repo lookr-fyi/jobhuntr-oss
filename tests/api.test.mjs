@@ -379,6 +379,9 @@ test("professional profile audits stay local, persist history, and validate limi
   const created = await req("/api/profile-audits", {
     method: "POST",
     body: JSON.stringify({
+      profileUrl: "https://www.linkedin.com/in/local-profile",
+      targetContext:
+        "Seeking a product engineer who owns activation experiments and automation.",
       headline: "Product Engineer | TypeScript automation",
       about: "I improved activation 24%. Connect with me.",
       experience: "Built React products and reduced incidents 35%.",
@@ -387,8 +390,15 @@ test("professional profile audits stay local, persist history, and validate limi
   });
   assert.equal(created.res.status, 201);
   assert.ok(created.body.total > 0);
+  assert.ok(created.body.matchedTerms.includes("activation"));
+  assert.ok(created.body.stats.targetContextWords > 0);
   const state = (await req("/api/state")).body;
   assert.ok(state.profileAudits.some((audit) => audit.id === created.body.id));
+  assert.equal(
+    state.profileAudits.find((audit) => audit.id === created.body.id).input
+      .profileUrl,
+    "https://www.linkedin.com/in/local-profile",
+  );
   const invalid = await req("/api/profile-audits", {
     method: "POST",
     body: JSON.stringify({ headline: "x".repeat(1001) }),

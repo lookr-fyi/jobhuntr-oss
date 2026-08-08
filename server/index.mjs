@@ -856,6 +856,8 @@ app.post("/api/outreach/draft", async (req, res) => {
   res.status(201).json(draft);
 });
 const ProfileAuditSchema = z.object({
+  profileUrl: z.string().max(1000).optional().default(""),
+  targetContext: z.string().max(50000).optional().default(""),
   headline: z.string().max(1000).optional().default(""),
   about: z.string().max(30000).optional().default(""),
   experience: z.string().max(100000).optional().default(""),

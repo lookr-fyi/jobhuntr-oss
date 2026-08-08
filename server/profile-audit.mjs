@@ -18,11 +18,31 @@ export function auditProfessionalProfile(input, profile) {
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean);
+  const targetContext = String(input.targetContext || "").trim();
+  const contextTerms = words(targetContext.toLowerCase())
+    .map((term) => term.replace(/[^a-z0-9+#.-]/g, ""))
+    .filter(
+      (term) =>
+        term.length > 3 &&
+        ![
+          "with",
+          "that",
+          "this",
+          "from",
+          "have",
+          "will",
+          "your",
+          "about",
+          "role",
+          "team",
+          "work",
+        ].includes(term),
+    );
   const targetTerms = unique(
-    [...(profile.targetRoles || []), ...(profile.skills || [])]
+    [...(profile.targetRoles || []), ...(profile.skills || []), ...contextTerms]
       .flatMap((value) => String(value).toLowerCase().split(/\s+/))
       .filter((term) => term.length > 2),
-  );
+  ).slice(0, 80);
   const combined =
     `${headline} ${about} ${experience} ${skills.join(" ")}`.toLowerCase();
   const matchedTerms = targetTerms.filter((term) => combined.includes(term));
@@ -110,7 +130,9 @@ export function auditProfessionalProfile(input, profile) {
     .map((check) => `${check.section}: ${check.detail}`);
   if (matchedTerms.length < Math.min(5, targetTerms.length))
     suggestions.push(
-      "Use more of your saved target-role and skill language where it is truthful.",
+      targetContext
+        ? "Use more truthful language from the target role in your headline, About section, and recent experience."
+        : "Use more of your saved target-role and skill language where it is truthful.",
     );
   return {
     total,
@@ -123,6 +145,7 @@ export function auditProfessionalProfile(input, profile) {
       aboutWords,
       experienceWords,
       skillCount: skills.length,
+      targetContextWords: words(targetContext).length,
     },
   };
 }
