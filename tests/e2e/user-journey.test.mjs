@@ -726,8 +726,13 @@ test(
       await assertAccessible(page, "Cover Letters");
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
-      await page.getByRole("button", { name: /Filters/ }).click();
-      await page.getByText("Show columns", { exact: true }).waitFor();
+      await page.getByText("Show Columns:", { exact: true }).waitFor();
+      for (const status of ["Submitting", "Failed", "Skipped", "Removed"]) {
+        assert.equal(
+          await page.getByLabel(status, { exact: true }).isChecked(),
+          true,
+        );
+      }
       await page.getByLabel("Filter by agent run").selectOption("automated");
       assert.equal(
         await page.getByLabel("Filter by agent run").inputValue(),

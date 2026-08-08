@@ -666,6 +666,16 @@ button:disabled {
   padding: 16px 18px;
   animation: slide-in 0.18s ease;
 }
+.v2-tracker-filters-always {
+  grid-template-columns:
+    minmax(180px, 0.6fr) minmax(420px, 1.4fr) minmax(220px, 0.55fr)
+    auto;
+  align-items: center;
+  animation: none;
+}
+.v2-tracker-filters-always .searchbox {
+  align-self: center;
+}
 .tracker-filter-label {
   display: block;
   margin-bottom: 8px;
@@ -708,6 +718,20 @@ button:disabled {
 }
 .tracker-status-dot.interview {
   background: #f59e0b;
+}
+.tracker-status-dot.submitting {
+  background: #f97316;
+}
+.tracker-status-dot.offer {
+  background: #10b981;
+}
+.tracker-status-dot.rejected,
+.tracker-status-dot.failed {
+  background: #ef4444;
+}
+.tracker-status-dot.skipped,
+.tracker-status-dot.removed {
+  background: #94a3b8;
 }
 .tracker-status-dot.offer {
   background: #10b981;
@@ -811,6 +835,26 @@ button:disabled {
 .kanban-card.selected {
   border-color: #60a5fa;
   box-shadow: 0 0 0 2px #bfdbfe;
+}
+.v2-tracker-add-job {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 9px;
+  color: #475569;
+  border: 1px dashed #cbd5e1;
+  background: transparent;
+  box-shadow: none;
+  font-size: 12px;
+}
+.v2-tracker-add-job:hover {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+  transform: none;
 }
 .kanban-card b,
 .kanban-card span,
@@ -1179,6 +1223,9 @@ button:disabled {
     grid-template-columns: 1fr;
     gap: 16px;
     align-items: stretch;
+  }
+  .v2-tracker-filters-always .searchbox {
+    grid-column: auto;
   }
   .form-grid {
     grid-template-columns: 1fr 1fr;

@@ -60,18 +60,26 @@ const APP_ROUTES = [
 const TRACKER_STAGES = [
   "saved",
   "interested",
+  "submitting",
   "applied",
   "interview",
   "offer",
   "rejected",
+  "failed",
+  "skipped",
+  "removed",
 ];
 const TRACKER_STAGE_LABELS = {
   saved: "Started",
   interested: "Queued",
+  submitting: "Submitting",
   applied: "Applied",
   interview: "Interviewing",
   offer: "Offer",
   rejected: "Rejected",
+  failed: "Failed",
+  skipped: "Skipped",
+  removed: "Removed",
 };
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
 const maximumListedSalary = (job) => {
@@ -1381,6 +1389,7 @@ function Tracker({ state, reload }) {
     salary: "",
     description: "",
     tags: "",
+    status: "saved",
   });
   const [selected, setSelected] = useState(
     trackerParams.get("job") || state.jobs[0]?.id,
@@ -1406,8 +1415,6 @@ function Tracker({ state, reload }) {
       localStorage.getItem("jobTracker_selectedAgentRun") ||
       "all",
   );
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [mode, setMode] = useState("board");
   const [showForm, setShowForm] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [editBusy, setEditBusy] = useState(false);
@@ -1578,6 +1585,7 @@ function Tracker({ state, reload }) {
       salary: "",
       description: "",
       tags: "",
+      status: "saved",
     });
     setSelected(created.id);
     setShowForm(false);
@@ -1614,91 +1622,60 @@ function Tracker({ state, reload }) {
           </a>
         </div>
       </div>
-      <div className="tracker-toolbar card">
+      <div className="card tracker-filter-panel v2-tracker-filters-always">
         <div className="searchbox">
           <Search size={16} />
           <input
             aria-label="Search tracked jobs"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search company, role, location, or tag"
+            placeholder="Search jobs..."
           />
         </div>
-        <button
-          className={`secondary ${filtersOpen ? "active" : ""}`}
-          aria-expanded={filtersOpen}
-          onClick={() => setFiltersOpen((open) => !open)}
-        >
-          <Filter size={15} /> Filters
-          <span className="filter-count">
-            {stages.length - visibleStages.size + (runFilter === "all" ? 0 : 1)}
-          </span>
-        </button>
-        <div className="segmented">
-          <button
-            className={mode === "board" ? "active" : ""}
-            onClick={() => setMode("board")}
-          >
-            Board
-          </button>
-          <button
-            className={mode === "list" ? "active" : ""}
-            onClick={() => setMode("list")}
-          >
-            List
-          </button>
+        <div>
+          <span className="tracker-filter-label">Show Columns:</span>
+          <div className="tracker-status-filters">
+            {stages.map((stage) => (
+              <label key={stage}>
+                <input
+                  type="checkbox"
+                  checked={visibleStages.has(stage)}
+                  onChange={() => toggleStage(stage)}
+                />
+                <span className={`tracker-status-dot ${stage}`} />
+                {trackerStageLabel(stage)}
+              </label>
+            ))}
+          </div>
         </div>
-        <button onClick={() => setShowForm(!showForm)}>
-          <Plus size={16} /> Add role
+        <label>
+          <span className="tracker-filter-label">Run:</span>
+          <select
+            aria-label="Filter by agent run"
+            value={runFilter}
+            onChange={(event) => setRunFilter(event.target.value)}
+          >
+            <option value="all">All Runs</option>
+            <option value="manual">Manual Applications Only</option>
+            <option value="automated">Automated Applications Only</option>
+            {(state.agentRuns || []).map((run) => (
+              <option value={run.id} key={run.id}>
+                {run.runName || run.search?.q || "Local hunt"} -{" "}
+                {new Date(run.createdAt).toLocaleDateString()}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          className="text-button"
+          onClick={() => {
+            setVisibleStages(new Set(stages));
+            setRunFilter("all");
+          }}
+        >
+          Reset filters
         </button>
       </div>
-      {filtersOpen && (
-        <div className="card tracker-filter-panel">
-          <div>
-            <span className="tracker-filter-label">Show columns</span>
-            <div className="tracker-status-filters">
-              {stages.map((stage) => (
-                <label key={stage}>
-                  <input
-                    type="checkbox"
-                    checked={visibleStages.has(stage)}
-                    onChange={() => toggleStage(stage)}
-                  />
-                  <span className={`tracker-status-dot ${stage}`} />
-                  {trackerStageLabel(stage)}
-                </label>
-              ))}
-            </div>
-          </div>
-          <label>
-            <span className="tracker-filter-label">Run</span>
-            <select
-              aria-label="Filter by agent run"
-              value={runFilter}
-              onChange={(event) => setRunFilter(event.target.value)}
-            >
-              <option value="all">All runs</option>
-              <option value="manual">Manual applications only</option>
-              <option value="automated">Automated applications only</option>
-              {(state.agentRuns || []).map((run) => (
-                <option value={run.id} key={run.id}>
-                  {run.search?.q || "Local hunt"} —{" "}
-                  {new Date(run.createdAt).toLocaleDateString()}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className="text-button"
-            onClick={() => {
-              setVisibleStages(new Set(stages));
-              setRunFilter("all");
-            }}
-          >
-            Reset filters
-          </button>
-        </div>
-      )}
       {showForm && (
         <div className="card add-panel">
           <div className="row">
@@ -1742,77 +1719,65 @@ function Tracker({ state, reload }) {
       <div
         className={job ? "tracker-workspace with-detail" : "tracker-workspace"}
       >
-        {mode === "board" ? (
-          <div className="kanban">
-            {stages
-              .filter((stage) => visibleStages.has(stage))
-              .map((stage) => (
-                <div
-                  className="kanban-column"
-                  key={stage}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) =>
-                    patch(e.dataTransfer.getData("jobId"), { status: stage })
-                  }
-                >
-                  <div className="column-title">
-                    <b>{trackerStageLabel(stage)}</b>
-                    <span>
-                      {filtered.filter((item) => item.status === stage).length}
-                    </span>
-                  </div>
-                  {filtered
-                    .filter((item) => item.status === stage)
-                    .map((item) => (
-                      <button
-                        draggable
-                        onDragStart={(e) =>
-                          e.dataTransfer.setData("jobId", item.id)
-                        }
-                        onClick={() => selectJob(item.id)}
-                        className={`kanban-card ${item.id === selected ? "selected" : ""}`}
-                        key={item.id}
-                      >
-                        <div className="fit-ring">{item.fitScore}</div>
-                        <b>{item.title}</b>
-                        <span>{item.company}</span>
-                        <small>{item.location || "Location not set"}</small>
-                        {item.tasks?.some((t) => !t.done) && (
-                          <em>
-                            {item.tasks.filter((t) => !t.done).length} open
-                            task(s)
-                          </em>
-                        )}
-                      </button>
-                    ))}
+        <div
+          className="kanban"
+          style={{
+            gridTemplateColumns: `repeat(${Math.max(visibleStages.size, 1)}, minmax(230px, 1fr))`,
+          }}
+        >
+          {stages
+            .filter((stage) => visibleStages.has(stage))
+            .map((stage) => (
+              <div
+                className="kanban-column"
+                key={stage}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) =>
+                  patch(e.dataTransfer.getData("jobId"), { status: stage })
+                }
+              >
+                <div className="column-title">
+                  <b>{trackerStageLabel(stage)}</b>
+                  <span>
+                    {filtered.filter((item) => item.status === stage).length}
+                  </span>
                 </div>
-              ))}
-          </div>
-        ) : (
-          <div className="card tracker-list">
-            <div className="list-head">
-              <span>Role</span>
-              <span>Stage</span>
-              <span>Fit</span>
-              <span>Updated</span>
-            </div>
-            {filtered.map((item) => (
-              <button key={item.id} onClick={() => selectJob(item.id)}>
-                <span>
-                  <b>{item.title}</b>
-                  <small>
-                    {item.company} · {item.location}
-                  </small>
-                </span>
-                <span className={`pill ${item.status}`}>
-                  {trackerStageLabel(item.status)}
-                </span>
-                <strong>{item.fitScore}%</strong>
-                <time>{new Date(item.updatedAt).toLocaleDateString()}</time>
-              </button>
+                {filtered
+                  .filter((item) => item.status === stage)
+                  .map((item) => (
+                    <button
+                      draggable
+                      onDragStart={(e) =>
+                        e.dataTransfer.setData("jobId", item.id)
+                      }
+                      onClick={() => selectJob(item.id)}
+                      className={`kanban-card ${item.id === selected ? "selected" : ""}`}
+                      key={item.id}
+                    >
+                      <div className="fit-ring">{item.fitScore}</div>
+                      <b>{item.title}</b>
+                      <span>{item.company}</span>
+                      <small>{item.location || "Location not set"}</small>
+                      {item.tasks?.some((t) => !t.done) && (
+                        <em>
+                          {item.tasks.filter((t) => !t.done).length} open
+                          task(s)
+                        </em>
+                      )}
+                    </button>
+                  ))}
+                <button
+                  className="v2-tracker-add-job"
+                  onClick={() => {
+                    setForm((current) => ({ ...current, status: stage }));
+                    setShowForm(true);
+                  }}
+                >
+                  <Plus size={14} /> Add Job
+                </button>
+              </div>
             ))}
-          </div>
-        )}
+        </div>
         {job && (
           <div className="job-drawer">
             <div className="row">
