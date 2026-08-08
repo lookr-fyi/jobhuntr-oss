@@ -274,6 +274,26 @@ test(
         .waitFor();
 
       await page.getByRole("button", { name: "Cover Letter" }).click();
+      await page.getByRole("button", { name: "Create Cover Letter" }).click();
+      await page
+        .getByRole("heading", { name: "Choose a writing style" })
+        .waitFor();
+      await assertAccessible(page, "Cover Letter wizard");
+      await page.getByRole("button", { name: /Story-driven/ }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await page
+        .getByLabel("Custom opening")
+        .fill("I have followed this team’s product work for years.");
+      await page
+        .getByLabel("Experience to emphasize")
+        .fill("I increased conversion by 42% while leading a React platform.");
+      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: /E2E tailored resume/ }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await page
+        .getByRole("heading", { name: "Choose the target job" })
+        .waitFor();
+      await page.getByRole("button", { name: "Continue" }).click();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -281,7 +301,7 @@ test(
             response.request().method() === "POST" &&
             response.ok(),
         ),
-        page.getByRole("button", { name: "Create Cover Letter" }).click(),
+        page.getByRole("button", { name: "Generate Cover Letter" }).click(),
       ]);
       await page.getByLabel("Cover letter title").fill("E2E product letter");
       await page

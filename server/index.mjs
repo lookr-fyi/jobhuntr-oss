@@ -501,12 +501,35 @@ app.post("/api/cover-letters", async (req, res) => {
   const letter = await mutate((db) => {
     const job =
       db.jobs.find((j) => j.id === req.body.jobId) || req.body.job || {};
+    const style = ["professional", "concise", "story-driven"].includes(
+      req.body.style,
+    )
+      ? req.body.style
+      : "professional";
+    const opening = safeText(req.body.opening, 1000);
+    const emphasis = safeText(req.body.emphasis, 2000);
+    const resume = db.resumes.find((item) => item.id === req.body.resumeId);
     const skills = (db.profile.skills || []).slice(0, 4).join(", ");
-    const body = `Dear ${job.company || "Hiring Team"},\n\nI am excited to apply for the ${job.title || "role"} position. My background in ${skills || "shipping user-focused software"} maps well to your needs, and I am especially interested in ${job.description || "the opportunity to contribute quickly and thoughtfully"}.\n\nIn prior work I have built reliable product workflows, improved user experience, and operated with strong ownership. I would welcome the chance to discuss how I can help ${job.company || "your team"} deliver meaningful results.\n\nBest,\n${db.profile.name}`;
+    const styleOpening = {
+      professional: `I am excited to apply for the ${job.title || "role"} position.`,
+      concise: `I’m applying for the ${job.title || "role"} role because my experience aligns directly with your needs.`,
+      "story-driven": `The strongest work in my career has started with a difficult customer problem and a team determined to solve it well. That is what drew me to the ${job.title || "role"} opportunity.`,
+    }[style];
+    const resumeEvidence = resume?.content
+      ?.split(/\n+/)
+      .map((line) => line.trim())
+      .find((line) => line.length > 30)
+      ?.slice(0, 260);
+    const body = `Dear ${job.company || "Hiring Team"},\n\n${opening || styleOpening} My background in ${skills || "shipping user-focused software"} maps well to your needs, and I am especially interested in ${job.description || "the opportunity to contribute quickly and thoughtfully"}.\n\n${emphasis || resumeEvidence || "In prior work I have built reliable product workflows, improved user experience, and operated with strong ownership."}\n\nI would welcome the chance to discuss how I can help ${job.company || "your team"} deliver meaningful results.\n\nBest,\n${db.profile.name}`;
     const item = {
       id: nanoid(),
       jobId: job.id,
+      resumeId: resume?.id || "",
+      style,
+      opening,
+      emphasis,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       title: `${job.company || "General"} cover letter`,
       body,
     };

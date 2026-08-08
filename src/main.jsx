@@ -1616,6 +1616,7 @@ function Resume({ state, reload, mode = "resume" }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const [score, setScore] = useState(null);
   const [letter, setLetter] = useState(state.coverLetters[0] || null);
+  const [letterWizard, setLetterWizard] = useState(null);
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
@@ -1716,12 +1717,23 @@ function Resume({ state, reload, mode = "resume" }) {
     setPreview(saved);
     await reload();
   };
-  const generateLetter = async () => {
+  const openLetterWizard = () =>
+    setLetterWizard({
+      step: 1,
+      style: "professional",
+      opening: "",
+      emphasis: "",
+      resumeId: state.resumes[0]?.id || "",
+      jobId: jobId || state.jobs[0]?.id || "",
+    });
+  const generateLetter = async (wizard = null) => {
+    const options = wizard || { jobId };
     const created = await api("/api/cover-letters", {
       method: "POST",
-      body: JSON.stringify({ jobId }),
+      body: JSON.stringify(options),
     });
     setLetter(created);
+    setLetterWizard(null);
     await reload();
   };
   const saveLetter = async () => {
@@ -1734,6 +1746,279 @@ function Resume({ state, reload, mode = "resume" }) {
     await reload();
   };
   if (mode === "cover-letter") {
+    if (letterWizard) {
+      const wizardSteps = [
+        "Choose Template",
+        "Edit Template",
+        "Select Resume",
+        "Job Information",
+        "Final Result",
+      ];
+      const selectedJob = state.jobs.find(
+        (item) => item.id === letterWizard.jobId,
+      );
+      const selectedResume = state.resumes.find(
+        (item) => item.id === letterWizard.resumeId,
+      );
+      return (
+        <section className="v2-cover-wizard">
+          <div className="v2-cover-wizard-head">
+            <button
+              className="secondary"
+              aria-label="Back to cover letters"
+              onClick={() => setLetterWizard(null)}
+            >
+              ←
+            </button>
+            <div>
+              <h2>Cover Letter Template</h2>
+              <p>Build a reusable, job-specific letter in five guided steps.</p>
+            </div>
+          </div>
+          <ol className="v2-wizard-progress" aria-label="Cover letter steps">
+            {wizardSteps.map((label, index) => (
+              <li
+                className={
+                  letterWizard.step === index + 1
+                    ? "active"
+                    : letterWizard.step > index + 1
+                      ? "complete"
+                      : ""
+                }
+                key={label}
+              >
+                <span>{letterWizard.step > index + 1 ? "✓" : index + 1}</span>
+                <b>{label}</b>
+              </li>
+            ))}
+          </ol>
+          <div className="card v2-cover-step">
+            {letterWizard.step === 1 && (
+              <>
+                <div className="v2-cover-step-head">
+                  <span>STEP 1 OF 5</span>
+                  <h3>Choose a writing style</h3>
+                  <p>Select the tone that best fits this opportunity.</p>
+                </div>
+                <div className="v2-cover-style-grid">
+                  {[
+                    [
+                      "professional",
+                      "Professional",
+                      "Balanced, polished, and broadly applicable.",
+                    ],
+                    [
+                      "concise",
+                      "Concise",
+                      "Direct and compact for fast-moving hiring teams.",
+                    ],
+                    [
+                      "story-driven",
+                      "Story-driven",
+                      "Opens with motivation and a memorable narrative.",
+                    ],
+                  ].map(([value, label, description]) => (
+                    <button
+                      className={letterWizard.style === value ? "selected" : ""}
+                      key={value}
+                      onClick={() =>
+                        setLetterWizard({ ...letterWizard, style: value })
+                      }
+                    >
+                      <FileText size={24} />
+                      <b>{label}</b>
+                      <span>{description}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {letterWizard.step === 2 && (
+              <>
+                <div className="v2-cover-step-head">
+                  <span>STEP 2 OF 5</span>
+                  <h3>Personalize the template</h3>
+                  <p>Add an optional opening and the evidence to emphasize.</p>
+                </div>
+                <label>
+                  Custom opening
+                  <textarea
+                    value={letterWizard.opening}
+                    onChange={(event) =>
+                      setLetterWizard({
+                        ...letterWizard,
+                        opening: event.target.value,
+                      })
+                    }
+                    placeholder="What specifically drew you to this role?"
+                  />
+                </label>
+                <label>
+                  Experience to emphasize
+                  <textarea
+                    value={letterWizard.emphasis}
+                    onChange={(event) =>
+                      setLetterWizard({
+                        ...letterWizard,
+                        emphasis: event.target.value,
+                      })
+                    }
+                    placeholder="A relevant outcome, project, or strength"
+                  />
+                </label>
+              </>
+            )}
+            {letterWizard.step === 3 && (
+              <>
+                <div className="v2-cover-step-head">
+                  <span>STEP 3 OF 5</span>
+                  <h3>Select a resume</h3>
+                  <p>
+                    Ground the letter in a saved resume or your local profile.
+                  </p>
+                </div>
+                <div className="v2-cover-resume-list">
+                  <button
+                    className={!letterWizard.resumeId ? "selected" : ""}
+                    onClick={() =>
+                      setLetterWizard({ ...letterWizard, resumeId: "" })
+                    }
+                  >
+                    <FileText size={20} />
+                    <span>
+                      <b>Profile resume</b>
+                      <small>Use your current profile resume text</small>
+                    </span>
+                  </button>
+                  {state.resumes.map((item) => (
+                    <button
+                      className={
+                        letterWizard.resumeId === item.id ? "selected" : ""
+                      }
+                      key={item.id}
+                      onClick={() =>
+                        setLetterWizard({
+                          ...letterWizard,
+                          resumeId: item.id,
+                        })
+                      }
+                    >
+                      <FileText size={20} />
+                      <span>
+                        <b>{item.name}</b>
+                        <small>
+                          {state.templates.find(
+                            (template) => template.id === item.templateId,
+                          )?.name || "ATS resume"}
+                        </small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+            {letterWizard.step === 4 && (
+              <>
+                <div className="v2-cover-step-head">
+                  <span>STEP 4 OF 5</span>
+                  <h3>Choose the target job</h3>
+                  <p>Job details personalize the company and role context.</p>
+                </div>
+                <label>
+                  Target job
+                  <select
+                    value={letterWizard.jobId}
+                    onChange={(event) =>
+                      setLetterWizard({
+                        ...letterWizard,
+                        jobId: event.target.value,
+                      })
+                    }
+                  >
+                    {state.jobs.map((item) => (
+                      <option value={item.id} key={item.id}>
+                        {item.company} — {item.title}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedJob && (
+                  <div className="v2-cover-job-summary">
+                    <b>{selectedJob.title}</b>
+                    <span>
+                      {selectedJob.company} · {selectedJob.location}
+                    </span>
+                    <p>{selectedJob.description}</p>
+                  </div>
+                )}
+              </>
+            )}
+            {letterWizard.step === 5 && (
+              <>
+                <div className="v2-cover-step-head">
+                  <span>STEP 5 OF 5</span>
+                  <h3>Review and generate</h3>
+                  <p>
+                    Confirm the inputs before creating your editable letter.
+                  </p>
+                </div>
+                <div className="v2-cover-review">
+                  <div>
+                    <span>Style</span>
+                    <b>{letterWizard.style}</b>
+                  </div>
+                  <div>
+                    <span>Resume</span>
+                    <b>{selectedResume?.name || "Profile resume"}</b>
+                  </div>
+                  <div>
+                    <span>Target</span>
+                    <b>
+                      {selectedJob
+                        ? `${selectedJob.title} @ ${selectedJob.company}`
+                        : "Select a job"}
+                    </b>
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="v2-cover-step-actions">
+              <button
+                className="secondary"
+                disabled={letterWizard.step === 1}
+                onClick={() =>
+                  setLetterWizard({
+                    ...letterWizard,
+                    step: letterWizard.step - 1,
+                  })
+                }
+              >
+                Previous
+              </button>
+              {letterWizard.step < 5 ? (
+                <button
+                  onClick={() =>
+                    setLetterWizard({
+                      ...letterWizard,
+                      step: letterWizard.step + 1,
+                    })
+                  }
+                >
+                  Continue
+                </button>
+              ) : (
+                <button
+                  disabled={!letterWizard.jobId}
+                  onClick={() => generateLetter(letterWizard)}
+                >
+                  <Sparkles size={16} /> Generate Cover Letter
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+    }
     return (
       <section className="v2-document-page">
         <div className="v2-document-page-head">
@@ -1745,18 +2030,7 @@ function Resume({ state, reload, mode = "resume" }) {
             </p>
           </div>
           <div className="v2-document-actions">
-            <select
-              aria-label="Cover letter target job"
-              value={jobId}
-              onChange={(e) => setJobId(e.target.value)}
-            >
-              {state.jobs.map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.company} — {job.title}
-                </option>
-              ))}
-            </select>
-            <button onClick={generateLetter}>
+            <button onClick={openLetterWizard}>
               <Plus size={16} /> Create Cover Letter
             </button>
           </div>

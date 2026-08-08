@@ -454,8 +454,16 @@ test("cover letters can be edited, printed safely, and removed", async () => {
   const job = state.jobs[0];
   const created = await req("/api/cover-letters", {
     method: "POST",
-    body: JSON.stringify({ jobId: job.id }),
+    body: JSON.stringify({
+      jobId: job.id,
+      style: "story-driven",
+      opening: "A customer problem first drew me to this team.",
+      emphasis: "I improved conversion by 42% while leading delivery.",
+    }),
   });
+  assert.equal(created.body.style, "story-driven");
+  assert.match(created.body.body, /customer problem first drew me/);
+  assert.match(created.body.body, /improved conversion by 42%/);
   const updated = await req(`/api/cover-letters/${created.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({
