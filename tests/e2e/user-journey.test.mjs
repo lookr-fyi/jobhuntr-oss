@@ -782,19 +782,30 @@ test(
       await page
         .getByRole("heading", { name: "LinkedIn Profile Audit" })
         .waitFor();
+      assert.equal(
+        await page.getByLabel("About section").count(),
+        0,
+        "pasted profile content should start collapsed like v2",
+      );
+      await page
+        .getByRole("button", { name: /Show pasted profile content/ })
+        .click();
       await page
         .getByLabel("About section")
         .fill(
           "I build customer-facing products and improved conversion by 42% through measurable experiments.",
         );
-      await page
-        .getByLabel("LinkedIn profile URL Optional reference")
-        .fill("https://www.linkedin.com/in/e2e-profile");
+      const profileUrlInput = page.getByLabel(
+        "LinkedIn profile URL Optional reference",
+      );
+      await profileUrlInput.fill("https://example.com/not-linkedin");
+      await page.getByText(/Enter a valid LinkedIn profile URL/).waitFor();
+      await profileUrlInput.fill("https://www.linkedin.com/in/e2e-profile");
       await page
         .getByRole("button", { name: /Show Additional Context/ })
         .click();
       await page
-        .getByLabel("How would you like to improve your LinkedIn profile?")
+        .getByLabel(/How would you like to improve your LinkedIn profile/)
         .fill(
           "Target product engineering roles focused on conversion experiments and React.",
         );

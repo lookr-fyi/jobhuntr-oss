@@ -6639,7 +6639,7 @@ function Gigs({ state, reload }) {
 }
 function ProfileAudit({ state, reload }) {
   const [profileUrl, setProfileUrl] = useState("");
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [contextExpanded, setContextExpanded] = useState(false);
   const [form, setForm] = useState({
     profileUrl: "",
@@ -6652,6 +6652,11 @@ function ProfileAudit({ state, reload }) {
   const [audit, setAudit] = useState(state.profileAudits[0] || null);
   const [deleteAudit, setDeleteAudit] = useState(null);
   const [running, setRunning] = useState(false);
+  const profileUrlValid =
+    !profileUrl.trim() ||
+    /^https:\/\/(www\.)?linkedin\.com\/(in|pub)\/[^/?#]+/i.test(
+      profileUrl.trim(),
+    );
   const run = async () => {
     setRunning(true);
     try {
@@ -6696,14 +6701,59 @@ function ProfileAudit({ state, reload }) {
           <input
             value={profileUrl}
             onChange={(e) => setProfileUrl(e.target.value)}
+            onKeyDown={(event) => {
+              if (
+                event.key === "Enter" &&
+                !running &&
+                form.headline.trim() &&
+                profileUrlValid
+              )
+                run();
+            }}
             placeholder="https://www.linkedin.com/in/username"
             inputMode="url"
+            aria-invalid={!profileUrlValid}
           />
         </label>
-        <button disabled={running || !form.headline.trim()} onClick={run}>
+        <button
+          disabled={running || !form.headline.trim() || !profileUrlValid}
+          onClick={run}
+        >
           {running ? "Analyzing…" : "Analyze Profile"}
         </button>
       </div>
+      {!profileUrlValid && (
+        <p className="v2-audit-url-error" role="alert">
+          Enter a valid LinkedIn profile URL, such as
+          https://www.linkedin.com/in/username.
+        </p>
+      )}
+      <button
+        className="v2-target-context-toggle v2-audit-context-toggle"
+        aria-expanded={contextExpanded}
+        onClick={() => setContextExpanded((value) => !value)}
+      >
+        <span>
+          {contextExpanded ? "Hide" : "Show"} Additional Context (Optional)
+        </span>
+        <ChevronRight className={contextExpanded ? "rotated" : ""} size={17} />
+      </button>
+      {contextExpanded && (
+        <label className="v2-audit-context-field">
+          How would you like to improve your LinkedIn profile? (e.g., enter your
+          targeted job&apos;s description)
+          <textarea
+            value={form.targetContext}
+            onChange={(event) =>
+              setForm({ ...form, targetContext: event.target.value })
+            }
+            placeholder="Paste your target job description, specific goals, or areas you would like to focus on…"
+          />
+          <small>
+            Providing context helps tailor feedback to your specific goals.
+          </small>
+        </label>
+      )}
       <div className="v2-local-notice">
         <ShieldCheck size={18} />
         <span>
@@ -6716,12 +6766,10 @@ function ProfileAudit({ state, reload }) {
         className="v2-audit-toggle"
         onClick={() => setExpanded(!expanded)}
       >
-        <span>
-          {expanded ? "Hide" : "Show"} profile content and additional context
-        </span>
+        <span>{expanded ? "Hide" : "Show"} pasted profile content</span>
         <ChevronRight className={expanded ? "rotated" : ""} size={18} />
       </button>
-      <div className="audit-layout">
+      <div className={expanded ? "audit-layout" : "audit-layout collapsed"}>
         {expanded && (
           <div className="card audit-form">
             <span className="eyebrow">PROFILE CONTENT</span>
@@ -6769,32 +6817,6 @@ function ProfileAudit({ state, reload }) {
                 onChange={(e) => setForm({ ...form, skills: e.target.value })}
               />
             </label>
-            <button
-              className="v2-target-context-toggle"
-              aria-expanded={contextExpanded}
-              onClick={() => setContextExpanded((value) => !value)}
-            >
-              <span>
-                {contextExpanded ? "Hide" : "Show"} Additional Context
-                (Optional)
-              </span>
-              <ChevronRight
-                className={contextExpanded ? "rotated" : ""}
-                size={17}
-              />
-            </button>
-            {contextExpanded && (
-              <label>
-                How would you like to improve your LinkedIn profile?
-                <textarea
-                  value={form.targetContext}
-                  onChange={(event) =>
-                    setForm({ ...form, targetContext: event.target.value })
-                  }
-                  placeholder="Paste a target job description or describe the roles and positioning you want to optimize for…"
-                />
-              </label>
-            )}
             <p className="hint">
               JobHuntr does not open LinkedIn, use cookies, or transmit this
               content.

@@ -2271,6 +2271,34 @@ button:disabled {
 .v2-audit-url button {
   min-height: 44px;
 }
+.v2-audit-url-error {
+  margin: -5px 0 12px;
+  color: #b91c1c;
+  font-size: 12px;
+}
+.v2-audit-context-toggle {
+  margin: 0 0 12px;
+}
+.v2-audit-context-field {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 14px;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-audit-context-field textarea {
+  min-height: 150px;
+  margin: 0;
+}
+.v2-audit-context-field small {
+  color: #64748b;
+  font-weight: 400;
+}
 .v2-local-notice {
   display: flex;
   align-items: flex-start;
@@ -3750,6 +3778,9 @@ button.v2-workflow-card.selected {
   display: grid;
   grid-template-columns: 420px minmax(0, 1fr);
   gap: 18px;
+}
+.audit-layout.collapsed {
+  grid-template-columns: minmax(0, 1fr);
 }
 .audit-form {
   align-self: start;
