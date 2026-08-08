@@ -2884,7 +2884,22 @@ function Board({ state, reload }) {
                 <span className="v2-board-row-tags">
                   <em>{j.fitScore}% match</em>
                   {queuedUrls.has(j.url) && <em className="saved">Saved</em>}
-                  <small>Recently added</small>
+                  <small>
+                    {boardJobType(j) === "full-time"
+                      ? "Full-time"
+                      : boardJobType(j) === "contract"
+                        ? "Contract"
+                        : "Internship"}
+                  </small>
+                  <small>
+                    {boardSeniority(j) === "lead"
+                      ? "Lead / Staff+"
+                      : boardSeniority(j) === "senior"
+                        ? "Senior"
+                        : boardSeniority(j) === "entry"
+                          ? "Entry level"
+                          : "Mid level"}
+                  </small>
                 </span>
               </span>
               <ChevronRight size={16} />
@@ -2908,8 +2923,34 @@ function Board({ state, reload }) {
             </div>
             <div className="v2-job-facts">
               <span>{selected.salary || "Salary not listed"}</span>
-              <span>Recently added</span>
-              <span>Community sourced</span>
+              <span>
+                {boardJobType(selected) === "full-time"
+                  ? "Full-time"
+                  : boardJobType(selected) === "contract"
+                    ? "Contract"
+                    : "Internship"}
+              </span>
+              <span>
+                {boardSeniority(selected) === "lead"
+                  ? "Lead / Staff+"
+                  : boardSeniority(selected) === "senior"
+                    ? "Senior"
+                    : boardSeniority(selected) === "entry"
+                      ? "Entry level"
+                      : "Mid level"}
+              </span>
+              <span>
+                {/remote|anywhere/i.test(selected.location)
+                  ? "Remote"
+                  : "On-site / hybrid"}
+              </span>
+              <span>
+                {boardSponsorship(selected) === "yes"
+                  ? "Visa sponsorship mentioned"
+                  : boardSponsorship(selected) === "no"
+                    ? "No visa sponsorship"
+                    : "Visa status not specified"}
+              </span>
             </div>
             <div className="v2-board-detail-actions">
               <button

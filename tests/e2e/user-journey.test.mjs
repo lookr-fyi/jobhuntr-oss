@@ -361,6 +361,12 @@ test(
       await page
         .getByRole("button", { name: /Frontend Platform Engineer/ })
         .click();
+      const boardDetail = page.locator(".v2-board-detail");
+      await boardDetail.getByText("Full-time", { exact: true }).waitFor();
+      await boardDetail.getByText("Mid level", { exact: true }).waitFor();
+      await boardDetail
+        .getByText("Visa status not specified", { exact: true })
+        .waitFor();
       await page
         .getByRole("heading", { name: "Frontend Platform Engineer" })
         .waitFor();
