@@ -701,10 +701,16 @@ test(
       await page
         .getByRole("heading", { name: "Edit Your Cover Letter Template" })
         .waitFor();
+      await page.getByTitle("Cover Letter Preview").waitFor();
       assert.match(
         await page.getByLabel("Template content").inputValue(),
         /Hello \{\{company\}\}/,
       );
+      await page
+        .getByLabel("Prompt to optimize cover letter")
+        .fill("Make it more professional");
+      await page.getByRole("button", { name: "Apply Prompt" }).click();
+      await page.getByText("Prompt applied locally").waitFor();
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("button", { name: /E2E tailored resume/ }).click();
       await page.getByRole("button", { name: "Continue" }).click();

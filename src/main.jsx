@@ -182,6 +182,24 @@ const formatRelativeTime = (value) => {
   if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
   return new Date(value).toLocaleDateString();
 };
+const coverLetterPreviewDocument = (content, templateId = "minimal") => {
+  const escaped = String(content || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  const accent = ["modern", "tech-startup", "creative", "marketing"].includes(
+    templateId,
+  )
+    ? "#2563eb"
+    : "#0f172a";
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    *{box-sizing:border-box}body{margin:0;padding:58px 54px;background:#fff;color:#27364a;font:15px/1.7 Georgia,serif;border-top:12px solid ${accent}}
+    header{margin-bottom:34px;color:${accent};font:700 21px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+  </style></head><body><header>Cover Letter</header><pre>${escaped}</pre></body></html>`;
+};
 
 const api = async (path, options = {}) => {
   try {
@@ -4643,9 +4661,10 @@ function Resume({ state, reload, mode = "resume" }) {
                         >
                           <ChevronLeft size={30} />
                         </button>
-                        <button
+                        <div
                           className={`v2-cover-template-sheet ${selectedTemplate.id}`}
-                          aria-label={`${selectedTemplate.name} selected`}
+                          role="img"
+                          aria-label={`${selectedTemplate.name} cover letter template preview`}
                         >
                           <span className="v2-cover-template-letterhead">
                             {state.profile.name || "Your Name"}
@@ -4653,7 +4672,7 @@ function Resume({ state, reload, mode = "resume" }) {
                           <i /> <i /> <i />
                           <b>{selectedTemplate.name}</b>
                           <span>{selectedTemplate.category}</span>
-                        </button>
+                        </div>
                         <button
                           className="secondary v2-cover-carousel-arrow"
                           aria-label="Next cover letter template"
@@ -4698,24 +4717,38 @@ function Resume({ state, reload, mode = "resume" }) {
                   <span>STEP 2 OF 5</span>
                   <h3>Edit Your Cover Letter Template</h3>
                   <p>
-                    Customize the selected template. Keep placeholders wrapped
-                    in double braces so JobHuntr can personalize it.
+                    Focus on styling your cover letter template. JobHuntr will
+                    personalize the text with your resume and target job.
                   </p>
                 </div>
-                <label>
-                  Template content
-                  <textarea
-                    className="v2-cover-template-editor"
-                    value={letterWizard.templateContent}
-                    onChange={(event) =>
-                      setLetterWizard({
-                        ...letterWizard,
-                        templateContent: event.target.value,
-                      })
-                    }
-                    placeholder="Enter your cover letter template…"
-                  />
-                </label>
+                <div className="v2-cover-editor-workspace">
+                  <label>
+                    <span>HTML Source</span>
+                    <textarea
+                      className="v2-cover-template-editor"
+                      aria-label="Template content"
+                      value={letterWizard.templateContent}
+                      onChange={(event) =>
+                        setLetterWizard({
+                          ...letterWizard,
+                          templateContent: event.target.value,
+                        })
+                      }
+                      placeholder="Enter your cover letter template…"
+                    />
+                  </label>
+                  <div className="v2-cover-live-preview">
+                    <span>Preview</span>
+                    <iframe
+                      sandbox=""
+                      srcDoc={coverLetterPreviewDocument(
+                        letterWizard.templateContent,
+                        letterWizard.templateId,
+                      )}
+                      title="Cover Letter Preview"
+                    />
+                  </div>
+                </div>
                 <div className="v2-cover-placeholder-help">
                   {[
                     "{{company}}",
@@ -4729,6 +4762,48 @@ function Resume({ state, reload, mode = "resume" }) {
                     <code key={placeholder}>{placeholder}</code>
                   ))}
                 </div>
+                <div className="v2-cover-prompt-bar">
+                  <input
+                    aria-label="Prompt to optimize cover letter"
+                    value={letterWizard.promptInstructions || ""}
+                    onChange={(event) =>
+                      setLetterWizard({
+                        ...letterWizard,
+                        promptInstructions: event.target.value,
+                      })
+                    }
+                    placeholder="Prompt to optimize cover letter (e.g., Make it more professional)"
+                  />
+                  <button
+                    disabled={!letterWizard.promptInstructions?.trim()}
+                    onClick={() => {
+                      const prompt =
+                        letterWizard.promptInstructions.toLowerCase();
+                      let templateContent = letterWizard.templateContent;
+                      if (/professional|formal/.test(prompt))
+                        templateContent = templateContent
+                          .replace(/^Hello /, "Dear ")
+                          .replace("Creatively yours", "Sincerely");
+                      if (/direct|concise/.test(prompt))
+                        templateContent = templateContent.replace(
+                          /I am excited to apply|I’m excited to apply/gi,
+                          "I’m applying",
+                        );
+                      setLetterWizard({
+                        ...letterWizard,
+                        templateContent,
+                        promptApplied: true,
+                      });
+                    }}
+                  >
+                    <Sparkles size={15} /> Apply Prompt
+                  </button>
+                </div>
+                {letterWizard.promptApplied && (
+                  <p className="v2-inline-success" role="status">
+                    <CheckCircle2 size={14} /> Prompt applied locally
+                  </p>
+                )}
               </>
             )}
             {letterWizard.step === 3 && (

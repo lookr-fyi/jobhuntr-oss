@@ -7613,6 +7613,62 @@ main > header.integrated-page-header {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   line-height: 1.6;
 }
+.v2-cover-editor-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.v2-cover-editor-workspace > label,
+.v2-cover-live-preview {
+  display: grid;
+  grid-template-rows: 38px 1fr;
+  min-width: 0;
+  margin: 0;
+}
+.v2-cover-editor-workspace > label {
+  border-right: 1px solid #e2e8f0;
+}
+.v2-cover-editor-workspace > label > span,
+.v2-cover-live-preview > span {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-cover-editor-workspace .v2-cover-template-editor {
+  width: 100%;
+  min-height: 380px;
+  border: 0;
+  border-radius: 0;
+  resize: none;
+}
+.v2-cover-live-preview iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  border: 0;
+  background: #fff;
+}
+.v2-cover-prompt-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+.v2-cover-prompt-bar input {
+  flex: 1;
+}
 .v2-cover-placeholder-help {
   display: flex;
   flex-wrap: wrap;
@@ -7781,6 +7837,17 @@ main > header.integrated-page-header {
   .v2-cover-template-letterhead {
     margin-bottom: 24px;
     font-size: 17px;
+  }
+  .v2-cover-editor-workspace {
+    grid-template-columns: 1fr;
+  }
+  .v2-cover-editor-workspace > label {
+    border-right: 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .v2-cover-prompt-bar {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 .v2-ats-header {
