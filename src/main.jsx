@@ -27,6 +27,7 @@ import {
   ChevronRight,
   RefreshCcw,
   Medal,
+  Trophy,
   Trash2,
   Calendar,
   Filter,
@@ -2532,6 +2533,8 @@ function Board({ state, reload }) {
   const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
   const [queueing, setQueueing] = useState("");
   const [notice, setNotice] = useState("");
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
+  const leaderboardCloseRef = useRef(null);
   const search = async () => {
     const jobs = await api("/api/board/search", {
       method: "POST",
@@ -2638,6 +2641,35 @@ function Board({ state, reload }) {
       setQueueing("");
     }
   };
+  useEffect(() => {
+    if (!leaderboardOpen) return undefined;
+    const returnFocus = document.activeElement;
+    leaderboardCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setLeaderboardOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [leaderboardOpen]);
+  const localContributions = [
+    {
+      name: state.profile.name || "Your local workspace",
+      count: state.jobs.filter((job) => job.source === "Manual").length,
+      current: true,
+    },
+    ...[...new Set(results.map((job) => job.source).filter(Boolean))].map(
+      (boardSource) => ({
+        name: boardSource,
+        count: results.filter((job) => job.source === boardSource).length,
+        current: false,
+      }),
+    ),
+  ]
+    .filter((entry) => entry.current || entry.count > 0)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
   return (
     <section className="v2-board-page">
       <div className="v2-board-header">
@@ -2650,9 +2682,17 @@ function Board({ state, reload }) {
               queue before they're gone!
             </p>
           </div>
-          <button className="secondary" onClick={search}>
-            <RefreshCcw size={15} /> Refresh now
-          </button>
+          <div className="v2-board-header-actions">
+            <button
+              className="secondary"
+              onClick={() => setLeaderboardOpen(true)}
+            >
+              <Trophy size={15} /> Leaderboard
+            </button>
+            <button className="secondary" onClick={search}>
+              <RefreshCcw size={15} /> Refresh now
+            </button>
+          </div>
         </div>
       </div>
       <form
@@ -2978,6 +3018,70 @@ function Board({ state, reload }) {
           </div>
         )}
       </div>
+      {leaderboardOpen && (
+        <div
+          className="v2-session-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="leaderboard-title"
+          onKeyDown={containDialogFocus}
+        >
+          <button
+            className="v2-session-backdrop"
+            aria-label="Close leaderboard"
+            onClick={() => setLeaderboardOpen(false)}
+          />
+          <div className="v2-session-content v2-leaderboard-modal">
+            <button
+              ref={leaderboardCloseRef}
+              className="v2-leaderboard-close"
+              aria-label="Close"
+              onClick={() => setLeaderboardOpen(false)}
+            >
+              <X size={19} />
+            </button>
+            <div className="v2-leaderboard-heading">
+              <Trophy size={25} />
+              <div>
+                <h2 id="leaderboard-title">
+                  Top Contributors of{" "}
+                  {new Date().toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </h2>
+                <p>Private, local contribution summary for this workspace</p>
+              </div>
+            </div>
+            <div className="v2-leaderboard-privacy">
+              <ShieldCheck size={16} /> No community identities or account data
+              are included in the open-source edition.
+            </div>
+            <div className="v2-leaderboard-list">
+              {localContributions.map((entry, index) => (
+                <div
+                  className={entry.current ? "current" : ""}
+                  key={entry.name}
+                >
+                  <strong className={`rank rank-${index + 1}`}>
+                    {index < 3 ? <Medal size={20} /> : index + 1}
+                  </strong>
+                  <span className="v2-leaderboard-avatar">
+                    {entry.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span>
+                    <b>{entry.name}</b>
+                    {entry.current && <small>You · local only</small>}
+                  </span>
+                  <strong>
+                    {entry.count} job{entry.count === 1 ? "" : "s"}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

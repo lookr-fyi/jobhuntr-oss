@@ -3104,6 +3104,116 @@ button.v2-audit-toggle:hover {
 .v2-board-header {
   margin-bottom: 20px;
 }
+.v2-board-header-actions {
+  display: flex;
+  gap: 10px;
+}
+.v2-board-header-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.v2-leaderboard-modal {
+  position: relative;
+  width: min(600px, calc(100vw - 40px));
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+}
+.v2-leaderboard-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  padding: 0;
+  color: #64748b;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.v2-leaderboard-heading {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding-right: 38px;
+}
+.v2-leaderboard-heading > svg {
+  flex: none;
+  color: #2563eb;
+}
+.v2-leaderboard-heading h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.v2-leaderboard-heading p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+.v2-leaderboard-privacy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0;
+  padding: 10px 12px;
+  color: #334155;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  font-size: 11px;
+}
+.v2-leaderboard-list {
+  display: grid;
+  gap: 6px;
+}
+.v2-leaderboard-list > div {
+  display: grid;
+  grid-template-columns: 34px 40px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.v2-leaderboard-list > div.current {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.v2-leaderboard-list .rank {
+  display: grid;
+  place-items: center;
+  color: #64748b;
+}
+.v2-leaderboard-list .rank-1 {
+  color: #d4a017;
+}
+.v2-leaderboard-list .rank-2 {
+  color: #94a3b8;
+}
+.v2-leaderboard-list .rank-3 {
+  color: #b45309;
+}
+.v2-leaderboard-avatar {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  color: #334155;
+  border-radius: 50%;
+  background: #e2e8f0;
+  font-weight: 800;
+}
+.v2-leaderboard-list b,
+.v2-leaderboard-list small {
+  display: block;
+}
+.v2-leaderboard-list small {
+  margin-top: 2px;
+  color: #2563eb;
+  font-size: 10px;
+}
 .v2-board-header .eyebrow {
   color: #64748b;
   letter-spacing: 0.11em;

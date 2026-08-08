@@ -360,6 +360,16 @@ test(
 
       await page.getByRole("button", { name: "Job Board" }).click();
       await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      await page.getByRole("button", { name: "Leaderboard" }).click();
+      const leaderboardDialog = page.getByRole("dialog", {
+        name: /Top Contributors of/,
+      });
+      await leaderboardDialog.waitFor();
+      await leaderboardDialog
+        .getByText(/No community identities or account data/)
+        .waitFor();
+      await page.keyboard.press("Escape");
+      await leaderboardDialog.waitFor({ state: "hidden" });
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Location").fill("Remote");
       await page.getByLabel("Minimum match").selectOption("25");
