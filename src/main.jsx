@@ -115,6 +115,20 @@ const HUNT_WORKFLOWS = [
     "Search verified company career pages directly.",
   ],
 ];
+const OVERVIEW_MOTIVATION = [
+  "One thoughtful application today is a brick in your next chapter.",
+  "Interviews start with consistent, courageous outreach.",
+  "Jobs are won by storytellers—keep refining yours.",
+  "Your momentum is louder than any algorithm.",
+  "Progress over perfection beats ghosting every time.",
+  "You are one tailored message away from a warm intro.",
+  "Hiring managers notice people who keep showing up.",
+  "Stay curious—every rejection is market research.",
+  "Stack small wins until they look like momentum.",
+  "Opportunities move toward people in motion.",
+  "Clarity follows action, not the other way around.",
+  "Momentum beats motivation—press send.",
+];
 const TRACKER_STAGES = [
   "saved",
   "interested",
@@ -1081,12 +1095,40 @@ function subtitle(t) {
 function Overview({ state, setTab, reload }) {
   const [refreshing, setRefreshing] = useState(false);
   const [farewellOpen, setFarewellOpen] = useState(false);
+  const [motivationIndex, setMotivationIndex] = useState(
+    () => new Date().getDate() % OVERVIEW_MOTIVATION.length,
+  );
+  const [typedMotivation, setTypedMotivation] = useState("");
   const [chartVisibility, setChartVisibility] = useState({
     evaluated: true,
     queued: true,
   });
   const [chartHover, setChartHover] = useState(null);
   const farewellCloseRef = useRef(null);
+  useEffect(() => {
+    const message = OVERVIEW_MOTIVATION[motivationIndex];
+    const reducedMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    let typingTimer;
+    const startTimer = window.setTimeout(() => {
+      if (reducedMotion) {
+        setTypedMotivation(message);
+        return;
+      }
+      setTypedMotivation("");
+      let index = 0;
+      typingTimer = window.setInterval(() => {
+        index += 1;
+        setTypedMotivation(message.slice(0, index));
+        if (index >= message.length) window.clearInterval(typingTimer);
+      }, 24);
+    }, 0);
+    return () => {
+      window.clearTimeout(startTimer);
+      window.clearInterval(typingTimer);
+    };
+  }, [motivationIndex]);
   useEffect(() => {
     if (!farewellOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -1194,6 +1236,7 @@ function Overview({ state, setTab, reload }) {
   const refresh = async () => {
     setRefreshing(true);
     await reload();
+    setMotivationIndex((index) => (index + 1) % OVERVIEW_MOTIVATION.length);
     setRefreshing(false);
   };
   const exitJobHuntr = () => {
@@ -1239,9 +1282,9 @@ function Overview({ state, setTab, reload }) {
           </button>
         </div>
       </div>
-      <div className="v2-momentum">
+      <div className="v2-momentum" aria-live="polite">
         <span>MOMENTUM REMINDER</span>
-        <b>Every focused application is one step closer to the right role.</b>
+        <b>{typedMotivation || "\u00a0"}</b>
       </div>
       <div className="v2-overview-top">
         <div className="v2-kpi-grid">
@@ -1297,89 +1340,108 @@ function Overview({ state, setTab, reload }) {
             onPointerMove={updateChartHover}
             onPointerLeave={() => setChartHover(null)}
           >
-            <div className="v2-chart-y-labels" aria-hidden="true">
-              {[chartMax, Math.round(chartMax / 2), 0].map((value, index) => (
-                <span key={`${value}-${index}`}>{value}</span>
-              ))}
-            </div>
-            <svg
-              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-              preserveAspectRatio="none"
-              role="img"
-              aria-label="Application progress over the last seven days"
-            >
-              {[0, 1, 2, 3, 4].map((index) => {
-                const y =
-                  chartPaddingY +
-                  ((chartHeight - chartPaddingY * 2) / 4) * index;
-                return (
-                  <line
-                    className="gridline"
-                    key={index}
-                    x1={chartPaddingX}
-                    x2={chartWidth - chartPaddingX}
-                    y1={y}
-                    y2={y}
-                  />
-                );
-              })}
-              {visibleSeries.map((key) => (
-                <path className={`line ${key}`} d={chartPath(key)} key={key} />
-              ))}
-              {chartHover !== null && visibleSeries.length > 0 && (
-                <line
-                  className="hoverline"
-                  x1={chartPoint(chartHover, 0).x}
-                  x2={chartPoint(chartHover, 0).x}
-                  y1={chartPaddingY}
-                  y2={chartHeight - chartPaddingY}
-                />
-              )}
-            </svg>
-            <div className="v2-chart-x-labels" aria-hidden="true">
-              <span>
-                {chartData[0].date.toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-              <span>
-                {chartData.at(-1).date.toLocaleDateString(undefined, {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            </div>
-            {chartHover !== null && (
-              <div
-                className="v2-chart-tooltip"
-                role="status"
-                style={{
-                  left: `${Math.max(
-                    8,
-                    Math.min(
-                      92,
-                      (chartHover / Math.max(chartData.length - 1, 1)) * 100,
-                    ),
-                  )}%`,
-                }}
-              >
-                <b>
-                  {chartData[chartHover].date.toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </b>
-                {visibleSeries.map((key) => (
-                  <span key={key}>
-                    {key === "evaluated"
-                      ? "Applications evaluated"
-                      : "Jobs queued+"}
-                    <strong>{chartData[chartHover][key]}</strong>
-                  </span>
-                ))}
+            {!visibleSeries.length ? (
+              <div className="v2-chart-empty" role="status">
+                <b>No lines selected.</b>
+                <span>Turn on at least one series to see the trend.</span>
               </div>
+            ) : (
+              <>
+                <div className="v2-chart-y-labels" aria-hidden="true">
+                  {[chartMax, Math.round(chartMax / 2), 0].map(
+                    (value, index) => (
+                      <span key={`${value}-${index}`}>{value}</span>
+                    ),
+                  )}
+                </div>
+                <svg
+                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                  preserveAspectRatio="none"
+                  role="img"
+                  aria-label="Application progress over time"
+                >
+                  {[0, 1, 2, 3, 4].map((index) => {
+                    const y =
+                      chartPaddingY +
+                      ((chartHeight - chartPaddingY * 2) / 4) * index;
+                    return (
+                      <line
+                        className="gridline"
+                        key={index}
+                        x1={chartPaddingX}
+                        x2={chartWidth - chartPaddingX}
+                        y1={y}
+                        y2={y}
+                      />
+                    );
+                  })}
+                  {visibleSeries.map((key) => (
+                    <path
+                      className={`line ${key}`}
+                      d={chartPath(key)}
+                      key={key}
+                    />
+                  ))}
+                  {chartHover !== null && visibleSeries.length > 0 && (
+                    <line
+                      className="hoverline"
+                      x1={chartPoint(chartHover, 0).x}
+                      x2={chartPoint(chartHover, 0).x}
+                      y1={chartPaddingY}
+                      y2={chartHeight - chartPaddingY}
+                    />
+                  )}
+                </svg>
+                <div className="v2-chart-x-labels" aria-hidden="true">
+                  <span>
+                    {chartData[0].date.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                  <span>
+                    {chartData.at(-1).date.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+                {chartHover !== null && (
+                  <div
+                    className="v2-chart-tooltip"
+                    role="status"
+                    style={{
+                      left: `${Math.max(
+                        8,
+                        Math.min(
+                          92,
+                          (chartHover / Math.max(chartData.length - 1, 1)) *
+                            100,
+                        ),
+                      )}%`,
+                    }}
+                  >
+                    <b>
+                      {chartData[chartHover].date.toLocaleDateString(
+                        undefined,
+                        {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        },
+                      )}
+                    </b>
+                    {visibleSeries.map((key) => (
+                      <span key={key}>
+                        {key === "evaluated"
+                          ? "Applications evaluated"
+                          : "Jobs queued+"}
+                        <strong>{chartData[chartHover][key]}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

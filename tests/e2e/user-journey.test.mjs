@@ -117,6 +117,14 @@ test(
       await page.getByText(/jobs? contributed/).waitFor();
       await page.getByText(/sent today/).waitFor();
       await page.getByText("From your first signup to today.").waitFor();
+      await page.waitForFunction(
+        () =>
+          (document.querySelector(".v2-momentum b")?.textContent?.trim()
+            .length || 0) > 20,
+      );
+      const initialMotivation = await page
+        .locator(".v2-momentum b")
+        .innerText();
       const navigationIconBounds = await page
         .locator(".v2-nav button > svg")
         .evaluateAll((icons) =>
@@ -178,7 +186,10 @@ test(
         0,
         "overview chart series controls should hide a line",
       );
+      await page.getByLabel("Jobs queued+").uncheck();
+      await page.getByText("No lines selected.").waitFor();
       await page.getByLabel("Applications evaluated").check();
+      await page.getByLabel("Jobs queued+").check();
       await page.locator(".v2-chart").hover({ position: { x: 320, y: 120 } });
       await page
         .getByRole("status")
@@ -190,6 +201,12 @@ test(
         ),
         page.getByRole("button", { name: "Refresh" }).click(),
       ]);
+      await page.waitForFunction((previous) => {
+        const text = document
+          .querySelector(".v2-momentum b")
+          ?.textContent?.trim();
+        return Boolean(text && text.length > 20 && text !== previous);
+      }, initialMotivation);
       await page.getByRole("button", { name: /I got an offer/ }).click();
       await page.getByRole("dialog", { name: "Congrats!" }).waitFor();
       await page.keyboard.press("Escape");

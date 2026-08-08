@@ -6186,6 +6186,7 @@ select:focus {
   letter-spacing: 0.1em;
 }
 .v2-momentum b {
+  min-height: 21px;
   color: var(--v2-primary);
   font-size: 17px;
 }
@@ -6279,6 +6280,21 @@ select:focus {
   height: 260px;
   margin-top: 20px;
   overflow: visible;
+}
+.v2-chart-empty {
+  display: grid;
+  height: 100%;
+  place-content: center;
+  gap: 5px;
+  color: #64748b;
+  text-align: center;
+}
+.v2-chart-empty b {
+  color: #334155;
+  font-size: 13px;
+}
+.v2-chart-empty span {
+  font-size: 11px;
 }
 .v2-chart .gridline {
   stroke: #e2e8f0;
