@@ -2,7 +2,18 @@
 
 [![Verify](https://github.com/lookr-fyi/jobhuntr-oss/actions/workflows/verify.yml/badge.svg)](https://github.com/lookr-fyi/jobhuntr-oss/actions/workflows/verify.yml)
 
-A self-contained, open-source rebuild of JobHuntr inspired by JobHuntr v2: job search CRM, local job board, resume/cover-letter studio, career coach, and explainable autonomous hunt engine.
+A self-contained, local-first Electron rebuild of the JobHuntr v2 experience: job search CRM, job board, resume/cover-letter studio, career coach, and explainable autonomous hunt engine.
+
+## Electron desktop app
+
+```bash
+npm install
+npm run desktop
+```
+
+This builds the frontend, starts the private loopback service, and opens JobHuntr in a native Electron window. The desktop shell uses context isolation, disables Node integration in the renderer, enables Chromium sandboxing, and stores workspace data under Electron's per-user application-data directory.
+
+The browser-based local launcher remains available for contributors and users who prefer it.
 
 ## One-line local run
 
@@ -47,6 +58,8 @@ All user data is stored locally in:
 ./data/jobhuntr.json
 ```
 
+The Electron app uses its platform-specific JobHuntr user-data directory instead. Set `JOBHUNTR_DATA_DIR` to override either location.
+
 Delete `./data` to reset. Back up `/api/export` before deleting if you need your data.
 
 Writes are atomic and serialized. JobHuntr also maintains `./data/jobhuntr.backup.json`; if the primary JSON file becomes malformed, the server automatically restores the last readable backup and preserves the damaged file for inspection.
@@ -55,9 +68,11 @@ Writes are atomic and serialized. JobHuntr also maintains `./data/jobhuntr.backu
 
 ```bash
 npm run dev          # local API + Vite frontend
+npm run desktop      # build and launch the Electron desktop app
 npm run build        # build frontend into dist/public
 npm start            # serve API; also serves built frontend if present
 npm test             # backend API smoke tests
+npm run test:e2e     # real Chrome and Electron user-journey tests
 npm run lint         # static checks for browser, server, scripts, and tests
 npm run format       # format JavaScript, JSX, CSS, JSON, Markdown, and workflows
 npm run secret:scan  # scan repository for obvious secrets before publishing
