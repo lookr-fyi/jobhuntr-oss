@@ -4352,7 +4352,9 @@ function Resume({ state, reload, mode = "resume" }) {
   );
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const [score, setScore] = useState(null);
-  const [letter, setLetter] = useState(state.coverLetters[0] || null);
+  const [letter, setLetter] = useState(
+    mode === "cover-letter" ? null : state.coverLetters[0] || null,
+  );
   const [letterWizard, setLetterWizard] = useState(() => {
     if (mode !== "cover-letter") return null;
     try {
@@ -4558,14 +4560,14 @@ function Resume({ state, reload, mode = "resume" }) {
   };
   const finishLetterWizard = async () => {
     if (!letterWizard?.result) return;
-    const saved = await api(`/api/cover-letters/${letterWizard.result.id}`, {
+    await api(`/api/cover-letters/${letterWizard.result.id}`, {
       method: "PATCH",
       body: JSON.stringify({
         title: letterWizard.result.title,
         body: letterWizard.result.body,
       }),
     });
-    setLetter(saved);
+    setLetter(null);
     setLetterWizard(null);
     await reload();
   };
@@ -5148,74 +5150,93 @@ function Resume({ state, reload, mode = "resume" }) {
         />
         <div className="v2-document-page-head">
           <div>
-            <h2>Cover Letters</h2>
-            <p>
-              {state.coverLetters.length} cover letter
-              {state.coverLetters.length === 1 ? "" : "s"} available
-            </p>
-          </div>
-          <div className="v2-document-actions">
-            <button onClick={openLetterWizard}>
-              <Plus size={16} /> Create Cover Letter
-            </button>
-          </div>
-        </div>
-        <div className="v2-cover-layout">
-          <div className="v2-template-grid">
-            {state.coverLetters.map((item) => (
-              <article
-                key={item.id}
-                className={letter?.id === item.id ? "selected" : ""}
-              >
-                <button
-                  className="v2-letter-card-preview"
-                  aria-label={`Edit ${item.title}`}
-                  onClick={() => setLetter(item)}
-                >
-                  <span className="v2-letter-status">Ready</span>
-                  <span className="v2-letter-paper">
-                    <b>{state.profile.name}</b>
-                    <i />
-                    <i />
-                    <em>{item.title}</em>
-                    <span>{item.body.slice(0, 460)}</span>
-                  </span>
-                </button>
-                <footer>
-                  <button onClick={() => setLetter(item)}>
-                    <b>{item.title}</b>
-                    <small>
-                      <Calendar size={13} />{" "}
-                      {new Date(
-                        item.updatedAt || item.createdAt,
-                      ).toLocaleDateString()}
-                    </small>
-                  </button>
-                  <button
-                    className="v2-letter-delete"
-                    aria-label={`Delete ${item.title}`}
-                    onClick={() => setDeleteTarget({ type: "letter", item })}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </footer>
-              </article>
-            ))}
-            {!state.coverLetters.length && (
-              <div className="v2-document-empty">
-                <FileText />
-                <h3>No cover letters yet</h3>
-                <p>
-                  Select a tracked job and create your first reusable letter.
-                </p>
-              </div>
-            )}
-          </div>
-          <div className="card v2-letter-workspace">
             {letter ? (
               <>
+                <button
+                  className="secondary v2-cover-back-to-list"
+                  onClick={() => setLetter(null)}
+                >
+                  <ChevronLeft size={16} /> Back to Cover Letters
+                </button>
+                <h2>Edit Cover Letter</h2>
+                <p>Review and update your saved local document.</p>
+              </>
+            ) : (
+              <>
+                <h2>Cover Letters</h2>
+                <p>
+                  {state.coverLetters.length} cover letter
+                  {state.coverLetters.length === 1 ? "" : "s"} available
+                </p>
+              </>
+            )}
+          </div>
+          {!letter && (
+            <div className="v2-document-actions">
+              <button onClick={openLetterWizard}>
+                <Plus size={16} /> Create Cover Letter
+              </button>
+            </div>
+          )}
+        </div>
+        <div className={`v2-cover-layout ${letter ? "editing" : ""}`}>
+          {!letter && (
+            <div className="v2-template-grid">
+              {state.coverLetters.map((item) => (
+                <article
+                  key={item.id}
+                  className={letter?.id === item.id ? "selected" : ""}
+                >
+                  <button
+                    className="v2-letter-card-preview"
+                    aria-label={`Edit ${item.title}`}
+                    onClick={() => setLetter(item)}
+                  >
+                    <span className="v2-letter-status">Ready</span>
+                    <span className="v2-letter-paper">
+                      <b>{state.profile.name}</b>
+                      <i />
+                      <i />
+                      <em>{item.title}</em>
+                      <span>{item.body.slice(0, 460)}</span>
+                    </span>
+                  </button>
+                  <footer>
+                    <button onClick={() => setLetter(item)}>
+                      <b>{item.title}</b>
+                      <small>
+                        <Calendar size={13} />{" "}
+                        {new Date(
+                          item.updatedAt || item.createdAt,
+                        ).toLocaleDateString()}
+                      </small>
+                    </button>
+                    <button
+                      className="v2-letter-delete"
+                      aria-label={`Delete ${item.title}`}
+                      onClick={() => setDeleteTarget({ type: "letter", item })}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </footer>
+                </article>
+              ))}
+              {!state.coverLetters.length && (
+                <div className="v2-document-empty">
+                  <FileText />
+                  <h3>No cover letters yet</h3>
+                  <p>
+                    Select a tracked job and create your first reusable letter.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {letter && (
+            <div className="card v2-letter-workspace">
+              <>
                 <div className="row">
-                  <h3>Edit Cover Letter</h3>
+                  <h3>{letter.title}</h3>
                   <a
                     href={`/print/cover-letter/${letter.id}`}
                     target="_blank"
@@ -5253,14 +5274,8 @@ function Resume({ state, reload, mode = "resume" }) {
                   </button>
                 </div>
               </>
-            ) : (
-              <div className="v2-detail-empty">
-                <FileText />
-                <h3>Select a cover letter</h3>
-                <p>Choose a saved letter to preview and edit its content.</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </section>
     );

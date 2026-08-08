@@ -769,6 +769,17 @@ test(
         "saved cover letters should render as v2 document preview cards",
       );
       await assertAccessible(page, "Cover Letters");
+      await page
+        .getByRole("button", { name: "Edit E2E product letter" })
+        .click();
+      await page.getByRole("heading", { name: "Edit Cover Letter" }).waitFor();
+      assert.equal(
+        await page.locator(".v2-letter-card-preview").count(),
+        0,
+        "editing should use a focused document workspace instead of stacking beneath the card grid",
+      );
+      await page.getByRole("button", { name: "Back to Cover Letters" }).click();
+      await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
       await page.getByText("Show Columns:", { exact: true }).waitFor();

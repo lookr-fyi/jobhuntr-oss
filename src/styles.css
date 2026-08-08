@@ -7143,6 +7143,14 @@ main > header.integrated-page-header {
   grid-template-columns: 1fr;
   gap: 20px;
 }
+.v2-cover-layout.editing {
+  display: block;
+  max-width: 920px;
+}
+.v2-cover-back-to-list {
+  margin-bottom: 16px;
+  padding: 7px 10px;
+}
 .v2-template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
