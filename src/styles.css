@@ -7698,6 +7698,38 @@ main > header.integrated-page-header {
   min-height: 340px;
   line-height: 1.65;
 }
+.v2-cover-result-preview {
+  margin-top: 18px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+.v2-cover-result-preview > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-cover-result-preview a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+.v2-cover-result-preview iframe {
+  width: 100%;
+  min-height: 620px;
+  border: 0;
+  background: #fff;
+}
 .v2-cover-step > label {
   display: block;
   margin-top: 16px;

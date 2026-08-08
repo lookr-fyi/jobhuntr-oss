@@ -742,6 +742,8 @@ test(
         "Emphasize accessible product delivery and measurable outcomes.",
       );
       await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
+      await page.getByTitle("Generated Cover Letter Preview").waitFor();
+      await page.getByRole("link", { name: "Preview PDF" }).waitFor();
       await page.getByLabel("Cover letter title").fill("E2E product letter");
       await page
         .getByLabel("Generated cover letter")

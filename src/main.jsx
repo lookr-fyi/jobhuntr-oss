@@ -5060,6 +5060,28 @@ function Resume({ state, reload, mode = "resume" }) {
                     />
                   </label>
                 </div>
+                <div className="v2-cover-result-preview">
+                  <div>
+                    <span>Document Preview</span>
+                    {letterWizard.result?.id && (
+                      <a
+                        href={`/print/cover-letter/${letterWizard.result.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <Download size={15} /> Preview PDF
+                      </a>
+                    )}
+                  </div>
+                  <iframe
+                    sandbox=""
+                    srcDoc={coverLetterPreviewDocument(
+                      letterWizard.result?.body || "",
+                      letterWizard.templateId,
+                    )}
+                    title="Generated Cover Letter Preview"
+                  />
+                </div>
               </>
             )}
             <div className="v2-cover-step-actions">
