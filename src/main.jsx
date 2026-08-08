@@ -4434,6 +4434,7 @@ function Gigs({ state, reload }) {
   const [gigQuery, setGigQuery] = useState("");
   const [myGigQuery, setMyGigQuery] = useState("");
   const [myView, setMyView] = useState("table");
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const gigCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
   const money = (value) =>
@@ -4509,17 +4510,34 @@ function Gigs({ state, reload }) {
       .toLowerCase()
       .includes(myGigQuery.toLowerCase()),
   );
+  const deleteGig = async () => {
+    await api(`/api/gigs/${deleteTarget.id}`, { method: "DELETE" });
+    setSelected(null);
+    await reload();
+  };
   useEffect(() => {
     if (!gig || myView !== "table") return undefined;
     gigCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setSelected(null);
+      if (event.key === "Escape" && !deleteTarget) setSelected(null);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [gig, myView]);
+  }, [gig, myView, deleteTarget]);
   return (
     <section className="gigs-page">
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete gig application?"
+        description={
+          deleteTarget
+            ? `“${deleteTarget.title}” and its proposal, notes, and status history will be permanently removed.`
+            : "This gig application will be permanently removed."
+        }
+        confirmLabel="Delete application"
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={deleteGig}
+      />
       <div className="v2-page-intro v2-gigs-intro">
         <div>
           <h2>Gigs</h2>
@@ -4863,15 +4881,7 @@ function Gigs({ state, reload }) {
                   </p>
                 ))}
               </div>
-              <button
-                className="danger"
-                onClick={async () => {
-                  if (!confirm(`Delete ${gig.title}?`)) return;
-                  await api(`/api/gigs/${gig.id}`, { method: "DELETE" });
-                  setSelected(null);
-                  reload();
-                }}
-              >
+              <button className="danger" onClick={() => setDeleteTarget(gig)}>
                 Delete gig
               </button>
             </div>
@@ -4963,15 +4973,7 @@ function Gigs({ state, reload }) {
               />
             </label>
             <div className="v2-gig-modal-footer">
-              <button
-                className="danger"
-                onClick={async () => {
-                  if (!confirm(`Delete ${gig.title}?`)) return;
-                  await api(`/api/gigs/${gig.id}`, { method: "DELETE" });
-                  setSelected(null);
-                  reload();
-                }}
-              >
+              <button className="danger" onClick={() => setDeleteTarget(gig)}>
                 Close application
               </button>
               <button className="secondary" onClick={() => setSelected(null)}>
