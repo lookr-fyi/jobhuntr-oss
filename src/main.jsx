@@ -3690,8 +3690,20 @@ function Resume({ state, reload, mode = "resume" }) {
     setTemplateDialog({
       id: template?.id || null,
       step: 1,
-      name: template?.name || "",
+      name:
+        template?.name ||
+        `New ATS Template - ${new Date().toLocaleDateString()}`,
       description: template?.description || "",
+      originalResume: template?.originalResume || "",
+      editedResume:
+        template?.editedResume ||
+        template?.originalResume ||
+        state.profile.resumeText ||
+        "",
+      additionalExperience: template?.additionalExperience || "",
+      testJobId: template?.testJobId || state.jobs[0]?.id || "",
+      uploadedFileName: template?.originalResume ? "Saved resume" : "",
+      scoreResult: null,
       sections: (
         template?.sections || ["Summary", "Skills", "Experience", "Education"]
       ).join(", "),
@@ -3701,6 +3713,10 @@ function Resume({ state, reload, mode = "resume" }) {
     const payload = {
       name: templateDialog.name,
       description: templateDialog.description,
+      originalResume: templateDialog.originalResume,
+      editedResume: templateDialog.editedResume,
+      additionalExperience: templateDialog.additionalExperience,
+      testJobId: templateDialog.testJobId,
       sections: templateDialog.sections
         .split(",")
         .map((section) => section.trim())
@@ -3718,6 +3734,28 @@ function Resume({ state, reload, mode = "resume" }) {
     setTemplateId(saved.id);
     setTemplateDialog(null);
     await reload();
+  };
+  const advanceTemplateWizard = async () => {
+    if (templateDialog.step !== 4) {
+      setTemplateDialog({
+        ...templateDialog,
+        step: templateDialog.step + 1,
+      });
+      return;
+    }
+    const scoreResult = await api("/api/resume/score", {
+      method: "POST",
+      body: JSON.stringify({
+        resumeText: [
+          templateDialog.editedResume,
+          templateDialog.additionalExperience,
+        ]
+          .filter(Boolean)
+          .join("\n\n"),
+        jobId: templateDialog.testJobId,
+      }),
+    });
+    setTemplateDialog({ ...templateDialog, scoreResult, step: 5 });
   };
   const saveResume = async () => {
     const content = resumeRef.current?.value ?? resume;
@@ -4539,13 +4577,13 @@ function Resume({ state, reload, mode = "resume" }) {
                   {templateDialog.id ? "Edit Template" : "Create New Template"}
                 </h3>
               </div>
-              <small>Step {templateDialog.step} of 3</small>
+              <small>Step {templateDialog.step} of 5</small>
             </div>
             <ol
               className="v2-template-progress"
               aria-label="Template setup progress"
             >
-              {["Template details", "Resume sections", "Review"].map(
+              {["Upload", "Edit Clone", "Enrich Exp", "Test", "Result"].map(
                 (label, index) => (
                   <li
                     key={label}
@@ -4561,10 +4599,12 @@ function Resume({ state, reload, mode = "resume" }) {
               )}
             </ol>
             {templateDialog.step === 1 && (
-              <div className="v2-template-step">
+              <div className="v2-template-step v2-template-upload-step">
                 <div>
-                  <h4>Name your template</h4>
-                  <p>Give this reusable resume structure a clear purpose.</p>
+                  <h4>Upload your resume</h4>
+                  <p>
+                    JobHuntr clones your existing resume before optimizing it.
+                  </p>
                 </div>
                 <label>
                   Template name
@@ -4577,151 +4617,164 @@ function Resume({ state, reload, mode = "resume" }) {
                         name: event.target.value,
                       })
                     }
-                    placeholder="e.g., Senior product engineer"
                   />
                 </label>
-                <label>
-                  Description
-                  <textarea
-                    value={templateDialog.description}
-                    onChange={(event) =>
+                <label className="v2-template-dropzone">
+                  <Upload size={30} />
+                  <b>
+                    {templateDialog.uploadedFileName || "Choose a resume file"}
+                  </b>
+                  <span>
+                    PDF, HTML, or text · processed only on this device
+                  </span>
+                  <input
+                    aria-label="Upload resume for ATS template"
+                    type="file"
+                    accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
+                    onChange={async (event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      const content =
+                        file.type === "application/pdf"
+                          ? state.profile.resumeText
+                          : await file.text();
                       setTemplateDialog({
                         ...templateDialog,
-                        description: event.target.value,
-                      })
-                    }
-                    placeholder="When and how you plan to use this template"
+                        uploadedFileName: file.name,
+                        originalResume: content,
+                        editedResume: content,
+                      });
+                    }}
                   />
                 </label>
+                {templateDialog.originalResume && (
+                  <div className="v2-template-upload-success" role="status">
+                    <CheckCircle2 size={18} /> Resume uploaded successfully and
+                    ready to edit.
+                  </div>
+                )}
               </div>
             )}
             {templateDialog.step === 2 && (
-              <div className="v2-template-step">
+              <div className="v2-template-step v2-template-edit-step">
                 <div>
-                  <h4>Arrange resume sections</h4>
-                  <p>Keep the highest-value ATS content near the top.</p>
+                  <h4>Edit your cloned resume</h4>
+                  <p>
+                    Correct conversion issues while preserving your original
+                    content.
+                  </p>
                 </div>
-                <div className="v2-template-sections">
-                  {templateDialog.sections
-                    .split(",")
-                    .map((section) => section.trim())
-                    .filter(Boolean)
-                    .map((section, index, sections) => (
-                      <div key={`${section}-${index}`}>
-                        <span>
-                          <b>{index + 1}</b>
-                          {section}
-                        </span>
-                        <span>
-                          <button
-                            aria-label={`Move ${section} up`}
-                            disabled={index === 0}
-                            onClick={() => {
-                              const next = [...sections];
-                              [next[index - 1], next[index]] = [
-                                next[index],
-                                next[index - 1],
-                              ];
-                              setTemplateDialog({
-                                ...templateDialog,
-                                sections: next.join(", "),
-                              });
-                            }}
-                          >
-                            ↑
-                          </button>
-                          <button
-                            aria-label={`Move ${section} down`}
-                            disabled={index === sections.length - 1}
-                            onClick={() => {
-                              const next = [...sections];
-                              [next[index], next[index + 1]] = [
-                                next[index + 1],
-                                next[index],
-                              ];
-                              setTemplateDialog({
-                                ...templateDialog,
-                                sections: next.join(", "),
-                              });
-                            }}
-                          >
-                            ↓
-                          </button>
-                          <button
-                            aria-label={`Remove ${section}`}
-                            disabled={sections.length <= 1}
-                            onClick={() =>
-                              setTemplateDialog({
-                                ...templateDialog,
-                                sections: sections
-                                  .filter((_, itemIndex) => itemIndex !== index)
-                                  .join(", "),
-                              })
-                            }
-                          >
-                            ×
-                          </button>
-                        </span>
-                      </div>
-                    ))}
-                </div>
-                <div className="inline v2-template-add-section">
-                  <input
-                    aria-label="New resume section"
-                    value={templateDialog.newSection}
-                    onChange={(event) =>
-                      setTemplateDialog({
-                        ...templateDialog,
-                        newSection: event.target.value,
-                      })
-                    }
-                    placeholder="Add another section"
-                  />
-                  <button
-                    className="secondary"
-                    disabled={!templateDialog.newSection.trim()}
-                    onClick={() =>
-                      setTemplateDialog({
-                        ...templateDialog,
-                        sections: `${templateDialog.sections}, ${templateDialog.newSection.trim()}`,
-                        newSection: "",
-                      })
-                    }
-                  >
-                    Add
-                  </button>
-                </div>
+                <textarea
+                  aria-label="Cloned resume content"
+                  value={templateDialog.editedResume}
+                  onChange={(event) =>
+                    setTemplateDialog({
+                      ...templateDialog,
+                      editedResume: event.target.value,
+                    })
+                  }
+                />
+                <small>
+                  {templateDialog.editedResume.length.toLocaleString()}{" "}
+                  characters
+                </small>
               </div>
             )}
             {templateDialog.step === 3 && (
-              <div className="v2-template-step v2-template-review">
+              <div className="v2-template-step v2-template-edit-step">
                 <div>
-                  <h4>Review your ATS structure</h4>
-                  <p>Confirm the reusable layout before saving it locally.</p>
+                  <h4>Add Additional Experience</h4>
+                  <p>
+                    Add truthful skills, projects, achievements, or experience
+                    not already included. JobHuntr never invents details.
+                  </p>
                 </div>
-                <article>
-                  <header>
-                    <FileText size={22} />
-                    <span>
-                      <b>{templateDialog.name}</b>
-                      <small>
-                        {templateDialog.description ||
-                          "Reusable ATS resume template"}
-                      </small>
-                    </span>
-                  </header>
-                  {templateDialog.sections
-                    .split(",")
-                    .map((section) => section.trim())
-                    .filter(Boolean)
-                    .map((section) => (
-                      <section key={section}>
-                        <b>{section}</b>
-                        <i />
-                        <i />
-                      </section>
+                <textarea
+                  aria-label="Additional experience and skills"
+                  maxLength={10000}
+                  value={templateDialog.additionalExperience}
+                  onChange={(event) =>
+                    setTemplateDialog({
+                      ...templateDialog,
+                      additionalExperience: event.target.value,
+                    })
+                  }
+                  placeholder="Freelance projects, certifications, volunteer leadership, awards, publications…"
+                />
+                <small>
+                  {templateDialog.additionalExperience.length.toLocaleString()}
+                  /10,000 characters
+                </small>
+              </div>
+            )}
+            {templateDialog.step === 4 && (
+              <div className="v2-template-step">
+                <div>
+                  <h4>Test your ATS template</h4>
+                  <p>
+                    Select a tracked role to verify alignment before completing
+                    the template.
+                  </p>
+                </div>
+                <label>
+                  Test job
+                  <select
+                    aria-label="ATS template test job"
+                    value={templateDialog.testJobId}
+                    onChange={(event) =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        testJobId: event.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Choose a tracked job</option>
+                    {state.jobs.map((job) => (
+                      <option key={job.id} value={job.id}>
+                        {job.title} · {job.company}
+                      </option>
                     ))}
-                </article>
+                  </select>
+                </label>
+                <div className="v2-template-test-summary">
+                  <ShieldCheck size={24} />
+                  <span>
+                    <b>Private deterministic test</b>
+                    <small>
+                      Your resume and job data never leave this device.
+                    </small>
+                  </span>
+                </div>
+              </div>
+            )}
+            {templateDialog.step === 5 && (
+              <div className="v2-template-step v2-template-result">
+                <div>
+                  <h4>ATS Optimization Complete</h4>
+                  <p>
+                    Your reusable template is ready for job-specific resumes.
+                  </p>
+                </div>
+                <div className="v2-template-score">
+                  <strong>{templateDialog.scoreResult?.score ?? 0}</strong>
+                  <span>ATS match score</span>
+                </div>
+                <div className="v2-template-result-grid">
+                  <div>
+                    <b>Matched keywords</b>
+                    <p>
+                      {templateDialog.scoreResult?.keywordHits?.join(", ") ||
+                        "No job keywords detected"}
+                    </p>
+                  </div>
+                  <div>
+                    <b>Suggested improvements</b>
+                    <p>
+                      {templateDialog.scoreResult?.suggestions?.[1] ||
+                        "Keep experience specific and measurable."}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
             <div className="v2-template-modal-actions">
@@ -4739,22 +4792,20 @@ function Resume({ state, reload, mode = "resume" }) {
               >
                 {templateDialog.step === 1 ? "Cancel" : "Previous"}
               </button>
-              {templateDialog.step < 3 ? (
+              {templateDialog.step < 5 ? (
                 <button
                   disabled={
                     (templateDialog.step === 1 &&
-                      !templateDialog.name.trim()) ||
+                      (!templateDialog.name.trim() ||
+                        !templateDialog.originalResume.trim())) ||
                     (templateDialog.step === 2 &&
-                      !templateDialog.sections.trim())
+                      !templateDialog.editedResume.trim()) ||
+                    (templateDialog.step === 4 && !templateDialog.testJobId)
                   }
-                  onClick={() =>
-                    setTemplateDialog({
-                      ...templateDialog,
-                      step: templateDialog.step + 1,
-                    })
-                  }
+                  onClick={advanceTemplateWizard}
                 >
-                  Continue <ChevronRight size={15} />
+                  {templateDialog.step === 4 ? "Run ATS Test" : "Next"}{" "}
+                  <ChevronRight size={15} />
                 </button>
               ) : (
                 <button

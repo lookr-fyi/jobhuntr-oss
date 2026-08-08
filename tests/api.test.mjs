@@ -646,10 +646,16 @@ test("resume templates can be created, edited, and safely removed", async () => 
       name: "Technical Leadership",
       description: "Highlights architecture and team outcomes.",
       sections: ["Summary", "Leadership", "Experience", "Education"],
+      originalResume: "Original resume content",
+      editedResume: "Edited resume content",
+      additionalExperience: "Mentored five engineers.",
+      testJobId: "test-job",
     }),
   });
   assert.equal(created.res.status, 201);
   assert.equal(created.body.name, "Technical Leadership");
+  assert.equal(created.body.editedResume, "Edited resume content");
+  assert.equal(created.body.additionalExperience, "Mentored five engineers.");
   const updated = await req(`/api/templates/${created.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({ name: "Engineering Leadership" }),

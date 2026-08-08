@@ -368,20 +368,37 @@ test(
       });
       await templateDialog.getByLabel("Template name").fill("E2E Leadership");
       await templateDialog
-        .getByLabel("Description")
-        .fill("Highlights technical leadership and measurable outcomes.");
-      await templateDialog.getByRole("button", { name: /Continue/ }).click();
-      await templateDialog.getByText("Arrange resume sections").waitFor();
-      await templateDialog.getByLabel("New resume section").fill("Leadership");
+        .getByLabel("Upload resume for ATS template")
+        .setInputFiles({
+          name: "e2e-resume.txt",
+          mimeType: "text/plain",
+          buffer: Buffer.from(
+            "Product engineer with React, TypeScript, leadership, and 40% performance gains.",
+          ),
+        });
+      await templateDialog.getByText(/Resume uploaded successfully/).waitFor();
+      await templateDialog.getByRole("button", { name: /Next/ }).click();
+      await templateDialog.getByText("Edit your cloned resume").waitFor();
       await templateDialog
-        .getByRole("button", { name: "Add", exact: true })
-        .click();
+        .getByLabel("Cloned resume content")
+        .fill(
+          "Product engineer who led React delivery and improved performance 40%.",
+        );
+      await templateDialog.getByRole("button", { name: /Next/ }).click();
+      await templateDialog.getByText("Add Additional Experience").waitFor();
       await templateDialog
-        .getByRole("button", { name: "Move Leadership up" })
+        .getByLabel("Additional experience and skills")
+        .fill("Mentored five engineers and led accessibility delivery.");
+      await templateDialog.getByRole("button", { name: /Next/ }).click();
+      await templateDialog.getByText("Test your ATS template").waitFor();
+      await templateDialog
+        .getByLabel("ATS template test job")
+        .selectOption({ index: 1 });
+      await templateDialog
+        .getByRole("button", { name: /Run ATS Test/ })
         .click();
-      await templateDialog.getByRole("button", { name: /Continue/ }).click();
-      await templateDialog.getByText("Review your ATS structure").waitFor();
-      await templateDialog.getByText("Leadership", { exact: true }).waitFor();
+      await templateDialog.getByText("ATS Optimization Complete").waitFor();
+      await templateDialog.getByText("ATS match score").waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) =>

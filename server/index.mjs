@@ -63,6 +63,10 @@ const JobSchema = z.object({
 const TemplateSchema = z.object({
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(500).optional().default(""),
+  originalResume: z.string().max(200000).optional().default(""),
+  editedResume: z.string().max(200000).optional().default(""),
+  additionalExperience: z.string().max(10000).optional().default(""),
+  testJobId: z.string().max(200).optional().default(""),
   sections: z
     .array(z.string().trim().min(1).max(100))
     .min(1)
