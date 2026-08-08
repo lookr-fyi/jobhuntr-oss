@@ -842,6 +842,32 @@ button:disabled {
   grid-template-columns: 400px minmax(0, 1fr);
   gap: 18px;
 }
+.v2-board-page { max-width: 1180px; margin: 0 auto; padding: 8px 24px 48px; }
+.v2-board-header { margin-bottom: 20px; }
+.v2-board-header .eyebrow { color: #64748b; letter-spacing: .11em; }
+.v2-board-header .v2-page-intro { margin-top: 4px; }
+.v2-board-search { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 6px 6px 6px 14px; border: 1px solid #dbe3ee; border-radius: 10px; background: #fff; }
+.v2-board-search input { border: 0; box-shadow: none; padding: 8px 0; }
+.v2-board-search input:focus { box-shadow: none; }
+.v2-board-layout { display: grid; grid-template-columns: minmax(330px, .8fr) minmax(420px, 1.2fr); gap: 18px; margin-top: 18px; align-items: start; }
+.v2-board-list { display: flex; flex-direction: column; gap: 8px; }
+button.v2-board-row { display: grid; grid-template-columns: 42px 1fr auto; gap: 12px; align-items: center; width: 100%; padding: 15px; text-align: left; color: #1e293b; background: #fff; border: 1px solid #e2e8f0; border-radius: 11px; }
+button.v2-board-row:hover { background: #f8fafc; border-color: #cbd5e1; }
+button.v2-board-row.selected { border-color: #18181a; box-shadow: inset 3px 0 #18181a; }
+.v2-board-row > span:nth-child(2) { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.v2-board-row small { color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.v2-board-row em { width: max-content; padding: 3px 7px; border-radius: 999px; background: #ecfdf5; color: #15803d; font-size: 11px; font-style: normal; font-weight: 700; }
+.v2-board-detail { position: sticky; top: 18px; padding: 26px; }
+.v2-board-detail-top { display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 14px; }
+.v2-board-detail h3 { margin: 0 0 4px; font-size: 20px; }
+.v2-board-detail p { color: #64748b; line-height: 1.65; }
+.v2-board-detail h4 { margin: 24px 0 8px; }
+.v2-board-detail li { margin: 8px 0; color: #475569; }
+.v2-job-logo.large { width: 52px; height: 52px; font-size: 20px; }
+.v2-match-pill { padding: 5px 9px; border-radius: 999px; background: #ecfdf5; color: #15803d; font-size: 12px; font-weight: 700; }
+.v2-job-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
+.v2-job-facts span { padding: 6px 9px; border-radius: 7px; background: #f1f5f9; color: #475569; font-size: 12px; }
+@media (max-width: 900px) { .v2-board-layout { grid-template-columns: 1fr; } .v2-board-detail { position: static; } }
 .v2-hunt-page {
   width: 100%;
   max-width: 960px;

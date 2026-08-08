@@ -148,6 +148,7 @@ function App() {
               "cover-letter",
               "tracker",
               "agent",
+              "board",
             ].includes(tab)
               ? "integrated-page-header"
               : ""
@@ -898,6 +899,7 @@ function Actions({ job, reload }) {
 function Board({ reload }) {
   const [q, setQ] = useState("engineer");
   const [results, setResults] = useState([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const search = async () =>
     setResults(
       await api("/api/board/search", {
@@ -911,40 +913,49 @@ function Board({ reload }) {
       body: JSON.stringify({ q: "engineer" }),
     }).then(setResults);
   }, []);
+  const selected = results[selectedIndex] || results[0];
   return (
-    <section className="card">
-      <div className="inline">
+    <section className="v2-board-page">
+      <div className="v2-board-header">
+        <span className="eyebrow">COMMUNITY JOB FEED</span>
+        <div className="v2-page-intro"><div><h2>Today's Picks</h2><p>{results.length} fresh jobs from the local demo catalog. Add one to your queue before it's gone.</p></div><button className="secondary" onClick={search}>Refresh now</button></div>
+      </div>
+      <div className="v2-board-search">
+        <Search size={17} />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search role, skill, company"
         />
-        <button onClick={search}>
-          <Search size={16} /> Search
-        </button>
+        <button onClick={search}>Search</button>
       </div>
-      <div className="resultgrid">
+      <div className="v2-board-layout">
+        <div className="v2-board-list">
         {results.map((j, i) => (
-          <div className="jobcard" key={`${j.url}-${i}`}>
-            <b>{j.title}</b>
-            <span>
-              {j.company} · {j.location}
-            </span>
-            <p>{j.description}</p>
-            <em>{j.fitScore}% fit</em>
-            <button
+          <button type="button" className={`v2-board-row ${selectedIndex === i ? "selected" : ""}`} key={`${j.url}-${i}`} onClick={() => setSelectedIndex(i)}>
+            <span className="v2-job-logo">{j.company?.slice(0, 1)}</span>
+            <span><strong>{j.title}</strong><small>{j.company} · {j.location}</small><em>{j.fitScore}% match</em></span>
+            <ChevronRight size={16} />
+          </button>
+        ))}
+        </div>
+        {selected && <article className="card v2-board-detail">
+          <div className="v2-board-detail-top"><span className="v2-job-logo large">{selected.company?.slice(0, 1)}</span><div><h3>{selected.title}</h3><p>{selected.company} · {selected.location}</p></div><span className="v2-match-pill">{selected.fitScore}% match</span></div>
+          <div className="v2-job-facts"><span>Full-time</span><span>Recently added</span><span>Community sourced</span></div>
+          <h4>About the role</h4><p>{selected.description}</p>
+          <h4>Why it matches</h4><ul><li>Matches your target role and saved preferences</li><li>Relevant skills found in your JobHuntr profile</li></ul>
+          <button
               onClick={async () => {
                 await api("/api/jobs", {
                   method: "POST",
-                  body: JSON.stringify(j),
+                  body: JSON.stringify(selected),
                 });
                 reload();
               }}
             >
-              Save to tracker
-            </button>
-          </div>
-        ))}
+              <Plus size={16} /> Add to job tracker
+          </button>
+        </article>}
       </div>
     </section>
   );
