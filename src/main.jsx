@@ -18,6 +18,8 @@ import {
   MessageSquare,
   BadgeCheck,
   CircleDollarSign,
+  RotateCw,
+  WifiOff,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -40,17 +42,17 @@ function App() {
       .catch((e) => setErr(e.message));
   useEffect(load, []);
   const tabs = [
-    ["overview", LayoutDashboard],
-    ["tracker", Briefcase],
-    ["board", Search],
-    ["queue", ListChecks],
-    ["resume", FileText],
-    ["coach", MessageSquare],
-    ["audit", BadgeCheck],
-    ["gigs", CircleDollarSign],
-    ["agent", Bot],
-    ["settings", Settings],
-    ["privacy", ShieldCheck],
+    ["overview", LayoutDashboard, "Overview"],
+    ["settings", Settings, "Setup"],
+    ["queue", ListChecks, "Queue"],
+    ["tracker", Briefcase, "History"],
+    ["agent", Bot, "Hunt"],
+    ["board", Search, "Job board"],
+    ["resume", FileText, "Documents"],
+    ["coach", MessageSquare, "Coach"],
+    ["audit", BadgeCheck, "Profile audit"],
+    ["gigs", CircleDollarSign, "Gigs"],
+    ["privacy", ShieldCheck, "Data & privacy"],
   ];
   if (!state)
     return (
@@ -63,22 +65,37 @@ function App() {
       {state.profile.onboarded === false && (
         <Onboarding profile={state.profile} reload={load} />
       )}
+      <div className="windowbar">
+        <div className="traffic-lights" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="window-title">
+          <div className="window-logo">J</div>
+          <b>JobHuntr</b>
+          <span>LOCAL WORKSPACE</span>
+        </div>
+        <div className="window-status">
+          <WifiOff size={13} /> Private · on this device
+        </div>
+      </div>
       <aside>
         <div className="brand">
           <div className="logo">JH</div>
           <div>
-            <b>JobHuntr OSS</b>
-            <span>Local-first job search</span>
+            <b>JobHuntr</b>
+            <span>Application agent</span>
           </div>
         </div>
-        {tabs.map(([name, Icon]) => (
+        {tabs.map(([name, Icon, label]) => (
           <button
             key={name}
             className={tab === name ? "active" : ""}
             onClick={() => setTab(name)}
           >
             <Icon size={18} />
-            {name}
+            {label}
           </button>
         ))}
         <p className="local">
@@ -88,10 +105,18 @@ function App() {
       <main>
         <header>
           <div>
+            <span className="page-kicker">WORKSPACE / {tab.toUpperCase()}</span>
             <h1>{title(tab)}</h1>
             <p>{subtitle(tab)}</p>
           </div>
-          <button onClick={load}>Refresh</button>
+          <div className="header-actions">
+            <span className="local-badge">
+              <span /> Local mode
+            </span>
+            <button className="secondary refresh-button" onClick={load}>
+              <RotateCw size={15} /> Refresh
+            </button>
+          </div>
         </header>
         {err && <div className="error">{err}</div>}
         {tab === "overview" && <Overview state={state} setTab={setTab} />}{" "}
@@ -105,6 +130,12 @@ function App() {
         {tab === "agent" && <Agent state={state} reload={load} />}{" "}
         {tab === "settings" && <SettingsPage state={state} reload={load} />}{" "}
         {tab === "privacy" && <Privacy />}
+        <footer className="app-statusbar">
+          <span>
+            <i className="status-dot" /> Workspace saved locally
+          </span>
+          <span>JobHuntr v2 · open source edition</span>
+        </footer>
       </main>
     </div>
   );
@@ -210,7 +241,7 @@ function title(t) {
     audit: "Professional profile audit",
     gigs: "Freelance gigs",
     agent: "Autonomous hunt",
-    settings: "Profile & preferences",
+    settings: "Setup",
     privacy: "Privacy & safety",
   }[t];
 }
@@ -227,7 +258,8 @@ function subtitle(t) {
     audit:
       "Paste your profile sections for a deterministic, private quality review.",
     agent: "Run a transparent local workflow using your preferences.",
-    settings: "Control the profile and criteria used for matching.",
+    settings:
+      "Configure your resume, search filters, answers, and application rules.",
     privacy: "Back up and restore a workspace with no cloud dependency.",
   }[t];
 }
@@ -449,7 +481,7 @@ function Tracker({ state, reload }) {
   const [selected, setSelected] = useState(state.jobs[0]?.id);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
-  const [mode, setMode] = useState("board");
+  const [mode, setMode] = useState("list");
   const [showForm, setShowForm] = useState(false);
   const job = state.jobs.find((item) => item.id === selected);
   const filtered = state.jobs.filter((item) => {
@@ -904,6 +936,8 @@ function Board({ reload }) {
 function Queue({ state, reload }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const active = state.submissions.filter((s) => s.status !== "archived");
+  const [selectedId, setSelectedId] = useState(active[0]?.id || "");
+  const selected = active.find((item) => item.id === selectedId) || active[0];
   const create = async () => {
     await api("/api/submissions", {
       method: "POST",
@@ -913,45 +947,91 @@ function Queue({ state, reload }) {
         coverLetterId: state.coverLetters[0]?.id || "",
       }),
     });
-    reload();
+    await reload();
   };
   return (
-    <section className="grid">
-      <div className="card hero">
-        <h2>Application review</h2>
-        <p>
-          Create a packet, complete its checklist, then record submission.
-          JobHuntr never submits externally or stores credentials.
-        </p>
-        <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
-          {state.jobs
-            .filter((j) => !["applied", "rejected"].includes(j.status))
-            .map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.company} — {j.title}
-              </option>
-            ))}
-        </select>
-        <button disabled={!jobId} onClick={create}>
-          <Plus size={16} /> Create packet
-        </button>
+    <section className="queue-workspace">
+      <div className="queue-summary card">
+        <span>
+          <i className="queue-dot pending" /> Pending:{" "}
+          <b>{active.filter((x) => x.status === "draft").length}</b>
+        </span>
+        <span>
+          <i className="queue-dot ready" /> Ready:{" "}
+          <b>{active.filter((x) => x.status === "ready").length}</b>
+        </span>
+        <span>
+          <i className="queue-dot submitting" /> Submitted:{" "}
+          <b>
+            {state.submissions.filter((x) => x.status === "submitted").length}
+          </b>
+        </span>
+        <div className="queue-create">
+          <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
+            {state.jobs
+              .filter((j) => !["applied", "rejected"].includes(j.status))
+              .map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.company} — {j.title}
+                </option>
+              ))}
+          </select>
+          <button disabled={!jobId} onClick={create}>
+            <Plus size={16} /> Create packet
+          </button>
+        </div>
       </div>
-      <div className="card wide">
-        <h3>Packets · {active.length}</h3>
-        {active.length ? (
-          active.map((s) => (
+      <div className="queue-body">
+        <aside className="queue-list card">
+          <div className="queue-list-title">
+            <span>APPLICATIONS</span>
+            <b>{active.length}</b>
+          </div>
+          {active.map((item) => {
+            const job = state.jobs.find(
+              (candidate) => candidate.id === item.jobId,
+            );
+            return (
+              <button
+                key={item.id}
+                className={selected?.id === item.id ? "selected" : ""}
+                onClick={() => setSelectedId(item.id)}
+              >
+                <span className={`queue-dot ${item.status}`} />
+                <span>
+                  <b>{job?.title || "Missing role"}</b>
+                  <small>{job?.company}</small>
+                </span>
+                <em>{item.status}</em>
+              </button>
+            );
+          })}
+          {!active.length && (
+            <div className="queue-empty">
+              <ListChecks />
+              <b>Your review queue is clear</b>
+              <span>Create a packet from a tracked role.</span>
+            </div>
+          )}
+        </aside>
+        <div className="card queue-detail">
+          {selected ? (
             <SubmissionCard
-              key={s.id}
-              submission={s}
+              submission={selected}
               state={state}
               reload={reload}
             />
-          ))
-        ) : (
-          <p className="empty">
-            No packets yet. Choose a tracked role to begin.
-          </p>
-        )}
+          ) : (
+            <div className="queue-empty large">
+              <ShieldCheck />
+              <h2>Review before submitting</h2>
+              <p>
+                Select a role above, then create a packet. Every answer and
+                attachment stays review-gated.
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );
@@ -2468,6 +2548,12 @@ function SettingsPage({ state, reload }) {
     remote: p.preferences?.remote,
     minSalary: p.preferences?.minSalary,
     weeklyApplicationGoal: p.preferences?.weeklyApplicationGoal || 5,
+    resumeText: p.resumeText || "",
+    blacklist: (p.blacklist || []).join(", "),
+    faq: p.faq || "",
+    autoApply: p.applicationRules?.autoApply ?? false,
+    submitWhenConfident: p.applicationRules?.submitWhenConfident ?? true,
+    skipOptional: p.applicationRules?.skipOptional ?? true,
   });
   const save = async () => {
     await api("/api/profile", {
@@ -2485,6 +2571,17 @@ function SettingsPage({ state, reload }) {
           .split(",")
           .map((x) => x.trim())
           .filter(Boolean),
+        resumeText: form.resumeText,
+        blacklist: form.blacklist
+          .split(",")
+          .map((x) => x.trim())
+          .filter(Boolean),
+        faq: form.faq,
+        applicationRules: {
+          autoApply: form.autoApply,
+          submitWhenConfident: form.submitWhenConfident,
+          skipOptional: form.skipOptional,
+        },
         preferences: {
           remote: form.remote,
           minSalary: Number(form.minSalary) || 0,
@@ -2502,68 +2599,148 @@ function SettingsPage({ state, reload }) {
     reload();
   };
   return (
-    <section className="split">
-      <div className="card">
-        <h3>Your local profile</h3>
-        {[
-          ["name", "Name"],
-          ["headline", "Headline"],
-          ["location", "Home location"],
-          ["targetRoles", "Target roles"],
-          ["skills", "Skills"],
-        ].map(([key, label]) => (
-          <label key={key}>
-            {label}
-            <input
-              value={form[key] || ""}
-              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+    <section className="setup-layout">
+      <div className="setup-stack">
+        <div className="card setup-section">
+          <span className="eyebrow">TELL ME ABOUT YOU</span>
+          <h3>Candidate profile</h3>
+          {[
+            ["name", "Name"],
+            ["headline", "Headline"],
+            ["location", "Home location"],
+            ["targetRoles", "Target roles"],
+            ["skills", "Skills"],
+          ].map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                value={form[key] || ""}
+                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+              />
+            </label>
+          ))}
+          <label>
+            Resume
+            <textarea
+              className="setup-resume"
+              value={form.resumeText}
+              onChange={(e) => setForm({ ...form, resumeText: e.target.value })}
+              placeholder="Paste your resume text here"
             />
           </label>
-        ))}
+        </div>
+        <div className="card setup-section">
+          <span className="eyebrow">JOB MATCHING SETTINGS</span>
+          <h3>Search filters</h3>
+          <label>
+            Preferred locations
+            <input
+              value={form.locations || ""}
+              onChange={(e) => setForm({ ...form, locations: e.target.value })}
+            />
+          </label>
+          <label>
+            Minimum salary
+            <input
+              type="number"
+              value={form.minSalary || 0}
+              onChange={(e) => setForm({ ...form, minSalary: e.target.value })}
+            />
+          </label>
+          <label>
+            Weekly application goal
+            <input
+              type="number"
+              min="1"
+              max="100"
+              value={form.weeklyApplicationGoal}
+              onChange={(e) =>
+                setForm({ ...form, weeklyApplicationGoal: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Blacklisted companies
+            <textarea
+              value={form.blacklist}
+              onChange={(e) => setForm({ ...form, blacklist: e.target.value })}
+              placeholder="Amazon, Google"
+            />
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={form.remote}
+              onChange={(e) => setForm({ ...form, remote: e.target.checked })}
+            />{" "}
+            Include remote roles
+          </label>
+        </div>
       </div>
-      <div className="card">
-        <h3>Search preferences</h3>
-        <label>
-          Preferred locations
-          <input
-            value={form.locations || ""}
-            onChange={(e) => setForm({ ...form, locations: e.target.value })}
-          />
-        </label>
-        <label>
-          Minimum salary
-          <input
-            type="number"
-            value={form.minSalary || 0}
-            onChange={(e) => setForm({ ...form, minSalary: e.target.value })}
-          />
-        </label>
-        <label>
-          Weekly application goal
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={form.weeklyApplicationGoal}
-            onChange={(e) =>
-              setForm({ ...form, weeklyApplicationGoal: e.target.value })
+      <div className="setup-stack">
+        <div className="card setup-section">
+          <span className="eyebrow">FAQ</span>
+          <h3>Reusable application answers</h3>
+          <p className="hint">
+            JobHuntr uses this private answer bank when preparing application
+            packets.
+          </p>
+          <textarea
+            className="faq-editor"
+            value={form.faq}
+            onChange={(e) => setForm({ ...form, faq: e.target.value })}
+            placeholder={
+              "Work authorization: ...\nSponsorship: ...\nWhy are you interested?: ..."
             }
           />
-        </label>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={form.remote}
-            onChange={(e) => setForm({ ...form, remote: e.target.checked })}
-          />{" "}
-          Include remote roles
-        </label>
-        <button onClick={save}>
-          <Save size={16} /> Save preferences
+        </div>
+        <div className="card setup-section">
+          <span className="eyebrow">APPLICATION</span>
+          <h3>Review behavior</h3>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={form.submitWhenConfident}
+              onChange={(e) =>
+                setForm({ ...form, submitWhenConfident: e.target.checked })
+              }
+            />{" "}
+            Submit packet when every answer is reviewed
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={form.skipOptional}
+              onChange={(e) =>
+                setForm({ ...form, skipOptional: e.target.checked })
+              }
+            />{" "}
+            Skip optional questions without grounded answers
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={form.autoApply}
+              onChange={(e) =>
+                setForm({ ...form, autoApply: e.target.checked })
+              }
+            />{" "}
+            Enable autonomous apply mode
+          </label>
+          <div className="safety-note">
+            <ShieldCheck size={16} />
+            <span>
+              Autonomous mode remains local and review-gated in this open-source
+              edition.
+            </span>
+          </div>
+        </div>
+        <button className="setup-save" onClick={save}>
+          <Save size={16} /> Save setup
         </button>
-        <p className="hint">
-          Used for local fit scores and hunt defaults. Nothing is sent over the
-          network.
+        <p className="hint setup-hint">
+          Used for local matching, resume generation, and review packets.
+          Nothing is sent to a hosted JobHuntr service.
         </p>
       </div>
     </section>
