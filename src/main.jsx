@@ -474,12 +474,12 @@ function App() {
                 <div className="v2-divider" />
               )}
               <button
-                title={label}
+                title={name === "runs" ? "Agent Runs" : label}
                 aria-current={tab === name ? "page" : undefined}
                 className={tab === name ? "active" : ""}
                 onClick={() => setTab(name)}
               >
-                <Icon size={16} />
+                <Icon size={14} />
                 <span>{label}</span>
                 {name === "queue" &&
                   state.submissions.filter((x) =>

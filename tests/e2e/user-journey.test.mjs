@@ -131,6 +131,13 @@ test(
         ),
         "collapsed desktop navigation icons should remain inside the sidebar",
       );
+      assert.equal(
+        await page
+          .locator('.v2-nav button[title="Agent Runs"] svg')
+          .getAttribute("width"),
+        "14",
+        "sidebar icons should use the compact v2 navigation scale",
+      );
       await page.locator(".v2-sidebar").hover({ position: { x: 30, y: 100 } });
       await page.waitForTimeout(200);
       const expandedNavigationBox = await page
@@ -236,7 +243,7 @@ test(
       await page.keyboard.press("Escape");
       await sessionDialog.waitFor({ state: "hidden" });
 
-      await page.getByRole("button", { name: "All Runs" }).click();
+      await page.getByRole("button", { name: "Agent Runs" }).click();
       await page.getByRole("heading", { name: "All Runs" }).waitFor();
       await page
         .locator(".v2-run-row .pill", { hasText: "Completed" })
