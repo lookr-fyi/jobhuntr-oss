@@ -441,9 +441,32 @@ test(
         name: "Delete tracked job?",
       });
       await deleteJobDialog.waitFor();
+      assert.equal(
+        await deleteJobDialog
+          .getByRole("button", { name: "Cancel" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "destructive dialogs should focus the safe action first",
+      );
+      await page.keyboard.press("Shift+Tab");
+      assert.equal(
+        await deleteJobDialog
+          .getByRole("button", { name: "Delete" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "Shift+Tab should wrap focus inside the dialog",
+      );
+      await page.keyboard.press("Tab");
       await assertAccessible(page, "Delete tracked job confirmation");
       await deleteJobDialog.getByRole("button", { name: "Cancel" }).click();
       await deleteJobDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Delete role" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "closing a dialog should restore focus to its trigger",
+      );
       await page.getByText("E2E tracker note").waitFor();
       await assertAccessible(page, "Job Tracker");
 

@@ -83,6 +83,24 @@ const api = async (path, options = {}) => {
     throw error;
   }
 };
+const containDialogFocus = (event) => {
+  if (event.key !== "Tab") return;
+  const focusable = [
+    ...event.currentTarget.querySelectorAll(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ].filter((element) => !element.hidden && element.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+};
 function ConfirmDialog({
   open,
   title,
@@ -93,15 +111,26 @@ function ConfirmDialog({
 }) {
   const [busy, setBusy] = useState(false);
   const cancelRef = useRef(null);
+  const returnFocusRef = useRef(null);
+  const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
+  useEffect(() => {
+    busyRef.current = busy;
+    closeRef.current = onClose;
+  }, [busy, onClose]);
   useEffect(() => {
     if (!open) return undefined;
+    returnFocusRef.current = document.activeElement;
     cancelRef.current?.focus();
     const onKeyDown = (event) => {
-      if (event.key === "Escape" && !busy) onClose();
+      if (event.key === "Escape" && !busyRef.current) closeRef.current();
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, busy, onClose]);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      returnFocusRef.current?.focus?.();
+    };
+  }, [open]);
   if (!open) return null;
   const confirm = async () => {
     setBusy(true);
@@ -125,6 +154,7 @@ function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-title"
         aria-describedby="confirm-description"
+        onKeyDown={containDialogFocus}
       >
         <span className="v2-danger-icon">
           <Trash2 size={21} />
@@ -6616,8 +6646,28 @@ function Privacy({ state }) {
   const [backupPreview, setBackupPreview] = useState(null);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const restoreCancelRef = useRef(null);
+  const restoreReturnFocusRef = useRef(null);
+  const restoringRef = useRef(restoring);
+  useEffect(() => {
+    restoringRef.current = restoring;
+  }, [restoring]);
   const [csvFile, setCsvFile] = useState(null);
   const [result, setResult] = useState(null);
+  useEffect(() => {
+    if (!restoreOpen) return undefined;
+    restoreReturnFocusRef.current = document.activeElement;
+    restoreCancelRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !restoringRef.current)
+        setRestoreOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      restoreReturnFocusRef.current?.focus?.();
+    };
+  }, [restoreOpen]);
   const restore = async () => {
     if (!backupFile) return;
     setRestoring(true);
@@ -6809,6 +6859,7 @@ function Privacy({ state }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="restore-title"
+            onKeyDown={containDialogFocus}
           >
             <span className="v2-warning-icon">
               <RefreshCcw size={22} />
@@ -6825,6 +6876,7 @@ function Privacy({ state }) {
             </div>
             <div className="modal-actions">
               <button
+                ref={restoreCancelRef}
                 className="secondary"
                 disabled={restoring}
                 onClick={() => setRestoreOpen(false)}
