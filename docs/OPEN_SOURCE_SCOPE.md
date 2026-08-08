@@ -25,6 +25,9 @@ OSS replacement decisions:
 | Job board | Bundled offline board with profile-based scoring |
 | ATS templates | Three transparent templates, named resume versions, keyword and impact analysis |
 | Cover letters | Editable deterministic drafts persisted in the local workspace |
+| Submission queue | Local application packets, attachment visibility, mandatory review, submission history |
+| AI coach | Deterministic role-specific interview questions, talking points, and research checklist |
+| Outreach | Local editable LinkedIn/email-style draft generation; no automatic sending |
 | Infinite Hunt | Explainable multi-step local run, thresholding, deduplication, and run history |
 | User settings | Local profile, role/skill criteria, locations, remote and salary preferences |
 | Data portability | Full JSON backup/restore, CSV jobs export, bulk JSON jobs import |

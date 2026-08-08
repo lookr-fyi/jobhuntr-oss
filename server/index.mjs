@@ -104,6 +104,32 @@ app.post('/api/cover-letters', async (req, res) => {
   res.status(201).json(letter);
 });
 
+app.get('/api/submissions', async (_req, res) => { const db = await readDb(); res.json(db.submissions.map((s) => ({ ...s, job: db.jobs.find((j) => j.id === s.jobId) || null, resume: db.resumes.find((r) => r.id === s.resumeId) || null, coverLetter: db.coverLetters.find((c) => c.id === s.coverLetterId) || null }))); });
+app.post('/api/submissions', async (req, res) => {
+  const submission = await mutate((db) => { const job = db.jobs.find((j) => j.id === req.body.jobId); if (!job) return null; const existing = db.submissions.find((s) => s.jobId === job.id && ['draft','ready'].includes(s.status)); if (existing) return existing; const item = { id: nanoid(), jobId: job.id, resumeId: safeText(req.body.resumeId, 50), coverLetterId: safeText(req.body.coverLetterId, 50), status: 'draft', checklist: [{ id: nanoid(), text: 'Review resume alignment', done: Boolean(req.body.resumeId) }, { id: nanoid(), text: 'Review cover letter', done: Boolean(req.body.coverLetterId) }, { id: nanoid(), text: 'Confirm application details', done: false }], createdAt: timestamp(), updatedAt: timestamp() }; db.submissions.unshift(item); auditEvent(db, 'submission', `Created application packet for ${job.company}.`, { jobId: job.id, submissionId: item.id }); return item; });
+  if (!submission) return res.status(404).json({ error: 'Job not found' }); res.status(201).json(submission);
+});
+app.patch('/api/submissions/:id', async (req, res) => {
+  const submission = await mutate((db) => { const item = db.submissions.find((s) => s.id === req.params.id); if (!item) return null; if (req.body.checklist) item.checklist = req.body.checklist; if (req.body.resumeId !== undefined) item.resumeId = safeText(req.body.resumeId, 50); if (req.body.coverLetterId !== undefined) item.coverLetterId = safeText(req.body.coverLetterId, 50); if (req.body.status && ['draft','ready','submitted','archived'].includes(req.body.status)) item.status = req.body.status; item.updatedAt = timestamp(); return item; });
+  if (!submission) return res.status(404).json({ error: 'Submission not found' }); res.json(submission);
+});
+app.post('/api/submissions/:id/submit', async (req, res) => {
+  const submission = await mutate((db) => { const item = db.submissions.find((s) => s.id === req.params.id); if (!item) return null; if (!item.checklist.every((x) => x.done)) return { blocked: true, item }; const job = db.jobs.find((j) => j.id === item.jobId); item.status = 'submitted'; item.submittedAt = timestamp(); item.updatedAt = timestamp(); item.applicationUrl = safeText(req.body.applicationUrl || job?.url, 1000); if (job) { job.status = 'applied'; job.updatedAt = timestamp(); (job.statusHistory ||= []).unshift({ status: 'applied', at: timestamp(), source: 'submission-queue' }); } auditEvent(db, 'submission', `Marked application to ${job?.company || 'a company'} as submitted locally.`, { submissionId: item.id, jobId: job?.id }); return item; });
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  if (submission.blocked) return res.status(409).json({ error: 'Complete every checklist item before submitting' });
+  res.json(submission);
+});
+
+app.post('/api/coach/prepare', async (req, res) => {
+  const session = await mutate((db) => { const job = db.jobs.find((j) => j.id === req.body.jobId); if (!job) return null; const skills = db.profile.skills || []; const relevant = skills.filter((s) => `${job.title} ${job.description} ${(job.tags||[]).join(' ')}`.toLowerCase().includes(String(s).toLowerCase())); const item = { id: nanoid(), jobId: job.id, createdAt: timestamp(), questions: [`Why are you interested in ${job.company} and this ${job.title} role?`, `Describe a project where you used ${relevant[0] || skills[0] || 'your core skills'} to create measurable impact.`, 'Tell me about a difficult tradeoff you made with incomplete information.', `What would your first 30 days at ${job.company} look like?`], talkingPoints: [`Connect your headline—“${db.profile.headline}”—to the role.`, `Use a STAR story with a quantified outcome for ${relevant.slice(0,3).join(', ') || 'your most relevant experience'}.`, `Ask how success is measured for the ${job.title} role.`], companyResearch: [`Review the company website and product before the interview.`, `Prepare one informed question about ${job.description || 'the team’s current priorities'}.`], notes: '' }; db.coachingSessions.unshift(item); auditEvent(db, 'coach', `Prepared local interview plan for ${job.company}.`, { jobId: job.id }); return item; });
+  if (!session) return res.status(404).json({ error: 'Job not found' }); res.status(201).json(session);
+});
+
+app.post('/api/outreach/draft', async (req, res) => {
+  const draft = await mutate((db) => { const job = db.jobs.find((j) => j.id === req.body.jobId); if (!job) return null; const contact = job.contacts.find((c) => c.id === req.body.contactId) || job.contacts[0]; const recipient = contact?.name || 'there'; const body = `Hi ${recipient},\n\nI’m exploring the ${job.title} opportunity at ${job.company}. My background in ${(db.profile.skills || []).slice(0,3).join(', ')} looks closely aligned, particularly with ${job.description || 'the team’s product goals'}.\n\nIf you’re open to it, I’d appreciate hearing what the team values most in candidates for this role.\n\nBest,\n${db.profile.name}`; const item = { id: nanoid(), jobId: job.id, contactId: contact?.id || '', channel: req.body.channel === 'email' ? 'email' : 'linkedin', subject: `Interest in ${job.title} at ${job.company}`, body, createdAt: timestamp() }; db.outreachDrafts.unshift(item); auditEvent(db, 'outreach', `Drafted outreach for ${job.company}.`, { jobId: job.id }); return item; });
+  if (!draft) return res.status(404).json({ error: 'Job not found' }); res.status(201).json(draft);
+});
+
 app.post('/api/resume/score', async (req, res) => {
   const db = await readDb(); const text = String(req.body.resumeText || db.profile.resumeText || ''); const job = req.body.job || db.jobs.find((j) => j.id === req.body.jobId) || {};
   const jd = `${job.title || ''} ${job.description || ''} ${(job.tags || []).join(' ')}`.toLowerCase();

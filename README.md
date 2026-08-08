@@ -29,6 +29,8 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 - **Cover letters**: offline editable first drafts.
 - **Autonomous hunt**: deterministic, explainable workflow with thresholds, run steps, and action history.
 - **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.
+- **Submission queue**: assemble resume/letter packets, enforce a review checklist, and record applications without external account automation.
+- **Interview coach and outreach**: role-specific practice plans, talking points, research checklists, and editable messages generated offline.
 - **Import/export**: one-click JSON backup/restore, CSV job export, and bulk job import API.
 - **Public-repo safety**: `.gitignore`, `.env.example`, and `npm run secret:scan`.
 

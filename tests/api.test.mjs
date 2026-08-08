@@ -54,4 +54,27 @@ test('invalid jobs return a safe 400 response', async () => {
   assert.equal(bad.res.status, 400); assert.equal(bad.body.error, 'Invalid request');
 });
 
+test('submission queue enforces review before local submission', async () => {
+  const state = (await req('/api/state')).body;
+  const packet = await req('/api/submissions', { method: 'POST', body: JSON.stringify({ jobId: state.jobs[0].id }) });
+  assert.equal(packet.res.status, 201); assert.equal(packet.body.status, 'draft');
+  const blocked = await req(`/api/submissions/${packet.body.id}/submit`, { method: 'POST', body: '{}' });
+  assert.equal(blocked.res.status, 409);
+  const checklist = packet.body.checklist.map((item) => ({ ...item, done: true }));
+  const ready = await req(`/api/submissions/${packet.body.id}`, { method: 'PATCH', body: JSON.stringify({ checklist, status: 'ready' }) });
+  assert.equal(ready.body.status, 'ready');
+  const submitted = await req(`/api/submissions/${packet.body.id}/submit`, { method: 'POST', body: '{}' });
+  assert.equal(submitted.res.status, 200); assert.equal(submitted.body.status, 'submitted');
+  const refreshed = (await req('/api/state')).body;
+  assert.equal(refreshed.jobs.find((j) => j.id === state.jobs[0].id).status, 'applied');
+});
+
+test('coach and outreach create private role-specific drafts', async () => {
+  const state = (await req('/api/state')).body; const job = state.jobs[0];
+  const coach = await req('/api/coach/prepare', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });
+  assert.equal(coach.res.status, 201); assert.equal(coach.body.questions.length, 4); assert.match(coach.body.questions[0], new RegExp(job.company));
+  const outreach = await req('/api/outreach/draft', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });
+  assert.equal(outreach.res.status, 201); assert.match(outreach.body.body, new RegExp(job.company));
+});
+
 test.after(async () => { await new Promise((resolve)=>server.close(resolve)); await fs.rm(dir, { recursive: true, force: true }); });

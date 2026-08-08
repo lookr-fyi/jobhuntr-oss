@@ -31,6 +31,9 @@ export function emptyDb() {
     resumes: [],
     coverLetters: [],
     templates: defaultTemplates(),
+    submissions: [],
+    coachingSessions: [],
+    outreachDrafts: [],
     agentRuns: [],
     activities: [{ id: nanoid(), at: createdAt, type: 'system', message: 'Initialized local JobHuntr workspace.' }]
   };
@@ -51,6 +54,9 @@ function migrate(db) {
   db.resumes ||= [];
   db.coverLetters ||= [];
   db.templates ||= defaultTemplates();
+  db.submissions ||= [];
+  db.coachingSessions ||= [];
+  db.outreachDrafts ||= [];
   db.agentRuns ||= [];
   db.activities ||= [];
   for (const job of db.jobs) {
@@ -112,5 +118,6 @@ export function summarize(db) {
   const avgFit = db.jobs.length ? Math.round(db.jobs.reduce((sum, j) => sum + (j.fitScore || 0), 0) / db.jobs.length) : 0;
   const applicationsThisWeek = db.jobs.filter((j) => j.statusHistory?.some((h) => h.status === 'applied' && Date.now() - new Date(h.at).getTime() < 7 * 864e5)).length;
   const interviews = db.jobs.filter((j) => j.status === 'interview').length;
-  return { totalJobs: db.jobs.length, byStatus, openTasks, avgFit, applicationsThisWeek, interviews, recentActivities: db.activities.slice(0, 12), activeRuns: db.agentRuns.filter((r) => ['running', 'paused'].includes(r.status)) };
+  const queue = db.submissions.filter((s) => ['draft', 'ready'].includes(s.status));
+  return { totalJobs: db.jobs.length, byStatus, openTasks, avgFit, applicationsThisWeek, interviews, queueCount: queue.length, recentActivities: db.activities.slice(0, 12), activeRuns: db.agentRuns.filter((r) => ['running', 'paused'].includes(r.status)) };
 }
