@@ -231,53 +231,151 @@ function Overview({ state, setTab }) {
     "offer",
     "rejected",
   ];
+  const priorityTasks = [
+    ...s.overdueTasks,
+    ...s.upcomingTasks.filter(
+      (item) => !s.overdueTasks.some((overdue) => overdue.id === item.id),
+    ),
+  ];
   return (
-    <section className="grid">
-      <div className="card hero">
-        <h2>Pipeline fit: {s.avgFit}%</h2>
-        <p>
-          {s.totalJobs} roles tracked. {s.openTasks.length} open tasks. Data
-          never leaves this machine.
-        </p>
-        <button onClick={() => setTab("agent")}>
-          <Bot size={16} /> Run local hunt
-        </button>
-      </div>
-      <div className="card">
-        <h3>Funnel</h3>
-        {stages.map((st) => (
-          <div className="bar" key={st}>
-            <span>{st}</span>
-            <b style={{ width: `${(s.byStatus[st] || 0) * 18 + 8}%` }}>
-              {s.byStatus[st] || 0}
-            </b>
+    <section className="dashboard">
+      <div className="card hero goal-card">
+        <div>
+          <span className="eyebrow">THIS WEEK</span>
+          <h2>
+            {s.applicationsThisWeek} of {s.weeklyGoal} applications
+          </h2>
+          <p>
+            {s.weeklyGoalProgress >= 100
+              ? "Weekly target reached. Keep the pipeline warm."
+              : `${Math.max(0, s.weeklyGoal - s.applicationsThisWeek)} more application${s.weeklyGoal - s.applicationsThisWeek === 1 ? "" : "s"} to reach your goal.`}
+          </p>
+          <div className="inline">
+            <button onClick={() => setTab("queue")}>
+              <ListChecks size={16} /> Review queue
+            </button>
+            <button className="secondary" onClick={() => setTab("agent")}>
+              <Bot size={16} /> Find matches
+            </button>
           </div>
-        ))}
+        </div>
+        <div
+          className="goal-ring"
+          style={{ "--progress": `${s.weeklyGoalProgress * 3.6}deg` }}
+        >
+          <strong>{s.weeklyGoalProgress}%</strong>
+          <span>complete</span>
+        </div>
       </div>
-      <div className="card">
-        <h3>Open tasks</h3>
-        {s.openTasks.length ? (
-          s.openTasks.slice(0, 8).map((t) => (
-            <p className="task" key={t.id}>
-              ☐ {t.text}
-              <small>
-                {t.company} · {t.title}
-              </small>
-            </p>
-          ))
-        ) : (
-          <p>No open tasks. Add follow-ups in Tracker.</p>
-        )}
+      <div className="metric-grid">
+        <div className="card metric">
+          <span>TRACKED ROLES</span>
+          <strong>{s.totalJobs}</strong>
+          <small>{s.avgFit}% average fit</small>
+        </div>
+        <div className="card metric">
+          <span>ACTIVE APPLICATIONS</span>
+          <strong>{s.activeApplications}</strong>
+          <small>applied through offer</small>
+        </div>
+        <div className="card metric">
+          <span>RESPONSE RATE</span>
+          <strong>{s.responseRate}%</strong>
+          <small>applications reaching interview</small>
+        </div>
+        <div
+          className={`card metric ${s.overdueTasks.length ? "attention" : ""}`}
+        >
+          <span>OVERDUE TASKS</span>
+          <strong>{s.overdueTasks.length}</strong>
+          <small>{s.upcomingTasks.length} due in seven days</small>
+        </div>
       </div>
-      <div className="card wide">
-        <h3>Activity log</h3>
-        <div className="timeline">
-          {s.recentActivities.map((a) => (
-            <p key={a.id}>
-              <time>{new Date(a.at).toLocaleString()}</time>
-              {a.message}
-            </p>
+      <div className="dashboard-grid">
+        <div className="card">
+          <h3>Pipeline funnel</h3>
+          {stages.map((stage) => (
+            <div className="bar" key={stage}>
+              <span>{stage}</span>
+              <b
+                style={{
+                  width: `${Math.min(100, (s.byStatus[stage] || 0) * 18 + 8)}%`,
+                }}
+              >
+                {s.byStatus[stage] || 0}
+              </b>
+            </div>
           ))}
+        </div>
+        <div className="card">
+          <div className="row">
+            <h3>Next actions</h3>
+            <button className="text-button" onClick={() => setTab("tracker")}>
+              Open tracker
+            </button>
+          </div>
+          {priorityTasks.length ? (
+            priorityTasks.slice(0, 7).map((task) => {
+              const overdue = s.overdueTasks.some(
+                (item) => item.id === task.id,
+              );
+              return (
+                <div
+                  className={`next-action ${overdue ? "overdue" : ""}`}
+                  key={task.id}
+                >
+                  <span>{overdue ? "!" : "→"}</span>
+                  <div>
+                    <b>{task.text}</b>
+                    <small>
+                      {task.company} ·{" "}
+                      {task.due
+                        ? `${overdue ? "overdue" : "due"} ${new Date(`${task.due}T12:00:00`).toLocaleDateString()}`
+                        : "no due date"}
+                    </small>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="empty">
+              <p>No dated follow-ups. Add one from a tracked role.</p>
+            </div>
+          )}
+        </div>
+        <div className="card">
+          <h3>Needs attention</h3>
+          {s.staleJobs.length ? (
+            s.staleJobs.slice(0, 6).map((job) => (
+              <button
+                className="attention-row"
+                key={job.id}
+                onClick={() => setTab("tracker")}
+              >
+                <b>{job.title}</b>
+                <span>
+                  {job.company} · {job.status}
+                </span>
+                <small>
+                  Not updated since{" "}
+                  {new Date(job.updatedAt).toLocaleDateString()}
+                </small>
+              </button>
+            ))
+          ) : (
+            <p className="empty">No opportunities have gone stale.</p>
+          )}
+        </div>
+        <div className="card">
+          <h3>Recent activity</h3>
+          <div className="timeline">
+            {s.recentActivities.slice(0, 8).map((activity) => (
+              <p key={activity.id}>
+                <time>{new Date(activity.at).toLocaleString()}</time>
+                {activity.message}
+              </p>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -566,6 +664,7 @@ function Tracker({ state, reload }) {
 function Actions({ job, reload }) {
   const [note, setNote] = useState("");
   const [task, setTask] = useState("Follow up with recruiter");
+  const [taskDue, setTaskDue] = useState("");
   const [contact, setContact] = useState({
     name: "",
     role: "Recruiter",
@@ -601,16 +700,23 @@ function Actions({ job, reload }) {
         </p>
       ))}
       <h3>Tasks</h3>
-      <div className="inline">
+      <div className="task-compose">
         <input value={task} onChange={(e) => setTask(e.target.value)} />
+        <input
+          type="date"
+          aria-label="Task due date"
+          value={taskDue}
+          onChange={(e) => setTaskDue(e.target.value)}
+        />
         <button
           disabled={!task.trim()}
           onClick={async () => {
             await api(`/api/jobs/${job.id}/tasks`, {
               method: "POST",
-              body: JSON.stringify({ text: task }),
+              body: JSON.stringify({ text: task, due: taskDue }),
             });
             setTask("");
+            setTaskDue("");
             reload();
           }}
         >
@@ -618,20 +724,41 @@ function Actions({ job, reload }) {
         </button>
       </div>
       {(job.tasks || []).map((t) => (
-        <label className="task check" key={t.id}>
-          <input
-            type="checkbox"
-            checked={t.done}
-            onChange={async (e) => {
+        <div className="task-row" key={t.id}>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={t.done}
+              onChange={async (e) => {
+                await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
+                  method: "PATCH",
+                  body: JSON.stringify({ done: e.target.checked }),
+                });
+                reload();
+              }}
+            />
+            <span>
+              {t.text}
+              {t.due && (
+                <small>
+                  Due {new Date(`${t.due}T12:00:00`).toLocaleDateString()}
+                </small>
+              )}
+            </span>
+          </label>
+          <button
+            className="icon danger"
+            aria-label={`Delete task ${t.text}`}
+            onClick={async () => {
               await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
-                method: "PATCH",
-                body: JSON.stringify({ done: e.target.checked }),
+                method: "DELETE",
               });
               reload();
             }}
-          />
-          {t.text}
-        </label>
+          >
+            ×
+          </button>
+        </div>
       ))}
       <h3>Contacts</h3>
       <div className="contact-form">
@@ -1819,6 +1946,7 @@ function SettingsPage({ state, reload }) {
     locations: (p.preferences?.locations || []).join(", "),
     remote: p.preferences?.remote,
     minSalary: p.preferences?.minSalary,
+    weeklyApplicationGoal: p.preferences?.weeklyApplicationGoal || 5,
   });
   const save = async () => {
     await api("/api/profile", {
@@ -1839,6 +1967,10 @@ function SettingsPage({ state, reload }) {
         preferences: {
           remote: form.remote,
           minSalary: Number(form.minSalary) || 0,
+          weeklyApplicationGoal: Math.max(
+            1,
+            Number(form.weeklyApplicationGoal) || 5,
+          ),
           locations: form.locations
             .split(",")
             .map((x) => x.trim())
@@ -1883,6 +2015,18 @@ function SettingsPage({ state, reload }) {
             type="number"
             value={form.minSalary || 0}
             onChange={(e) => setForm({ ...form, minSalary: e.target.value })}
+          />
+        </label>
+        <label>
+          Weekly application goal
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={form.weeklyApplicationGoal}
+            onChange={(e) =>
+              setForm({ ...form, weeklyApplicationGoal: e.target.value })
+            }
           />
         </label>
         <label className="check">

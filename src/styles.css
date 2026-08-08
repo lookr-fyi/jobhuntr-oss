@@ -1045,3 +1045,164 @@ button:disabled {
     max-width: none;
   }
 }
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.goal-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 28px 34px;
+}
+.goal-card h2 {
+  font-size: 30px;
+  margin-top: 8px;
+}
+.goal-ring {
+  --progress: 0deg;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: conic-gradient(#2563eb var(--progress), #dbeafe 0);
+  display: grid;
+  place-content: center;
+  text-align: center;
+  position: relative;
+}
+.goal-ring:before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  background: #f5f7ff;
+  border-radius: 50%;
+}
+.goal-ring strong,
+.goal-ring span {
+  position: relative;
+}
+.goal-ring strong {
+  font-size: 27px;
+}
+.goal-ring span {
+  font-size: 11px;
+  color: #64748b;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+.metric {
+  box-shadow: none;
+}
+.metric > span {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #64748b;
+}
+.metric strong {
+  display: block;
+  font-size: 34px;
+  margin: 5px 0;
+}
+.metric.attention {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+.metric.attention strong {
+  color: #dc2626;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.next-action {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 10px 0;
+}
+.next-action > span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-weight: 800;
+}
+.next-action.overdue > span {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.next-action small {
+  display: block;
+  color: #64748b;
+}
+.attention-row {
+  display: block;
+  width: 100%;
+  background: #f8fafc;
+  color: #334155;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  margin: 7px 0;
+}
+.attention-row span,
+.attention-row small {
+  display: block;
+}
+.task-compose {
+  display: grid;
+  grid-template-columns: 1fr 135px auto;
+  gap: 6px;
+  align-items: center;
+}
+.task-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 7px 9px;
+  margin: 7px 0;
+}
+.task-row .check {
+  margin: 0;
+}
+.task-row small {
+  display: block;
+  color: #64748b;
+}
+@media (max-width: 1000px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 750px) {
+  .goal-card {
+    display: block;
+  }
+  .goal-ring {
+    margin: 20px auto 0;
+  }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .task-compose {
+    grid-template-columns: 1fr;
+  }
+  .metric-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 480px) {
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+}

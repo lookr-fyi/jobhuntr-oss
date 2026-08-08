@@ -54,7 +54,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 5, createdAt, updatedAt: createdAt },
+    meta: { version: 6, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: "Local Job Hunter",
@@ -64,7 +64,12 @@ export function emptyDb() {
       skills: ["TypeScript", "React", "Python", "Automation"],
       resumeText:
         "Paste your resume here. JobHuntr stores it only on this machine.",
-      preferences: { remote: true, locations: ["Remote"], minSalary: 120000 },
+      preferences: {
+        remote: true,
+        locations: ["Remote"],
+        minSalary: 120000,
+        weeklyApplicationGoal: 5,
+      },
     },
     jobs: seedJobs.slice(0, 2).map((job, index) => ({
       id: nanoid(),
@@ -171,7 +176,7 @@ function migrate(db) {
       { status: job.status || "saved", at: job.createdAt || now() },
     ];
   }
-  db.meta.version = 5;
+  db.meta.version = 6;
   return db;
 }
 
@@ -369,13 +374,67 @@ export function summarize(db) {
   const queue = db.submissions.filter((s) =>
     ["draft", "ready"].includes(s.status),
   );
+  const currentTime = Date.now();
+  const activeApplications = db.jobs.filter((job) =>
+    ["applied", "interview", "offer"].includes(job.status),
+  );
+  const respondedApplications = db.jobs.filter((job) =>
+    (job.statusHistory || []).some((event) =>
+      ["interview", "offer"].includes(event.status),
+    ),
+  );
+  const appliedEver = db.jobs.filter((job) =>
+    (job.statusHistory || []).some((event) => event.status === "applied"),
+  );
+  const responseRate = appliedEver.length
+    ? Math.min(
+        100,
+        Math.round((respondedApplications.length / appliedEver.length) * 100),
+      )
+    : 0;
+  const overdueTasks = openTasks.filter(
+    (task) =>
+      task.due && new Date(`${task.due}T23:59:59`).getTime() < currentTime,
+  );
+  const upcomingTasks = openTasks
+    .filter((task) => {
+      const due = task.due && new Date(`${task.due}T23:59:59`).getTime();
+      return due && due >= currentTime && due <= currentTime + 7 * 864e5;
+    })
+    .sort((a, b) => new Date(a.due) - new Date(b.due));
+  const staleJobs = db.jobs.filter(
+    (job) =>
+      !["offer", "rejected"].includes(job.status) &&
+      currentTime - new Date(job.updatedAt || job.createdAt).getTime() >
+        14 * 864e5,
+  );
+  const weeklyGoal = Math.max(
+    1,
+    Number(db.profile.preferences?.weeklyApplicationGoal || 5),
+  );
   return {
     totalJobs: db.jobs.length,
     byStatus,
     openTasks,
     avgFit,
     applicationsThisWeek,
+    weeklyGoal,
+    weeklyGoalProgress: Math.min(
+      100,
+      Math.round((applicationsThisWeek / weeklyGoal) * 100),
+    ),
     interviews,
+    activeApplications: activeApplications.length,
+    responseRate,
+    overdueTasks,
+    upcomingTasks,
+    staleJobs: staleJobs.map((job) => ({
+      id: job.id,
+      company: job.company,
+      title: job.title,
+      status: job.status,
+      updatedAt: job.updatedAt,
+    })),
     queueCount: queue.length,
     recentActivities: db.activities.slice(0, 12),
     activeRuns: db.agentRuns.filter((r) =>

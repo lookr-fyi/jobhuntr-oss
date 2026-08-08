@@ -24,6 +24,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 ## What is included
 
 - **Application tracker**: draggable Kanban and list views, search/status filters, status timeline, fit scores, notes, tasks, contacts, and cascading deletion.
+- **Command center**: weekly application goals, pipeline conversion metrics, dated follow-ups, overdue/upcoming priorities, stale-opportunity detection, and activity history.
 - **Local job board**: seed jobs and local search without scraping or external services.
 - **Resume studio**: reusable ATS templates, named version history, keyword analysis, secure print previews, and browser-native PDF export.
 - **Cover letters**: offline generation, persistent editing/history, print previews, and PDF-ready layouts.

@@ -45,6 +45,8 @@ const safeText = (value, max = 10000) =>
   String(value ?? "")
     .trim()
     .slice(0, max);
+const safeDueDate = (value) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
 
 const JobSchema = z.object({
   company: z.string().min(1),
@@ -286,9 +288,10 @@ app.post("/api/jobs/:id/tasks", async (req, res) => {
     if (!job) return null;
     const task = {
       id: nanoid(),
-      text: String(req.body.text || "Follow up"),
-      due: req.body.due || "",
+      text: safeText(req.body.text || "Follow up", 500),
+      due: safeDueDate(req.body.due),
       done: false,
+      createdAt: timestamp(),
     };
     job.tasks.unshift(task);
     auditEvent(db, "task", `Added task for ${job.company}.`, { jobId: job.id });
@@ -302,7 +305,9 @@ app.patch("/api/jobs/:id/tasks/:taskId", async (req, res) => {
     const job = db.jobs.find((j) => j.id === req.params.id);
     const task = job?.tasks.find((t) => t.id === req.params.taskId);
     if (!task) return null;
-    Object.assign(task, req.body);
+    if (req.body.text !== undefined) task.text = safeText(req.body.text, 500);
+    if (req.body.due !== undefined) task.due = safeDueDate(req.body.due);
+    if (req.body.done !== undefined) task.done = Boolean(req.body.done);
     auditEvent(
       db,
       "task",
@@ -312,6 +317,16 @@ app.patch("/api/jobs/:id/tasks/:taskId", async (req, res) => {
   });
   if (!task) return res.status(404).json({ error: "Task not found" });
   res.json(task);
+});
+app.delete("/api/jobs/:id/tasks/:taskId", async (req, res) => {
+  const removed = await mutate((db) => {
+    const job = db.jobs.find((item) => item.id === req.params.id);
+    if (!job) return false;
+    const before = job.tasks.length;
+    job.tasks = job.tasks.filter((task) => task.id !== req.params.taskId);
+    return before !== job.tasks.length;
+  });
+  res.status(removed ? 204 : 404).end();
 });
 
 app.post("/api/board/search", async (req, res) => {

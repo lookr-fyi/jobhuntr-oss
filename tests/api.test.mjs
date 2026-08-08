@@ -250,6 +250,41 @@ test("submission queue enforces review before local submission", async () => {
   );
 });
 
+test("command center reports weekly goals and due-date priorities", async () => {
+  const state = (await req("/api/state")).body;
+  const job = state.jobs[0];
+  const day = (offset) => {
+    const date = new Date(Date.now() + offset * 864e5);
+    return date.toISOString().slice(0, 10);
+  };
+  const overdue = await req(`/api/jobs/${job.id}/tasks`, {
+    method: "POST",
+    body: JSON.stringify({ text: "Overdue follow-up", due: day(-2) }),
+  });
+  const upcoming = await req(`/api/jobs/${job.id}/tasks`, {
+    method: "POST",
+    body: JSON.stringify({ text: "Upcoming interview prep", due: day(3) }),
+  });
+  const invalid = await req(`/api/jobs/${job.id}/tasks`, {
+    method: "POST",
+    body: JSON.stringify({ text: "Safe date", due: "not-a-date" }),
+  });
+  assert.equal(invalid.body.due, "");
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ preferences: { weeklyApplicationGoal: 1 } }),
+  });
+  const summary = (await req("/api/summary")).body;
+  assert.ok(summary.overdueTasks.some((task) => task.id === overdue.body.id));
+  assert.ok(summary.upcomingTasks.some((task) => task.id === upcoming.body.id));
+  assert.equal(summary.weeklyGoal, 1);
+  assert.ok(summary.weeklyGoalProgress >= 100);
+  const removed = await req(`/api/jobs/${job.id}/tasks/${invalid.body.id}`, {
+    method: "DELETE",
+  });
+  assert.equal(removed.res.status, 204);
+});
+
 test("coach and outreach create private role-specific drafts", async () => {
   const state = (await req("/api/state")).body;
   const job = state.jobs[0];
