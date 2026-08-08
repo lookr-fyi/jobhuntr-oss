@@ -1118,6 +1118,185 @@ button:disabled {
   background: #f1f5f9;
   color: #334155;
 }
+.v2-user-tabs {
+  display: flex;
+  gap: 0;
+  margin: 18px 0 24px;
+  overflow-x: auto;
+  border-bottom: 1px solid #e2e8f0;
+}
+.v2-user-tabs button {
+  flex: 0 0 auto;
+  padding: 12px 24px;
+  color: #64748b;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  font-size: 13px;
+}
+.v2-user-tabs button[aria-selected="true"] {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: transparent;
+}
+.v2-save-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -10px 0 16px;
+  padding: 10px 12px;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  font-size: 13px;
+}
+.v2-user-profile-card {
+  padding: 26px;
+}
+.v2-user-profile-card > h3 {
+  margin: 0 0 24px;
+}
+.v2-user-identity {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.v2-user-avatar-large {
+  display: grid;
+  flex: 0 0 auto;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  color: #fff;
+  border: 4px solid #dbeafe;
+  border-radius: 50%;
+  background: #2563eb;
+  font-size: 28px;
+  font-weight: 800;
+}
+.v2-user-identity h3 {
+  margin: 0 0 5px;
+}
+.v2-user-identity p,
+.v2-user-identity small {
+  display: block;
+  margin: 0 0 4px;
+  color: #64748b;
+}
+.v2-user-details-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.4fr 0.8fr;
+  gap: 14px;
+  margin: 22px 0 16px;
+}
+.v2-user-details-grid label,
+.v2-about-panel label {
+  display: grid;
+  gap: 7px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-usage-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+.v2-usage-section h3,
+.v2-usage-section p {
+  margin: 0 0 4px;
+}
+.v2-usage-section p {
+  color: #64748b;
+  font-size: 13px;
+}
+.v2-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.v2-usage-grid > div {
+  display: grid;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+.v2-usage-grid span,
+.v2-usage-grid small {
+  color: #64748b;
+  font-size: 11px;
+}
+.v2-usage-grid strong {
+  color: #1e293b;
+  font-size: 24px;
+}
+.v2-coaches-panel {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 18px;
+  align-items: start;
+  padding: 26px;
+}
+.v2-coach-avatar {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  color: #1d4ed8;
+  border-radius: 12px;
+  background: #dbeafe;
+}
+.v2-coaches-panel h3 {
+  margin: 4px 0 7px;
+}
+.v2-coaches-panel p {
+  max-width: 680px;
+  color: #64748b;
+  line-height: 1.6;
+}
+.v2-about-panel {
+  padding: 26px;
+}
+.v2-about-panel textarea {
+  min-height: 310px;
+  line-height: 1.6;
+}
+.v2-about-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 8px 0 16px;
+  color: #64748b;
+  font-size: 11px;
+}
+.v2-local-account dl {
+  margin: 14px 0;
+}
+.v2-local-account dl div {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+.v2-local-account dt {
+  color: #64748b;
+}
+.v2-local-account dd {
+  margin: 0;
+  color: #166534;
+  font-weight: 700;
+}
 .v2-data-grid {
   margin-top: 20px;
   max-width: none;
@@ -1135,6 +1314,26 @@ button:disabled {
   .v2-settings-grid,
   .v2-data-grid {
     grid-template-columns: 1fr;
+  }
+  .v2-user-details-grid,
+  .v2-usage-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .v2-user-tabs button {
+    padding: 11px 14px;
+  }
+  .v2-user-details-grid,
+  .v2-usage-grid {
+    grid-template-columns: 1fr;
+  }
+  .v2-coaches-panel {
+    grid-template-columns: auto 1fr;
+  }
+  .v2-coaches-panel > .pill {
+    grid-column: 2;
+    width: max-content;
   }
 }
 @media (max-width: 950px) {

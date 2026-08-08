@@ -408,10 +408,24 @@ test(
       await assertAccessible(page, "Gigs");
 
       await page.locator('[title="Profile and settings"]').click();
+      await page.getByRole("heading", { name: "User Center" }).waitFor();
+      await page.getByRole("tab", { name: "About Me" }).click();
       await page
-        .getByRole("heading", { name: "Profile & preferences" })
-        .waitFor();
-      await assertAccessible(page, "Profile and preferences");
+        .getByLabel("Career background and resume")
+        .fill("E2E product engineer with React and TypeScript experience.");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save About Me" }).click(),
+      ]);
+      await page.getByText("Changes saved locally.").waitFor();
+      await page.getByRole("tab", { name: "Settings" }).click();
+      await page.getByLabel("Weekly application goal").waitFor();
+      await assertAccessible(page, "User Center");
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
       await assertAccessible(page, "Settings and data");

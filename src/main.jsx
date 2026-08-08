@@ -4848,6 +4848,8 @@ function RunsPage({ state, setTab }) {
 }
 function SettingsPage({ state, reload }) {
   const p = state.profile;
+  const [activeTab, setActiveTab] = useState("profile");
+  const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
     ...p,
     skills: (p.skills || []).join(", "),
@@ -4856,8 +4858,10 @@ function SettingsPage({ state, reload }) {
     remote: p.preferences?.remote,
     minSalary: p.preferences?.minSalary,
     weeklyApplicationGoal: p.preferences?.weeklyApplicationGoal || 5,
+    resumeText: p.resumeText || "",
   });
   const save = async () => {
+    setSaved(false);
     await api("/api/profile", {
       method: "PUT",
       body: JSON.stringify({
@@ -4885,99 +4889,269 @@ function SettingsPage({ state, reload }) {
             .map((x) => x.trim())
             .filter(Boolean),
         },
+        resumeText: form.resumeText,
       }),
     });
-    reload();
+    await reload();
+    setSaved(true);
   };
+  const usage = [
+    ["AI Resumes", state.resumes.length, "versions created"],
+    ["Cover Letters", state.coverLetters.length, "letters created"],
+    ["Infinite Hunts", state.agentRuns.length, "runs completed"],
+    ["Tracked Jobs", state.jobs.length, "opportunities saved"],
+  ];
   return (
     <section className="v2-settings-page">
       <div className="v2-page-intro">
         <div>
-          <h2>Profile & preferences</h2>
-          <p>Keep your career profile and search defaults up to date.</p>
-        </div>
-        <button onClick={save}>
-          <Save size={16} /> Save changes
-        </button>
-      </div>
-      <div className="v2-settings-grid">
-        <div className="card v2-settings-card">
-          <div className="v2-settings-card-title">
-            <span className="v2-settings-icon">
-              <User size={18} />
-            </span>
-            <div>
-              <h3>Your profile</h3>
-              <p>Used to personalize matches, documents, and coaching.</p>
-            </div>
-          </div>
-          {[
-            ["name", "Name"],
-            ["headline", "Headline"],
-            ["location", "Home location"],
-            ["targetRoles", "Target roles"],
-            ["skills", "Skills"],
-          ].map(([key, label]) => (
-            <label key={key}>
-              {label}
-              <input
-                value={form[key] || ""}
-                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-              />
-            </label>
-          ))}
-        </div>
-        <div className="card v2-settings-card">
-          <div className="v2-settings-card-title">
-            <span className="v2-settings-icon">
-              <Search size={18} />
-            </span>
-            <div>
-              <h3>Search preferences</h3>
-              <p>Control which opportunities JobHuntr prioritizes.</p>
-            </div>
-          </div>
-          <label>
-            Preferred locations
-            <input
-              value={form.locations || ""}
-              onChange={(e) => setForm({ ...form, locations: e.target.value })}
-            />
-          </label>
-          <label>
-            Minimum salary
-            <input
-              type="number"
-              value={form.minSalary || 0}
-              onChange={(e) => setForm({ ...form, minSalary: e.target.value })}
-            />
-          </label>
-          <label>
-            Weekly application goal
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={form.weeklyApplicationGoal}
-              onChange={(e) =>
-                setForm({ ...form, weeklyApplicationGoal: e.target.value })
-              }
-            />
-          </label>
-          <label className="check">
-            <input
-              type="checkbox"
-              checked={form.remote}
-              onChange={(e) => setForm({ ...form, remote: e.target.checked })}
-            />{" "}
-            Include remote roles
-          </label>
-          <p className="hint">
-            Used for local fit scores and hunt defaults. Nothing is sent over
-            the network.
+          <h2>User Center</h2>
+          <p>
+            Manage your profile, usage, coaches, and teach JobHuntr about
+            yourself.
           </p>
         </div>
       </div>
+      <div className="v2-user-tabs" role="tablist" aria-label="User Center">
+        {[
+          ["profile", "Profile & Usage"],
+          ["coaches", "Coaches"],
+          ["about", "About Me"],
+          ["settings", "Settings"],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            role="tab"
+            aria-selected={activeTab === value}
+            onClick={() => {
+              setActiveTab(value);
+              setSaved(false);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {saved && (
+        <div className="v2-save-notice" role="status">
+          <CheckCircle2 size={16} /> Changes saved locally.
+        </div>
+      )}
+      {activeTab === "profile" && (
+        <div className="card v2-user-profile-card" role="tabpanel">
+          <h3>Profile Information</h3>
+          <div className="v2-user-identity">
+            <span className="v2-user-avatar-large">
+              {(form.name || "J").slice(0, 1).toUpperCase()}
+            </span>
+            <div>
+              <h3>{form.name || "Job Hunter"}</h3>
+              <p>{form.headline || "Add your professional headline"}</p>
+              <small>{form.location || "Location not set"}</small>
+            </div>
+          </div>
+          <div className="v2-user-details-grid">
+            {["name", "headline", "location"].map((key) => (
+              <label key={key}>
+                {key === "name"
+                  ? "Display name"
+                  : key === "headline"
+                    ? "Professional headline"
+                    : "Location"}
+                <input
+                  value={form[key] || ""}
+                  onChange={(event) =>
+                    setForm({ ...form, [key]: event.target.value })
+                  }
+                />
+              </label>
+            ))}
+          </div>
+          <button onClick={save}>
+            <Save size={16} /> Save profile
+          </button>
+          <div className="v2-usage-section">
+            <div>
+              <h3>Usage</h3>
+              <p>Your activity in this private local workspace.</p>
+            </div>
+            <span className="pill completed">Local plan</span>
+          </div>
+          <div className="v2-usage-grid">
+            {usage.map(([label, value, detail]) => (
+              <div key={label}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+                <small>{detail}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {activeTab === "coaches" && (
+        <div className="card v2-coaches-panel" role="tabpanel">
+          <div className="v2-coach-avatar">
+            <Sparkles size={22} />
+          </div>
+          <div>
+            <span className="eyebrow">YOUR CAREER COACH</span>
+            <h3>JobHuntr AI Coach</h3>
+            <p>
+              Practice interviews, organize career evidence, and turn your
+              experience into stronger answers—all inside your local workspace.
+            </p>
+            <div className="chips">
+              <span>Interview practice</span>
+              <span>STAR stories</span>
+              <span>Career planning</span>
+            </div>
+          </div>
+          <span className="pill completed">Active</span>
+        </div>
+      )}
+      {activeTab === "about" && (
+        <div className="card v2-about-panel" role="tabpanel">
+          <div className="v2-settings-card-title">
+            <span className="v2-settings-icon">
+              <FileText size={18} />
+            </span>
+            <div>
+              <h3>About Me</h3>
+              <p>
+                Teach JobHuntr about your experience so every workflow starts
+                with the same context.
+              </p>
+            </div>
+          </div>
+          <label>
+            Career background and resume
+            <textarea
+              value={form.resumeText}
+              onChange={(event) =>
+                setForm({ ...form, resumeText: event.target.value })
+              }
+              placeholder="Paste your experience, achievements, education, and career context…"
+            />
+          </label>
+          <div className="v2-about-stats">
+            <span>
+              {form.resumeText.trim().split(/\s+/).filter(Boolean).length} words
+            </span>
+            <span>Stored only on this device</span>
+          </div>
+          <button onClick={save}>
+            <Save size={16} /> Save About Me
+          </button>
+        </div>
+      )}
+      {activeTab === "settings" && (
+        <div className="v2-settings-grid" role="tabpanel">
+          <div className="card v2-settings-card">
+            <div className="v2-settings-card-title">
+              <span className="v2-settings-icon">
+                <User size={18} />
+              </span>
+              <div>
+                <h3>Career preferences</h3>
+                <p>Used to personalize job matches and documents.</p>
+              </div>
+            </div>
+            <label>
+              Target roles
+              <input
+                value={form.targetRoles}
+                onChange={(event) =>
+                  setForm({ ...form, targetRoles: event.target.value })
+                }
+              />
+            </label>
+            <label>
+              Skills
+              <input
+                value={form.skills}
+                onChange={(event) =>
+                  setForm({ ...form, skills: event.target.value })
+                }
+              />
+            </label>
+            <label>
+              Preferred locations
+              <input
+                value={form.locations || ""}
+                onChange={(e) =>
+                  setForm({ ...form, locations: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Minimum salary
+              <input
+                type="number"
+                value={form.minSalary || 0}
+                onChange={(e) =>
+                  setForm({ ...form, minSalary: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Weekly application goal
+              <input
+                type="number"
+                min="1"
+                max="100"
+                value={form.weeklyApplicationGoal}
+                onChange={(e) =>
+                  setForm({ ...form, weeklyApplicationGoal: e.target.value })
+                }
+              />
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={form.remote}
+                onChange={(e) => setForm({ ...form, remote: e.target.checked })}
+              />{" "}
+              Include remote roles
+            </label>
+            <p className="hint">
+              Used for local fit scores and hunt defaults. Nothing is sent over
+              the network.
+            </p>
+            <button onClick={save}>
+              <Save size={16} /> Save settings
+            </button>
+          </div>
+          <div className="card v2-settings-card v2-local-account">
+            <div className="v2-settings-card-title">
+              <span className="v2-settings-icon">
+                <ShieldCheck size={18} />
+              </span>
+              <div>
+                <h3>Local account</h3>
+                <p>Your JobHuntr data stays in this desktop app.</p>
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>Workspace</dt>
+                <dd>Local</dd>
+              </div>
+              <div>
+                <dt>Cloud sync</dt>
+                <dd>Off</dd>
+              </div>
+              <div>
+                <dt>Telemetry</dt>
+                <dd>Off</dd>
+              </div>
+            </dl>
+            <p className="hint">
+              Backups and data controls are available from Settings & data in
+              the sidebar.
+            </p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
