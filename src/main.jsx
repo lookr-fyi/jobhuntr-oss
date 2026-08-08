@@ -3614,13 +3614,34 @@ function OutreachPage({ state, reload }) {
 function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
   const [chatInput, setChatInput] = useState("");
-  const [messages, setMessages] = useState(() => {
+  const [conversations, setConversations] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("jobhuntr-coach-chat") || "[]");
+      const saved = JSON.parse(
+        localStorage.getItem("jobhuntr-coach-conversations") || "[]",
+      );
+      if (saved.length) return saved;
+      const legacy = JSON.parse(
+        localStorage.getItem("jobhuntr-coach-chat") || "[]",
+      );
+      return legacy.length
+        ? [
+            {
+              id: "migrated-coaching-session",
+              title:
+                legacy.find((message) => message.role === "user")?.content ||
+                "Career coaching session",
+              messages: legacy,
+              updatedAt: new Date().toISOString(),
+            },
+          ]
+        : [];
     } catch {
       return [];
     }
   });
+  const [activeConversationId, setActiveConversationId] = useState(() =>
+    localStorage.getItem("jobhuntr-active-coach-conversation"),
+  );
   const [jobId, setJobId] = useState(
     state.jobs.find((j) => j.status === "interview")?.id ||
       state.jobs[0]?.id ||
@@ -3628,6 +3649,38 @@ function Coach({ state, reload }) {
   );
   const [session, setSession] = useState(state.coachingSessions[0] || null);
   const [draft, setDraft] = useState(state.outreachDrafts[0] || null);
+  const activeConversation =
+    conversations.find(({ id }) => id === activeConversationId) ||
+    (activeConversationId ? conversations[0] || null : null);
+  const messages = activeConversation?.messages || [];
+  const persistConversations = (next, activeId = activeConversationId) => {
+    setConversations(next);
+    localStorage.setItem("jobhuntr-coach-conversations", JSON.stringify(next));
+    if (activeId) {
+      setActiveConversationId(activeId);
+      localStorage.setItem("jobhuntr-active-coach-conversation", activeId);
+    } else {
+      setActiveConversationId(null);
+      localStorage.removeItem("jobhuntr-active-coach-conversation");
+    }
+  };
+  const newConversation = () => {
+    setChatInput("");
+    persistConversations(conversations, null);
+  };
+  const openConversation = (id) => {
+    setChatInput("");
+    setActiveConversationId(id);
+    localStorage.setItem("jobhuntr-active-coach-conversation", id);
+  };
+  const deleteConversation = (id) => {
+    const next = conversations.filter((conversation) => conversation.id !== id);
+    const nextActive =
+      id === activeConversation?.id
+        ? next[0]?.id || null
+        : activeConversationId;
+    persistConversations(next, nextActive);
+  };
   const prepare = async () => {
     const created = await api("/api/coach/prepare", {
       method: "POST",
@@ -3653,13 +3706,28 @@ function Coach({ state, reload }) {
       "your target role";
     const skills = (state.profile.skills || []).slice(0, 3).join(", ");
     const answer = `For ${role}, start by grounding your answer in one specific outcome. Use a short situation-action-result structure${skills ? ` and connect it to ${skills}` : ""}. Next, quantify the result and finish by explaining how that experience applies to this opportunity.`;
-    const next = [
+    const nextMessages = [
       ...messages,
       { role: "user", content: prompt },
       { role: "assistant", content: answer },
     ];
-    setMessages(next);
-    localStorage.setItem("jobhuntr-coach-chat", JSON.stringify(next));
+    const id = activeConversation?.id || crypto.randomUUID();
+    const updated = {
+      ...activeConversation,
+      id,
+      jobId,
+      title:
+        activeConversation?.title ||
+        (prompt.length > 42 ? `${prompt.slice(0, 42)}…` : prompt),
+      messages: nextMessages,
+      updatedAt: new Date().toISOString(),
+    };
+    const nextConversations = activeConversation
+      ? conversations.map((conversation) =>
+          conversation.id === id ? updated : conversation,
+        )
+      : [updated, ...conversations];
+    persistConversations(nextConversations, id);
     setChatInput("");
   };
   return (
@@ -3708,75 +3776,152 @@ function Coach({ state, reload }) {
         </select>
       </div>
       {view === "chat" && (
-        <div className="v2-coach-chat card">
-          <div className="v2-coach-messages">
-            {messages.length === 0 ? (
-              <div className="v2-coach-welcome">
-                <div className="v2-coach-avatar">
-                  <Sparkles size={24} />
-                </div>
-                <h2>Hi, I'm AI Coach!</h2>
-                <p>
-                  I'm your private and personal career coach. I can help you
-                  sharpen your story, prepare for interviews, and decide what to
-                  do next.
-                </p>
-                <strong>How can I help you today?</strong>
-                <div className="v2-coach-prompts">
-                  {[
-                    "Help me prepare for an interview",
-                    "Improve my career story",
-                    "What should I prioritize this week?",
-                  ].map((prompt) => (
-                    <button
-                      className="secondary"
-                      key={prompt}
-                      onClick={() => sendCoachMessage(prompt)}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
+        <div className="v2-coach-workspace">
+          <aside
+            className="v2-coach-history card"
+            aria-label="Coach conversations"
+          >
+            <div className="v2-coach-history-head">
+              <div>
+                <strong>Conversations</strong>
+                <span>{conversations.length} saved locally</span>
               </div>
-            ) : (
-              messages.map((message, index) => (
-                <div
-                  className={`v2-chat-message ${message.role}`}
-                  key={`${message.role}-${index}`}
-                >
-                  {message.role === "assistant" && (
-                    <span className="v2-mini-coach">
-                      <Sparkles size={14} />
-                    </span>
-                  )}
-                  <p>{message.content}</p>
+              <button
+                className="icon-button"
+                onClick={newConversation}
+                aria-label="New coaching conversation"
+              >
+                <Plus size={17} />
+              </button>
+            </div>
+            <div className="v2-coach-history-list">
+              {conversations.length === 0 ? (
+                <p>Your coaching sessions will appear here.</p>
+              ) : (
+                conversations.map((conversation) => (
+                  <div
+                    className={`v2-coach-history-row ${conversation.id === activeConversation?.id ? "selected" : ""}`}
+                    key={conversation.id}
+                  >
+                    <button
+                      onClick={() => openConversation(conversation.id)}
+                      aria-current={
+                        conversation.id === activeConversation?.id
+                          ? "page"
+                          : undefined
+                      }
+                    >
+                      <MessageSquare size={16} />
+                      <span>
+                        <strong>{conversation.title}</strong>
+                        <small>
+                          {conversation.messages.length / 2} coaching exchange
+                          {conversation.messages.length === 2 ? "" : "s"}
+                        </small>
+                      </span>
+                    </button>
+                    <button
+                      className="v2-coach-delete"
+                      onClick={() => deleteConversation(conversation.id)}
+                      aria-label={`Delete ${conversation.title}`}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="v2-coach-private">
+              <ShieldCheck size={16} />
+              <span>
+                <strong>Private by design</strong>Your chats stay on this
+                device.
+              </span>
+            </div>
+          </aside>
+          <div className="v2-coach-chat card">
+            <div className="v2-coach-stage" aria-label="Coaching progress">
+              <span className={messages.length ? "complete" : "active"}>1</span>
+              <i />
+              <span className={messages.length ? "active" : ""}>2</span>
+              <i />
+              <span>3</span>
+              <small>
+                {messages.length
+                  ? "Build your action plan"
+                  : "Choose your focus"}
+              </small>
+            </div>
+            <div className="v2-coach-messages" aria-live="polite">
+              {messages.length === 0 ? (
+                <div className="v2-coach-welcome">
+                  <div className="v2-coach-avatar">
+                    <Sparkles size={24} />
+                  </div>
+                  <h2>Hi, I'm AI Coach!</h2>
+                  <p>
+                    I'm your private and personal career coach. I can help you
+                    sharpen your story, prepare for interviews, and decide what
+                    to do next.
+                  </p>
+                  <strong>How can I help you today?</strong>
+                  <div className="v2-coach-prompts">
+                    {[
+                      "Help me prepare for an interview",
+                      "Improve my career story",
+                      "What should I prioritize this week?",
+                    ].map((prompt) => (
+                      <button
+                        className="secondary"
+                        key={prompt}
+                        onClick={() => sendCoachMessage(prompt)}
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ))
-            )}
+              ) : (
+                messages.map((message, index) => (
+                  <div
+                    className={`v2-chat-message ${message.role}`}
+                    key={`${message.role}-${index}`}
+                  >
+                    {message.role === "assistant" && (
+                      <span className="v2-mini-coach">
+                        <Sparkles size={14} />
+                      </span>
+                    )}
+                    <p>{message.content}</p>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="v2-coach-input">
+              <textarea
+                aria-label="Message AI Coach"
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    sendCoachMessage();
+                  }
+                }}
+                placeholder="Ask about your job search, interviews, or next career move…"
+              />
+              <button
+                disabled={!chatInput.trim()}
+                onClick={() => sendCoachMessage()}
+              >
+                Get Started <ChevronRight size={17} />
+              </button>
+            </div>
+            <small className="v2-coach-disclaimer">
+              JobHuntr is an AI coach, not a licensed career counselor. Review
+              important decisions with a professional.
+            </small>
           </div>
-          <div className="v2-coach-input">
-            <textarea
-              aria-label="Message AI Coach"
-              value={chatInput}
-              onChange={(event) => setChatInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  sendCoachMessage();
-                }
-              }}
-              placeholder="Ask about your job search, interviews, or next career move…"
-            />
-            <button
-              disabled={!chatInput.trim()}
-              onClick={() => sendCoachMessage()}
-            >
-              Get Started <ChevronRight size={17} />
-            </button>
-          </div>
-          <small className="v2-coach-disclaimer">
-            Private local guidance. Review important career decisions yourself.
-          </small>
         </div>
       )}
       {view === "practice" && (

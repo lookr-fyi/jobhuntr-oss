@@ -1261,13 +1261,172 @@ button:disabled {
   color: #ffe600;
 }
 .v2-coach-chat {
-  max-width: 1000px;
+  min-width: 0;
   min-height: 650px;
-  margin: 16px auto 0;
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.v2-coach-workspace {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: 16px;
+  max-width: 1240px;
+  margin: 16px auto 0;
+}
+.v2-coach-history {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #0f172a;
+}
+.v2-coach-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.v2-coach-history-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.v2-coach-history button {
+  color: #475569;
+  text-transform: none;
+}
+.v2-coach-history button:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+}
+.v2-coach-history-head span,
+.v2-coach-history-list p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+}
+.v2-coach-history-list {
+  flex: 1;
+  padding: 10px;
+}
+.v2-coach-history-list > p {
+  padding: 16px 8px;
+  line-height: 1.5;
+}
+.v2-coach-history-row {
+  position: relative;
+  border-radius: 9px;
+}
+.v2-coach-history-row.selected {
+  background: #f1f5f9;
+}
+.v2-coach-history-row > button:first-child {
+  width: 100%;
+  padding: 11px 34px 11px 10px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 9px;
+  color: #334155;
+  text-align: left;
+  background: transparent;
+}
+.v2-coach-history-row > button:first-child span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.v2-coach-history-row strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-coach-history-row small {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 400;
+}
+.v2-coach-delete {
+  position: absolute;
+  top: 8px;
+  right: 5px;
+  padding: 5px;
+  color: #94a3b8;
+  background: transparent;
+  opacity: 0;
+}
+.v2-coach-history-row:hover .v2-coach-delete,
+.v2-coach-delete:focus-visible {
+  opacity: 1;
+}
+.v2-coach-private {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px;
+  padding: 12px;
+  border-radius: 9px;
+  color: #475569;
+  background: #f8fafc;
+}
+.v2-coach-private span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+}
+.v2-coach-private strong {
+  font-size: 12px;
+  color: #334155;
+}
+.v2-coach-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 56px;
+  padding: 9px 24px 17px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.v2-coach-stage span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v2-coach-stage span.active {
+  color: #111827;
+  border-color: #ffe000;
+  background: #fff8b5;
+}
+.v2-coach-stage span.complete {
+  color: white;
+  border-color: #111827;
+  background: #111827;
+}
+.v2-coach-stage i {
+  width: 52px;
+  height: 1px;
+  background: #dbe1e8;
+}
+.v2-coach-stage small {
+  position: absolute;
+  bottom: 3px;
+  color: #64748b;
+  font-size: 10px;
 }
 .v2-coach-messages {
   flex: 1;
@@ -1357,6 +1516,24 @@ button:disabled {
   text-align: center;
 }
 @media (max-width: 700px) {
+  .v2-coach-workspace {
+    display: flex;
+    flex-direction: column;
+  }
+  .v2-coach-history {
+    max-height: 210px;
+  }
+  .v2-coach-history-list {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .v2-coach-history-row {
+    min-width: 210px;
+  }
+  .v2-coach-private {
+    display: none;
+  }
   .v2-coach-messages {
     padding: 24px 18px;
   }

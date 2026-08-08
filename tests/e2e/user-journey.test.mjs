@@ -467,10 +467,26 @@ test(
         .click();
       await page.getByText(/start by grounding your answer/).waitFor();
       await assertAccessible(page, "AI Coach");
+      await page
+        .getByRole("button", { name: "New coaching conversation" })
+        .click();
+      await page.getByRole("heading", { name: "Hi, I'm AI Coach!" }).waitFor();
+      await page.getByLabel("Message AI Coach").fill("Help me plan this week");
+      await page.getByRole("button", { name: /Get Started/ }).click();
+      await page.getByText("2 saved locally").waitFor();
       await page.reload();
-      await page.getByRole("button", { name: "AI Coach" }).click();
+      await page
+        .getByRole("paragraph")
+        .filter({ hasText: /^Help me plan this week$/ })
+        .waitFor();
+      await page
+        .getByRole("button", {
+          name: "Help me prepare for an interview 1 coaching exchange",
+        })
+        .click();
       await page
         .getByText("Help me prepare for an interview", { exact: true })
+        .last()
         .waitFor();
 
       await page.getByRole("button", { name: "Gigs" }).click();
