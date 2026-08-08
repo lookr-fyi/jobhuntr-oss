@@ -144,12 +144,28 @@ test(
         .getByText("Help me prepare for an interview", { exact: true })
         .waitFor();
 
+      await page.getByRole("button", { name: "Gigs" }).click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/gigs") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "View & apply" }).first().click(),
+      ]);
+      await page
+        .getByRole("heading", { name: "Review an AI resume workflow" })
+        .last()
+        .waitFor();
+
       const persisted = JSON.parse(
         await fs.readFile(path.join(dataDir, "jobhuntr.json"), "utf8"),
       );
       assert.equal(persisted.agentRuns.length, 1);
       assert.equal(persisted.resumes[0].name, "E2E tailored resume");
       assert.equal(persisted.submissions[0].status, "submitted");
+      assert.equal(persisted.gigs[0].title, "Review an AI resume workflow");
       assert.equal(
         persisted.outreachDrafts[0].subject,
         "E2E persisted outreach subject",

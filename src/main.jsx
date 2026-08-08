@@ -2363,7 +2363,8 @@ function Gigs({ state, reload }) {
   };
   const [form, setForm] = useState(empty);
   const [selected, setSelected] = useState(state.gigs[0]?.id || null);
-  const [showForm, setShowForm] = useState(state.gigs.length === 0);
+  const [showForm, setShowForm] = useState(false);
+  const [gigQuery, setGigQuery] = useState("");
   const gig = state.gigs.find((item) => item.id === selected);
   const money = (value) =>
     new Intl.NumberFormat("en-US", {
@@ -2388,6 +2389,51 @@ function Gigs({ state, reload }) {
     });
     await reload();
   };
+  const availableGigs = [
+    {
+      client: "Career Tools Lab",
+      title: "Review an AI resume workflow",
+      budget: 175,
+      description:
+        "Test a career product workflow and deliver concise, evidence-based usability feedback.",
+      skills: ["Product testing", "Writing"],
+    },
+    {
+      client: "Launch Partners",
+      title: "Create a technical product teardown",
+      budget: 300,
+      description:
+        "Document a software onboarding journey and recommend the three highest-impact improvements.",
+      skills: ["Research", "Product strategy"],
+    },
+    {
+      client: "Developer Community",
+      title: "Build a small React prototype",
+      budget: 500,
+      description:
+        "Turn a focused product brief into a polished responsive prototype with clear handoff notes.",
+      skills: ["React", "TypeScript"],
+    },
+  ].filter((item) =>
+    `${item.title} ${item.client} ${item.description}`
+      .toLowerCase()
+      .includes(gigQuery.toLowerCase()),
+  );
+  const applyToGig = async (item) => {
+    const created = await api("/api/gigs", {
+      method: "POST",
+      body: JSON.stringify({
+        ...empty,
+        client: item.client,
+        title: item.title,
+        budget: item.budget,
+        description: item.description,
+        source: "JobHuntr Gigs",
+      }),
+    });
+    setSelected(created.id);
+    await reload();
+  };
   return (
     <section className="gigs-page">
       <div className="v2-page-intro v2-gigs-intro">
@@ -2401,6 +2447,44 @@ function Gigs({ state, reload }) {
         <button onClick={() => setShowForm(!showForm)}>
           <Plus size={16} /> Add gig
         </button>
+      </div>
+      <div className="v2-available-gigs">
+        <div className="v2-gigs-section-title">
+          <div>
+            <h3>Available Gigs</h3>
+            <p>
+              Short projects selected for fast skill validation and earnings.
+            </p>
+          </div>
+        </div>
+        <div className="searchbox v2-gig-search">
+          <Search size={16} />
+          <input
+            aria-label="Search available gigs"
+            value={gigQuery}
+            onChange={(event) => setGigQuery(event.target.value)}
+            placeholder="Search gigs by title, description, or partner…"
+          />
+        </div>
+        <div className="v2-gig-campaigns">
+          {availableGigs.map((item) => (
+            <article className="card" key={item.title}>
+              <div className="row">
+                <span className="v2-gig-partner">{item.client[0]}</span>
+                <strong>{money(item.budget)}</strong>
+              </div>
+              <h3>{item.title}</h3>
+              <small>by {item.client}</small>
+              <p>{item.description}</p>
+              <div className="chips">
+                {item.skills.map((skill) => (
+                  <span key={skill}>{skill}</span>
+                ))}
+              </div>
+              <button onClick={() => applyToGig(item)}>View & apply</button>
+            </article>
+          ))}
+        </div>
       </div>
       <div className="v2-gigs-section-title">
         <div>
