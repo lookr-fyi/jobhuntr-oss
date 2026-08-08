@@ -6501,6 +6501,8 @@ function SettingsPage({ state, reload }) {
     atsThreshold: p.preferences?.atsThreshold ?? 80,
     weeklyApplicationGoal: p.preferences?.weeklyApplicationGoal || 5,
     resumeText: p.resumeText || "",
+    additionalInfo: p.additionalInfo || "",
+    faqAnswers: p.faqAnswers || [],
   });
   const save = async () => {
     setSaved(false);
@@ -6533,6 +6535,8 @@ function SettingsPage({ state, reload }) {
           atsThreshold: Number(form.atsThreshold) || 80,
         },
         resumeText: form.resumeText,
+        additionalInfo: form.additionalInfo,
+        faqAnswers: form.faqAnswers,
       }),
     });
     await reload();
@@ -6653,38 +6657,119 @@ function SettingsPage({ state, reload }) {
         </div>
       )}
       {activeTab === "about" && (
-        <div className="card v2-about-panel" role="tabpanel">
-          <div className="v2-settings-card-title">
-            <span className="v2-settings-icon">
-              <FileText size={18} />
-            </span>
+        <div className="v2-about-hub" role="tabpanel">
+          <div className="card v2-about-hero">
             <div>
-              <h3>About Me</h3>
+              <span className="eyebrow">ABOUT ME HUB</span>
+              <h3>Teach JobHuntr how to speak on your behalf</h3>
               <p>
-                Teach JobHuntr about your experience so every workflow starts
-                with the same context.
+                Everything you add here feeds automated question answering.
+                Long-form context supplies story-driven responses while FAQ
+                answers handle common interview and application prompts.
               </p>
             </div>
           </div>
-          <label>
-            Career background and resume
-            <textarea
-              value={form.resumeText}
-              onChange={(event) =>
-                setForm({ ...form, resumeText: event.target.value })
-              }
-              placeholder="Paste your experience, achievements, education, and career context…"
-            />
-          </label>
-          <div className="v2-about-stats">
-            <span>
-              {form.resumeText.trim().split(/\s+/).filter(Boolean).length} words
-            </span>
-            <span>Stored only on this device</span>
+          <div className="card v2-about-panel">
+            <div className="v2-about-section-header">
+              <div>
+                <h3>Additional information about me</h3>
+                <p>
+                  Keep one rich story you’re proud of—JobHuntr reuses this
+                  whenever lengthy answers pop up mid-application.
+                </p>
+              </div>
+              <FileText size={20} />
+            </div>
+            <label>
+              Long-form career context
+              <textarea
+                value={form.additionalInfo}
+                onChange={(event) =>
+                  setForm({ ...form, additionalInfo: event.target.value })
+                }
+                placeholder="Example: I’m a systems thinker with 5+ years leading go-to-market experiments…"
+              />
+            </label>
+            <div className="v2-about-stats">
+              <span>
+                {form.additionalInfo.trim().split(/\s+/).filter(Boolean).length}{" "}
+                words
+              </span>
+              <span>Stored only on this device</span>
+            </div>
+            <button onClick={save}>
+              <Save size={16} /> Save About Me
+            </button>
           </div>
-          <button onClick={save}>
-            <Save size={16} /> Save About Me
-          </button>
+          <div className="card v2-faq-panel">
+            <div className="v2-about-section-header">
+              <div>
+                <h3>FAQ Questions</h3>
+                <p>Answer common application questions.</p>
+              </div>
+              {!form.faqAnswers.length && (
+                <button
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      faqAnswers: [
+                        {
+                          question: "Why are you interested in this role?",
+                          answer: "",
+                        },
+                        {
+                          question: "What are your salary expectations?",
+                          answer: "",
+                        },
+                        {
+                          question: "When are you available to start?",
+                          answer: "",
+                        },
+                        {
+                          question:
+                            "Will you require work authorization sponsorship?",
+                          answer: "",
+                        },
+                      ],
+                    })
+                  }
+                >
+                  <Plus size={15} /> Generate FAQ
+                </button>
+              )}
+            </div>
+            {form.faqAnswers.length ? (
+              <div className="v2-faq-list">
+                {form.faqAnswers.map((faq, index) => (
+                  <label key={faq.question}>
+                    <span>{faq.question}</span>
+                    <textarea
+                      rows={2}
+                      value={faq.answer}
+                      placeholder="Enter your answer…"
+                      onChange={(event) => {
+                        const faqAnswers = [...form.faqAnswers];
+                        faqAnswers[index] = {
+                          ...faq,
+                          answer: event.target.value,
+                        };
+                        setForm({ ...form, faqAnswers });
+                      }}
+                    />
+                  </label>
+                ))}
+                <button onClick={save}>
+                  <Save size={16} /> Save FAQ answers
+                </button>
+              </div>
+            ) : (
+              <div className="v2-faq-empty">
+                <MessageSquare size={28} />
+                <h4>No FAQ Questions Yet</h4>
+                <p>Generate a starter set based on common applications.</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {activeTab === "settings" && (

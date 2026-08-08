@@ -663,7 +663,7 @@ test(
       await page.getByRole("heading", { name: "User Center" }).waitFor();
       await page.getByRole("tab", { name: "About Me" }).click();
       await page
-        .getByLabel("Career background and resume")
+        .getByLabel("Long-form career context")
         .fill("E2E product engineer with React and TypeScript experience.");
       await Promise.all([
         page.waitForResponse(
@@ -675,6 +675,27 @@ test(
         page.getByRole("button", { name: "Save About Me" }).click(),
       ]);
       await page.getByText("Changes saved locally.").waitFor();
+      await page.getByRole("button", { name: "Generate FAQ" }).click();
+      await page
+        .getByLabel("Why are you interested in this role?")
+        .fill("I enjoy building reliable user-facing products.");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save FAQ answers" }).click(),
+      ]);
+      await page.reload();
+      await page.getByRole("tab", { name: "About Me" }).click();
+      assert.equal(
+        await page
+          .getByLabel("Why are you interested in this role?")
+          .inputValue(),
+        "I enjoy building reliable user-facing products.",
+      );
       await page.getByRole("tab", { name: "Settings" }).click();
       await page.getByLabel("Weekly application goal").waitFor();
       await page.getByLabel("ATS template application threshold").fill("85");
