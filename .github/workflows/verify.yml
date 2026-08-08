@@ -15,7 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run verify
+      - name: Verify browser and Electron workflows
+        run: xvfb-run -a npm run verify
 
   clean-one-line-launch:
     runs-on: ubuntu-latest
@@ -40,4 +41,4 @@ jobs:
             sleep 1
           done
           grep -q '"mode":"local-only"' /tmp/jobhuntr-health.json
-          curl -fsS http://127.0.0.1:8790/ | grep -q 'JobHuntr OSS'
+          curl -fsS http://127.0.0.1:8790/ | grep -q '<title>JobHuntr</title>'

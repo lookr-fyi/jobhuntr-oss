@@ -1,6 +1,6 @@
 # JobHuntr OSS completion audit
 
-This audit maps the original open-source objective to current, verifiable repository evidence. JobHuntr v2 was used as a product reference; private implementation and infrastructure were not copied into this history.
+This audit maps the original open-source objective to current, verifiable repository evidence. The authorized Electron JobHuntr v2 frontend is the product and visual reference; the public implementation remains independently local-first and excludes private infrastructure and credentials.
 
 ## Original requirements
 
@@ -9,6 +9,7 @@ This audit maps the original open-source objective to current, verifiable reposi
 | New public repository under lookr-fyi                | [`lookr-fyi/jobhuntr-oss`](https://github.com/lookr-fyi/jobhuntr-oss) reports `PUBLIC`, with `main` as its default branch and AGPL-3.0 recognized by GitHub.                                                                                                                      | Proven |
 | Build the product from scratch using v2 as reference | [`OPEN_SOURCE_SCOPE.md`](OPEN_SOURCE_SCOPE.md) records each observed v2 surface and its independently built OSS equivalent. Public history begins with the clean local-first implementation rather than a v2 source import.                                                       | Proven |
 | Frontend and backend are both included               | React/Vite frontend under `src/`; Express API, persistence, scoring, rendering, and audit engines under `server/`. Production build serves both from one process.                                                                                                                 | Proven |
+| Electron desktop experience                          | `electron/main.mjs` launches the built app and private loopback service in a native window. `tests/e2e/electron-smoke.test.mjs` launches the real Electron runtime and verifies onboarding plus sandbox, context-isolation, and Node-integration settings.                        | Proven |
 | User can build and run in one line                   | Executable `./run.sh` installs locked dependencies when absent, builds, starts the app, and opens `127.0.0.1:8787`. `tests/one-line.test.mjs` validates the launcher. CI's `clean-one-line-launch` job runs that exact command from a checkout with no `node_modules`.            | Proven |
 | No cloud storage or resources are required           | Local JSON storage and recovery backup live in ignored `./data`. `tests/local-first.test.mjs` enforces the runtime dependency allowlist and rejects cloud/auth/payment/database/telemetry SDKs. The server binds to loopback by default.                                          | Proven |
 | No sensitive JobHuntr v2 data is leaked              | `.env*` and `data/` are ignored; only `.env.example` is tracked. `npm run secret:scan` scans both the working tree and every reachable Git blob for private keys, common tokens, JWTs, suspicious credential filenames, and private env files. CI blocks publication regressions. | Proven |
@@ -24,10 +25,10 @@ This audit maps the original open-source objective to current, verifiable reposi
 | ATS templates and resume history | Three transparent templates, named versions, ATS keyword/impact checks, sanitized print preview, and PDF-ready browser output                    |
 | Cover letters                    | Deterministic generation, persistent editing/history, sanitized print preview, and PDF-ready output                                              |
 | Infinite Hunt / agent runs       | Real role/location/required/excluded keyword filtering, thresholds, preview, reasons, presets, deduplication, and run history                    |
-| AI Coach / About Me              | Persistent interview answers, notes, research progress, STAR story vault, evidence matching, and session history                                 |
+| AI Coach / About Me              | Persistent local coaching chat, interview answers, notes, research progress, STAR story vault, evidence matching, and session history            |
 | Outreach                         | Editable local drafts and draft/sent/replied/archived lifecycle without automatic sending                                                        |
 | LinkedIn audit                   | Paste-only deterministic professional-profile audit with visible rubric and local history; no login, cookie access, or scraping                  |
-| Gigs                             | Lead-to-delivery Kanban, proposals, deadlines, budgets, earnings, and command-center rollups                                                     |
+| Gigs                             | Available campaign cards plus lead-to-delivery Kanban, proposals, deadlines, budgets, earnings, and command-center rollups                       |
 | User settings                    | Local identity, role/skill targets, locations, salary, remote preference, and weekly goal                                                        |
 | Data portability                 | Full JSON backup/restore, automatic corruption recovery, CSV export/import, bounded imports, and schema migration                                |
 | Privacy controls                 | Localhost-only default, no account, no telemetry, restrictive headers, ignored personal data, dependency guard, and history-wide secret scanning |
@@ -52,5 +53,7 @@ Their user-facing value is replaced with local profiles, deterministic scoring/g
 3. ESLint and React Hooks checks with zero warnings.
 4. API, persistence, concurrency, recovery, rendering, scoring, import/export, local-first architecture, and one-line-launch tests.
 5. Production frontend build.
+6. A no-mock Chrome journey covering onboarding, hunting, run history, ATS resume, submission, cover letter, tracker, profile audit, outreach, AI Coach, Gigs, persistence, and mobile layout.
+7. A real Electron launch test that also verifies renderer security boundaries.
 
-GitHub Actions repeats the gate and independently launches `./run.sh` from a dependency-free checkout. `npm audit --omit=dev` is also expected to report zero production vulnerabilities at release time.
+GitHub Actions runs the browser and Electron gate under Xvfb and independently launches `./run.sh` from a dependency-free checkout. `npm audit --omit=dev` is also expected to report zero production vulnerabilities at release time.

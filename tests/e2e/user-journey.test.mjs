@@ -7,9 +7,26 @@ import net from "node:net";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
 
-const chromePath =
-  process.env.CHROME_PATH ||
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const chromeCandidates = [
+  process.env.CHROME_PATH,
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/usr/bin/google-chrome",
+  "/usr/bin/google-chrome-stable",
+  "/usr/bin/chromium",
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+].filter(Boolean);
+
+const findChrome = async () => {
+  for (const candidate of chromeCandidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {}
+  }
+  assert.fail(
+    `Chrome was not found. Set CHROME_PATH. Checked: ${chromeCandidates.join(", ")}`,
+  );
+};
 
 const freePort = () =>
   new Promise((resolve) => {
@@ -57,6 +74,7 @@ test(
     let browser;
     try {
       await waitForHealth(baseUrl, () => logs);
+      const chromePath = await findChrome();
       browser = await chromium.launch({
         executablePath: chromePath,
         headless: true,
