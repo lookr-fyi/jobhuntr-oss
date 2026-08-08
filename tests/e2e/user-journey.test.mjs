@@ -703,6 +703,21 @@ test(
         name: "Start submitting",
       });
       await submitDialog.waitFor();
+      await submitDialog
+        .getByRole("link", { name: "Open application form" })
+        .waitFor();
+      assert.equal(
+        await submitDialog
+          .getByRole("button", { name: "Record submitted" })
+          .isDisabled(),
+        true,
+        "submission recording must fail closed until the user confirms external success",
+      );
+      await submitDialog
+        .getByLabel(
+          /I personally verified that the external application was submitted/i,
+        )
+        .check();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -710,7 +725,7 @@ test(
             response.request().method() === "POST" &&
             response.ok(),
         ),
-        submitDialog.getByRole("button", { name: "Confirm submitted" }).click(),
+        submitDialog.getByRole("button", { name: "Record submitted" }).click(),
       ]);
       await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
       await page.getByRole("button", { name: "About Me" }).click();
@@ -881,7 +896,21 @@ test(
       await roundForm
         .getByLabel("Notes")
         .fill("Technical interview with the engineering manager");
-      await roundForm.getByRole("button", { name: "Add", exact: true }).click();
+      const [roundResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/jobs/") &&
+            response.request().method() === "PATCH",
+        ),
+        roundForm.getByRole("button", { name: "Add", exact: true }).click(),
+      ]);
+      const roundResult = await roundResponse.json();
+      assert.equal(roundResponse.status(), 200);
+      assert.equal(
+        roundResult.interviewRounds?.[0]?.roundType,
+        "Interview Round 1",
+        `interview round was not persisted: ${JSON.stringify(roundResult)}`,
+      );
       await page.getByText("Interview Round 1", { exact: true }).waitFor();
       await page
         .getByText("Technical interview with the engineering manager", {

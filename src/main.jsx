@@ -140,6 +140,14 @@ const TRACKER_STAGE_LABELS = {
   removed: "Removed",
 };
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
+const safeHttpUrl = (value) => {
+  try {
+    const url = new URL(String(value || ""));
+    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+};
 const maximumListedSalary = (job) => {
   const values = String(job.salary || "")
     .match(/\d+(?:\.\d+)?\s*k?/gi)
@@ -1987,8 +1995,12 @@ function Tracker({ state, reload, setTab }) {
                     </option>
                   ))}
                 </select>
-                {job.url && (
-                  <a href={job.url} target="_blank" rel="noreferrer">
+                {safeHttpUrl(job.url) && (
+                  <a
+                    href={safeHttpUrl(job.url)}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     Open job listing ↗
                   </a>
                 )}
@@ -3093,14 +3105,16 @@ function Board({ state, reload }) {
                     ? "Queueing…"
                     : "Queue"}
               </button>
-              <a
-                className="button secondary"
-                href={selected.url}
-                target="_blank"
-                rel="noreferrer"
-              >
-                View original post <ExternalLink size={15} />
-              </a>
+              {safeHttpUrl(selected.url) && (
+                <a
+                  className="button secondary"
+                  href={safeHttpUrl(selected.url)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View original post <ExternalLink size={15} />
+                </a>
+              )}
             </div>
             <h4>About the role</h4>
             <p>{selected.description}</p>
@@ -3231,6 +3245,9 @@ function Queue({ state, reload, setTab }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
+  const [submitBatch, setSubmitBatch] = useState([]);
+  const [submitIndex, setSubmitIndex] = useState(0);
+  const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
   const [submittingReady, setSubmittingReady] = useState(false);
   const submitCloseRef = useRef(null);
   const active = state.submissions.filter(
@@ -3271,6 +3288,11 @@ function Queue({ state, reload, setTab }) {
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
   const readySubmissions = active.filter((item) => item.status === "ready");
+  const currentSubmitPacket = submitBatch[submitIndex] || null;
+  const currentSubmitJob = state.jobs.find(
+    (item) => item.id === currentSubmitPacket?.jobId,
+  );
+  const currentApplicationUrl = safeHttpUrl(currentSubmitJob?.url);
   const selected =
     filtered.find((item) => item.id === selectedId) || filtered[0];
   const selectedPacketId = selected?.id || "";
@@ -3366,20 +3388,31 @@ function Queue({ state, reload, setTab }) {
     window.addEventListener("hashchange", followQueueLink);
     return () => window.removeEventListener("hashchange", followQueueLink);
   }, []);
-  const recordReadySubmissions = async () => {
+  const closeSubmitAssist = () => {
+    setSubmitOpen(false);
+    setSubmitBatch([]);
+    setSubmitIndex(0);
+    setSubmissionConfirmed(false);
+  };
+  const recordCurrentSubmission = async () => {
+    if (!currentSubmitPacket || !submissionConfirmed) return;
     setSubmittingReady(true);
     try {
-      await Promise.all(
-        readySubmissions.map((item) =>
-          api(`/api/submissions/${item.id}/submit`, {
-            method: "POST",
-            body: "{}",
-          }),
-        ),
-      );
-      setSubmitOpen(false);
-      setSelectedId("");
+      await api(`/api/submissions/${currentSubmitPacket.id}/submit`, {
+        method: "POST",
+        body: JSON.stringify({
+          applicationUrl: currentApplicationUrl,
+          confirmedByUser: true,
+        }),
+      });
       await reload();
+      if (submitIndex < submitBatch.length - 1) {
+        setSubmitIndex((index) => index + 1);
+        setSubmissionConfirmed(false);
+      } else {
+        closeSubmitAssist();
+        setSelectedId("");
+      }
     } finally {
       setSubmittingReady(false);
     }
@@ -3417,7 +3450,12 @@ function Queue({ state, reload, setTab }) {
         <div className="inline">
           <button
             disabled={!readySubmissions.length}
-            onClick={() => setSubmitOpen(true)}
+            onClick={() => {
+              setSubmitBatch(readySubmissions);
+              setSubmitIndex(0);
+              setSubmissionConfirmed(false);
+              setSubmitOpen(true);
+            }}
             title={
               readySubmissions.length
                 ? "Record reviewed applications as submitted"
@@ -3858,45 +3896,83 @@ function Queue({ state, reload, setTab }) {
           <button
             className="v2-template-backdrop"
             aria-label="Close start submitting dialog"
-            onClick={() => setSubmitOpen(false)}
+            onClick={closeSubmitAssist}
           />
           <div className="v2-template-modal-content v2-submit-ready-modal">
             <span className="v2-connect-icon">
               <CheckCircle2 size={22} />
             </span>
             <h3 id="submit-ready-title">Start submitting</h3>
-            <p>
-              Record {readySubmissions.length} fully reviewed application
-              {readySubmissions.length === 1 ? "" : "s"} as submitted?
+            <p className="v2-submit-progress">
+              Application {Math.min(submitIndex + 1, submitBatch.length)} of{" "}
+              {submitBatch.length}
             </p>
-            <div className="v2-submit-ready-list">
-              {readySubmissions.map((item) => {
-                const job = state.jobs.find((entry) => entry.id === item.jobId);
-                return (
-                  <div key={item.id}>
-                    <strong>{job?.title}</strong>
-                    <span>{job?.company}</span>
-                  </div>
-                );
-              })}
+            <div className="v2-submit-current-job">
+              <span className="v2-job-logo">
+                {(currentSubmitJob?.company || "J").slice(0, 1).toUpperCase()}
+              </span>
+              <span>
+                <strong>{currentSubmitJob?.title || "Missing role"}</strong>
+                <small>{currentSubmitJob?.company || "Unknown company"}</small>
+              </span>
             </div>
-            <small>
-              JobHuntr will update your local tracker only. No external form is
-              submitted.
+            <ol className="v2-submit-assist-steps">
+              <li>
+                Open the company application and review every populated field.
+              </li>
+              <li>
+                Resolve validation errors, uploads, authentication, or CAPTCHA
+                manually.
+              </li>
+              <li>Submit on the company site, then return here to confirm.</li>
+            </ol>
+            {currentApplicationUrl ? (
+              <a
+                className="v2-submit-open-link"
+                href={currentApplicationUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <ExternalLink size={16} /> Open application form
+              </a>
+            ) : (
+              <p className="v2-submit-missing-url" role="alert">
+                This job has no valid HTTP application URL. Open the employer’s
+                site manually before confirming.
+              </p>
+            )}
+            <label className="check v2-submit-confirmation">
+              <input
+                type="checkbox"
+                checked={submissionConfirmed}
+                onChange={(event) =>
+                  setSubmissionConfirmed(event.target.checked)
+                }
+              />
+              I personally verified that the external application was submitted
+              successfully.
+            </label>
+            <small className="v2-submit-safety-note">
+              Fail closed: JobHuntr does not fill, click, or infer success on an
+              external form. The tracker changes only after this confirmation.
             </small>
             <div className="v2-template-modal-actions">
               <button
                 ref={submitCloseRef}
                 className="secondary"
-                onClick={() => setSubmitOpen(false)}
+                onClick={closeSubmitAssist}
               >
                 Cancel
               </button>
               <button
-                disabled={submittingReady}
-                onClick={recordReadySubmissions}
+                disabled={submittingReady || !submissionConfirmed}
+                onClick={recordCurrentSubmission}
               >
-                {submittingReady ? "Recording…" : "Confirm submitted"}
+                {submittingReady
+                  ? "Recording…"
+                  : submitIndex < submitBatch.length - 1
+                    ? "Record submitted & next"
+                    : "Record submitted"}
               </button>
             </div>
           </div>
@@ -4199,12 +4275,12 @@ function SubmissionCard({ submission: s, state, reload }) {
           onClick={async () => {
             await api(`/api/submissions/${s.id}/submit`, {
               method: "POST",
-              body: "{}",
+              body: JSON.stringify({ confirmedByUser: true }),
             });
             reload();
           }}
         >
-          <CheckCircle2 size={16} /> Mark submitted
+          <CheckCircle2 size={16} /> I submitted this externally
         </button>
         <button
           className="secondary"
@@ -4213,10 +4289,10 @@ function SubmissionCard({ submission: s, state, reload }) {
           Remove
         </button>
       </div>
-      {job?.url && (
+      {safeHttpUrl(job?.url) && (
         <a
           className="v2-apply-manually"
-          href={job.url}
+          href={safeHttpUrl(job.url)}
           target="_blank"
           rel="noreferrer"
         >
@@ -5633,10 +5709,10 @@ function Resume({ state, reload, mode = "resume" }) {
                         </span>
                         <small>{item.name}</small>
                       </button>
-                      {job?.url && (
+                      {safeHttpUrl(job?.url) && (
                         <a
                           className="v2-resume-job-link"
-                          href={job.url}
+                          href={safeHttpUrl(job.url)}
                           target="_blank"
                           rel="noreferrer"
                         >
@@ -7751,8 +7827,8 @@ function Gigs({ state, reload }) {
                   <option key={stage}>{stage}</option>
                 ))}
               </select>
-              {gig.url && (
-                <a href={gig.url} target="_blank" rel="noreferrer">
+              {safeHttpUrl(gig.url) && (
+                <a href={safeHttpUrl(gig.url)} target="_blank" rel="noreferrer">
                   Open listing ↗
                 </a>
               )}

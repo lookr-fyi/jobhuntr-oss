@@ -313,6 +313,16 @@ test("invalid jobs return a safe 400 response", async () => {
   });
   assert.equal(bad.res.status, 400);
   assert.equal(bad.body.error, "Invalid request");
+  const unsafeUrl = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Unsafe Co",
+      title: "Unsafe role",
+      url: "javascript:alert(document.domain)",
+    }),
+  });
+  assert.equal(unsafeUrl.res.status, 400);
+  assert.equal(unsafeUrl.body.error, "Invalid request");
 });
 
 test("submission queue enforces review before local submission", async () => {
@@ -359,7 +369,7 @@ test("submission queue enforces review before local submission", async () => {
   );
   const blocked = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",
-    body: "{}",
+    body: JSON.stringify({ confirmedByUser: true }),
   });
   assert.equal(blocked.res.status, 409);
   const checklist = packet.body.checklist.map((item) => ({
@@ -371,9 +381,15 @@ test("submission queue enforces review before local submission", async () => {
     body: JSON.stringify({ checklist, status: "ready" }),
   });
   assert.equal(ready.body.status, "ready");
-  const submitted = await req(`/api/submissions/${packet.body.id}/submit`, {
+  const unconfirmed = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",
     body: "{}",
+  });
+  assert.equal(unconfirmed.res.status, 409);
+  assert.match(unconfirmed.body.error, /explicit user confirmation/i);
+  const submitted = await req(`/api/submissions/${packet.body.id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedByUser: true }),
   });
   assert.equal(submitted.res.status, 200);
   assert.equal(submitted.body.status, "submitted");

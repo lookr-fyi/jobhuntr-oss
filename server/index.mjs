@@ -48,6 +48,14 @@ const safeText = (value, max = 10000) =>
     .slice(0, max);
 const safeDueDate = (value) =>
   /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
+const isSafeHttpUrl = (value) => {
+  if (!value) return true;
+  try {
+    return ["http:", "https:"].includes(new URL(value).protocol);
+  } catch {
+    return false;
+  }
+};
 
 const ProfileSchema = z.object({
   onboarded: z.boolean().optional(),
@@ -83,15 +91,53 @@ const ProfileSchema = z.object({
 });
 
 const JobSchema = z.object({
-  company: z.string().min(1),
-  title: z.string().min(1),
-  location: z.string().optional().default(""),
-  url: z.string().optional().default(""),
-  source: z.string().optional().default("Manual"),
-  salary: z.string().optional().default(""),
-  description: z.string().optional().default(""),
-  tags: z.array(z.string()).optional().default([]),
-  status: z.string().optional().default("saved"),
+  company: z.string().trim().min(1).max(300),
+  title: z.string().trim().min(1).max(500),
+  location: z.string().max(500).optional().default(""),
+  url: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine(isSafeHttpUrl, "Job URL must use HTTP or HTTPS")
+    .optional()
+    .default(""),
+  source: z.string().max(200).optional().default("Manual"),
+  salary: z.string().max(300).optional().default(""),
+  description: z.string().max(100000).optional().default(""),
+  tags: z.array(z.string().max(200)).max(100).optional().default([]),
+  status: z.string().max(50).optional().default("saved"),
+});
+const JobPatchSchema = z.object({
+  company: z.string().trim().min(1).max(300).optional(),
+  title: z.string().trim().min(1).max(500).optional(),
+  location: z.string().max(500).optional(),
+  url: z
+    .string()
+    .trim()
+    .max(2000)
+    .refine(isSafeHttpUrl, "Job URL must use HTTP or HTTPS")
+    .optional(),
+  source: z.string().max(200).optional(),
+  salary: z.string().max(300).optional(),
+  description: z.string().max(100000).optional(),
+  tags: z.array(z.string().max(200)).max(100).optional(),
+  status: z.string().max(50).optional(),
+  interviewRounds: z
+    .array(
+      z.object({
+        id: z.string().max(200),
+        roundType: z.string().max(200).optional().default("Interview Round"),
+        number: z.string().max(50).optional().default(""),
+        date: z.string().max(50).optional().default(""),
+        notes: z.string().max(10000).optional().default(""),
+        status: z.string().max(50).optional().default("scheduled"),
+        outcome: z.string().max(50).optional().default("pending"),
+        createdAt: z.string().max(100).optional(),
+        updatedAt: z.string().max(100).optional(),
+      }),
+    )
+    .max(50)
+    .optional(),
 });
 const TemplateSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -248,12 +294,13 @@ app.post("/api/jobs", async (req, res) => {
   res.status(job.deduplicated ? 200 : 201).json(job);
 });
 app.patch("/api/jobs/:id", async (req, res) => {
+  const changes = JobPatchSchema.parse(req.body || {});
   const job = await mutate((db) => {
     const item = db.jobs.find((j) => j.id === req.params.id);
     if (!item) return null;
     const previousStatus = item.status;
-    Object.assign(item, req.body, { updatedAt: timestamp() });
-    if (req.body.status && req.body.status !== previousStatus)
+    Object.assign(item, changes, { updatedAt: timestamp() });
+    if (changes.status && changes.status !== previousStatus)
       (item.statusHistory ||= []).unshift({
         status: req.body.status,
         at: timestamp(),
@@ -791,6 +838,11 @@ app.patch("/api/submissions/:id", async (req, res) => {
   res.json(submission);
 });
 app.post("/api/submissions/:id/submit", async (req, res) => {
+  if (req.body?.confirmedByUser !== true)
+    return res.status(409).json({
+      error:
+        "Explicit user confirmation is required before recording an external submission",
+    });
   const submission = await mutate((db) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
