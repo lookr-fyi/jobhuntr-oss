@@ -751,8 +751,14 @@ test(
       const trackerInsightsState = await (
         await page.request.get(`${baseUrl}/api/state`)
       ).json();
-      const insightsJobId = trackerInsightsState.submissions[0].jobId;
+      const activeTrackerSubmission = trackerInsightsState.submissions.find(
+        (submission) => !["submitted", "archived"].includes(submission.status),
+      );
+      const insightsJobId = activeTrackerSubmission.jobId;
       await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
+      await page
+        .getByRole("button", { name: "Go to Submission Queue" })
+        .waitFor();
       const atsAnalysis = page.getByRole("region", { name: "ATS Analysis" });
       await atsAnalysis.waitFor();
       await atsAnalysis

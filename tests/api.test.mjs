@@ -119,6 +119,11 @@ test("agent run saves matches and logs actions", async () => {
     state.jobs.filter((job) => job.workflowRunId === run.body.id).length,
     run.body.added,
   );
+  assert.ok(
+    state.jobs
+      .filter((job) => job.workflowRunId === run.body.id)
+      .every((job) => job.status === "interested"),
+  );
   assert.equal(
     state.submissions.filter((item) => item.atsDecision).length,
     run.body.queued,
@@ -293,6 +298,11 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(packet.res.status, 201);
   assert.equal(packet.body.status, "draft");
+  const queuedJob = (await req("/api/state")).body.jobs.find(
+    (job) => job.id === state.jobs[0].id,
+  );
+  assert.equal(queuedJob.status, "interested");
+  assert.equal(queuedJob.statusHistory[0].status, "interested");
   assert.equal(packet.body.applicationQuestions.length, 4);
   assert.equal(packet.body.applicationQuestions[2].questionType, "dropdown");
   assert.deepEqual(packet.body.applicationQuestions[2].options, [

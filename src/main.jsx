@@ -660,7 +660,9 @@ function App() {
         {tab === "overview" && (
           <Overview state={state} setTab={setTab} reload={load} />
         )}{" "}
-        {tab === "tracker" && <Tracker state={state} reload={load} />}{" "}
+        {tab === "tracker" && (
+          <Tracker state={state} reload={load} setTab={setTab} />
+        )}{" "}
         {tab === "board" && <Board state={state} reload={load} />}{" "}
         {tab === "queue" && (
           <Queue state={state} reload={load} setTab={setTab} />
@@ -1376,7 +1378,7 @@ function Overview({ state, setTab, reload }) {
     </section>
   );
 }
-function Tracker({ state, reload }) {
+function Tracker({ state, reload, setTab }) {
   const stages = TRACKER_STAGES;
   const trackerParams = new URLSearchParams(
     window.location.hash.split("?")[1] || "",
@@ -1925,6 +1927,23 @@ function Tracker({ state, reload }) {
                   submission={jobSubmission}
                   profile={state.profile}
                 />
+                {jobSubmission &&
+                  !["submitted", "archived"].includes(jobSubmission.status) && (
+                    <div className="v2-tracker-primary-actions">
+                      <button
+                        onClick={() => {
+                          window.history.pushState(
+                            { tab: "queue", packet: jobSubmission.id },
+                            "",
+                            `#/queue?packet=${encodeURIComponent(jobSubmission.id)}`,
+                          );
+                          setTab("queue");
+                        }}
+                      >
+                        Go to Submission Queue
+                      </button>
+                    </div>
+                  )}
                 {["interview", "offer", "rejected"].includes(job.status) && (
                   <InterviewRounds job={job} reload={reload} />
                 )}

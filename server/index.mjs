@@ -677,6 +677,16 @@ app.post("/api/submissions", async (req, res) => {
       updatedAt: timestamp(),
     };
     db.submissions.unshift(item);
+    if (["saved", "interested"].includes(job.status)) {
+      job.status = "interested";
+      job.updatedAt = timestamp();
+      if (job.statusHistory?.[0]?.status !== "interested")
+        (job.statusHistory ||= []).unshift({
+          status: "interested",
+          at: timestamp(),
+          source: "submission-queue",
+        });
+    }
     auditEvent(
       db,
       "submission",
@@ -1263,6 +1273,13 @@ app.post("/api/agent-runs/start", async (req, res) => {
           ],
           createdAt: timestamp(),
           updatedAt: timestamp(),
+        });
+        savedJob.status = "interested";
+        savedJob.updatedAt = timestamp();
+        savedJob.statusHistory.unshift({
+          status: "interested",
+          at: timestamp(),
+          source: "infinite-hunt",
         });
         queued++;
       }
