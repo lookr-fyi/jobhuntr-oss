@@ -81,6 +81,28 @@ const maximumListedSalary = (job) => {
     });
   return values?.length ? Math.max(...values) : 0;
 };
+const boardJobType = (job) =>
+  /contract|freelance|temporary/i.test(
+    `${job.title || ""} ${job.description || ""} ${(job.tags || []).join(" ")}`,
+  )
+    ? "contract"
+    : /intern/i.test(`${job.title || ""} ${(job.tags || []).join(" ")}`)
+      ? "internship"
+      : "full-time";
+const boardSeniority = (job) => {
+  const text = `${job.title || ""} ${(job.tags || []).join(" ")}`;
+  if (/principal|staff|lead|head|director|founding/i.test(text)) return "lead";
+  if (/senior|sr\.?\b/i.test(text)) return "senior";
+  if (/junior|jr\.?\b|entry|associate|intern/i.test(text)) return "entry";
+  return "mid";
+};
+const boardSponsorship = (job) => {
+  const text = `${job.description || ""} ${(job.tags || []).join(" ")}`;
+  if (/no (visa |work )?sponsor|cannot sponsor|without sponsorship/i.test(text))
+    return "no";
+  if (/visa|sponsor|immigration|work authorization/i.test(text)) return "yes";
+  return "unknown";
+};
 const formatRelativeTime = (value) => {
   const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
   const minutes = Math.floor(elapsed / 60000);
@@ -2516,6 +2538,9 @@ function Board({ state, reload }) {
   const [minimumFit, setMinimumFit] = useState(0);
   const [minimumSalary, setMinimumSalary] = useState(0);
   const [remoteType, setRemoteType] = useState("all");
+  const [jobType, setJobType] = useState("all");
+  const [seniority, setSeniority] = useState("all");
+  const [sponsorship, setSponsorship] = useState("all");
   const [source, setSource] = useState("all");
   const [sort, setSort] = useState("fit");
   const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
@@ -2550,6 +2575,9 @@ function Board({ state, reload }) {
               (remoteType === "remote"
                 ? /remote|anywhere/i.test(job.location)
                 : !/remote|anywhere/i.test(job.location))) &&
+            (jobType === "all" || boardJobType(job) === jobType) &&
+            (seniority === "all" || boardSeniority(job) === seniority) &&
+            (sponsorship === "all" || boardSponsorship(job) === sponsorship) &&
             (source === "all" || job.source === source),
         )
         .sort((a, b) =>
@@ -2561,7 +2589,17 @@ function Board({ state, reload }) {
                 ? a.company.localeCompare(b.company)
                 : a.title.localeCompare(b.title),
         ),
-    [results, minimumFit, minimumSalary, remoteType, source, sort],
+    [
+      results,
+      minimumFit,
+      minimumSalary,
+      remoteType,
+      jobType,
+      seniority,
+      sponsorship,
+      source,
+      sort,
+    ],
   );
   const selected =
     visibleResults.find((job) => job.url === selectedUrl) || visibleResults[0];
@@ -2590,6 +2628,9 @@ function Board({ state, reload }) {
     minimumFit > 0,
     minimumSalary > 0,
     remoteType !== "all",
+    jobType !== "all",
+    seniority !== "all",
+    sponsorship !== "all",
     source !== "all",
   ].filter(Boolean).length;
   const queueJob = async (job) => {
@@ -2734,6 +2775,46 @@ function Board({ state, reload }) {
             </select>
           </label>
           <label>
+            Job type
+            <select
+              aria-label="Board job type"
+              value={jobType}
+              onChange={(event) => setJobType(event.target.value)}
+            >
+              <option value="all">All job types</option>
+              <option value="full-time">Full-time</option>
+              <option value="contract">Contract</option>
+              <option value="internship">Internship</option>
+            </select>
+          </label>
+          <label>
+            Seniority
+            <select
+              aria-label="Board seniority"
+              value={seniority}
+              onChange={(event) => setSeniority(event.target.value)}
+            >
+              <option value="all">All levels</option>
+              <option value="entry">Entry level</option>
+              <option value="mid">Mid level</option>
+              <option value="senior">Senior</option>
+              <option value="lead">Lead / Staff+</option>
+            </select>
+          </label>
+          <label>
+            Visa sponsorship
+            <select
+              aria-label="Board visa sponsorship"
+              value={sponsorship}
+              onChange={(event) => setSponsorship(event.target.value)}
+            >
+              <option value="all">Any sponsorship status</option>
+              <option value="yes">Sponsorship mentioned</option>
+              <option value="no">No sponsorship</option>
+              <option value="unknown">Not specified</option>
+            </select>
+          </label>
+          <label>
             Sort by
             <select
               value={sort}
@@ -2757,6 +2838,9 @@ function Board({ state, reload }) {
               setMinimumFit(0);
               setMinimumSalary(0);
               setRemoteType("all");
+              setJobType("all");
+              setSeniority("all");
+              setSponsorship("all");
               setSource("all");
               setSort("fit");
               setQ("");
