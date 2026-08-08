@@ -96,6 +96,26 @@ test("can add and update a tracked job", async () => {
   assert.equal(contact.body.name, "Alex Recruiter");
 });
 
+test("v2 personal profile details persist with bounded local input", async () => {
+  const updated = await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      firstName: "Ada",
+      lastName: "Lovelace",
+      nickname: "Analytical Builder",
+    }),
+  });
+  assert.equal(updated.res.status, 200);
+  assert.equal(updated.body.firstName, "Ada");
+  assert.equal(updated.body.lastName, "Lovelace");
+  assert.equal(updated.body.nickname, "Analytical Builder");
+  const invalid = await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ nickname: "x".repeat(101) }),
+  });
+  assert.equal(invalid.res.status, 400);
+});
+
 test("agent run saves matches and logs actions", async () => {
   const run = await req("/api/agent-runs/start", {
     method: "POST",

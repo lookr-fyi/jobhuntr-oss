@@ -1200,6 +1200,25 @@ test(
       assert.equal(new URL(page.url()).hash, "#/settings");
       await page.reload();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
+      await page.getByLabel("First name").fill("E2E");
+      await page.getByLabel("Last name").fill("Hunter");
+      await page.getByLabel("Nickname (for job cards)").fill("E2E Builder");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save profile" }).click(),
+      ]);
+      await page.reload();
+      assert.equal(await page.getByLabel("First name").inputValue(), "E2E");
+      assert.equal(await page.getByLabel("Last name").inputValue(), "Hunter");
+      assert.equal(
+        await page.getByLabel("Nickname (for job cards)").inputValue(),
+        "E2E Builder",
+      );
       await page.getByRole("tab", { name: "Coaches" }).click();
       await page.getByRole("heading", { name: "Coaching activity" }).waitFor();
       await page.getByText("Only you can access this workspace").waitFor();
@@ -1354,6 +1373,9 @@ test(
       );
       assert.equal(persisted.coverLetters[0].title, "E2E product letter");
       assert.equal(persisted.profile.preferences.atsThreshold, 85);
+      assert.equal(persisted.profile.firstName, "E2E");
+      assert.equal(persisted.profile.lastName, "Hunter");
+      assert.equal(persisted.profile.nickname, "E2E Builder");
       assert.equal(persisted.profileAudits.length, 1);
       assert.ok(
         persisted.jobs.some(

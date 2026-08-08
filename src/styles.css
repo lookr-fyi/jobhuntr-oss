@@ -2117,7 +2117,21 @@ button:disabled {
   display: grid;
   grid-template-columns: 0.8fr 1.4fr 0.8fr;
   gap: 14px;
-  margin: 22px 0 16px;
+  margin: 0;
+}
+.v2-user-details-section {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+.v2-user-details-section h4 {
+  margin: 0 0 16px;
+  color: #1e293b;
+}
+.v2-user-details-section.professional .v2-user-details-grid {
+  grid-template-columns: 1.4fr 0.8fr;
 }
 .v2-user-details-grid label,
 .v2-about-panel label {
@@ -2126,6 +2140,14 @@ button:disabled {
   color: #475569;
   font-size: 12px;
   font-weight: 700;
+}
+.v2-user-details-grid label small {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 400;
+}
+.v2-user-profile-card > button {
+  margin-top: 16px;
 }
 .v2-usage-section {
   display: flex;
@@ -2525,6 +2547,7 @@ button:disabled {
     border-top: 1px solid #e2e8f0;
   }
   .v2-user-details-grid,
+  .v2-user-details-section.professional .v2-user-details-grid,
   .v2-usage-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -2534,6 +2557,7 @@ button:disabled {
     padding: 11px 14px;
   }
   .v2-user-details-grid,
+  .v2-user-details-section.professional .v2-user-details-grid,
   .v2-usage-grid {
     grid-template-columns: 1fr;
   }

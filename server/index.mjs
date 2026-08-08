@@ -49,6 +49,39 @@ const safeText = (value, max = 10000) =>
 const safeDueDate = (value) =>
   /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
 
+const ProfileSchema = z.object({
+  onboarded: z.boolean().optional(),
+  name: z.string().max(200).optional(),
+  firstName: z.string().max(100).optional(),
+  lastName: z.string().max(100).optional(),
+  nickname: z.string().max(100).optional(),
+  headline: z.string().max(1000).optional(),
+  location: z.string().max(300).optional(),
+  targetRoles: z.array(z.string().max(200)).max(100).optional(),
+  skills: z.array(z.string().max(200)).max(200).optional(),
+  resumeText: z.string().max(200000).optional(),
+  additionalInfo: z.string().max(100000).optional(),
+  faqAnswers: z
+    .array(
+      z.object({
+        id: z.string().max(200).optional(),
+        question: z.string().max(1000),
+        answer: z.string().max(30000).optional().default(""),
+      }),
+    )
+    .max(100)
+    .optional(),
+  preferences: z
+    .object({
+      remote: z.boolean().optional(),
+      locations: z.array(z.string().max(300)).max(100).optional(),
+      minSalary: z.coerce.number().min(0).max(100000000).optional(),
+      weeklyApplicationGoal: z.coerce.number().int().min(1).max(100).optional(),
+      atsThreshold: z.coerce.number().min(0).max(100).optional(),
+    })
+    .optional(),
+});
+
 const JobSchema = z.object({
   company: z.string().min(1),
   title: z.string().min(1),
@@ -117,7 +150,7 @@ app.get("/api/summary", async (_req, res) => {
   res.json(summarize(db));
 });
 app.put("/api/profile", async (req, res) => {
-  const profile = req.body || {};
+  const profile = ProfileSchema.parse(req.body || {});
   const db = await mutate((db) => {
     db.profile = {
       ...db.profile,

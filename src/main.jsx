@@ -9517,6 +9517,11 @@ function SettingsPage({ state, reload, setTab }) {
   const [faqDeleteTarget, setFaqDeleteTarget] = useState(null);
   const [form, setForm] = useState({
     ...p,
+    firstName: p.firstName || (p.name || "").trim().split(/\s+/)[0] || "",
+    lastName:
+      p.lastName || (p.name || "").trim().split(/\s+/).slice(1).join(" "),
+    nickname:
+      p.nickname || (p.name || "").trim().split(/\s+/)[0] || "Job Hunter",
     skills: (p.skills || []).join(", "),
     targetRoles: (p.targetRoles || []).join(", "),
     locations: (p.preferences?.locations || []).join(", "),
@@ -9530,11 +9535,15 @@ function SettingsPage({ state, reload, setTab }) {
   });
   const save = async () => {
     setSaved(false);
+    const fullName = `${form.firstName || ""} ${form.lastName || ""}`.trim();
     await api("/api/profile", {
       method: "PUT",
       body: JSON.stringify({
         onboarded: true,
-        name: form.name,
+        name: fullName || form.name,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        nickname: form.nickname,
         headline: form.headline,
         location: form.location,
         skills: form.skills
@@ -9566,6 +9575,10 @@ function SettingsPage({ state, reload, setTab }) {
     await reload();
     setSaved(true);
   };
+  const profileDisplayName =
+    `${form.firstName || ""} ${form.lastName || ""}`.trim() ||
+    form.name ||
+    "Job Hunter";
   const usage = [
     ["AI Resumes", state.resumes.length, "versions created"],
     ["Cover Letters", state.coverLetters.length, "letters created"],
@@ -9685,30 +9698,53 @@ function SettingsPage({ state, reload, setTab }) {
           <h3>Profile Information</h3>
           <div className="v2-user-identity">
             <span className="v2-user-avatar-large">
-              {(form.name || "J").slice(0, 1).toUpperCase()}
+              {profileDisplayName.slice(0, 1).toUpperCase()}
             </span>
             <div>
-              <h3>{form.name || "Job Hunter"}</h3>
+              <h3>{profileDisplayName}</h3>
               <p>{form.headline || "Add your professional headline"}</p>
               <small>{form.location || "Location not set"}</small>
             </div>
           </div>
-          <div className="v2-user-details-grid">
-            {["name", "headline", "location"].map((key) => (
-              <label key={key}>
-                {key === "name"
-                  ? "Display name"
-                  : key === "headline"
-                    ? "Professional headline"
-                    : "Location"}
-                <input
-                  value={form[key] || ""}
-                  onChange={(event) =>
-                    setForm({ ...form, [key]: event.target.value })
-                  }
-                />
-              </label>
-            ))}
+          <div className="v2-user-details-section">
+            <h4>Personal details</h4>
+            <div className="v2-user-details-grid personal">
+              {[
+                ["firstName", "First name", "First name"],
+                ["lastName", "Last name", "Last name"],
+                ["nickname", "Nickname (for job cards)", "Your nickname"],
+              ].map(([key, label, placeholder]) => (
+                <label key={key}>
+                  {label}
+                  <input
+                    value={form[key] || ""}
+                    placeholder={placeholder}
+                    onChange={(event) =>
+                      setForm({ ...form, [key]: event.target.value })
+                    }
+                  />
+                  {key === "nickname" && (
+                    <small>Shown on local leaderboards and job cards.</small>
+                  )}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="v2-user-details-section professional">
+            <h4>Professional details</h4>
+            <div className="v2-user-details-grid">
+              {["headline", "location"].map((key) => (
+                <label key={key}>
+                  {key === "headline" ? "Professional headline" : "Location"}
+                  <input
+                    value={form[key] || ""}
+                    onChange={(event) =>
+                      setForm({ ...form, [key]: event.target.value })
+                    }
+                  />
+                </label>
+              ))}
+            </div>
           </div>
           <button onClick={save}>
             <Save size={16} /> Save profile
