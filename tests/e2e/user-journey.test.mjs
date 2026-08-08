@@ -275,6 +275,23 @@ test(
         true,
         "run details should restore focus to the selected run",
       );
+      const runState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const linkedRunId = runState.agentRuns[0].id;
+      await page.goto(`${baseUrl}/#/runs?run=${linkedRunId}`);
+      const linkedRunDialog = page.getByRole("dialog", {
+        name: "Software Engineer",
+      });
+      await linkedRunDialog.waitFor();
+      await page.reload();
+      await linkedRunDialog.waitFor();
+      assert.match(page.url(), new RegExp(`run=${linkedRunId}`));
+      await linkedRunDialog
+        .getByRole("button", { name: "Close", exact: true })
+        .click();
+      await linkedRunDialog.waitFor({ state: "hidden" });
+      assert.match(page.url(), /#\/runs$/);
       await assertAccessible(page, "All Runs");
       const huntStatus = page.getByRole("button", {
         name: "Open Infinite Hunting status",

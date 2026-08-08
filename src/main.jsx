@@ -7247,11 +7247,16 @@ function Agent({ state, reload, setTab }) {
   );
 }
 function RunsPage({ state, setTab, reload }) {
-  const runs = state.agentRuns || [];
+  const runs = state.agentRuns;
+  const linkedRunId = new URLSearchParams(
+    window.location.hash.split("?")[1] || "",
+  ).get("run");
   const [query, setQuery] = useState("");
   const [hideZero, setHideZero] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
-  const [selectedRun, setSelectedRun] = useState(null);
+  const [selectedRun, setSelectedRun] = useState(
+    () => runs.find((run) => run.id === linkedRunId) || null,
+  );
   const [deleteIds, setDeleteIds] = useState([]);
   const runCloseRef = useRef(null);
   const visibleRuns = runs.filter((run) => {
@@ -7303,6 +7308,21 @@ function RunsPage({ state, setTab, reload }) {
       returnFocus?.focus?.();
     };
   }, [selectedRun]);
+  useEffect(() => {
+    const hash = selectedRun ? `#/runs?run=${selectedRun.id}` : "#/runs";
+    if (window.location.hash !== hash)
+      window.history.replaceState({ tab: "runs" }, "", hash);
+  }, [selectedRun]);
+  useEffect(() => {
+    const followLinkedRun = () => {
+      const id = new URLSearchParams(
+        window.location.hash.split("?")[1] || "",
+      ).get("run");
+      if (id) setSelectedRun(runs.find((run) => run.id === id) || null);
+    };
+    window.addEventListener("hashchange", followLinkedRun);
+    return () => window.removeEventListener("hashchange", followLinkedRun);
+  }, [runs]);
   return (
     <section className="v2-runs-page">
       <div className="v2-page-intro">
