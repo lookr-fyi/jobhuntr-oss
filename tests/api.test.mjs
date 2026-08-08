@@ -241,6 +241,24 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(packet.res.status, 201);
   assert.equal(packet.body.status, "draft");
+  assert.equal(packet.body.applicationQuestions.length, 4);
+  const questions = packet.body.applicationQuestions.map((question, index) =>
+    index === 0
+      ? { ...question, answer: "I build products that match this mission." }
+      : question,
+  );
+  const answered = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ applicationQuestions: questions }),
+  });
+  assert.equal(
+    answered.body.applicationQuestions[0].answer,
+    "I build products that match this mission.",
+  );
+  assert.equal(
+    (await req("/api/state")).body.profile.faqAnswers[0].answer,
+    "I build products that match this mission.",
+  );
   const blocked = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",
     body: "{}",

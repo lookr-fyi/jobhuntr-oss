@@ -5715,6 +5715,67 @@ main > header.integrated-page-header {
   font-size: 11px;
   font-weight: 700;
 }
+.v2-packet-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.v2-packet-section-heading h4,
+.v2-packet-section-heading p {
+  margin: 0;
+}
+.v2-packet-section-heading p {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+}
+.v2-packet-section-heading > span {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  color: #475569;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-size: 10px;
+  font-weight: 700;
+}
+.v2-application-questions {
+  display: grid;
+  gap: 10px;
+}
+.v2-application-questions > label {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.v2-application-questions > label > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v2-application-questions em {
+  padding: 3px 6px;
+  color: #166534;
+  border-radius: 999px;
+  background: #dcfce7;
+  font-size: 9px;
+  font-style: normal;
+}
+.v2-application-questions textarea {
+  min-height: 56px;
+  margin: 0;
+  resize: vertical;
+  background: #fff;
+  font-size: 12px;
+}
 .v2-packet-checklist .check:last-child {
   border-bottom: 0;
 }

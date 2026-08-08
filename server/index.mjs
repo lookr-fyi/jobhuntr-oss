@@ -582,6 +582,25 @@ app.get("/api/submissions", async (_req, res) => {
     })),
   );
 });
+const applicationQuestionsFor = (db) => {
+  const defaults = [
+    "Why are you interested in this role?",
+    "What are your salary expectations?",
+    "When are you available to start?",
+    "Will you require work authorization sponsorship?",
+  ];
+  return defaults.map((question) => ({
+    id: nanoid(),
+    question,
+    answer:
+      (db.profile.faqAnswers || []).find(
+        (item) =>
+          String(item.question).trim().toLowerCase() === question.toLowerCase(),
+      )?.answer || "",
+    questionType: "text_input",
+    confident: false,
+  }));
+};
 app.post("/api/submissions", async (req, res) => {
   const submission = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.body.jobId);
@@ -596,6 +615,7 @@ app.post("/api/submissions", async (req, res) => {
       resumeId: safeText(req.body.resumeId, 50),
       coverLetterId: safeText(req.body.coverLetterId, 50),
       status: "draft",
+      applicationQuestions: applicationQuestionsFor(db),
       checklist: [
         {
           id: nanoid(),
@@ -633,6 +653,38 @@ app.patch("/api/submissions/:id", async (req, res) => {
       item.resumeId = safeText(req.body.resumeId, 50);
     if (req.body.coverLetterId !== undefined)
       item.coverLetterId = safeText(req.body.coverLetterId, 50);
+    if (Array.isArray(req.body.applicationQuestions)) {
+      item.applicationQuestions = req.body.applicationQuestions
+        .slice(0, 30)
+        .map((question) => ({
+          id: safeText(question.id, 80) || nanoid(),
+          question: safeText(question.question, 500),
+          answer: safeText(question.answer, 10000),
+          questionType: ["text_input", "dropdown", "multiple_choice"].includes(
+            question.questionType,
+          )
+            ? question.questionType
+            : "text_input",
+          options: Array.isArray(question.options)
+            ? question.options
+                .map((option) => safeText(option, 500))
+                .filter(Boolean)
+                .slice(0, 30)
+            : [],
+          confident: Boolean(question.answer),
+        }))
+        .filter((question) => question.question);
+      db.profile.faqAnswers = item.applicationQuestions.map((question) => ({
+        question: question.question,
+        answer: question.answer,
+      }));
+      auditEvent(
+        db,
+        "about-me",
+        "Remembered application answers in the About Me profile.",
+        { submissionId: item.id },
+      );
+    }
     if (
       req.body.status &&
       ["draft", "ready", "submitted", "archived"].includes(req.body.status)
@@ -1092,6 +1144,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
           atsScore: original.score,
           atsThreshold: threshold,
           atsDecision: decision,
+          applicationQuestions: applicationQuestionsFor(db),
           checklist: [
             { id: nanoid(), text: "Review resume alignment", done: true },
             { id: nanoid(), text: "Review cover letter", done: false },

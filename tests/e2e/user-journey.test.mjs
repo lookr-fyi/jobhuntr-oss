@@ -373,7 +373,22 @@ test(
       await page.getByText("Application documents", { exact: true }).waitFor();
       await page.getByText("Job description", { exact: true }).waitFor();
       await page.getByRole("link", { name: /Apply manually/ }).waitFor();
-      await page.getByRole("button", { name: "Filters" }).click();
+      const interestAnswer = page.getByLabel(
+        "Why are you interested in this role?",
+      );
+      await interestAnswer.fill(
+        "I enjoy building reliable user-facing products.",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Filters" }).click(),
+      ]);
+      await page.getByText("1/4 answered").waitFor();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
       await page
         .locator(".v2-ats-recommendation", { hasText: "ATS resume generated" })
@@ -691,19 +706,6 @@ test(
         page.getByRole("button", { name: "Save About Me" }).click(),
       ]);
       await page.getByText("Changes saved locally.").waitFor();
-      await page.getByRole("button", { name: "Generate FAQ" }).click();
-      await page
-        .getByLabel("Why are you interested in this role?")
-        .fill("I enjoy building reliable user-facing products.");
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().endsWith("/api/profile") &&
-            response.request().method() === "PUT" &&
-            response.ok(),
-        ),
-        page.getByRole("button", { name: "Save FAQ answers" }).click(),
-      ]);
       await page.reload();
       await page.getByRole("tab", { name: "About Me" }).click();
       assert.equal(

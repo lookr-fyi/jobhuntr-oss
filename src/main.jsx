@@ -2709,7 +2709,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       method: "PATCH",
       body: JSON.stringify(body),
     });
-    reload();
+    await reload();
   };
   const updateChecklist = async (id, done) => {
     const checklist = s.checklist.map((x) =>
@@ -2719,6 +2719,15 @@ function SubmissionCard({ submission: s, state, reload }) {
       checklist,
       status: checklist.every((x) => x.done) ? "ready" : "draft",
     });
+  };
+  const updateQuestion = async (id, answer) => {
+    const applicationQuestions = (s.applicationQuestions || []).map(
+      (question) =>
+        question.id === id
+          ? { ...question, answer, confident: true }
+          : question,
+    );
+    await updatePacket({ applicationQuestions });
   };
   return (
     <div className="packet">
@@ -2811,6 +2820,43 @@ function SubmissionCard({ submission: s, state, reload }) {
           </div>
         )}
       </section>
+      {!!s.applicationQuestions?.length && (
+        <section className="v2-packet-section v2-application-questions">
+          <div className="v2-packet-section-heading">
+            <div>
+              <h4>Application Questions</h4>
+              <p>
+                Answers are remembered in About Me for your next application.
+              </p>
+            </div>
+            <span>
+              {
+                s.applicationQuestions.filter((question) =>
+                  question.answer?.trim(),
+                ).length
+              }
+              /{s.applicationQuestions.length} answered
+            </span>
+          </div>
+          {s.applicationQuestions.map((question) => (
+            <label key={question.id}>
+              <span>
+                {question.question}
+                {question.answer?.trim() && <em>Remembered</em>}
+              </span>
+              <textarea
+                rows={2}
+                defaultValue={question.answer || ""}
+                placeholder="Enter your answer…"
+                onBlur={(event) => {
+                  if (event.target.value !== (question.answer || ""))
+                    updateQuestion(question.id, event.target.value);
+                }}
+              />
+            </label>
+          ))}
+        </section>
+      )}
       <section className="v2-packet-section v2-packet-checklist">
         <h4>Review checklist</h4>
         {s.checklist.map((item) => (

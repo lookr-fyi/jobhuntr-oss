@@ -154,6 +154,27 @@ function migrate(db) {
   db.coverLetters ||= [];
   db.templates ||= defaultTemplates();
   db.submissions ||= [];
+  for (const submission of db.submissions) {
+    if (!Array.isArray(submission.applicationQuestions)) {
+      submission.applicationQuestions = [
+        "Why are you interested in this role?",
+        "What are your salary expectations?",
+        "When are you available to start?",
+        "Will you require work authorization sponsorship?",
+      ].map((question) => ({
+        id: nanoid(),
+        question,
+        answer:
+          (db.profile.faqAnswers || []).find(
+            (item) =>
+              String(item.question).trim().toLowerCase() ===
+              question.toLowerCase(),
+          )?.answer || "",
+        questionType: "text_input",
+        confident: false,
+      }));
+    }
+  }
   db.coachingSessions ||= [];
   db.outreachDrafts ||= [];
   db.huntPresets ||= [];
@@ -184,7 +205,7 @@ function migrate(db) {
       { status: job.status || "saved", at: job.createdAt || now() },
     ];
   }
-  db.meta.version = 8;
+  db.meta.version = 9;
   return db;
 }
 
