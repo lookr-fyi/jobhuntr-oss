@@ -20,8 +20,23 @@ test(
         env: { ...process.env, JOBHUNTR_DATA_DIR: dataDir },
       });
       const window = await electronApp.firstWindow();
-      await window.getByRole("button", { name: "Use demo profile" }).click();
+      await window.getByRole("button", { name: "Set up my workspace" }).click();
+      await window.getByLabel("Your name").fill("Electron User");
+      await window.getByLabel("Primary target role").fill("Product Engineer");
+      await window.getByLabel("Home location").fill("Seattle, WA");
+      await window.getByRole("button", { name: /Continue/ }).click();
+      await window
+        .getByLabel("Skills, comma-separated")
+        .fill("React, TypeScript, Product Strategy");
+      await window.getByRole("button", { name: /Continue/ }).click();
+      await window.getByLabel("Preferred locations").fill("Seattle, Remote");
+      await window.getByLabel("Minimum salary").fill("150000");
+      await window.getByLabel("Weekly application goal").fill("7");
+      await window
+        .getByRole("button", { name: "Open my command center" })
+        .click();
       await window.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await window.getByText("Welcome back, Electron").waitFor();
       assert.equal(await window.title(), "JobHuntr");
       const security = await electronApp.evaluate(({ BrowserWindow }) => {
         const preferences =

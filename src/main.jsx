@@ -208,95 +208,258 @@ function App() {
 }
 function Onboarding({ profile, reload }) {
   const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "",
     role: profile.targetRoles?.[0] || "Software Engineer",
     skills: (profile.skills || []).join(", "),
+    location: profile.location || "United States",
+    preferredLocations: (profile.preferences?.locations || ["Remote"]).join(
+      ", ",
+    ),
+    minSalary: profile.preferences?.minSalary || 120000,
+    weeklyGoal: profile.preferences?.weeklyApplicationGoal || 5,
     remote: true,
   });
   const finish = async () => {
-    await api("/api/profile", {
-      method: "PUT",
-      body: JSON.stringify({
-        onboarded: true,
-        name: form.name || "Local Job Hunter",
-        targetRoles: [form.role].filter(Boolean),
-        skills: form.skills
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
-        preferences: { ...profile.preferences, remote: form.remote },
-      }),
-    });
-    reload();
+    setSaving(true);
+    try {
+      await api("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          onboarded: true,
+          name: form.name || "Local Job Hunter",
+          location: form.location,
+          headline: `${form.role} seeking high-impact teams`,
+          targetRoles: [form.role].filter(Boolean),
+          skills: form.skills
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean),
+          preferences: {
+            ...profile.preferences,
+            remote: form.remote,
+            locations: form.preferredLocations
+              .split(",")
+              .map((value) => value.trim())
+              .filter(Boolean),
+            minSalary: Number(form.minSalary) || 0,
+            weeklyApplicationGoal: Math.max(1, Number(form.weeklyGoal) || 5),
+          },
+        }),
+      });
+      await reload();
+    } finally {
+      setSaving(false);
+    }
   };
   return (
-    <div className="modal-backdrop">
-      <div className="onboarding">
-        {step === 0 && (
-          <>
-            <img
-              className="v2-onboarding-logo"
-              src={jobHuntrLogo}
-              alt="JobHuntr"
-            />
-            <span className="eyebrow">WELCOME TO JOBHUNTR</span>
-            <h2>Your job search stays yours.</h2>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-title"
+    >
+      <div className="onboarding-shell">
+        <aside className="v2-onboarding-aside">
+          <div className="v2-onboarding-brand">
+            <img src={jobHuntrLogo} alt="" />
+            <strong>JobHuntr</strong>
+          </div>
+          <div>
+            <span>PRIVATE DESKTOP WORKSPACE</span>
+            <h2>Quality over quantity, from day one.</h2>
             <p>
-              No signup, telemetry, hosted database, or required AI key.
-              Everything is saved to this computer and can be exported anytime.
+              Discover aligned roles, prepare stronger applications, and keep
+              every next step in one focused workspace.
             </p>
-            <button onClick={() => setStep(1)}>Set up my workspace</button>
-            <button className="text-button" onClick={finish}>
-              Use demo profile
-            </button>
-          </>
-        )}
-        {step === 1 && (
-          <>
-            <span className="eyebrow">STEP 1 OF 2</span>
-            <h2>What are you looking for?</h2>
-            <label>
-              Your name
-              <input
-                autoFocus
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Jane Doe"
+          </div>
+          <ul>
+            <li>
+              <CheckCircle2 size={16} /> Local-first and private
+            </li>
+            <li>
+              <CheckCircle2 size={16} /> Explainable job matching
+            </li>
+            <li>
+              <CheckCircle2 size={16} /> Human-reviewed submissions
+            </li>
+          </ul>
+        </aside>
+        <div className="onboarding">
+          <div
+            className="v2-onboarding-progress"
+            aria-label={`Setup step ${Math.max(1, step)} of 3`}
+          >
+            {[1, 2, 3].map((value) => (
+              <i key={value} className={step >= value ? "active" : ""} />
+            ))}
+          </div>
+          {step === 0 && (
+            <>
+              <img
+                className="v2-onboarding-logo"
+                src={jobHuntrLogo}
+                alt="JobHuntr"
               />
-            </label>
-            <label>
-              Primary target role
-              <input
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-              />
-            </label>
-            <button onClick={() => setStep(2)}>Continue</button>
-          </>
-        )}
-        {step === 2 && (
-          <>
-            <span className="eyebrow">STEP 2 OF 2</span>
-            <h2>Personalize local matching</h2>
-            <label>
-              Skills, comma-separated
-              <textarea
-                value={form.skills}
-                onChange={(e) => setForm({ ...form, skills: e.target.value })}
-              />
-            </label>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={form.remote}
-                onChange={(e) => setForm({ ...form, remote: e.target.checked })}
-              />{" "}
-              Include remote jobs
-            </label>
-            <button onClick={finish}>Open my command center</button>
-          </>
-        )}
+              <span className="eyebrow">WELCOME TO JOBHUNTR</span>
+              <h2 id="onboarding-title">Your job search stays yours.</h2>
+              <p>
+                No signup, telemetry, hosted database, or required AI key.
+                Everything is saved to this computer and can be exported
+                anytime.
+              </p>
+              <button onClick={() => setStep(1)}>
+                Set up my workspace <ChevronRight size={17} />
+              </button>
+              <button className="text-button" onClick={finish}>
+                Use demo profile
+              </button>
+            </>
+          )}
+          {step === 1 && (
+            <>
+              <span className="eyebrow">STEP 1 OF 3</span>
+              <h2 id="onboarding-title">What are you looking for?</h2>
+              <p>
+                Start with the role and identity JobHuntr should optimize for.
+              </p>
+              <label>
+                Your name
+                <input
+                  autoFocus
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Jane Doe"
+                />
+              </label>
+              <label>
+                Primary target role
+                <input
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                />
+              </label>
+              <label>
+                Home location
+                <input
+                  value={form.location}
+                  onChange={(e) =>
+                    setForm({ ...form, location: e.target.value })
+                  }
+                  placeholder="San Francisco, CA"
+                />
+              </label>
+              <div className="v2-onboarding-actions">
+                <button className="secondary" onClick={() => setStep(0)}>
+                  Back
+                </button>
+                <button disabled={!form.role.trim()} onClick={() => setStep(2)}>
+                  Continue <ChevronRight size={17} />
+                </button>
+              </div>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <span className="eyebrow">STEP 2 OF 3</span>
+              <h2 id="onboarding-title">Show us your strengths</h2>
+              <p>
+                Add the skills JobHuntr should prioritize when scoring roles.
+              </p>
+              <label>
+                Skills, comma-separated
+                <textarea
+                  value={form.skills}
+                  onChange={(e) => setForm({ ...form, skills: e.target.value })}
+                />
+              </label>
+              <div className="v2-skill-preview">
+                {form.skills
+                  .split(",")
+                  .map((skill) => skill.trim())
+                  .filter(Boolean)
+                  .slice(0, 8)
+                  .map((skill) => (
+                    <span key={skill}>{skill}</span>
+                  ))}
+              </div>
+              <div className="v2-onboarding-actions">
+                <button className="secondary" onClick={() => setStep(1)}>
+                  Back
+                </button>
+                <button
+                  disabled={!form.skills.trim()}
+                  onClick={() => setStep(3)}
+                >
+                  Continue <ChevronRight size={17} />
+                </button>
+              </div>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <span className="eyebrow">STEP 3 OF 3</span>
+              <h2 id="onboarding-title">Set your search preferences</h2>
+              <p>These defaults can be changed anytime in User Center.</p>
+              <label>
+                Preferred locations
+                <input
+                  value={form.preferredLocations}
+                  onChange={(e) =>
+                    setForm({ ...form, preferredLocations: e.target.value })
+                  }
+                />
+              </label>
+              <div className="double">
+                <label>
+                  Minimum salary
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.minSalary}
+                    onChange={(e) =>
+                      setForm({ ...form, minSalary: e.target.value })
+                    }
+                  />
+                </label>
+                <label>
+                  Weekly application goal
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={form.weeklyGoal}
+                    onChange={(e) =>
+                      setForm({ ...form, weeklyGoal: e.target.value })
+                    }
+                  />
+                </label>
+              </div>
+              <label className="check v2-onboarding-check">
+                <input
+                  type="checkbox"
+                  checked={form.remote}
+                  onChange={(e) =>
+                    setForm({ ...form, remote: e.target.checked })
+                  }
+                />{" "}
+                Include remote jobs
+              </label>
+              <div className="v2-onboarding-actions">
+                <button className="secondary" onClick={() => setStep(2)}>
+                  Back
+                </button>
+                <button disabled={saving} onClick={finish}>
+                  {saving ? "Creating workspace…" : "Open my command center"}
+                </button>
+              </div>
+            </>
+          )}
+          <small className="v2-onboarding-footnote">
+            No account, subscription, or cloud connection required.
+          </small>
+        </div>
       </div>
     </div>
   );

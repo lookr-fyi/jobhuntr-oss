@@ -450,13 +450,90 @@ button:disabled {
   z-index: 50;
   padding: 20px;
 }
+.onboarding-shell {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  width: min(920px, 100%);
+  min-height: 610px;
+  overflow: hidden;
+  border: 1px solid #dbe3ee;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 30px 80px #02061780;
+}
 .onboarding {
   background: white;
-  border-radius: 24px;
-  box-shadow: 0 30px 80px #02061780;
-  padding: 34px;
-  width: min(520px, 100%);
+  padding: 42px 48px 32px;
   box-sizing: border-box;
+}
+.v2-onboarding-aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 36px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 10% 15%, rgb(59 130 246 / 38%), transparent 38%),
+    linear-gradient(155deg, #111827, #1e293b 65%, #0f172a);
+}
+.v2-onboarding-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+}
+.v2-onboarding-brand img {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+}
+.v2-onboarding-aside > div > span {
+  color: #93c5fd;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.v2-onboarding-aside h2 {
+  margin: 10px 0 12px;
+  color: #fff;
+  font-size: 29px;
+  line-height: 1.18;
+}
+.v2-onboarding-aside p {
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.65;
+}
+.v2-onboarding-aside ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.v2-onboarding-aside li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #dbeafe;
+  font-size: 12px;
+}
+.v2-onboarding-aside li svg {
+  color: #34d399;
+}
+.v2-onboarding-progress {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 34px;
+}
+.v2-onboarding-progress i {
+  width: 34px;
+  height: 4px;
+  border-radius: 99px;
+  background: #e2e8f0;
+}
+.v2-onboarding-progress i.active {
+  background: #2563eb;
 }
 .v2-onboarding-logo {
   width: 48px;
@@ -480,6 +557,65 @@ button:disabled {
   color: #334155;
   font-weight: 650;
   margin: 12px 0;
+}
+.onboarding input,
+.onboarding textarea {
+  margin-top: 7px;
+}
+.onboarding textarea {
+  min-height: 115px;
+}
+.v2-onboarding-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 24px;
+}
+.v2-skill-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 28px;
+}
+.v2-skill-preview span {
+  padding: 4px 8px;
+  color: #1d4ed8;
+  border-radius: 99px;
+  background: #dbeafe;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v2-onboarding-check {
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.v2-onboarding-footnote {
+  display: block;
+  margin-top: 28px;
+  color: #64748b;
+  text-align: center;
+}
+@media (max-width: 760px) {
+  .modal-backdrop {
+    padding: 10px;
+  }
+  .onboarding-shell {
+    display: block;
+    min-height: 0;
+    max-height: calc(100vh - 20px);
+    overflow: auto;
+  }
+  .v2-onboarding-aside {
+    display: none;
+  }
+  .onboarding {
+    padding: 28px 22px 24px;
+  }
+  .onboarding h2 {
+    font-size: 26px;
+  }
 }
 .eyebrow {
   font-size: 11px;
@@ -3603,7 +3739,7 @@ button.v2-run-row:hover {
   background: rgba(15, 23, 42, 0.48);
   backdrop-filter: blur(8px);
 }
-.onboarding {
+.onboarding-shell {
   border-color: var(--v2-border);
   border-radius: 16px;
   box-shadow: 0 24px 80px rgba(15, 23, 42, 0.22);
