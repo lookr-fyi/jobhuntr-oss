@@ -512,13 +512,16 @@ app.post("/api/cover-letters", async (req, res) => {
       ? req.body.style
       : "professional";
     const opening = safeText(req.body.opening, 1000);
-    const emphasis = safeText(req.body.emphasis, 2000);
+    const emphasis =
+      safeText(req.body.emphasis, 2000) ||
+      safeText(req.body.coverLetterInstructions, 2000);
     const templateId = safeText(req.body.templateId, 50) || "classic";
     const templateName =
       safeText(req.body.templateName, 100) || "Classic Professional";
     const templateContent = safeText(req.body.templateContent, 20000);
     const jobDescription = safeText(req.body.jobDescription, 5000);
     const resume = db.resumes.find((item) => item.id === req.body.resumeId);
+    const atsTemplateId = safeText(req.body.atsTemplateId, 100);
     const skills = (db.profile.skills || []).slice(0, 4).join(", ");
     const styleOpening = {
       professional: `I am excited to apply for the ${job.title || "role"} position.`,
@@ -550,6 +553,7 @@ app.post("/api/cover-letters", async (req, res) => {
       id: nanoid(),
       jobId: job.id,
       resumeId: resume?.id || "",
+      atsTemplateId,
       style,
       templateId,
       templateName,

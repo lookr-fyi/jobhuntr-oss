@@ -7733,6 +7733,29 @@ main > header.integrated-page-header {
   margin-top: 4px;
   color: #475569;
 }
+.v2-cover-option-title {
+  margin: 20px 0 10px;
+  color: #334155;
+  font-size: 14px;
+}
+.v2-cover-ats-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v2-cover-instructions {
+  display: grid !important;
+  gap: 7px;
+  margin-top: 22px !important;
+}
+.v2-cover-instructions textarea {
+  min-height: 120px;
+  line-height: 1.55;
+}
+.v2-cover-instructions small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
 .v2-cover-job-summary,
 .v2-cover-review {
   margin-top: 18px;
@@ -7861,6 +7884,9 @@ main > header.integrated-page-header {
     font-size: 17px;
   }
   .v2-cover-editor-workspace {
+    grid-template-columns: 1fr;
+  }
+  .v2-cover-ats-list {
     grid-template-columns: 1fr;
   }
   .v2-cover-editor-workspace > label {

@@ -713,6 +713,9 @@ test(
       await page.getByText("Prompt applied locally").waitFor();
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("button", { name: /E2E tailored resume/ }).click();
+      await page
+        .getByLabel("Cover Letter Instructions")
+        .fill("Emphasize accessible product delivery and measurable outcomes.");
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("heading", { name: "Job Information" }).waitFor();
       await page
@@ -729,9 +732,14 @@ test(
         ),
         page.getByRole("button", { name: "Generate Cover Letter" }).click(),
       ]);
+      const generatedCoverLetter = await coverLetterResponse.json();
       assert.equal(
-        (await coverLetterResponse.json()).jobDescription,
+        generatedCoverLetter.jobDescription,
         "Build accessible React product experiences and improve customer conversion.",
+      );
+      assert.equal(
+        generatedCoverLetter.emphasis,
+        "Emphasize accessible product delivery and measurable outcomes.",
       );
       await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
       await page.getByLabel("Cover letter title").fill("E2E product letter");

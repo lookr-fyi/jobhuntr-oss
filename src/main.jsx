@@ -4813,16 +4813,28 @@ function Resume({ state, reload, mode = "resume" }) {
               <>
                 <div className="v2-cover-step-head">
                   <span>STEP 3 OF 5</span>
-                  <h3>Select a resume</h3>
+                  <h3>Select Resume or ATS Template</h3>
                   <p>
-                    Ground the letter in a saved resume or your local profile.
+                    Pick the source JobHuntr should use to ground your cover
+                    letter in truthful experience.
                   </p>
                 </div>
+                <h4 className="v2-cover-option-title">
+                  Option 1: Select Resume
+                </h4>
                 <div className="v2-cover-resume-list">
                   <button
-                    className={!letterWizard.resumeId ? "selected" : ""}
+                    className={
+                      !letterWizard.resumeId && !letterWizard.atsTemplateId
+                        ? "selected"
+                        : ""
+                    }
                     onClick={() =>
-                      setLetterWizard({ ...letterWizard, resumeId: "" })
+                      setLetterWizard({
+                        ...letterWizard,
+                        resumeId: "",
+                        atsTemplateId: "",
+                      })
                     }
                   >
                     <FileText size={20} />
@@ -4841,6 +4853,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         setLetterWizard({
                           ...letterWizard,
                           resumeId: item.id,
+                          atsTemplateId: "",
                         })
                       }
                     >
@@ -4856,6 +4869,54 @@ function Resume({ state, reload, mode = "resume" }) {
                     </button>
                   ))}
                 </div>
+                <h4 className="v2-cover-option-title">
+                  Option 2: Select ATS Template
+                </h4>
+                <div className="v2-cover-resume-list v2-cover-ats-list">
+                  {state.templates.map((template) => (
+                    <button
+                      className={
+                        letterWizard.atsTemplateId === template.id
+                          ? "selected"
+                          : ""
+                      }
+                      key={template.id}
+                      onClick={() =>
+                        setLetterWizard({
+                          ...letterWizard,
+                          resumeId: "",
+                          atsTemplateId: template.id,
+                        })
+                      }
+                    >
+                      <Sparkles size={20} />
+                      <span>
+                        <b>{template.name}</b>
+                        <small>
+                          {template.description ||
+                            "Use this ATS template with your profile resume"}
+                        </small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <label className="v2-cover-instructions">
+                  Cover Letter Instructions
+                  <textarea
+                    value={letterWizard.coverLetterInstructions || ""}
+                    onChange={(event) =>
+                      setLetterWizard({
+                        ...letterWizard,
+                        coverLetterInstructions: event.target.value,
+                      })
+                    }
+                    placeholder="Highlight the most relevant accomplishments, tone, or experience for this letter…"
+                  />
+                  <small>
+                    Enter key instructions for your cover letter. They remain
+                    private in this local wizard session.
+                  </small>
+                </label>
               </>
             )}
             {letterWizard.step === 4 && (
@@ -4949,7 +5010,14 @@ function Resume({ state, reload, mode = "resume" }) {
                   </div>
                   <div>
                     <span>Resume</span>
-                    <b>{selectedResume?.name || "Profile resume"}</b>
+                    <b>
+                      {selectedResume?.name ||
+                        state.templates.find(
+                          (template) =>
+                            template.id === letterWizard.atsTemplateId,
+                        )?.name ||
+                        "Profile resume"}
+                    </b>
                   </div>
                   <div>
                     <span>Target</span>

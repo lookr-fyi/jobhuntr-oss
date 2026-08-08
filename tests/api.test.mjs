@@ -607,6 +607,7 @@ test("cover letters can be edited, printed safely, and removed", async () => {
       emphasis: "I improved conversion by 42% while leading delivery.",
       templateId: "modern",
       templateName: "Modern Impact",
+      atsTemplateId: "clean-ats",
       jobDescription: "Build accessible React products for customers.",
       templateContent:
         "Hello {{company}} team,\n\n{{opening}}\n\n{{evidence}}\n\n{{name}}",
@@ -614,6 +615,7 @@ test("cover letters can be edited, printed safely, and removed", async () => {
   });
   assert.equal(created.body.style, "story-driven");
   assert.equal(created.body.templateName, "Modern Impact");
+  assert.equal(created.body.atsTemplateId, "clean-ats");
   assert.equal(
     created.body.jobDescription,
     "Build accessible React products for customers.",
