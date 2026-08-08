@@ -10,7 +10,7 @@ const freePort = () => new Promise((resolve) => { const server = net.createServe
 
 test('one-line launcher builds and serves the complete local app', { timeout: 30000 }, async () => {
   const port = await freePort(); const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'jobhuntr-launch-'));
-  const child = spawn(process.execPath, ['scripts/one-line-run.mjs'], { cwd: process.cwd(), env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', JOBHUNTR_DATA_DIR: dataDir, JOBHUNTR_NO_OPEN: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, ['scripts/one-line-run.mjs'], { cwd: process.cwd(), env: { ...process.env, PORT: String(port), HOST: '127.0.0.1', JOBHUNTR_DATA_DIR: dataDir, JOBHUNTR_NO_OPEN: '1' }, stdio: ['ignore', 'pipe', 'pipe'], detached: process.platform !== 'win32' });
   let output = ''; child.stdout.on('data', (d) => output += d); child.stderr.on('data', (d) => output += d);
   try {
     let response;
@@ -18,6 +18,7 @@ test('one-line launcher builds and serves the complete local app', { timeout: 30
     assert.ok(response?.ok, `launcher did not become healthy:\n${output}`);
     const page = await fetch(`http://127.0.0.1:${port}/`); assert.equal(page.status, 200); assert.match(await page.text(), /JobHuntr OSS/);
   } finally {
-    child.kill('SIGTERM'); await new Promise((resolve) => { child.once('exit', resolve); setTimeout(resolve, 3000); }); await fs.rm(dataDir, { recursive: true, force: true });
+    try { process.platform === 'win32' ? child.kill('SIGTERM') : process.kill(-child.pid, 'SIGTERM'); } catch {}
+    await new Promise((resolve) => { child.once('exit', resolve); setTimeout(resolve, 3000); }); await fs.rm(dataDir, { recursive: true, force: true });
   }
 });

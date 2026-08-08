@@ -23,10 +23,14 @@ run(['run', 'build']);
 console.log(`Starting JobHuntr OSS at ${url}`);
 const child = spawn(npm, ['run', 'preview'], {
   stdio: 'inherit',
+  detached: process.platform !== 'win32',
   env: { ...process.env, HOST: host, PORT: String(port), JOBHUNTR_DATA_DIR: process.env.JOBHUNTR_DATA_DIR || './data' }
 });
 
-const stop = (signal) => { if (!child.killed) child.kill(signal); };
+const stop = (signal) => {
+  if (child.killed) return;
+  try { process.platform === 'win32' ? child.kill(signal) : process.kill(-child.pid, signal); } catch {}
+};
 process.on('SIGINT', () => stop('SIGINT'));
 process.on('SIGTERM', () => stop('SIGTERM'));
 child.on('exit', (code, signal) => process.exit(signal ? 0 : (code ?? 0)));
