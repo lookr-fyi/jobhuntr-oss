@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { z } from 'zod';
 import { fileURLToPath } from 'node:url';
 import { readDb, mutate, auditEvent, scoreJob, summarize, seedJobs, DB_PATH } from './store.mjs';
+import { renderResumeDocument, renderCoverLetterDocument } from './render.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const APP_VERSION = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8')).version;
@@ -15,7 +16,7 @@ app.disable('x-powered-by');
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'no-referrer');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
   next();
@@ -82,11 +83,15 @@ app.post('/api/resumes', async (req, res) => {
 });
 
 app.patch('/api/resumes/:id', async (req, res) => {
-  const resume = await mutate((db) => { const item = db.resumes.find((r) => r.id === req.params.id); if (!item) return null; Object.assign(item, req.body, { updatedAt: timestamp() }); auditEvent(db, 'resume', `Updated resume “${item.name}”.`); return item; });
+  const resume = await mutate((db) => { const item = db.resumes.find((r) => r.id === req.params.id); if (!item) return null; if (req.body.name !== undefined) item.name = safeText(req.body.name, 120); if (req.body.templateId !== undefined) item.templateId = safeText(req.body.templateId, 50); if (req.body.content !== undefined) item.content = safeText(req.body.content, 100000); item.updatedAt = timestamp(); auditEvent(db, 'resume', `Updated resume “${item.name}”.`); return item; });
   if (!resume) return res.status(404).json({ error: 'Resume not found' }); res.json(resume);
 });
 
-app.delete('/api/resumes/:id', async (req, res) => { const ok = await mutate((db) => { const before = db.resumes.length; db.resumes = db.resumes.filter((r) => r.id !== req.params.id); return before !== db.resumes.length; }); res.status(ok ? 204 : 404).end(); });
+app.delete('/api/resumes/:id', async (req, res) => { const ok = await mutate((db) => { const before = db.resumes.length; db.resumes = db.resumes.filter((r) => r.id !== req.params.id); for (const submission of db.submissions) if (submission.resumeId === req.params.id) submission.resumeId = ''; return before !== db.resumes.length; }); res.status(ok ? 204 : 404).end(); });
+
+const downloadName = (name) => safeText(name, 80).replace(/[^a-z0-9._-]+/gi, '-').replace(/^-|-$/g, '') || 'jobhuntr-document';
+app.get('/print/resume/:id', async (req, res) => { const db = await readDb(); const resume = db.resumes.find((x) => x.id === req.params.id); if (!resume) return res.status(404).type('text').send('Resume not found'); if (req.query.download === '1') res.setHeader('Content-Disposition', `attachment; filename="${downloadName(resume.name)}.html"`); res.type('html').send(renderResumeDocument(resume, db.profile)); });
+app.get('/print/cover-letter/:id', async (req, res) => { const db = await readDb(); const letter = db.coverLetters.find((x) => x.id === req.params.id); if (!letter) return res.status(404).type('text').send('Cover letter not found'); const job = db.jobs.find((x) => x.id === letter.jobId); if (req.query.download === '1') res.setHeader('Content-Disposition', `attachment; filename="${downloadName(letter.title)}.html"`); res.type('html').send(renderCoverLetterDocument(letter, db.profile, job)); });
 app.post('/api/jobs/:id/tasks', async (req, res) => {
   const task = await mutate((db) => { const job = db.jobs.find((j) => j.id === req.params.id); if (!job) return null; const task = { id: nanoid(), text: String(req.body.text || 'Follow up'), due: req.body.due || '', done: false }; job.tasks.unshift(task); auditEvent(db, 'task', `Added task for ${job.company}.`, { jobId: job.id }); return task; });
   if (!task) return res.status(404).json({ error: 'Job not found' }); res.status(201).json(task);
@@ -114,6 +119,11 @@ app.post('/api/cover-letters', async (req, res) => {
   });
   res.status(201).json(letter);
 });
+app.patch('/api/cover-letters/:id', async (req, res) => {
+  const letter = await mutate((db) => { const item = db.coverLetters.find((x) => x.id === req.params.id); if (!item) return null; if (req.body.title !== undefined) item.title = safeText(req.body.title, 200); if (req.body.body !== undefined) item.body = safeText(req.body.body, 100000); item.updatedAt = timestamp(); auditEvent(db, 'cover-letter', `Updated cover letter “${item.title}”.`); return item; });
+  if (!letter) return res.status(404).json({ error: 'Cover letter not found' }); res.json(letter);
+});
+app.delete('/api/cover-letters/:id', async (req, res) => { const removed = await mutate((db) => { const before = db.coverLetters.length; db.coverLetters = db.coverLetters.filter((x) => x.id !== req.params.id); for (const submission of db.submissions) if (submission.coverLetterId === req.params.id) submission.coverLetterId = ''; return before !== db.coverLetters.length; }); res.status(removed ? 204 : 404).end(); });
 
 app.get('/api/submissions', async (_req, res) => { const db = await readDb(); res.json(db.submissions.map((s) => ({ ...s, job: db.jobs.find((j) => j.id === s.jobId) || null, resume: db.resumes.find((r) => r.id === s.resumeId) || null, coverLetter: db.coverLetters.find((c) => c.id === s.coverLetterId) || null }))); });
 app.post('/api/submissions', async (req, res) => {

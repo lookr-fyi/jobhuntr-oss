@@ -6,6 +6,8 @@ The default app does not send user data to any cloud service. It uses a local Ex
 
 The production and development servers bind to `127.0.0.1` by default. API responses include restrictive browser security headers, and imports copy only documented JobHuntr data keys with bounded collection sizes.
 
+Resume and cover-letter print pages escape all user-controlled values before generating HTML. Documents are rendered locally and PDF creation uses the browser’s native Print dialog; no document is uploaded to a conversion service.
+
 ## Before publishing
 
 Run:

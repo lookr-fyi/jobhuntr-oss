@@ -15,7 +15,7 @@ const req = async (url, options={}) => { const res = await fetch(base + url, { h
 test('health and initial state are local-only', async () => {
   const { res, body } = await req('/api/health');
   assert.equal(body.ok, true); assert.equal(body.mode, 'local-only');
-  assert.equal(body.host, '127.0.0.1'); assert.equal(res.headers.get('x-frame-options'), 'DENY'); assert.equal(res.headers.get('x-powered-by'), null);
+  assert.equal(body.host, '127.0.0.1'); assert.equal(res.headers.get('x-frame-options'), 'SAMEORIGIN'); assert.equal(res.headers.get('x-powered-by'), null);
   const state = (await req('/api/state')).body;
   assert.ok(state.jobs.length >= 4); assert.ok(state.summary.totalJobs >= 4);
 });
@@ -49,6 +49,8 @@ test('resume versions and ATS details are persisted locally', async () => {
   assert.equal(created.res.status, 201); assert.equal(created.body.templateId, 'impact');
   const score = await req('/api/resume/score', { method: 'POST', body: JSON.stringify({ resumeText: created.body.content, jobId: state.jobs[0].id }) });
   assert.equal(score.res.status, 200); assert.ok(Array.isArray(score.body.keywordHits)); assert.ok(score.body.quantifiedBullets >= 1);
+  const printable = await fetch(`${base}/print/resume/${created.body.id}`); const html = await printable.text();
+  assert.equal(printable.status, 200); assert.match(printable.headers.get('content-type'), /text\/html/); assert.match(html, /Product version/);
 });
 
 test('bulk import deduplicates URLs and CSV export is available', async () => {
@@ -84,6 +86,16 @@ test('coach and outreach create private role-specific drafts', async () => {
   assert.equal(coach.res.status, 201); assert.equal(coach.body.questions.length, 4); assert.match(coach.body.questions[0], new RegExp(job.company));
   const outreach = await req('/api/outreach/draft', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });
   assert.equal(outreach.res.status, 201); assert.match(outreach.body.body, new RegExp(job.company));
+});
+
+test('cover letters can be edited, printed safely, and removed', async () => {
+  const state = (await req('/api/state')).body; const job = state.jobs[0];
+  const created = await req('/api/cover-letters', { method: 'POST', body: JSON.stringify({ jobId: job.id }) });
+  const updated = await req(`/api/cover-letters/${created.body.id}`, { method: 'PATCH', body: JSON.stringify({ title: 'Tailored letter', body: 'Hello <script>alert(1)</script>' }) });
+  assert.equal(updated.body.title, 'Tailored letter');
+  const printable = await fetch(`${base}/print/cover-letter/${created.body.id}`); const html = await printable.text();
+  assert.equal(printable.status, 200); assert.doesNotMatch(html, /<script>alert/); assert.match(html, /&lt;script&gt;/);
+  const removed = await req(`/api/cover-letters/${created.body.id}`, { method: 'DELETE' }); assert.equal(removed.res.status, 204);
 });
 
 test('deleting a job cascades its private workflow records', async () => {

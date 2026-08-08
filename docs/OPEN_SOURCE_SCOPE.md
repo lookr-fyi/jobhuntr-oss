@@ -23,8 +23,8 @@ OSS replacement decisions:
 | Overview and pipeline | Command center, funnel, weekly application/interview metrics, tasks, activity audit |
 | Job tracker | Draggable Kanban/list views, filters, status history, notes, tasks, contacts, scoring, manual entry |
 | Job board | Bundled offline board with profile-based scoring |
-| ATS templates | Three transparent templates, named resume versions, keyword and impact analysis |
-| Cover letters | Editable deterministic drafts persisted in the local workspace |
+| ATS templates | Three transparent templates, named history, keyword/impact analysis, secure print preview and PDF-ready export |
+| Cover letters | Editable deterministic drafts, persistent history, print preview and PDF-ready export |
 | Submission queue | Local application packets, attachment visibility, mandatory review, submission history |
 | AI coach | Deterministic role-specific interview questions, talking points, and research checklist |
 | Outreach | Local editable LinkedIn/email-style draft generation; no automatic sending |

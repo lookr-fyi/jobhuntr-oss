@@ -25,8 +25,8 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 
 - **Application tracker**: draggable Kanban and list views, search/status filters, status timeline, fit scores, notes, tasks, contacts, and cascading deletion.
 - **Local job board**: seed jobs and local search without scraping or external services.
-- **Resume studio**: reusable ATS templates, named resume versions, keyword analysis, and quantified-impact checks.
-- **Cover letters**: offline editable first drafts.
+- **Resume studio**: reusable ATS templates, named version history, keyword analysis, secure print previews, and browser-native PDF export.
+- **Cover letters**: offline generation, persistent editing/history, print previews, and PDF-ready layouts.
 - **Autonomous hunt**: deterministic, explainable workflow with thresholds, run steps, and action history.
 - **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.
 - **Submission queue**: assemble resume/letter packets, enforce a review checklist, and record applications without external account automation.
