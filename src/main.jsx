@@ -2574,9 +2574,15 @@ function Board({ state, reload }) {
             ? b.fitScore - a.fitScore
             : sort === "salary"
               ? maximumListedSalary(b) - maximumListedSalary(a)
-              : sort === "company"
-                ? a.company.localeCompare(b.company)
-                : a.title.localeCompare(b.title),
+              : sort === "latest"
+                ? new Date(b.collectedAt || b.postedAt || 0) -
+                  new Date(a.collectedAt || a.postedAt || 0)
+                : sort === "oldest"
+                  ? new Date(a.collectedAt || a.postedAt || 0) -
+                    new Date(b.collectedAt || b.postedAt || 0)
+                  : sort === "company"
+                    ? a.company.localeCompare(b.company)
+                    : a.title.localeCompare(b.title),
         ),
     [
       results,
@@ -2847,6 +2853,8 @@ function Board({ state, reload }) {
               onChange={(event) => setSort(event.target.value)}
             >
               <option value="fit">Best match</option>
+              <option value="latest">Collected (Latest to Earliest)</option>
+              <option value="oldest">Collected (Earliest to Latest)</option>
               <option value="salary">Highest salary</option>
               <option value="company">Company</option>
               <option value="title">Job title</option>
@@ -2927,6 +2935,13 @@ function Board({ state, reload }) {
                           : "Mid level"}
                   </small>
                 </span>
+                <span className="v2-board-row-meta">
+                  <small>
+                    Posted {formatRelativeTime(j.postedAt || j.collectedAt)}
+                  </small>
+                  <small>{j.numApplicants || 0} applicants</small>
+                  <small>Contributed by {j.source || "Local catalog"}</small>
+                </span>
               </span>
               <ChevronRight size={16} />
             </button>
@@ -2944,6 +2959,17 @@ function Board({ state, reload }) {
                 <p>
                   <MapPin size={14} /> {selected.location}
                 </p>
+                <div className="v2-board-post-meta">
+                  <span>
+                    <Calendar size={13} /> Posted{" "}
+                    {new Date(
+                      selected.postedAt || selected.collectedAt,
+                    ).toLocaleDateString()}
+                  </span>
+                  <span>
+                    <Users size={13} /> {selected.numApplicants || 0} applicants
+                  </span>
+                </div>
               </div>
               <span className="v2-match-pill">{selected.fitScore}% match</span>
             </div>
@@ -3003,6 +3029,16 @@ function Board({ state, reload }) {
             </div>
             <h4>About the role</h4>
             <p>{selected.description}</p>
+            <div className="v2-board-contributor">
+              <span className="v2-leaderboard-avatar">
+                {(selected.source || "L").slice(0, 1).toUpperCase()}
+              </span>
+              <span>
+                <small>Contributed by</small>
+                <b>{selected.source || "Local catalog"}</b>
+              </span>
+              <ShieldCheck size={16} />
+            </div>
             <h4>Why it matches</h4>
             <ul>
               <li>Matches your target role and saved preferences</li>

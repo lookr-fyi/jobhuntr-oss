@@ -7,6 +7,8 @@ export const DB_PATH = path.join(DATA_DIR, "jobhuntr.json");
 export const BACKUP_PATH = path.join(DATA_DIR, "jobhuntr.backup.json");
 
 const now = () => new Date().toISOString();
+const hoursAgo = (hours) =>
+  new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
 export const seedJobs = [
   {
@@ -18,6 +20,9 @@ export const seedJobs = [
     salary: "$150k-$210k",
     tags: ["ai", "startup", "remote"],
     description: "Build AI workflows and customer-facing product surfaces.",
+    postedAt: hoursAgo(2),
+    collectedAt: hoursAgo(1),
+    numApplicants: 38,
   },
   {
     company: "Northstar Robotics",
@@ -28,6 +33,9 @@ export const seedJobs = [
     salary: "$145k-$190k",
     tags: ["react", "platform"],
     description: "Own design systems, app shell, and frontend reliability.",
+    postedAt: hoursAgo(5),
+    collectedAt: hoursAgo(3),
+    numApplicants: 74,
   },
   {
     company: "Civic Health Labs",
@@ -38,6 +46,9 @@ export const seedJobs = [
     salary: "$130k-$175k",
     tags: ["fullstack", "impact"],
     description: "Ship local-first health workflow software.",
+    postedAt: hoursAgo(8),
+    collectedAt: hoursAgo(6),
+    numApplicants: 29,
   },
   {
     company: "Orbit Data",
@@ -48,6 +59,9 @@ export const seedJobs = [
     salary: "$160k-$220k",
     tags: ["devtools", "typescript"],
     description: "Design SDKs, CLI tools, and diagnostics for data teams.",
+    postedAt: hoursAgo(12),
+    collectedAt: hoursAgo(10),
+    numApplicants: 51,
   },
 ];
 

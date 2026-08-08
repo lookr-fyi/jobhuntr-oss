@@ -3382,6 +3382,55 @@ button.v2-board-row.selected {
   gap: 7px;
   align-items: center;
 }
+.v2-board-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 7px;
+  color: #94a3b8;
+}
+.v2-board-row-meta small {
+  margin: 0;
+  font-size: 10px;
+}
+.v2-board-post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 11px;
+}
+.v2-board-post-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.v2-board-contributor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+.v2-board-contributor > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+.v2-board-contributor small,
+.v2-board-contributor b {
+  display: block;
+}
+.v2-board-contributor small {
+  color: #64748b;
+  font-size: 10px;
+}
+.v2-board-contributor > svg {
+  color: #16a34a;
+}
 .v2-board-row-tags small {
   color: #64748b;
   font-size: 11px;

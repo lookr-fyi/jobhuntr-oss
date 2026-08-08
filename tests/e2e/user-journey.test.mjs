@@ -412,6 +412,9 @@ test(
       const boardDetail = page.locator(".v2-board-detail");
       await boardDetail.getByText("Full-time", { exact: true }).waitFor();
       await boardDetail.getByText("Mid level", { exact: true }).waitFor();
+      await boardDetail.getByText("74 applicants", { exact: true }).waitFor();
+      await boardDetail.getByText("Contributed by", { exact: true }).waitFor();
+      await boardDetail.getByText("Seed Board", { exact: true }).waitFor();
       await boardDetail
         .getByText("Visa status not specified", { exact: true })
         .waitFor();
