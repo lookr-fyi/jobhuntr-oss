@@ -1121,6 +1121,8 @@ app.post("/api/resume/score", async (req, res) => {
 });
 
 const HuntSchema = z.object({
+  runName: z.string().trim().min(1).max(200).optional(),
+  origin: z.enum(["manual", "infinite"]).optional(),
   q: z.string().max(200).optional(),
   location: z.string().max(200).optional(),
   minFit: z.coerce.number().min(0).max(100).optional(),
@@ -1136,6 +1138,12 @@ const HuntSchema = z.object({
 });
 const huntOptions = (input, profile) =>
   HuntSchema.parse({
+    runName:
+      input.runName ||
+      input.q ||
+      profile.targetRoles?.[0] ||
+      "Software Engineer",
+    origin: input.origin || "infinite",
     q: input.q || profile.targetRoles?.[0] || "Software Engineer",
     location: input.location ?? profile.preferences?.locations?.[0] ?? "",
     minFit: input.minFit ?? 60,
@@ -1295,6 +1303,8 @@ app.post("/api/agent-runs/start", async (req, res) => {
     }
     const item = {
       id: runId,
+      runName: options.runName,
+      origin: options.origin,
       status: "completed",
       createdAt: timestamp(),
       completedAt: timestamp(),

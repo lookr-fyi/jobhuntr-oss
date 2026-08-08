@@ -7722,7 +7722,6 @@ function Agent({ state, reload, setTab }) {
   const latestRun = state.agentRuns[0] || null;
   useEffect(() => {
     if (!newRunDraft) return;
-    localStorage.removeItem("jobhuntr-new-run-draft");
     localStorage.setItem(
       "jobhuntr-infinite-workflows",
       JSON.stringify(newRunDraft.workflows),
@@ -7746,6 +7745,8 @@ function Agent({ state, reload, setTab }) {
     };
   }, [statusOpen]);
   const payload = () => ({
+    runName: newRunDraft?.runName || form.q,
+    origin: newRunDraft?.origin || "infinite",
     q: form.q,
     location: form.location,
     minFit: Number(form.minFit),
@@ -7792,6 +7793,7 @@ function Agent({ state, reload, setTab }) {
         options: result.options,
         added: result.added,
       });
+      localStorage.removeItem("jobhuntr-new-run-draft");
       await reload();
     } finally {
       setRunning(false);
@@ -8338,12 +8340,14 @@ function RunsPage({ state, setTab, reload }) {
   const visibleRuns = runs
     .filter((run) => {
       const matchesSearch =
-        `${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
+        `${run.runName || ""} ${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
           .toLowerCase()
           .includes(query.toLowerCase());
       return (
         matchesSearch &&
-        (!showManualOnly || run.origin === "manual") &&
+        (!showManualOnly ||
+          run.origin === "manual" ||
+          run.options?.origin === "manual") &&
         (!hideZero || (run.found || 0) > 0) &&
         (!showActionRequiredOnly || actionRequiredRunIds.has(run.id))
       );
@@ -8531,7 +8535,7 @@ function RunsPage({ state, setTab, reload }) {
                 className="v2-run-link"
                 onClick={() => setSelectedRun(run)}
               >
-                {run.search?.q || "Local hunt"}
+                {run.runName || run.search?.q || "Local hunt"}
               </button>
               <small>{run.id.slice(0, 8)}...</small>
               {!!run.search?.location && <small>{run.search.location}</small>}
@@ -8547,7 +8551,7 @@ function RunsPage({ state, setTab, reload }) {
             <div className="v2-run-action-menu">
               <button
                 className="v2-run-delete"
-                aria-label={`Actions for ${run.search?.q || "run"}`}
+                aria-label={`Actions for ${run.runName || run.search?.q || "run"}`}
                 aria-expanded={actionMenuOpen === run.id}
                 onClick={() =>
                   setActionMenuOpen((open) => (open === run.id ? null : run.id))
@@ -8606,7 +8610,7 @@ function RunsPage({ state, setTab, reload }) {
               <div>
                 <span>AGENT RUN</span>
                 <h3 id="run-detail-title">
-                  {selectedRun.search?.q || "Local hunt"}
+                  {selectedRun.runName || selectedRun.search?.q || "Local hunt"}
                 </h3>
               </div>
               <span className="pill submitted">Completed</span>
@@ -8824,7 +8828,8 @@ function RunsPage({ state, setTab, reload }) {
                   localStorage.setItem(
                     "jobhuntr-new-run-draft",
                     JSON.stringify({
-                      q: newRunName.trim(),
+                      runName: newRunName.trim(),
+                      origin: "manual",
                       workflows: [newRunTemplate],
                       optimizeResume: newRunOptimize,
                     }),

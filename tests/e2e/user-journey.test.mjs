@@ -249,6 +249,11 @@ test(
         .locator(".v2-run-row", { hasText: "Search" })
         .first()
         .waitFor();
+      const manualOnly = page.getByRole("switch", { name: "Manual Only" });
+      await manualOnly.click();
+      assert.equal(await page.locator(".v2-run-row").count(), 0);
+      await manualOnly.click();
+      assert.equal(await page.locator(".v2-run-row").count(), 1);
       await page.getByText("Action required", { exact: true }).waitFor();
       await page.getByLabel("Action required only").check();
       assert.equal(await page.locator(".v2-run-row").count(), 1);

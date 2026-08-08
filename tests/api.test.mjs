@@ -103,6 +103,8 @@ test("agent run saves matches and logs actions", async () => {
   });
   assert.equal(run.res.status, 201);
   assert.equal(run.body.status, "completed");
+  assert.equal(run.body.origin, "infinite");
+  assert.equal(run.body.runName, "engineer");
   assert.ok(run.body.actions.length > 0);
   assert.equal(run.body.steps.length, 6);
   assert.deepEqual(run.body.workflows, ["linkedin", "indeed"]);
@@ -131,8 +133,15 @@ test("agent run saves matches and logs actions", async () => {
 test("agent run history can be permanently deleted without deleting saved jobs", async () => {
   const run = await req("/api/agent-runs/start", {
     method: "POST",
-    body: JSON.stringify({ q: "product", minFit: 0 }),
+    body: JSON.stringify({
+      runName: "My Product Search",
+      origin: "manual",
+      q: "product",
+      minFit: 0,
+    }),
   });
+  assert.equal(run.body.runName, "My Product Search");
+  assert.equal(run.body.origin, "manual");
   const jobsBefore = (await req("/api/state")).body.jobs.length;
   const removed = await req(`/api/agent-runs/${run.body.id}`, {
     method: "DELETE",
