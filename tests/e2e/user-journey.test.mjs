@@ -567,6 +567,13 @@ test(
           exact: true,
         })
         .waitFor();
+      await page.getByRole("button", { name: "Funnel Analysis" }).click();
+      await funnelDialog.getByText("Round-by-round conversion").waitFor();
+      await funnelDialog
+        .getByText("Interview Round 1", { exact: true })
+        .waitFor();
+      await page.keyboard.press("Escape");
+      await funnelDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();

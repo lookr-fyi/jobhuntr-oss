@@ -7144,6 +7144,59 @@ main > header.integrated-page-header {
   border: 0;
   filter: brightness(0.95);
 }
+.v2-interview-funnel {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+.v2-interview-funnel > .row {
+  margin-bottom: 4px;
+}
+.v2-interview-funnel > .row span {
+  color: #2563eb;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.v2-interview-funnel h3 {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+.v2-interview-funnel > .row small {
+  color: #64748b;
+  font-size: 10px;
+}
+.v2-interview-funnel-row {
+  display: grid;
+  grid-template-columns: 135px minmax(100px, 1fr) 25px 90px;
+  gap: 10px;
+  align-items: center;
+  color: #475569;
+  font-size: 11px;
+}
+.v2-interview-funnel-row > div {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dbeafe;
+}
+.v2-interview-funnel-row i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #3b82f6;
+}
+.v2-interview-funnel-row strong {
+  color: #1e3a8a;
+}
+.v2-interview-funnel-row small {
+  color: #64748b;
+  text-align: right;
+}
 .v2-funnel-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -7176,6 +7229,16 @@ main > header.integrated-page-header {
   }
   .v2-tracker-header > div {
     flex-wrap: wrap;
+  }
+  .v2-interview-funnel-row {
+    grid-template-columns: 1fr 35px;
+  }
+  .v2-interview-funnel-row > div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .v2-interview-funnel-row small {
+    display: none;
   }
   .v2-funnel-content {
     padding: 20px;

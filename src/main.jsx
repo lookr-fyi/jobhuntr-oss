@@ -1383,6 +1383,30 @@ function Tracker({ state, reload }) {
       jobs: filtered.filter((item) => item.status === "rejected"),
     },
   ];
+  const interviewRoundStages = [
+    ...new Set(
+      filtered.flatMap((item) =>
+        (item.interviewRounds || []).map((round) =>
+          Number(round.roundType?.match(/\d+/)?.[0] || 0),
+        ),
+      ),
+    ),
+  ]
+    .filter(Boolean)
+    .sort((a, b) => a - b)
+    .map((roundNumber) => ({
+      roundNumber,
+      label: `Interview Round ${roundNumber}`,
+      jobs: filtered.filter((item) => {
+        const highest = Math.max(
+          0,
+          ...(item.interviewRounds || []).map((round) =>
+            Number(round.roundType?.match(/\d+/)?.[0] || 0),
+          ),
+        );
+        return highest >= roundNumber;
+      }),
+    }));
   useEffect(() => {
     if (!funnelOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -1789,6 +1813,44 @@ function Tracker({ state, reload }) {
                 );
               })}
             </div>
+            {interviewRoundStages.length > 0 && (
+              <div className="v2-interview-funnel">
+                <div className="row">
+                  <div>
+                    <span>INTERVIEW PROGRESSION</span>
+                    <h3>Round-by-round conversion</h3>
+                  </div>
+                  <small>{interviewRoundStages.length} rounds tracked</small>
+                </div>
+                {interviewRoundStages.map((stage, index) => {
+                  const priorCount =
+                    index === 0
+                      ? funnelStages[1].jobs.length
+                      : interviewRoundStages[index - 1].jobs.length;
+                  return (
+                    <div
+                      className="v2-interview-funnel-row"
+                      key={stage.roundNumber}
+                    >
+                      <span>{stage.label}</span>
+                      <div>
+                        <i
+                          style={{
+                            width: `${Math.max(8, (stage.jobs.length / Math.max(filtered.length, 1)) * 100)}%`,
+                          }}
+                        />
+                      </div>
+                      <strong>{stage.jobs.length}</strong>
+                      <small>
+                        {priorCount
+                          ? `${Math.round((stage.jobs.length / priorCount) * 100)}% advanced`
+                          : "No prior applications"}
+                      </small>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="v2-funnel-summary">
               <div>
                 <span>Application rate</span>
