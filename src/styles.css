@@ -5013,6 +5013,44 @@ select:focus {
   align-items: center;
   margin-bottom: 14px;
 }
+.v2-switch-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.v2-switch-control > button {
+  display: flex;
+  width: 48px;
+  height: 26px;
+  align-items: center;
+  padding: 2px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f1f5f9;
+  box-shadow: none;
+}
+.v2-switch-control > button span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 20%);
+  transition: transform 0.2s ease;
+}
+.v2-switch-control > button[aria-checked="true"] {
+  background: var(--v2-accent);
+}
+.v2-switch-control > button[aria-checked="true"] span {
+  transform: translateX(20px);
+}
+.v2-runs-filter-caption {
+  margin: -6px 0 16px;
+  color: #64748b;
+  font-size: 11px;
+}
 .v2-runs-toolbar .check {
   margin: 0;
   color: #475569;
@@ -5052,10 +5090,40 @@ select:focus {
 .v2-table-head,
 .v2-run-row {
   display: grid;
-  grid-template-columns: 24px minmax(240px, 1fr) 120px 100px 100px 200px 36px;
+  grid-template-columns: 24px minmax(240px, 1fr) 100px 120px 100px 60px;
   gap: 16px;
   align-items: center;
   padding: 14px 18px;
+}
+.v2-run-action-menu {
+  position: relative;
+}
+.v2-run-action-menu > div {
+  position: absolute;
+  z-index: 20;
+  top: 34px;
+  right: 0;
+  min-width: 140px;
+  padding: 4px;
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 14%);
+}
+.v2-run-action-menu > div button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  color: #b91c1c;
+  border: 0;
+  background: #fff;
+  box-shadow: none;
+}
+.v2-run-action-menu > div button:hover {
+  background: #fef2f2;
 }
 .v2-table-head {
   background: #f8fafc;

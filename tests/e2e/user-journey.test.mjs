@@ -244,18 +244,20 @@ test(
       await sessionDialog.waitFor({ state: "hidden" });
 
       await page.getByRole("button", { name: "Agent Runs" }).click();
-      await page.getByRole("heading", { name: "All Runs" }).waitFor();
+      await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
       await page
-        .locator(".v2-run-row .pill", { hasText: "Completed" })
+        .locator(".v2-run-row", { hasText: "Search" })
+        .first()
         .waitFor();
       await page.getByText("Action required", { exact: true }).waitFor();
       await page.getByLabel("Action required only").check();
-      await page.getByText("Showing 1 of 1 runs").waitFor();
+      assert.equal(await page.locator(".v2-run-row").count(), 1);
       await page.getByLabel("Action required only").uncheck();
       await page.getByLabel("Search runs").fill("Software Engineer");
-      await page.getByText("Showing 1 of 1 runs").waitFor();
+      assert.equal(await page.locator(".v2-run-row").count(), 1);
       const runTrigger = page.getByRole("button", {
-        name: /Software Engineer/,
+        name: "Software Engineer",
+        exact: true,
       });
       await runTrigger.click();
       const runDialog = page.getByRole("dialog", {
@@ -306,7 +308,7 @@ test(
         .click();
       await linkedRunDialog.waitFor({ state: "hidden" });
       assert.match(page.url(), /#\/runs$/);
-      await assertAccessible(page, "All Runs");
+      await assertAccessible(page, "Agent Runs");
       const huntStatus = page.getByRole("button", {
         name: "Open Infinite Hunting status",
       });

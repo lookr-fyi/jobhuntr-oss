@@ -33,6 +33,7 @@ import {
   ExternalLink,
   Copy,
   ListPlus,
+  MoreHorizontal,
   X,
 } from "lucide-react";
 import "./styles.css";
@@ -8283,7 +8284,9 @@ function RunsPage({ state, setTab, reload }) {
   ).get("run");
   const [query, setQuery] = useState("");
   const [hideZero, setHideZero] = useState(false);
+  const [showManualOnly, setShowManualOnly] = useState(false);
   const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
+  const [actionMenuOpen, setActionMenuOpen] = useState(null);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [selectedRun, setSelectedRun] = useState(
     () => runs.find((run) => run.id === linkedRunId) || null,
@@ -8308,6 +8311,7 @@ function RunsPage({ state, setTab, reload }) {
           .includes(query.toLowerCase());
       return (
         matchesSearch &&
+        (!showManualOnly || run.origin === "manual") &&
         (!hideZero || (run.found || 0) > 0) &&
         (!showActionRequiredOnly || actionRequiredRunIds.has(run.id))
       );
@@ -8378,10 +8382,8 @@ function RunsPage({ state, setTab, reload }) {
     <section className="v2-runs-page">
       <div className="v2-page-intro">
         <div>
-          <h2>All Runs</h2>
-          <p>
-            Review every job hunting workflow and the applications it evaluated.
-          </p>
+          <h2>Agent Runs</h2>
+          <p>Manage and monitor your job hunting agent runs</p>
         </div>
         <div className="inline">
           <button
@@ -8392,29 +8394,8 @@ function RunsPage({ state, setTab, reload }) {
             Open Latest Run
           </button>
           <button onClick={() => setTab("agent")}>
-            <Plus size={16} /> New run
+            <Plus size={16} /> New Run
           </button>
-        </div>
-      </div>
-      <div className="v2-run-stats">
-        <div>
-          <span>Total runs</span>
-          <strong>{runs.length}</strong>
-        </div>
-        <div>
-          <span>Jobs evaluated</span>
-          <strong>
-            {runs.reduce(
-              (sum, run) => sum + (run.inspected || run.found || 0),
-              0,
-            )}
-          </strong>
-        </div>
-        <div>
-          <span>Jobs saved</span>
-          <strong>
-            {runs.reduce((sum, run) => sum + (run.added || 0), 0)}
-          </strong>
         </div>
       </div>
       <div className="v2-runs-toolbar">
@@ -8424,16 +8405,30 @@ function RunsPage({ state, setTab, reload }) {
             aria-label="Search runs"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search runs…"
+            placeholder="Search runs..."
           />
         </div>
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={hideZero}
-            onChange={(event) => setHideZero(event.target.checked)}
-          />
-          Hide runs with 0 matches
+        <label className="v2-switch-control">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={showManualOnly}
+            onClick={() => setShowManualOnly((value) => !value)}
+          >
+            <span />
+          </button>
+          Manual Only
+        </label>
+        <label className="v2-switch-control">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={hideZero}
+            onClick={() => setHideZero((value) => !value)}
+          >
+            <span />
+          </button>
+          Hide 0 Apps
         </label>
         {actionRequiredRunIds.size > 0 && (
           <label className="check">
@@ -8447,15 +8442,25 @@ function RunsPage({ state, setTab, reload }) {
             Action required only
           </label>
         )}
-        <span>
-          Showing {visibleRuns.length} of {runs.length} runs
-        </span>
       </div>
+      <p className="v2-runs-filter-caption">
+        {showManualOnly
+          ? "Viewing manual runs created by you."
+          : "Viewing all runs (manual + infinite hunt)."}
+        {hideZero && " Runs with 0 applications are hidden."}
+      </p>
       {selectedIds.size > 0 && (
         <div className="v2-run-selection" role="status">
           <strong>
-            {selectedIds.size} run{selectedIds.size === 1 ? "" : "s"} selected
+            {selectedIds.size} agent run{selectedIds.size === 1 ? "" : "s"}{" "}
+            selected
           </strong>
+          <button
+            className="secondary"
+            onClick={() => setSelectedIds(new Set())}
+          >
+            Clear Selection
+          </button>
           <button
             className="danger secondary"
             onClick={() => setDeleteIds([...selectedIds])}
@@ -8475,11 +8480,11 @@ function RunsPage({ state, setTab, reload }) {
             }
             onChange={toggleVisible}
           />
-          <span>Run</span>
-          <span>Status</span>
-          <span>Evaluated</span>
-          <span>Saved</span>
-          <span>Started</span>
+          <span>Run Name</span>
+          <span>Type</span>
+          <span>Last Update</span>
+          <span>Applications</span>
+          <span>Actions</span>
         </div>
         {visibleRuns.map((run) => (
           <div className="v2-run-row" key={run.id}>
@@ -8496,30 +8501,42 @@ function RunsPage({ state, setTab, reload }) {
               >
                 {run.search?.q || "Local hunt"}
               </button>
-              <small>
-                {run.search?.location || "All locations"} ·{" "}
-                {(run.workflows || []).join(", ") || "Local catalog"}
-              </small>
+              <small>{run.id.slice(0, 8)}...</small>
+              {!!run.search?.location && <small>{run.search.location}</small>}
               {actionRequiredRunIds.has(run.id) && (
                 <small className="v2-run-action-required">
                   Action required
                 </small>
               )}
             </span>
-            <span className="pill submitted">Completed</span>
-            <strong>{run.inspected || run.found || 0}</strong>
+            <span>{run.options?.autoApply ? "Apply" : "Search"}</span>
+            <time>{formatRelativeTime(run.completedAt || run.createdAt)}</time>
             <strong>{run.added ?? run.found ?? 0}</strong>
-            <time>
-              {new Date(run.completedAt || run.createdAt).toLocaleString()}
-            </time>
-            <button
-              className="v2-run-delete"
-              aria-label="Delete run"
-              title={`Delete ${run.search?.q || "run"}`}
-              onClick={() => setDeleteIds([run.id])}
-            >
-              <Trash2 size={16} />
-            </button>
+            <div className="v2-run-action-menu">
+              <button
+                className="v2-run-delete"
+                aria-label={`Actions for ${run.search?.q || "run"}`}
+                aria-expanded={actionMenuOpen === run.id}
+                onClick={() =>
+                  setActionMenuOpen((open) => (open === run.id ? null : run.id))
+                }
+              >
+                <MoreHorizontal size={16} />
+              </button>
+              {actionMenuOpen === run.id && (
+                <div role="menu">
+                  <button
+                    role="menuitem"
+                    onClick={() => {
+                      setDeleteIds([run.id]);
+                      setActionMenuOpen(null);
+                    }}
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         ))}
         {!visibleRuns.length && (
