@@ -843,6 +843,29 @@ button:disabled {
   gap: 18px;
 }
 .v2-board-page { max-width: 1180px; margin: 0 auto; padding: 8px 24px 48px; }
+.v2-outreach-page { max-width: 1240px; margin: 0 auto; padding: 8px 24px 48px; }
+.v2-outreach-page .v2-page-intro > .inline select { min-width: 230px; }
+.v2-outreach-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+.v2-outreach-stats > div { padding: 16px 18px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; }
+.v2-outreach-stats span { display: block; color: #64748b; font-size: 12px; }
+.v2-outreach-stats strong { display: block; margin-top: 5px; font-size: 22px; }
+.v2-outreach-toolbar { display: grid; grid-template-columns: 1fr 170px; gap: 10px; margin-bottom: 14px; }
+.v2-outreach-layout { display: grid; grid-template-columns: minmax(500px, 1.15fr) minmax(360px, .85fr); gap: 16px; align-items: start; }
+.v2-contact-table { overflow: hidden; }
+.v2-contact-head { display: grid; grid-template-columns: 1.2fr 1fr 90px; gap: 12px; padding: 11px 16px 11px 68px; border-bottom: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.v2-contact-table > button { display: grid; grid-template-columns: 40px 1.2fr 1fr 90px; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 0; border-bottom: 1px solid #eef2f7; border-radius: 0; background: #fff; color: #1e293b; text-align: left; }
+.v2-contact-table > button:hover { background: #f8fafc; }
+.v2-contact-table > button.selected { background: #f1f5f9; box-shadow: inset 3px 0 #18181a; }
+.v2-contact-table > button > span:not(.v2-contact-avatar) { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.v2-contact-table small { color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v2-contact-table em { width: max-content; padding: 4px 7px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 11px; font-style: normal; }
+.v2-contact-avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #e0e7ff; color: #4338ca; font-weight: 800; }
+.v2-contact-avatar.large { width: 52px; height: 52px; font-size: 19px; }
+.v2-contact-detail { position: sticky; top: 18px; padding: 22px; }
+.v2-contact-profile { display: flex; align-items: center; gap: 13px; padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid #e2e8f0; }
+.v2-contact-profile h3 { margin: 0 0 4px; }.v2-contact-profile p { margin: 0; color: #64748b; }
+@media (max-width: 1000px) { .v2-outreach-layout { grid-template-columns: 1fr; } .v2-contact-detail { position: static; } }
+@media (max-width: 700px) { .v2-outreach-stats { grid-template-columns: 1fr; } .v2-outreach-toolbar { grid-template-columns: 1fr; } .v2-contact-head { display: none; } .v2-contact-table > button { grid-template-columns: 40px 1fr; } .v2-contact-table > button > span:nth-child(3), .v2-contact-table > button em { grid-column: 2; } }
 .v2-board-header { margin-bottom: 20px; }
 .v2-board-header .eyebrow { color: #64748b; letter-spacing: .11em; }
 .v2-board-header .v2-page-intro { margin-top: 4px; }

@@ -149,6 +149,7 @@ function App() {
               "tracker",
               "agent",
               "board",
+              "outreach",
             ].includes(tab)
               ? "integrated-page-header"
               : ""
@@ -174,7 +175,7 @@ function App() {
         {tab === "cover-letter" && (
           <Resume state={state} reload={load} mode="cover-letter" />
         )}
-        {tab === "outreach" && <Coach state={state} reload={load} />}
+        {tab === "outreach" && <OutreachPage state={state} reload={load} />}
         {tab === "settings" && (
           <SettingsPage state={state} reload={load} />
         )}{" "}
@@ -1539,6 +1540,31 @@ function Resume({ state, reload, mode = "resume" }) {
       )}
     </section>
   );
+}
+function OutreachPage({ state, reload }) {
+  const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
+  const [selectedId, setSelectedId] = useState(state.outreachDrafts[0]?.id || "");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [draft, setDraft] = useState(state.outreachDrafts.find((item) => item.id === selectedId) || null);
+  const generate = async () => {
+    const created = await api("/api/outreach/draft", { method: "POST", body: JSON.stringify({ jobId }) });
+    setSelectedId(created.id); setDraft(created); await reload();
+  };
+  const visible = state.outreachDrafts.filter((item) => {
+    const job = state.jobs.find((candidate) => candidate.id === item.jobId);
+    return (status === "all" || (item.status || "draft") === status) && `${item.subject} ${job?.company || ""} ${job?.title || ""}`.toLowerCase().includes(query.toLowerCase());
+  });
+  const selected = draft || visible.find((item) => item.id === selectedId) || visible[0];
+  return <section className="v2-outreach-page">
+    <div className="v2-page-intro"><div><h2>Outreach</h2><p>Build relationships with recruiters, hiring managers, and peers connected to your saved roles.</p></div><div className="inline"><select aria-label="Role for outreach" value={jobId} onChange={(e) => setJobId(e.target.value)}>{state.jobs.map((job) => <option key={job.id} value={job.id}>{job.company} — {job.title}</option>)}</select><button disabled={!jobId} onClick={generate}><Users size={16} /> Collect contacts</button></div></div>
+    <div className="v2-outreach-stats"><div><span>Total contacts</span><strong>{state.outreachDrafts.length}</strong></div><div><span>Ready to contact</span><strong>{state.outreachDrafts.filter((item) => (item.status || "draft") === "draft").length}</strong></div><div><span>Outreached</span><strong>{state.outreachDrafts.filter((item) => item.status === "sent").length}</strong></div></div>
+    <div className="v2-outreach-toolbar"><div className="searchbox"><Search size={16} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search contacts, companies, or roles" /></div><select value={status} onChange={(e) => setStatus(e.target.value)}><option value="all">All statuses</option><option value="draft">Listed</option><option value="sent">Outreached</option></select></div>
+    <div className="v2-outreach-layout">
+      <div className="card v2-contact-table"><div className="v2-contact-head"><span>Contact</span><span>Company & role</span><span>Status</span></div>{visible.length ? visible.map((item) => { const job = state.jobs.find((candidate) => candidate.id === item.jobId); return <button className={selected?.id === item.id ? "selected" : ""} key={item.id} onClick={() => { setSelectedId(item.id); setDraft(item); }}><span className="v2-contact-avatar">{(job?.company || "C")[0]}</span><span><strong>{item.recipient || "Hiring team"}</strong><small>{item.subject}</small></span><span><strong>{job?.company || "Deleted role"}</strong><small>{job?.title}</small></span><em>{item.status === "sent" ? "Outreached" : "Listed"}</em></button>; }) : <div className="empty-state"><Users /><h3>No contacts collected yet</h3><p>Choose a tracked role and collect a private, editable outreach draft.</p></div>}</div>
+      <div className="card v2-contact-detail">{selected ? <><div className="v2-contact-profile"><span className="v2-contact-avatar large">{(state.jobs.find((job) => job.id === selected.jobId)?.company || "C")[0]}</span><div><h3>{selected.recipient || "Hiring team"}</h3><p>{state.jobs.find((job) => job.id === selected.jobId)?.company} · {state.jobs.find((job) => job.id === selected.jobId)?.title}</p></div></div><OutreachEditor draft={selected} setDraft={setDraft} reload={reload} /></> : <div className="empty-state"><MessageSquare /><h3>Select a contact</h3><p>Contact details and your personalized message will appear here.</p></div>}</div>
+    </div>
+  </section>;
 }
 function Coach({ state, reload }) {
   const [view, setView] = useState("practice");
