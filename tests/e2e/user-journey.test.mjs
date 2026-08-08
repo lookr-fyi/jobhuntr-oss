@@ -370,6 +370,9 @@ test(
         .filter({ hasText: /ATS resume generated|Original resume meets/ })
         .first()
         .waitFor();
+      await page.getByText("Application documents", { exact: true }).waitFor();
+      await page.getByText("Job description", { exact: true }).waitFor();
+      await page.getByRole("link", { name: /Apply manually/ }).waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
       await page

@@ -5595,6 +5595,10 @@ main > header.integrated-page-header {
   color: #047857;
   font-style: normal;
 }
+.v2-queued-job em.ats {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
 .queue-state {
   width: 7px;
   height: 7px;
@@ -5622,6 +5626,113 @@ main > header.integrated-page-header {
 }
 .v2-queue-detail .packet > .row b {
   font-size: 18px;
+}
+.v2-packet-heading small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+}
+.v2-packet-job-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+.v2-packet-job-facts > span {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.v2-packet-job-facts small {
+  color: #64748b;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.v2-packet-job-facts b {
+  color: #334155;
+  font-size: 12px;
+}
+.v2-packet-section {
+  margin: 0;
+  padding: 16px 4px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.v2-packet-section summary,
+.v2-packet-section h4 {
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.v2-packet-section h4 {
+  margin: 0 0 12px;
+  cursor: default;
+}
+.v2-packet-section p,
+.v2-packet-section li {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.v2-packet-section ul {
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+.v2-packet-documents > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.v2-packet-documents > div + div {
+  margin-top: 8px;
+}
+.v2-packet-documents > div > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.v2-packet-documents > div > span > span {
+  display: grid;
+  gap: 2px;
+}
+.v2-packet-documents b,
+.v2-packet-documents small {
+  font-size: 11px;
+}
+.v2-packet-documents small {
+  color: #64748b;
+}
+.v2-packet-documents a {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+}
+.v2-packet-checklist .check:last-child {
+  border-bottom: 0;
+}
+.v2-packet-footer-actions {
+  display: flex;
+  gap: 10px;
+}
+.v2-apply-manually {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 16px;
+  padding-top: 14px;
+  color: #2563eb;
+  border-top: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
 }
 .v2-queue-detail .check {
   padding: 13px 4px;
@@ -5806,6 +5917,9 @@ main > header.integrated-page-header {
     gap: 12px;
   }
   .v2-packet-attachments {
+    grid-template-columns: 1fr;
+  }
+  .v2-packet-job-facts {
     grid-template-columns: 1fr;
   }
   .v2-queue-filter-panel {

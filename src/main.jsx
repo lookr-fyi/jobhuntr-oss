@@ -2594,6 +2594,9 @@ function Queue({ state, reload, setTab }) {
                         <i className={`queue-state ${item.status}`} />
                         {item.status}
                         <em>{job?.fitScore || 0}% match</em>
+                        {item.atsScore !== undefined && (
+                          <em className="ats">{item.atsScore}% ATS</em>
+                        )}
                       </span>
                     </span>
                     <time>{new Date(item.createdAt).toLocaleDateString()}</time>
@@ -2692,6 +2695,15 @@ function InboxIcon() {
 }
 function SubmissionCard({ submission: s, state, reload }) {
   const job = state.jobs.find((j) => j.id === s.jobId);
+  const attachedResume = state.resumes.find((item) => item.id === s.resumeId);
+  const attachedLetter = state.coverLetters.find(
+    (item) => item.id === s.coverLetterId,
+  );
+  const resumeLabel = attachedResume?.name
+    ? attachedResume.name
+    : s.resumeId === "profile-resume"
+      ? "Original profile resume"
+      : "No resume attached";
   const updatePacket = async (body) => {
     await api(`/api/submissions/${s.id}`, {
       method: "PATCH",
@@ -2710,25 +2722,108 @@ function SubmissionCard({ submission: s, state, reload }) {
   };
   return (
     <div className="packet">
-      <div className="row">
+      <div className="row v2-packet-heading">
         <div>
           <b>{job?.title || "Missing role"}</b>
           <small>
-            {job?.company} · {s.status}
+            {job?.company} · {job?.location || "Location unavailable"}
           </small>
         </div>
         <span className={`pill ${s.status}`}>{s.status}</span>
       </div>
-      {s.checklist.map((item) => (
-        <label className="check" key={item.id}>
-          <input
-            type="checkbox"
-            checked={item.done}
-            onChange={(e) => updateChecklist(item.id, e.target.checked)}
-          />
-          {item.text}
-        </label>
-      ))}
+      <div className="v2-packet-job-facts">
+        <span>
+          <small>Source</small>
+          <b>{job?.source || "Tracked job"}</b>
+        </span>
+        <span>
+          <small>Profile match</small>
+          <b>{job?.fitScore || 0}%</b>
+        </span>
+        <span>
+          <small>Salary</small>
+          <b>{job?.salary || "Not listed"}</b>
+        </span>
+      </div>
+      <details className="v2-packet-section" open>
+        <summary>Job description</summary>
+        <p>{job?.description || "No job description was captured."}</p>
+        {!!job?.tags?.length && (
+          <div className="chips">
+            {job.tags.map((tag) => (
+              <span key={tag}>{tag}</span>
+            ))}
+          </div>
+        )}
+      </details>
+      {!!job?.matchReasons?.length && (
+        <details className="v2-packet-section">
+          <summary>Why JobHuntr queued this role</summary>
+          <ul>
+            {job.matchReasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <section className="v2-packet-section v2-packet-documents">
+        <h4>Application documents</h4>
+        <div>
+          <span>
+            <FileText size={18} />
+            <span>
+              <b>{resumeLabel}</b>
+              <small>
+                {s.atsDecision === "optimized"
+                  ? "Tailored ATS resume"
+                  : "Base resume"}
+              </small>
+            </span>
+          </span>
+          {attachedResume && (
+            <a
+              href={`/print/resume/${attachedResume.id}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Preview ${attachedResume.name}`}
+            >
+              Preview
+            </a>
+          )}
+        </div>
+        {attachedLetter && (
+          <div>
+            <span>
+              <FileText size={18} />
+              <span>
+                <b>{attachedLetter.title}</b>
+                <small>Cover letter</small>
+              </span>
+            </span>
+            <a
+              href={`/print/cover-letter/${attachedLetter.id}`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Preview ${attachedLetter.title}`}
+            >
+              Preview
+            </a>
+          </div>
+        )}
+      </section>
+      <section className="v2-packet-section v2-packet-checklist">
+        <h4>Review checklist</h4>
+        {s.checklist.map((item) => (
+          <label className="check" key={item.id}>
+            <input
+              type="checkbox"
+              checked={item.done}
+              onChange={(e) => updateChecklist(item.id, e.target.checked)}
+            />
+            {item.text}
+          </label>
+        ))}
+      </section>
       <div className="attachments v2-packet-attachments">
         <div
           className={`v2-ats-recommendation ${
@@ -2787,19 +2882,38 @@ function SubmissionCard({ submission: s, state, reload }) {
           </select>
         </label>
       </div>
-      <button
-        className="success"
-        disabled={!s.checklist.every((x) => x.done)}
-        onClick={async () => {
-          await api(`/api/submissions/${s.id}/submit`, {
-            method: "POST",
-            body: "{}",
-          });
-          reload();
-        }}
-      >
-        <CheckCircle2 size={16} /> Mark submitted
-      </button>
+      <div className="v2-packet-footer-actions">
+        <button
+          className="success"
+          disabled={!s.checklist.every((x) => x.done)}
+          onClick={async () => {
+            await api(`/api/submissions/${s.id}/submit`, {
+              method: "POST",
+              body: "{}",
+            });
+            reload();
+          }}
+        >
+          <CheckCircle2 size={16} /> Mark submitted
+        </button>
+        <button
+          className="secondary"
+          onClick={() => updatePacket({ status: "archived" })}
+        >
+          Remove
+        </button>
+      </div>
+      {job?.url && (
+        <a
+          className="v2-apply-manually"
+          href={job.url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <ExternalLink size={16} /> Apply manually (required if blocked by
+          captcha)
+        </a>
+      )}
     </div>
   );
 }
