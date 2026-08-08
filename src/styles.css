@@ -1427,9 +1427,39 @@ button.v2-audit-toggle:hover {
 }
 .v2-outreach-toolbar {
   display: grid;
-  grid-template-columns: 1fr 170px;
+  grid-template-columns: 1fr auto auto;
   gap: 10px;
+  align-items: center;
   margin-bottom: 14px;
+}
+.v2-show-messages {
+  margin: 0;
+  white-space: nowrap;
+  color: #475569;
+  font-size: 12px;
+}
+.v2-outreach-toolbar .secondary.active {
+  color: #fff;
+  background: #18181a;
+  border-color: #18181a;
+}
+.v2-outreach-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+  margin: -4px 0 14px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+.v2-outreach-filters label {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
 }
 .v2-outreach-layout {
   display: grid;
@@ -1442,9 +1472,10 @@ button.v2-audit-toggle:hover {
 }
 .v2-contact-head {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 90px;
+  grid-template-columns: 20px 1.2fr 1fr 90px;
   gap: 12px;
-  padding: 11px 16px 11px 68px;
+  align-items: center;
+  padding: 11px 16px;
   border-bottom: 1px solid #e2e8f0;
   background: #f8fafc;
   color: #64748b;
@@ -1453,7 +1484,22 @@ button.v2-audit-toggle:hover {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.v2-contact-table > button {
+.v2-contact-row {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding-left: 16px;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+}
+.v2-contact-row > input,
+.v2-contact-head > input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+.v2-contact-row > button {
   display: grid;
   grid-template-columns: 40px 1.2fr 1fr 90px;
   align-items: center;
@@ -1461,20 +1507,24 @@ button.v2-audit-toggle:hover {
   width: 100%;
   padding: 14px 16px;
   border: 0;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 0;
   border-radius: 0;
   background: #fff;
   color: #1e293b;
   text-align: left;
 }
-.v2-contact-table > button:hover {
+.v2-contact-row:hover,
+.v2-contact-row > button:hover {
   background: #f8fafc;
 }
-.v2-contact-table > button.selected {
+.v2-contact-row:has(> button.selected) {
   background: #f1f5f9;
   box-shadow: inset 3px 0 #18181a;
 }
-.v2-contact-table > button > span:not(.v2-contact-avatar) {
+.v2-contact-row > button.selected {
+  background: #f1f5f9;
+}
+.v2-contact-row > button > span:not(.v2-contact-avatar) {
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -1530,6 +1580,63 @@ button.v2-audit-toggle:hover {
   margin: 0;
   color: #64748b;
 }
+.v2-message-hidden {
+  display: grid;
+  min-height: 250px;
+  place-content: center;
+  justify-items: center;
+  padding: 24px;
+  color: #64748b;
+  text-align: center;
+}
+.v2-message-hidden svg {
+  color: #2563eb;
+}
+.v2-message-hidden h3 {
+  margin: 12px 0 4px;
+  color: #334155;
+}
+.v2-message-hidden p {
+  max-width: 300px;
+  margin: 0;
+  line-height: 1.55;
+}
+.v2-connect-modal {
+  max-width: 460px;
+  text-align: center;
+}
+.v2-connect-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  place-items: center;
+  color: #1d4ed8;
+  border-radius: 50%;
+  background: #dbeafe;
+}
+.v2-connect-modal h3 {
+  margin: 0 0 8px;
+}
+.v2-connect-modal > p {
+  color: #64748b;
+  line-height: 1.55;
+}
+.v2-connect-summary {
+  display: grid;
+  margin: 18px 0;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+.v2-connect-summary strong {
+  font-size: 24px;
+}
+.v2-connect-summary span {
+  color: #64748b;
+  font-size: 12px;
+}
 @media (max-width: 1000px) {
   .v2-outreach-layout {
     grid-template-columns: 1fr;
@@ -1545,14 +1652,17 @@ button.v2-audit-toggle:hover {
   .v2-outreach-toolbar {
     grid-template-columns: 1fr;
   }
+  .v2-outreach-filters {
+    grid-template-columns: 1fr;
+  }
   .v2-contact-head {
     display: none;
   }
-  .v2-contact-table > button {
+  .v2-contact-row > button {
     grid-template-columns: 40px 1fr;
   }
-  .v2-contact-table > button > span:nth-child(3),
-  .v2-contact-table > button em {
+  .v2-contact-row > button > span:nth-child(3),
+  .v2-contact-row > button em {
     grid-column: 2;
   }
 }

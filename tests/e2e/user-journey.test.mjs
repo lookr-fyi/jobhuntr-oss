@@ -377,6 +377,30 @@ test(
       await page.reload();
       await page.getByRole("button", { name: "Outreach" }).click();
       await page.getByText("E2E persisted outreach subject").first().waitFor();
+      await page.getByRole("button", { name: "Filters" }).click();
+      await page.getByLabel("Sort contacts").selectOption("company");
+      await page
+        .getByLabel(/Select hiring team at/)
+        .first()
+        .check();
+      await page.getByRole("button", { name: "Connect (1)" }).click();
+      const connectDialog = page.getByRole("dialog", {
+        name: "Connect to 1 contact",
+      });
+      await connectDialog.waitFor();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/outreach/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        connectDialog
+          .getByRole("button", { name: "Mark as outreached" })
+          .click(),
+      ]);
+      await connectDialog.waitFor({ state: "hidden" });
+      await page.getByText("Outreached", { exact: true }).first().waitFor();
       await assertAccessible(page, "Outreach");
 
       await page.getByRole("button", { name: "AI Coach" }).click();

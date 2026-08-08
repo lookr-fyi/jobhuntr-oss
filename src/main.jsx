@@ -2857,9 +2857,25 @@ function OutreachPage({ state, reload }) {
   );
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
+  const [sort, setSort] = useState("newest");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showMessages, setShowMessages] = useState(true);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [connectOpen, setConnectOpen] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const connectCloseRef = useRef(null);
   const [draft, setDraft] = useState(
     state.outreachDrafts.find((item) => item.id === selectedId) || null,
   );
+  useEffect(() => {
+    if (!connectOpen) return undefined;
+    connectCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setConnectOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [connectOpen]);
   const generate = async () => {
     const created = await api("/api/outreach/draft", {
       method: "POST",
@@ -2869,17 +2885,58 @@ function OutreachPage({ state, reload }) {
     setDraft(created);
     await reload();
   };
-  const visible = state.outreachDrafts.filter((item) => {
-    const job = state.jobs.find((candidate) => candidate.id === item.jobId);
-    return (
-      (status === "all" || (item.status || "draft") === status) &&
-      `${item.subject} ${job?.company || ""} ${job?.title || ""}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
+  const visible = state.outreachDrafts
+    .filter((item) => {
+      const job = state.jobs.find((candidate) => candidate.id === item.jobId);
+      return (
+        (status === "all" || (item.status || "draft") === status) &&
+        `${item.subject} ${item.recipient || ""} ${job?.company || ""} ${job?.title || ""}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      );
+    })
+    .sort((a, b) =>
+      sort === "oldest"
+        ? new Date(a.createdAt) - new Date(b.createdAt)
+        : sort === "company"
+          ? (
+              state.jobs.find((job) => job.id === a.jobId)?.company || ""
+            ).localeCompare(
+              state.jobs.find((job) => job.id === b.jobId)?.company || "",
+            )
+          : new Date(b.createdAt) - new Date(a.createdAt),
     );
-  });
   const selected =
     draft || visible.find((item) => item.id === selectedId) || visible[0];
+  const allVisibleSelected =
+    visible.length > 0 && visible.every((item) => selectedIds.has(item.id));
+  const toggleSelected = (id) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const markSelectedOutreached = async () => {
+    setConnecting(true);
+    try {
+      await Promise.all(
+        [...selectedIds].map((id) =>
+          api(`/api/outreach/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ status: "sent" }),
+          }),
+        ),
+      );
+      setSelectedIds(new Set());
+      setConnectOpen(false);
+      setDraft(null);
+      await reload();
+    } finally {
+      setConnecting(false);
+    }
+  };
   return (
     <section className="v2-outreach-page">
       <div className="v2-page-intro">
@@ -2904,6 +2961,13 @@ function OutreachPage({ state, reload }) {
           </select>
           <button disabled={!jobId} onClick={generate}>
             <Users size={16} /> Collect contacts
+          </button>
+          <button
+            disabled={!selectedIds.size}
+            onClick={() => setConnectOpen(true)}
+          >
+            <MessageSquare size={16} />
+            {selectedIds.size ? `Connect (${selectedIds.size})` : "Connect"}
           </button>
         </div>
       </div>
@@ -2941,19 +3005,77 @@ function OutreachPage({ state, reload }) {
             placeholder="Search contacts, companies, or roles"
           />
         </div>
-        <select
-          aria-label="Filter contacts by status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
+        <label className="check v2-show-messages">
+          <input
+            type="checkbox"
+            checked={showMessages}
+            onChange={(event) => setShowMessages(event.target.checked)}
+          />
+          Show Connection Messages
+        </label>
+        <button
+          className={filtersOpen ? "secondary active" : "secondary"}
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((value) => !value)}
         >
-          <option value="all">All statuses</option>
-          <option value="draft">Listed</option>
-          <option value="sent">Outreached</option>
-        </select>
+          <Filter size={16} /> Filters
+        </button>
       </div>
+      {filtersOpen && (
+        <div className="v2-outreach-filters">
+          <label>
+            Contact status
+            <select
+              aria-label="Filter contacts by status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+            >
+              <option value="all">All statuses</option>
+              <option value="draft">Listed</option>
+              <option value="sent">Outreached</option>
+              <option value="replied">Replied</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+          <label>
+            Sort contacts
+            <select
+              aria-label="Sort contacts"
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="company">Company A–Z</option>
+            </select>
+          </label>
+          <button
+            className="secondary"
+            onClick={() => {
+              setQuery("");
+              setStatus("all");
+              setSort("newest");
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
       <div className="v2-outreach-layout">
         <div className="card v2-contact-table">
           <div className="v2-contact-head">
+            <input
+              type="checkbox"
+              aria-label="Select all visible contacts"
+              checked={allVisibleSelected}
+              onChange={() =>
+                setSelectedIds(
+                  allVisibleSelected
+                    ? new Set()
+                    : new Set(visible.map((item) => item.id)),
+                )
+              }
+            />
             <span>Contact</span>
             <span>Company & role</span>
             <span>Status</span>
@@ -2964,27 +3086,42 @@ function OutreachPage({ state, reload }) {
                 (candidate) => candidate.id === item.jobId,
               );
               return (
-                <button
-                  className={selected?.id === item.id ? "selected" : ""}
-                  key={item.id}
-                  onClick={() => {
-                    setSelectedId(item.id);
-                    setDraft(item);
-                  }}
-                >
-                  <span className="v2-contact-avatar">
-                    {(job?.company || "C")[0]}
-                  </span>
-                  <span>
-                    <strong>{item.recipient || "Hiring team"}</strong>
-                    <small>{item.subject}</small>
-                  </span>
-                  <span>
-                    <strong>{job?.company || "Deleted role"}</strong>
-                    <small>{job?.title}</small>
-                  </span>
-                  <em>{item.status === "sent" ? "Outreached" : "Listed"}</em>
-                </button>
+                <div className="v2-contact-row" key={item.id}>
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${item.recipient || "hiring team"} at ${job?.company || "company"}`}
+                    checked={selectedIds.has(item.id)}
+                    onChange={() => toggleSelected(item.id)}
+                  />
+                  <button
+                    className={selected?.id === item.id ? "selected" : ""}
+                    onClick={() => {
+                      setSelectedId(item.id);
+                      setDraft(item);
+                    }}
+                  >
+                    <span className="v2-contact-avatar">
+                      {(job?.company || "C")[0]}
+                    </span>
+                    <span>
+                      <strong>{item.recipient || "Hiring team"}</strong>
+                      <small>{item.subject}</small>
+                    </span>
+                    <span>
+                      <strong>{job?.company || "Deleted role"}</strong>
+                      <small>{job?.title}</small>
+                    </span>
+                    <em>
+                      {item.status === "sent"
+                        ? "Outreached"
+                        : item.status === "replied"
+                          ? "Replied"
+                          : item.status === "archived"
+                            ? "Archived"
+                            : "Listed"}
+                    </em>
+                  </button>
+                </div>
               );
             })
           ) : (
@@ -3020,11 +3157,22 @@ function OutreachPage({ state, reload }) {
                   </p>
                 </div>
               </div>
-              <OutreachEditor
-                draft={selected}
-                setDraft={setDraft}
-                reload={reload}
-              />
+              {showMessages ? (
+                <OutreachEditor
+                  draft={selected}
+                  setDraft={setDraft}
+                  reload={reload}
+                />
+              ) : (
+                <div className="v2-message-hidden">
+                  <ShieldCheck size={22} />
+                  <h3>Connection message hidden</h3>
+                  <p>
+                    Turn on Show Connection Messages to review and edit this
+                    private draft.
+                  </p>
+                </div>
+              )}
             </>
           ) : (
             <div className="empty-state">
@@ -3037,6 +3185,49 @@ function OutreachPage({ state, reload }) {
           )}
         </div>
       </div>
+      {connectOpen && (
+        <div
+          className="v2-template-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="connect-title"
+        >
+          <button
+            className="v2-template-backdrop"
+            aria-label="Close connect contacts dialog"
+            onClick={() => setConnectOpen(false)}
+          />
+          <div className="v2-template-modal-content v2-connect-modal">
+            <span className="v2-connect-icon">
+              <MessageSquare size={22} />
+            </span>
+            <h3 id="connect-title">
+              Connect to {selectedIds.size} contact
+              {selectedIds.size === 1 ? "" : "s"}
+            </h3>
+            <p>
+              Review the personalized messages before recording outreach.
+              JobHuntr will not send anything automatically.
+            </p>
+            <div className="v2-connect-summary">
+              <strong>{selectedIds.size}</strong>
+              <span>selected contact{selectedIds.size === 1 ? "" : "s"}</span>
+            </div>
+            <div className="v2-template-modal-actions">
+              <button
+                ref={connectCloseRef}
+                className="secondary"
+                onClick={() => setConnectOpen(false)}
+              >
+                Cancel
+              </button>
+              <button disabled={connecting} onClick={markSelectedOutreached}>
+                {connecting ? "Recording…" : "Mark as outreached"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
