@@ -4196,6 +4196,24 @@ function Resume({ state, reload, mode = "resume" }) {
           await reload();
         }}
       />
+      <ConfirmDialog
+        open={deleteTarget?.type === "resume"}
+        title="Delete resume version?"
+        description={
+          deleteTarget
+            ? `“${deleteTarget.item.name}” will be permanently removed. Your base profile resume and template will remain available.`
+            : "This generated resume will be permanently removed."
+        }
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await api(`/api/resumes/${deleteTarget.item.id}`, {
+            method: "DELETE",
+          });
+          if (preview?.id === deleteTarget.item.id) setPreview(null);
+          setDeleteTarget(null);
+          await reload();
+        }}
+      />
       <div className="v2-ats-header">
         <div>
           <h2>ATS Resume</h2>
@@ -4458,14 +4476,10 @@ function Resume({ state, reload, mode = "resume" }) {
                       </a>
                       <button
                         className="icon danger"
-                        title={`Delete ${item.name}`}
-                        onClick={async () => {
-                          await api(`/api/resumes/${item.id}`, {
-                            method: "DELETE",
-                          });
-                          if (preview?.id === item.id) setPreview(null);
-                          reload();
-                        }}
+                        aria-label={`Delete ${item.name}`}
+                        onClick={() =>
+                          setDeleteTarget({ type: "resume", item })
+                        }
                       >
                         ×
                       </button>
@@ -6239,6 +6253,7 @@ function Gigs({ state, reload }) {
                 <span className={`pill ${gig.status}`}>{gig.status}</span>
                 <button
                   className="drawer-close"
+                  aria-label="Close gig details"
                   onClick={() => setSelected(null)}
                 >
                   ×
@@ -6443,6 +6458,7 @@ function ProfileAudit({ state, reload }) {
     skills: (state.profile.skills || []).join(", "),
   });
   const [audit, setAudit] = useState(state.profileAudits[0] || null);
+  const [deleteAudit, setDeleteAudit] = useState(null);
   const [running, setRunning] = useState(false);
   const run = async () => {
     setRunning(true);
@@ -6459,6 +6475,20 @@ function ProfileAudit({ state, reload }) {
   };
   return (
     <section className="v2-audit-page">
+      <ConfirmDialog
+        open={Boolean(deleteAudit)}
+        title="Delete profile audit?"
+        description="This saved score, rubric, and recommendation history will be permanently removed."
+        onClose={() => setDeleteAudit(null)}
+        onConfirm={async () => {
+          await api(`/api/profile-audits/${deleteAudit.id}`, {
+            method: "DELETE",
+          });
+          if (audit?.id === deleteAudit.id) setAudit(null);
+          setDeleteAudit(null);
+          await reload();
+        }}
+      />
       <div className="v2-page-intro">
         <div>
           <h2>LinkedIn Profile Audit</h2>
@@ -6697,14 +6727,8 @@ function ProfileAudit({ state, reload }) {
                   </button>
                   <button
                     className="danger"
-                    aria-label="Delete profile audit"
-                    onClick={async () => {
-                      await api(`/api/profile-audits/${item.id}`, {
-                        method: "DELETE",
-                      });
-                      if (audit?.id === item.id) setAudit(null);
-                      reload();
-                    }}
+                    aria-label={`Delete profile audit from ${new Date(item.createdAt).toLocaleDateString()}`}
+                    onClick={() => setDeleteAudit(item)}
                   >
                     ×
                   </button>
@@ -6749,6 +6773,7 @@ function Agent({ state, reload, setTab }) {
   const [previewing, setPreviewing] = useState(false);
   const [savingPreset, setSavingPreset] = useState(false);
   const [presetSaved, setPresetSaved] = useState(false);
+  const [deletePreset, setDeletePreset] = useState(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
   const latestRun = state.agentRuns[0] || null;
@@ -6886,6 +6911,23 @@ function Agent({ state, reload, setTab }) {
   };
   return (
     <section className="v2-hunt-page">
+      <ConfirmDialog
+        open={Boolean(deletePreset)}
+        title="Delete hunt preset?"
+        description={
+          deletePreset
+            ? `“${deletePreset.name}” will be permanently removed. Existing run history is unaffected.`
+            : "This saved hunt preset will be permanently removed."
+        }
+        onClose={() => setDeletePreset(null)}
+        onConfirm={async () => {
+          await api(`/api/hunt-presets/${deletePreset.id}`, {
+            method: "DELETE",
+          });
+          setDeletePreset(null);
+          await reload();
+        }}
+      />
       <div className="v2-page-intro v2-hunt-intro">
         <div>
           <h2>Infinite Hunting</h2>
@@ -7143,12 +7185,8 @@ function Agent({ state, reload, setTab }) {
                   </button>
                   <button
                     className="danger"
-                    onClick={async () => {
-                      await api(`/api/hunt-presets/${preset.id}`, {
-                        method: "DELETE",
-                      });
-                      reload();
-                    }}
+                    aria-label={`Delete ${preset.name} preset`}
+                    onClick={() => setDeletePreset(preset)}
                   >
                     ×
                   </button>

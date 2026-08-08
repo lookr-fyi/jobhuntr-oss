@@ -418,6 +418,14 @@ test(
         .locator(".v2-resume-groups")
         .getByText("E2E tailored resume", { exact: true })
         .waitFor();
+      await page.getByLabel("Delete E2E tailored resume").click();
+      const deleteResumeDialog = page.getByRole("alertdialog", {
+        name: "Delete resume version?",
+      });
+      await deleteResumeDialog.waitFor();
+      await assertAccessible(page, "Delete resume version confirmation");
+      await deleteResumeDialog.getByRole("button", { name: "Cancel" }).click();
+      await deleteResumeDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search resume history").fill("no such resume");
       await page.getByText("No AI resumes found.", { exact: true }).waitFor();
       await page.getByLabel("Search resume history").fill("");
@@ -755,6 +763,15 @@ test(
         );
       await page.getByRole("button", { name: "Analyze Profile" }).click();
       await page.locator(".audit-score").waitFor();
+      await page
+        .getByRole("button", { name: /Delete profile audit from/ })
+        .click();
+      const deleteAuditDialog = page.getByRole("alertdialog", {
+        name: "Delete profile audit?",
+      });
+      await deleteAuditDialog.waitFor();
+      await deleteAuditDialog.getByRole("button", { name: "Cancel" }).click();
+      await deleteAuditDialog.waitFor({ state: "hidden" });
       await assertAccessible(page, "LinkedIn Audit");
 
       await page.locator('button[title="Outreach"]').click();
