@@ -532,6 +532,14 @@ test(
           .first()
           .click(),
       ]);
+      assert.equal(
+        await page.getByLabel("Resume version name").isVisible(),
+        false,
+        "manual resume generation should not displace the default v2 library/history layout",
+      );
+      await page
+        .getByText("Generate a resume manually", { exact: true })
+        .click();
       await page.getByLabel("Resume version name").fill("E2E tailored resume");
       await page
         .getByLabel("Resume content")

@@ -8468,6 +8468,46 @@ main > header.integrated-page-header {
   grid-column: 1/-1;
   grid-row: auto;
 }
+.v2-manual-resume-builder {
+  grid-column: 1/-1;
+}
+.v2-manual-resume-builder > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  list-style: none;
+}
+.v2-manual-resume-builder > summary::-webkit-details-marker {
+  display: none;
+}
+.v2-manual-resume-builder > summary > span {
+  display: grid;
+  grid-template-columns: 24px auto;
+  align-items: center;
+  gap: 2px 8px;
+}
+.v2-manual-resume-builder > summary svg {
+  grid-row: 1/3;
+}
+.v2-manual-resume-builder > summary small {
+  color: #64748b;
+  font-size: 11px;
+}
+.v2-manual-resume-builder > summary > svg {
+  transition: transform 0.2s ease;
+}
+.v2-manual-resume-builder[open] > summary > svg {
+  transform: rotate(90deg);
+}
+.v2-manual-resume-builder > .resume-editor {
+  margin-top: 12px;
+}
 .resume-studio > .document-library {
   grid-column: 1/-1;
 }

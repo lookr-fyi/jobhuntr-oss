@@ -5453,89 +5453,101 @@ function Resume({ state, reload, mode = "resume" }) {
           </div>
         )}
       </div>
-      <div className="card resume-editor">
-        <div className="row">
-          <h3>Resume editor</h3>
-          <span className="pill">local draft</span>
-        </div>
-        <div className="triple">
-          <input
-            aria-label="Resume version name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Version name"
-          />
-          <select
-            aria-label="Resume template"
-            value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
-          >
-            {state.templates.map((t) => (
-              <option value={t.id} key={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label="Target job"
-            value={jobId}
-            onChange={(e) => setJobId(e.target.value)}
-          >
-            {state.jobs.map((j) => (
-              <option value={j.id} key={j.id}>
-                {j.company} — {j.title}
-              </option>
-            ))}
-          </select>
-        </div>
-        <textarea
-          aria-label="Resume content"
-          ref={resumeRef}
-          className="resume"
-          value={resume}
-          onChange={(e) => setResume(e.target.value)}
-          placeholder={
-            "SUMMARY\nYour concise positioning statement\n\nEXPERIENCE\n- Accomplished X, measured by Y"
-          }
-        />
-        <div className="inline">
-          <button onClick={saveResume}>
-            <Save size={16} /> Save version
-          </button>
-          <button
-            className="secondary"
-            onClick={async () =>
-              setScore(
-                await api("/api/resume/score", {
-                  method: "POST",
-                  body: JSON.stringify({ resumeText: resume, jobId }),
-                }),
-              )
-            }
-          >
-            Analyze ATS fit
-          </button>
-        </div>
-        {score && (
-          <div className="score">
-            <b>{score.score}% ATS alignment</b>
-            <p>
-              {score.keywordHits.length} keywords matched ·{" "}
-              {score.quantifiedBullets} quantified outcomes
-            </p>
-            {score.missingKeywords?.length > 0 && (
-              <div className="chips">
-                {score.missingKeywords.slice(0, 6).map((x) => (
-                  <span key={x}>{x}</span>
-                ))}
-              </div>
-            )}
-            {score.suggestions.map((s) => (
-              <p key={s}>• {s}</p>
-            ))}
+      <details className="v2-manual-resume-builder">
+        <summary>
+          <span>
+            <FileText size={18} />
+            <b>Generate a resume manually</b>
+            <small>
+              Create a local resume version outside an Infinite Hunt run.
+            </small>
+          </span>
+          <ChevronRight size={18} />
+        </summary>
+        <div className="card resume-editor">
+          <div className="row">
+            <h3>Resume editor</h3>
+            <span className="pill">local draft</span>
           </div>
-        )}
-      </div>
+          <div className="triple">
+            <input
+              aria-label="Resume version name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Version name"
+            />
+            <select
+              aria-label="Resume template"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value)}
+            >
+              {state.templates.map((t) => (
+                <option value={t.id} key={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <select
+              aria-label="Target job"
+              value={jobId}
+              onChange={(e) => setJobId(e.target.value)}
+            >
+              {state.jobs.map((j) => (
+                <option value={j.id} key={j.id}>
+                  {j.company} — {j.title}
+                </option>
+              ))}
+            </select>
+          </div>
+          <textarea
+            aria-label="Resume content"
+            ref={resumeRef}
+            className="resume"
+            value={resume}
+            onChange={(e) => setResume(e.target.value)}
+            placeholder={
+              "SUMMARY\nYour concise positioning statement\n\nEXPERIENCE\n- Accomplished X, measured by Y"
+            }
+          />
+          <div className="inline">
+            <button onClick={saveResume}>
+              <Save size={16} /> Save version
+            </button>
+            <button
+              className="secondary"
+              onClick={async () =>
+                setScore(
+                  await api("/api/resume/score", {
+                    method: "POST",
+                    body: JSON.stringify({ resumeText: resume, jobId }),
+                  }),
+                )
+              }
+            >
+              Analyze ATS fit
+            </button>
+          </div>
+          {score && (
+            <div className="score">
+              <b>{score.score}% ATS alignment</b>
+              <p>
+                {score.keywordHits.length} keywords matched ·{" "}
+                {score.quantifiedBullets} quantified outcomes
+              </p>
+              {score.missingKeywords?.length > 0 && (
+                <div className="chips">
+                  {score.missingKeywords.slice(0, 6).map((x) => (
+                    <span key={x}>{x}</span>
+                  ))}
+                </div>
+              )}
+              {score.suggestions.map((s) => (
+                <p key={s}>• {s}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      </details>
       <div className="card document-library">
         <div className="v2-resume-history-head">
           <div>
