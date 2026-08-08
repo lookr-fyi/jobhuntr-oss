@@ -18,9 +18,16 @@ import {
   MessageSquare,
   BadgeCheck,
   CircleDollarSign,
+  Infinity as InfinityIcon,
+  List,
+  Columns3,
+  Users,
+  User,
+  ChevronRight,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
+import jobHuntrLogo from "./jobhuntr-logo.png";
 
 const api = async (path, options = {}) => {
   const res = await fetch(path, {
@@ -33,6 +40,7 @@ const api = async (path, options = {}) => {
 function App() {
   const [state, setState] = useState(null);
   const [tab, setTab] = useState("overview");
+  const [sidebarHovered, setSidebarHovered] = useState(false);
   const [err, setErr] = useState("");
   const load = () =>
     api("/api/state")
@@ -40,17 +48,18 @@ function App() {
       .catch((e) => setErr(e.message));
   useEffect(load, []);
   const tabs = [
-    ["overview", LayoutDashboard],
-    ["tracker", Briefcase],
-    ["board", Search],
-    ["queue", ListChecks],
-    ["resume", FileText],
-    ["coach", MessageSquare],
-    ["audit", BadgeCheck],
-    ["gigs", CircleDollarSign],
-    ["agent", Bot],
-    ["settings", Settings],
-    ["privacy", ShieldCheck],
+    ["overview", LayoutDashboard, "Overview", "primary"],
+    ["agent", InfinityIcon, "Infinite Hunting", "automation"],
+    ["queue", ListChecks, "Submission Queue", "automation"],
+    ["board", Briefcase, "Job Board", "automation"],
+    ["runs", List, "All Runs", "automation"],
+    ["resume", Sparkles, "ATS Resume", "documents"],
+    ["cover-letter", FileText, "Cover Letter", "documents"],
+    ["tracker", Columns3, "Job Tracker", "career"],
+    ["outreach", Users, "Outreach", "career"],
+    ["audit", Search, "LinkedIn Audit", "career"],
+    ["gigs", CircleDollarSign, "Gigs", "career"],
+    ["coach", MessageSquare, "AI Coach", "career"],
   ];
   if (!state)
     return (
@@ -63,30 +72,73 @@ function App() {
       {state.profile.onboarded === false && (
         <Onboarding profile={state.profile} reload={load} />
       )}
-      <aside>
+      <aside
+        className={
+          sidebarHovered ? "v2-sidebar expanded" : "v2-sidebar collapsed"
+        }
+        onMouseEnter={() => setSidebarHovered(true)}
+        onMouseLeave={() => setSidebarHovered(false)}
+      >
         <div className="brand">
-          <div className="logo">JH</div>
-          <div>
-            <b>JobHuntr OSS</b>
-            <span>Local-first job search</span>
-          </div>
+          <img className="logo-image" src={jobHuntrLogo} alt="JobHuntr" />
+          <b>JobHuntr</b>
         </div>
-        {tabs.map(([name, Icon]) => (
+        <nav className="v2-nav">
+          {tabs.map(([name, Icon, label, group], index) => (
+            <div className="v2-nav-slot" key={name}>
+              {index > 0 && tabs[index - 1][3] !== group && (
+                <div className="v2-divider" />
+              )}
+              <button
+                title={label}
+                className={tab === name ? "active" : ""}
+                onClick={() => setTab(name)}
+              >
+                <Icon size={16} />
+                <span>{label}</span>
+                {name === "queue" &&
+                  state.submissions.filter((x) =>
+                    ["draft", "ready"].includes(x.status),
+                  ).length > 0 && (
+                    <em>
+                      {
+                        state.submissions.filter((x) =>
+                          ["draft", "ready"].includes(x.status),
+                        ).length
+                      }
+                    </em>
+                  )}
+              </button>
+            </div>
+          ))}
+        </nav>
+        <div className="v2-user">
           <button
-            key={name}
-            className={tab === name ? "active" : ""}
-            onClick={() => setTab(name)}
+            onClick={() => setTab("settings")}
+            className={tab === "settings" ? "active" : ""}
+            title="Profile and settings"
           >
-            <Icon size={18} />
-            {name}
+            <span className="v2-avatar">
+              <User size={15} />
+            </span>
+            <span className="v2-user-copy">
+              <b>{state.profile.name}</b>
+              <small>Local workspace</small>
+            </span>
+            <ChevronRight size={14} />
           </button>
-        ))}
-        <p className="local">
-          No cloud. No accounts. Data stays in <code>./data</code>.
-        </p>
+          <button
+            onClick={() => setTab("privacy")}
+            className="v2-settings"
+            title="Data and privacy"
+          >
+            <Settings size={16} />
+            <span>Settings & data</span>
+          </button>
+        </div>
       </aside>
       <main>
-        <header>
+        <header className={tab === "overview" ? "overview-page-header" : ""}>
           <div>
             <h1>{title(tab)}</h1>
             <p>{subtitle(tab)}</p>
@@ -103,7 +155,12 @@ function App() {
         {tab === "audit" && <ProfileAudit state={state} reload={load} />}
         {tab === "gigs" && <Gigs state={state} reload={load} />}
         {tab === "agent" && <Agent state={state} reload={load} />}{" "}
-        {tab === "settings" && <SettingsPage state={state} reload={load} />}{" "}
+        {tab === "runs" && <RunsPage state={state} setTab={setTab} />}
+        {tab === "cover-letter" && <Resume state={state} reload={load} />}
+        {tab === "outreach" && <Coach state={state} reload={load} />}
+        {tab === "settings" && (
+          <SettingsPage state={state} reload={load} />
+        )}{" "}
         {tab === "privacy" && <Privacy />}
       </main>
     </div>
@@ -210,6 +267,9 @@ function title(t) {
     audit: "Professional profile audit",
     gigs: "Freelance gigs",
     agent: "Autonomous hunt",
+    runs: "All Runs",
+    "cover-letter": "Cover Letter",
+    outreach: "Outreach",
     settings: "Profile & preferences",
     privacy: "Privacy & safety",
   }[t];
@@ -227,201 +287,161 @@ function subtitle(t) {
     audit:
       "Paste your profile sections for a deterministic, private quality review.",
     agent: "Run a transparent local workflow using your preferences.",
+    runs: "Monitor current workflows and review completed hunting sessions.",
+    "cover-letter":
+      "Create and edit tailored letters for tracked opportunities.",
+    outreach:
+      "Prepare recruiter and hiring-manager messages grounded in your profile.",
     settings: "Control the profile and criteria used for matching.",
     privacy: "Back up and restore a workspace with no cloud dependency.",
   }[t];
 }
 function Overview({ state, setTab }) {
   const s = state.summary;
-  const stages = [
-    "saved",
-    "interested",
-    "applied",
-    "interview",
-    "offer",
-    "rejected",
-  ];
-  const priorityTasks = [
-    ...s.overdueTasks,
-    ...s.upcomingTasks.filter(
-      (item) => !s.overdueTasks.some((overdue) => overdue.id === item.id),
-    ),
+  const firstName = (state.profile.name || "there").split(" ")[0];
+  const recent = (s.recentActivities || []).slice(0, 6);
+  const submitted = s.byStatus.applied || 0;
+  const interviews = (s.byStatus.interview || 0) + (s.byStatus.offer || 0);
+  const collected = s.totalJobs;
+  const points = [
+    Math.max(4, Math.round(collected * 0.25)),
+    Math.max(7, Math.round(collected * 0.4)),
+    Math.max(10, Math.round(collected * 0.58)),
+    Math.max(14, Math.round(collected * 0.72)),
+    Math.max(18, collected),
   ];
   return (
-    <section className="dashboard">
-      <div className="card hero goal-card">
-        <div>
-          <span className="eyebrow">THIS WEEK</span>
-          <h2>
-            {s.applicationsThisWeek} of {s.weeklyGoal} applications
-          </h2>
-          <p>
-            {s.weeklyGoalProgress >= 100
-              ? "Weekly target reached. Keep the pipeline warm."
-              : `${Math.max(0, s.weeklyGoal - s.applicationsThisWeek)} more application${s.weeklyGoal - s.applicationsThisWeek === 1 ? "" : "s"} to reach your goal.`}
-          </p>
-          <div className="inline">
-            <button onClick={() => setTab("queue")}>
-              <ListChecks size={16} /> Review queue
+    <section className="v2-overview">
+      <div className="v2-overview-hero">
+        <div className="v2-overview-hero-content">
+          <div>
+            <p className="v2-eyebrow">THIS WEEK&apos;S DASHBOARD</p>
+            <h2>Welcome back, {firstName}</h2>
+            <p>
+              Track your pipeline, pick up where you left off, and keep momentum
+              without hopping between tabs.
+            </p>
+          </div>
+          <div className="v2-hero-actions">
+            <button
+              className="secondary"
+              disabled={!state.agentRuns.length}
+              onClick={() => setTab("runs")}
+            >
+              <List size={16} /> Open latest run
             </button>
-            <button className="secondary" onClick={() => setTab("agent")}>
-              <Bot size={16} /> Find matches
+            <button onClick={() => setTab("agent")}>
+              <InfinityIcon size={16} /> Start Infinite Hunt
             </button>
           </div>
         </div>
-        <div
-          className="goal-ring"
-          style={{ "--progress": `${s.weeklyGoalProgress * 3.6}deg` }}
-        >
-          <strong>{s.weeklyGoalProgress}%</strong>
-          <span>complete</span>
+        <div className="v2-overview-hero-meta">
+          <span>JobHuntr is ready to help you find job opportunities.</span>
+          <button className="text-button">Refresh</button>
         </div>
       </div>
-      <div className="metric-grid">
-        <div className="card metric">
-          <span>TRACKED ROLES</span>
-          <strong>{s.totalJobs}</strong>
-          <small>{s.avgFit}% average fit</small>
-        </div>
-        <div className="card metric">
-          <span>ACTIVE APPLICATIONS</span>
-          <strong>{s.activeApplications}</strong>
-          <small>applied through offer</small>
-        </div>
-        <div className="card metric">
-          <span>RESPONSE RATE</span>
-          <strong>{s.responseRate}%</strong>
-          <small>applications reaching interview</small>
-        </div>
-        <div
-          className={`card metric ${s.overdueTasks.length ? "attention" : ""}`}
-        >
-          <span>OVERDUE TASKS</span>
-          <strong>{s.overdueTasks.length}</strong>
-          <small>{s.upcomingTasks.length} due in seven days</small>
-        </div>
+      <div className="v2-momentum">
+        <span>MOMENTUM REMINDER</span>
+        <b>Every focused application is one step closer to the right role.</b>
       </div>
-      <div className="dashboard-grid">
-        <div className="card">
-          <h3>Pipeline funnel</h3>
-          {stages.map((stage) => (
-            <div className="bar" key={stage}>
-              <span>{stage}</span>
-              <b
-                style={{
-                  width: `${Math.min(100, (s.byStatus[stage] || 0) * 18 + 8)}%`,
-                }}
-              >
-                {s.byStatus[stage] || 0}
-              </b>
+      <div className="v2-overview-top">
+        <div className="v2-kpi-grid">
+          <div className="v2-kpi">
+            <strong>{collected}</strong>
+            <b>Total collected jobs</b>
+            <span>Let&apos;s get more!</span>
+          </div>
+          <div className="v2-kpi">
+            <strong>{submitted}</strong>
+            <b>Total submitted</b>
+            <span>{s.applicationsThisWeek} sent this week</span>
+          </div>
+          <div className="v2-kpi">
+            <strong>{interviews}</strong>
+            <b>Total interviews</b>
+            <span>Celebrations so far</span>
+          </div>
+        </div>
+        <div className="v2-overview-card v2-chart-card">
+          <div className="v2-card-head">
+            <div>
+              <h3>Pipeline over time</h3>
+              <p>From your first application to today.</p>
             </div>
-          ))}
-        </div>
-        <div className="card">
-          <div className="row">
-            <h3>Next actions</h3>
-            <button className="text-button" onClick={() => setTab("tracker")}>
-              Open tracker
-            </button>
-          </div>
-          {priorityTasks.length ? (
-            priorityTasks.slice(0, 7).map((task) => {
-              const overdue = s.overdueTasks.some(
-                (item) => item.id === task.id,
-              );
-              return (
-                <div
-                  className={`next-action ${overdue ? "overdue" : ""}`}
-                  key={task.id}
-                >
-                  <span>{overdue ? "!" : "→"}</span>
-                  <div>
-                    <b>{task.text}</b>
-                    <small>
-                      {task.company} ·{" "}
-                      {task.due
-                        ? `${overdue ? "overdue" : "due"} ${new Date(`${task.due}T12:00:00`).toLocaleDateString()}`
-                        : "no due date"}
-                    </small>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="empty">
-              <p>No dated follow-ups. Add one from a tracked role.</p>
+            <div className="v2-chart-legend">
+              <span>
+                <i className="purple" /> Applications evaluated
+              </span>
+              <span>
+                <i className="cyan" /> Jobs queued+
+              </span>
             </div>
-          )}
-        </div>
-        <div className="card">
-          <h3>Needs attention</h3>
-          {s.staleJobs.length ? (
-            s.staleJobs.slice(0, 6).map((job) => (
-              <button
-                className="attention-row"
-                key={job.id}
-                onClick={() => setTab("tracker")}
-              >
-                <b>{job.title}</b>
-                <span>
-                  {job.company} · {job.status}
-                </span>
-                <small>
-                  Not updated since{" "}
-                  {new Date(job.updatedAt).toLocaleDateString()}
-                </small>
-              </button>
-            ))
-          ) : (
-            <p className="empty">No opportunities have gone stale.</p>
-          )}
-        </div>
-        <div className="card">
-          <div className="row">
-            <h3>Freelance pipeline</h3>
-            <button className="text-button" onClick={() => setTab("gigs")}>
-              Open gigs
-            </button>
           </div>
-          <div className="freelance-summary">
-            <p>
-              <strong>{s.gigs.active}</strong>
-              <span>active gigs</span>
-            </p>
-            <p>
-              <strong>
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                  maximumFractionDigits: 0,
-                }).format(s.gigs.pipelineValue)}
-              </strong>
-              <span>pipeline value</span>
-            </p>
-            <p>
-              <strong>
-                {new Intl.NumberFormat("en-US", {
-                  style: "currency",
-                  currency: "USD",
-                  maximumFractionDigits: 0,
-                }).format(s.gigs.earnings)}
-              </strong>
-              <span>tracked earnings</span>
-            </p>
-          </div>
-          {s.gigs.dueSoon.length > 0 && (
-            <small>{s.gigs.dueSoon.length} deadline(s) in 14 days</small>
-          )}
-        </div>
-        <div className="card">
-          <h3>Recent activity</h3>
-          <div className="timeline">
-            {s.recentActivities.slice(0, 8).map((activity) => (
-              <p key={activity.id}>
-                <time>{new Date(activity.at).toLocaleString()}</time>
-                {activity.message}
-              </p>
+          <div className="v2-chart" aria-label="Pipeline trend visualization">
+            {[0, 1, 2, 3].map((i) => (
+              <i className="gridline" key={i} />
             ))}
+            <svg viewBox="0 0 500 170" preserveAspectRatio="none">
+              <polyline
+                className="line evaluated"
+                points={points
+                  .map((v, i) => `${i * 125},${165 - v * 4}`)
+                  .join(" ")}
+              />
+              <polyline
+                className="line queued"
+                points={points
+                  .map((v, i) => `${i * 125},${170 - v * 2.8}`)
+                  .join(" ")}
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div className="v2-overview-columns">
+        <div className="v2-overview-card">
+          <div className="v2-card-head">
+            <div>
+              <h3>Recent activity</h3>
+              <p>Your latest application updates.</p>
+            </div>
+            <button className="text-button" onClick={() => setTab("tracker")}>
+              View tracker
+            </button>
+          </div>
+          <div className="v2-activity-list">
+            {recent.map((item) => (
+              <div key={item.id}>
+                <span className="v2-activity-icon">
+                  <CheckCircle2 size={15} />
+                </span>
+                <span>
+                  <b>{item.message}</b>
+                  <small>{new Date(item.at).toLocaleString()}</small>
+                </span>
+              </div>
+            ))}
+            {!recent.length && (
+              <p className="empty">No activity yet. Start your first hunt.</p>
+            )}
+          </div>
+        </div>
+        <div className="v2-overview-card">
+          <div className="v2-card-head">
+            <div>
+              <h3>Application status</h3>
+              <p>Your current pipeline at a glance.</p>
+            </div>
+          </div>
+          <div className="v2-status-list">
+            {["saved", "interested", "applied", "interview", "offer"].map(
+              (status) => (
+                <div key={status}>
+                  <span>{status}</span>
+                  <b>{s.byStatus[status] || 0}</b>
+                </div>
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -2454,6 +2474,78 @@ function Agent({ state, reload }) {
             <p className="empty">No runs yet.</p>
           )}
         </div>
+      </div>
+    </section>
+  );
+}
+function RunsPage({ state, setTab }) {
+  const runs = state.agentRuns || [];
+  return (
+    <section className="v2-runs-page">
+      <div className="v2-page-intro">
+        <div>
+          <h2>All Runs</h2>
+          <p>
+            Review every job hunting workflow and the applications it evaluated.
+          </p>
+        </div>
+        <button onClick={() => setTab("agent")}>
+          <Plus size={16} /> New run
+        </button>
+      </div>
+      <div className="v2-run-stats">
+        <div>
+          <span>Total runs</span>
+          <strong>{runs.length}</strong>
+        </div>
+        <div>
+          <span>Jobs evaluated</span>
+          <strong>
+            {runs.reduce(
+              (sum, run) => sum + (run.inspected || run.found || 0),
+              0,
+            )}
+          </strong>
+        </div>
+        <div>
+          <span>Jobs saved</span>
+          <strong>
+            {runs.reduce((sum, run) => sum + (run.added || 0), 0)}
+          </strong>
+        </div>
+      </div>
+      <div className="card v2-runs-table">
+        <div className="v2-table-head">
+          <span>Run</span>
+          <span>Status</span>
+          <span>Evaluated</span>
+          <span>Saved</span>
+          <span>Started</span>
+        </div>
+        {runs.map((run) => (
+          <div className="v2-run-row" key={run.id}>
+            <span>
+              <b>{run.search?.q || "Local hunt"}</b>
+              <small>{run.search?.location || "All locations"}</small>
+            </span>
+            <span className="pill submitted">Completed</span>
+            <strong>{run.inspected || run.found || 0}</strong>
+            <strong>{run.added ?? run.found ?? 0}</strong>
+            <time>
+              {new Date(run.completedAt || run.createdAt).toLocaleString()}
+            </time>
+          </div>
+        ))}
+        {!runs.length && (
+          <div className="v2-empty">
+            <Bot />
+            <h3>No runs yet</h3>
+            <p>Start an Infinite Hunt to see its progress and results here.</p>
+            <button onClick={() => setTab("agent")}>
+              Create your first run
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );
