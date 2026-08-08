@@ -138,7 +138,13 @@ function App() {
         </div>
       </aside>
       <main>
-        <header className={tab === "overview" ? "overview-page-header" : ""}>
+        <header
+          className={
+            ["overview", "queue", "runs"].includes(tab)
+              ? "integrated-page-header"
+              : ""
+          }
+        >
           <div>
             <h1>{title(tab)}</h1>
             <p>{subtitle(tab)}</p>
@@ -922,59 +928,184 @@ function Board({ reload }) {
   );
 }
 function Queue({ state, reload }) {
-  const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
-  const active = state.submissions.filter((s) => s.status !== "archived");
+  const [jobId, setJobId] = useState(
+    state.jobs.find((j) => !["applied", "rejected"].includes(j.status))?.id ||
+      "",
+  );
+  const [selectedId, setSelectedId] = useState(
+    state.submissions.find(
+      (item) => !["archived", "submitted"].includes(item.status),
+    )?.id || "",
+  );
+  const [query, setQuery] = useState("");
+  const [queueTab, setQueueTab] = useState("apply");
+  const active = state.submissions.filter(
+    (item) => !["archived", "submitted"].includes(item.status),
+  );
+  const filtered = active.filter((item) => {
+    const job = state.jobs.find((candidate) => candidate.id === item.jobId);
+    return `${job?.title || ""} ${job?.company || ""}`
+      .toLowerCase()
+      .includes(query.toLowerCase());
+  });
+  const selected = active.find((item) => item.id === selectedId) || filtered[0];
   const create = async () => {
-    await api("/api/submissions", {
+    const created = await api("/api/submissions", {
       method: "POST",
       body: JSON.stringify({
         jobId,
         resumeId: state.resumes[0]?.id || "",
-        coverLetterId: state.coverLetters[0]?.id || "",
+        coverLetterId:
+          state.coverLetters.find((x) => x.jobId === jobId)?.id || "",
       }),
     });
-    reload();
+    setSelectedId(created.id);
+    await reload();
   };
   return (
-    <section className="grid">
-      <div className="card hero">
-        <h2>Application review</h2>
-        <p>
-          Create a packet, complete its checklist, then record submission.
-          JobHuntr never submits externally or stores credentials.
-        </p>
-        <select value={jobId} onChange={(e) => setJobId(e.target.value)}>
-          {state.jobs
-            .filter((j) => !["applied", "rejected"].includes(j.status))
-            .map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.company} — {j.title}
-              </option>
-            ))}
-        </select>
-        <button disabled={!jobId} onClick={create}>
-          <Plus size={16} /> Create packet
+    <section className="v2-queue-page">
+      <div className="v2-queue-title-row">
+        <div>
+          <h2>Submission Queue</h2>
+          <p>
+            Review collected jobs, attachments, and application details before
+            submitting.
+          </p>
+        </div>
+        <button className="secondary" onClick={reload}>
+          Refresh
         </button>
       </div>
-      <div className="card wide">
-        <h3>Packets · {active.length}</h3>
-        {active.length ? (
-          active.map((s) => (
-            <SubmissionCard
-              key={s.id}
-              submission={s}
-              state={state}
-              reload={reload}
-            />
-          ))
-        ) : (
-          <p className="empty">
-            No packets yet. Choose a tracked role to begin.
-          </p>
-        )}
+      <div className="v2-queue-tabs" role="tablist">
+        <button
+          className={queueTab === "apply" ? "active" : ""}
+          onClick={() => setQueueTab("apply")}
+        >
+          <ClipboardListIcon /> Apply Jobs <em>{active.length}</em>
+        </button>
+        <button
+          className={queueTab === "search" ? "active" : ""}
+          onClick={() => setQueueTab("search")}
+        >
+          <Search size={15} /> Search Jobs <em>0</em>
+        </button>
+        <button
+          className={queueTab === "manual" ? "active" : ""}
+          onClick={() => setQueueTab("manual")}
+        >
+          <Plus size={15} /> Manual Jobs <em>0</em>
+        </button>
       </div>
+      {queueTab !== "apply" ? (
+        <div className="v2-queue-placeholder">
+          <InboxIcon />
+          <h3>
+            {queueTab === "search"
+              ? "No search-only jobs"
+              : "No manually queued jobs"}
+          </h3>
+          <p>Jobs added through this workflow will appear here.</p>
+        </div>
+      ) : (
+        <>
+          <div className="v2-queue-toolbar">
+            <div className="searchbox">
+              <Search size={16} />
+              <input
+                aria-label="Search submission queue"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search jobs or companies"
+              />
+            </div>
+            <div className="v2-create-packet">
+              <select
+                aria-label="Tracked role"
+                value={jobId}
+                onChange={(e) => setJobId(e.target.value)}
+              >
+                {state.jobs
+                  .filter((j) => !["applied", "rejected"].includes(j.status))
+                  .map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.company} — {j.title}
+                    </option>
+                  ))}
+              </select>
+              <button disabled={!jobId} onClick={create}>
+                <Plus size={15} /> Add to queue
+              </button>
+            </div>
+          </div>
+          <div className="v2-queue-layout">
+            <div className="v2-queue-list">
+              <div className="v2-queue-list-head">
+                <span>{filtered.length} jobs</span>
+                <span>Queue time</span>
+              </div>
+              {filtered.map((item) => {
+                const job = state.jobs.find(
+                  (candidate) => candidate.id === item.jobId,
+                );
+                return (
+                  <button
+                    key={item.id}
+                    className={selected?.id === item.id ? "selected" : ""}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <span className="v2-job-logo">
+                      {(job?.company || "J").slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="v2-queued-job">
+                      <b>{job?.title || "Missing role"}</b>
+                      <small>
+                        {job?.company} ·{" "}
+                        {job?.location || "Location unavailable"}
+                      </small>
+                      <span>
+                        <i className={`queue-state ${item.status}`} />
+                        {item.status}
+                        <em>{job?.fitScore || 0}% match</em>
+                      </span>
+                    </span>
+                    <time>{new Date(item.createdAt).toLocaleDateString()}</time>
+                  </button>
+                );
+              })}
+              {!filtered.length && (
+                <div className="v2-queue-empty">
+                  <InboxIcon />
+                  <h3>Your queue is clear</h3>
+                  <p>Add a tracked role to review its application packet.</p>
+                </div>
+              )}
+            </div>
+            <div className="v2-queue-detail">
+              {selected ? (
+                <SubmissionCard
+                  submission={selected}
+                  state={state}
+                  reload={reload}
+                />
+              ) : (
+                <div className="v2-detail-empty">
+                  <ClipboardListIcon />
+                  <h3>Select a job to review</h3>
+                  <p>Application details and attachments will appear here.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </section>
   );
+}
+function ClipboardListIcon() {
+  return <ListChecks size={15} />;
+}
+function InboxIcon() {
+  return <Download size={24} />;
 }
 function SubmissionCard({ submission: s, state, reload }) {
   const job = state.jobs.find((j) => j.id === s.jobId);
