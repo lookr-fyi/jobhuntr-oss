@@ -308,6 +308,37 @@ test(
         .click();
       await linkedRunDialog.waitFor({ state: "hidden" });
       assert.match(page.url(), /#\/runs$/);
+      await page.getByRole("button", { name: "New Run" }).click();
+      const newRunDialog = page.getByRole("dialog", {
+        name: "Create New Agent Run",
+      });
+      await newRunDialog.waitFor();
+      await newRunDialog
+        .getByRole("radio", { name: /Glassdoor Auto Search/ })
+        .click();
+      await newRunDialog.getByLabel("Run Name").fill("Frontend Engineer");
+      await newRunDialog.getByLabel("Generate ATS-optimized resumes").check();
+      await newRunDialog.getByRole("button", { name: "Cancel" }).click();
+      await newRunDialog.waitFor({ state: "hidden" });
+      await page.getByRole("button", { name: "New Run" }).click();
+      await newRunDialog
+        .getByRole("radio", { name: /Company Website Search/ })
+        .click();
+      await newRunDialog.getByLabel("Run Name").fill("Platform Engineer");
+      await newRunDialog.getByLabel("Generate ATS-optimized resumes").check();
+      await newRunDialog.getByRole("button", { name: "Create" }).click();
+      await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      await page
+        .locator(".v2-loop-row", { hasText: "Company Career Page Search" })
+        .waitFor();
+      assert.equal(
+        await page
+          .getByLabel("Generate an optimized resume for each job")
+          .isChecked(),
+        true,
+      );
+      await page.getByRole("button", { name: "Agent Runs" }).click();
+      await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
       await assertAccessible(page, "Agent Runs");
       const huntStatus = page.getByRole("button", {
         name: "Open Infinite Hunting status",

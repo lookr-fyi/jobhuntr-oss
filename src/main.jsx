@@ -7673,8 +7673,17 @@ function ProfileAudit({ state, reload }) {
   );
 }
 function Agent({ state, reload, setTab }) {
+  const [newRunDraft] = useState(() => {
+    try {
+      return JSON.parse(
+        localStorage.getItem("jobhuntr-new-run-draft") || "null",
+      );
+    } catch {
+      return null;
+    }
+  });
   const defaults = {
-    q: state.profile.targetRoles?.[0] || "Software Engineer",
+    q: newRunDraft?.q || state.profile.targetRoles?.[0] || "Software Engineer",
     location: state.profile.preferences?.locations?.[0] || "",
     minFit: 60,
     maxResults: 25,
@@ -7688,15 +7697,20 @@ function Agent({ state, reload, setTab }) {
       const saved = JSON.parse(
         localStorage.getItem("jobhuntr-infinite-workflows") || "null",
       );
-      return Array.isArray(saved) && saved.length
-        ? saved
-        : ["linkedin", "indeed"];
+      return Array.isArray(newRunDraft?.workflows) &&
+        newRunDraft.workflows.length
+        ? newRunDraft.workflows
+        : Array.isArray(saved) && saved.length
+          ? saved
+          : ["linkedin", "indeed"];
     } catch {
       return ["linkedin", "indeed"];
     }
   });
   const [optimizeResume, setOptimizeResume] = useState(
-    () => localStorage.getItem("jobhuntr-optimize-resume") === "true",
+    () =>
+      newRunDraft?.optimizeResume ??
+      localStorage.getItem("jobhuntr-optimize-resume") === "true",
   );
   const [running, setRunning] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -7706,6 +7720,18 @@ function Agent({ state, reload, setTab }) {
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
   const latestRun = state.agentRuns[0] || null;
+  useEffect(() => {
+    if (!newRunDraft) return;
+    localStorage.removeItem("jobhuntr-new-run-draft");
+    localStorage.setItem(
+      "jobhuntr-infinite-workflows",
+      JSON.stringify(newRunDraft.workflows),
+    );
+    localStorage.setItem(
+      "jobhuntr-optimize-resume",
+      String(Boolean(newRunDraft.optimizeResume)),
+    );
+  }, [newRunDraft]);
   useEffect(() => {
     if (!statusOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -8287,6 +8313,12 @@ function RunsPage({ state, setTab, reload }) {
   const [showManualOnly, setShowManualOnly] = useState(false);
   const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState(null);
+  const [newRunOpen, setNewRunOpen] = useState(false);
+  const [newRunTemplate, setNewRunTemplate] = useState("linkedin");
+  const [newRunName, setNewRunName] = useState(
+    state.profile.targetRoles?.[0] || "Software Engineer",
+  );
+  const [newRunOptimize, setNewRunOptimize] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [selectedRun, setSelectedRun] = useState(
     () => runs.find((run) => run.id === linkedRunId) || null,
@@ -8393,7 +8425,7 @@ function RunsPage({ state, setTab, reload }) {
           >
             Open Latest Run
           </button>
-          <button onClick={() => setTab("agent")}>
+          <button onClick={() => setNewRunOpen(true)}>
             <Plus size={16} /> New Run
           </button>
         </div>
@@ -8671,6 +8703,137 @@ function RunsPage({ state, setTab, reload }) {
                 }}
               >
                 Run again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {newRunOpen && (
+        <div
+          className="v2-session-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-agent-run-title"
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setNewRunOpen(false);
+            containDialogFocus(event);
+          }}
+        >
+          <button
+            className="v2-session-backdrop"
+            aria-label="Close new agent run"
+            onClick={() => setNewRunOpen(false)}
+          />
+          <div className="v2-session-content v2-new-run-modal">
+            <div className="v2-new-run-head">
+              <div>
+                <span>NEW WORKFLOW</span>
+                <h3 id="new-agent-run-title">Create New Agent Run</h3>
+              </div>
+              <button
+                className="v2-run-delete"
+                aria-label="Close"
+                autoFocus
+                onClick={() => setNewRunOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p>
+              Choose a search workflow, then configure it in Infinite Hunting.
+            </p>
+            <div
+              className="v2-new-run-templates"
+              role="radiogroup"
+              aria-label="Run template"
+            >
+              {[
+                [
+                  "linkedin",
+                  "in",
+                  "LinkedIn Auto Search",
+                  "Find matching roles and save them for review.",
+                ],
+                [
+                  "indeed",
+                  "i",
+                  "Indeed Auto Search",
+                  "Search Indeed-style listings using your preferences.",
+                ],
+                [
+                  "glassdoor",
+                  "g",
+                  "Glassdoor Auto Search",
+                  "Discover roles with company and salary context.",
+                ],
+                [
+                  "company",
+                  "↗",
+                  "Company Website Search",
+                  "Search verified company career-page listings.",
+                ],
+              ].map(([id, mark, name, description]) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={newRunTemplate === id}
+                  className={newRunTemplate === id ? "selected" : ""}
+                  key={id}
+                  onClick={() => setNewRunTemplate(id)}
+                >
+                  <span className={`v2-platform-mark ${id}`}>{mark}</span>
+                  <span>
+                    <strong>{name}</strong>
+                    <small>{description}</small>
+                  </span>
+                  <i>{newRunTemplate === id ? "✓" : ""}</i>
+                </button>
+              ))}
+            </div>
+            <label>
+              Run Name
+              <input
+                value={newRunName}
+                onChange={(event) => setNewRunName(event.target.value)}
+                placeholder="Software Engineer"
+              />
+            </label>
+            <label className="v2-check-row v2-new-run-option">
+              <input
+                type="checkbox"
+                checked={newRunOptimize}
+                onChange={(event) => setNewRunOptimize(event.target.checked)}
+              />
+              <span>
+                <strong>Generate ATS-optimized resumes</strong>
+                <small>
+                  Create a tailored resume for matching queued jobs.
+                </small>
+              </span>
+            </label>
+            <div className="v2-session-actions">
+              <button
+                className="secondary"
+                onClick={() => setNewRunOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!newRunName.trim()}
+                onClick={() => {
+                  localStorage.setItem(
+                    "jobhuntr-new-run-draft",
+                    JSON.stringify({
+                      q: newRunName.trim(),
+                      workflows: [newRunTemplate],
+                      optimizeResume: newRunOptimize,
+                    }),
+                  );
+                  setNewRunOpen(false);
+                  setTab("agent");
+                }}
+              >
+                Create
               </button>
             </div>
           </div>

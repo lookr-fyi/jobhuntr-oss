@@ -5205,6 +5205,90 @@ select:focus {
   width: min(1000px, calc(100vw - 40px));
   max-width: 1000px;
 }
+.v2-new-run-modal {
+  width: min(760px, calc(100vw - 40px));
+  max-height: min(820px, calc(100vh - 40px));
+  overflow: auto;
+}
+.v2-new-run-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.v2-new-run-head span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.v2-new-run-head h3 {
+  margin: 5px 0 0;
+  font-size: 22px;
+}
+.v2-new-run-modal > p {
+  margin: 8px 0 20px;
+  color: #64748b;
+  font-size: 13px;
+}
+.v2-new-run-templates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.v2-new-run-templates > button {
+  display: grid;
+  grid-template-columns: 38px 1fr 22px;
+  gap: 11px;
+  align-items: center;
+  padding: 14px;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  text-align: left;
+  box-shadow: none;
+}
+.v2-new-run-templates > button:hover,
+.v2-new-run-templates > button.selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: none;
+}
+.v2-new-run-templates strong,
+.v2-new-run-templates small {
+  display: block;
+}
+.v2-new-run-templates small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.v2-new-run-templates i {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: #fff;
+  border-radius: 50%;
+  background: #2563eb;
+  font-size: 11px;
+  font-style: normal;
+}
+.v2-new-run-modal > label:not(.v2-check-row) {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-new-run-option {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
 .v2-run-detail-modal .v2-session-stats {
   grid-template-columns: repeat(4, 1fr);
 }
@@ -5294,6 +5378,9 @@ select:focus {
   .v2-run-detail-columns {
     grid-template-columns: 1fr;
   }
+  .v2-new-run-templates {
+    grid-template-columns: 1fr;
+  }
   .v2-table-head,
   .v2-run-row {
     grid-template-columns: 24px minmax(0, 1fr) 36px;
@@ -5301,8 +5388,7 @@ select:focus {
   .v2-table-head > :nth-child(n + 3):nth-child(-n + 6),
   .v2-run-row > :nth-child(3),
   .v2-run-row > :nth-child(4),
-  .v2-run-row > :nth-child(5),
-  .v2-run-row > :nth-child(6) {
+  .v2-run-row > :nth-child(5) {
     display: none;
   }
 }
