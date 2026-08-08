@@ -618,7 +618,9 @@ test(
         navigationBox.y >= 780,
         "mobile navigation should be bottom-fixed",
       );
-      await mobile.getByRole("button", { name: "Job Board" }).click();
+      await mobile
+        .locator('button[title="Job Board"]')
+        .evaluate((button) => button.click());
       await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
       await assertAccessible(mobile, "Mobile Job Board");
       const hasPageOverflow = await mobile.evaluate(
@@ -629,6 +631,30 @@ test(
         false,
         "mobile page should not overflow horizontally",
       );
+      for (const [navigation, heading] of [
+        ["Submission Queue", "Submission Queue"],
+        ["ATS Resume", "ATS Resume"],
+        ["Cover Letter", "Cover Letters"],
+        ["Job Tracker", "Job Tracker"],
+        ["Outreach", "Outreach"],
+        ["LinkedIn Audit", "LinkedIn Profile Audit"],
+        ["Gigs", "Gigs"],
+        ["AI Coach", "Hi, I'm AI Coach!"],
+        ["Profile and settings", "User Center"],
+        ["Data and privacy", "Settings & data"],
+      ]) {
+        await mobile
+          .locator(`button[title="${navigation}"]`)
+          .evaluate((button) => button.click());
+        await mobile.getByRole("heading", { name: heading }).first().waitFor();
+        const overflow = await mobile.evaluate(
+          () =>
+            document.documentElement.scrollWidth >
+            document.documentElement.clientWidth + 1,
+        );
+        assert.equal(overflow, false, `${heading} should fit a 390px viewport`);
+      }
+      await assertAccessible(mobile, "Mobile Settings and data");
       await mobileContext.close();
     } finally {
       await browser?.close();

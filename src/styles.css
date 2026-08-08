@@ -4380,22 +4380,40 @@ button.v2-run-row:hover {
     right: 0;
     width: 100% !important;
     height: 60px;
-    display: block;
+    display: flex;
+    flex-direction: row;
     border-right: 0;
     border-top: 1px solid var(--v2-border);
   }
   .v2-sidebar .brand,
-  .v2-user,
   .v2-divider {
     display: none;
   }
   .v2-nav {
+    min-width: 0;
     display: flex;
+    flex: 1;
     gap: 4px;
     padding: 10px;
     overflow-x: auto;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
+  }
+  .v2-user {
+    display: flex;
+    flex: none;
+    gap: 3px;
+    padding: 10px 8px;
+    border-top: 0;
+    border-left: 1px solid var(--v2-border);
+    background: #fff;
+  }
+  .v2-user > button,
+  .v2-user > button:first-child {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    margin: 0;
   }
   .v2-nav::-webkit-scrollbar {
     display: none;
