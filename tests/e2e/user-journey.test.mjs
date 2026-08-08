@@ -164,6 +164,18 @@ test(
       await page.getByRole("button", { name: "Start infinite hunt" }).click();
       await page.getByText(/eligible matches/).waitFor();
       await page.getByRole("heading", { name: "Run history" }).waitFor();
+      await page
+        .getByRole("button", { name: "View last infinite session" })
+        .click();
+      const sessionDialog = page.getByRole("dialog", {
+        name: "Latest infinite session",
+      });
+      await sessionDialog.waitFor();
+      await sessionDialog.getByText("Inspected", { exact: true }).waitFor();
+      await sessionDialog.getByText("Matched", { exact: true }).waitFor();
+      await sessionDialog.getByText("Saved", { exact: true }).waitFor();
+      await page.keyboard.press("Escape");
+      await sessionDialog.waitFor({ state: "hidden" });
 
       await page.getByRole("button", { name: "All Runs" }).click();
       await page.getByRole("heading", { name: "All Runs" }).waitFor();

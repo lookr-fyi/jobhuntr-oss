@@ -1523,6 +1523,14 @@ button.v2-board-row.selected {
   color: #374151;
   font-size: 14px;
 }
+.v2-queue-banner > span {
+  min-width: 0;
+  flex: 1;
+}
+.v2-queue-banner > button {
+  flex: none;
+  white-space: nowrap;
+}
 .v2-hunt-builder {
   max-width: 840px;
   margin: 0 auto;
@@ -1768,12 +1776,133 @@ button.v2-workflow-card.selected {
   max-width: 840px;
   margin: 24px auto 0;
 }
+.v2-session-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.v2-session-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+.v2-session-backdrop:hover {
+  border: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+.v2-session-content {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  width: min(620px, 100%);
+  max-height: calc(100vh - 40px);
+  padding: 28px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+}
+.v2-session-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.v2-session-head > div > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.v2-session-head h3 {
+  margin: 0;
+  font-size: 22px;
+}
+.v2-session-time {
+  margin: 8px 0 20px;
+  color: #475569;
+  font-size: 12px;
+}
+.v2-session-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.v2-session-stats > div {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.v2-session-stats strong,
+.v2-session-stats span {
+  display: block;
+}
+.v2-session-stats strong {
+  font-size: 22px;
+}
+.v2-session-stats span {
+  margin-top: 3px;
+  color: #475569;
+  font-size: 11px;
+}
+.v2-session-steps {
+  margin-top: 20px;
+}
+.v2-session-steps > div {
+  display: flex;
+  gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+.v2-session-steps svg {
+  flex: none;
+  margin-top: 2px;
+  color: #059669;
+}
+.v2-session-steps b,
+.v2-session-steps small {
+  display: block;
+}
+.v2-session-steps b {
+  font-size: 13px;
+}
+.v2-session-steps small {
+  margin-top: 3px;
+  color: #475569;
+  line-height: 1.45;
+}
+.v2-session-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
 @media (max-width: 760px) {
   .v2-hunt-page {
     padding-inline: 0;
   }
   .v2-hunt-builder {
     padding: 20px;
+  }
+  .v2-queue-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .v2-queue-banner > button {
+    width: 100%;
+    justify-content: center;
   }
   .v2-workflow-grid {
     grid-template-columns: 1fr;
@@ -1791,6 +1920,9 @@ button.v2-workflow-card.selected {
   }
   .v2-loop-row > button:last-child {
     grid-column: 3;
+  }
+  .v2-session-content {
+    padding: 22px;
   }
 }
 .hunt-config {

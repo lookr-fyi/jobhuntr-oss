@@ -183,7 +183,9 @@ function App() {
         {tab === "coach" && <Coach state={state} reload={load} />}{" "}
         {tab === "audit" && <ProfileAudit state={state} reload={load} />}
         {tab === "gigs" && <Gigs state={state} reload={load} />}
-        {tab === "agent" && <Agent state={state} reload={load} />}{" "}
+        {tab === "agent" && (
+          <Agent state={state} reload={load} setTab={setTab} />
+        )}{" "}
         {tab === "runs" && <RunsPage state={state} setTab={setTab} />}
         {tab === "cover-letter" && (
           <Resume state={state} reload={load} mode="cover-letter" />
@@ -3317,7 +3319,7 @@ function ProfileAudit({ state, reload }) {
     </section>
   );
 }
-function Agent({ state, reload }) {
+function Agent({ state, reload, setTab }) {
   const defaults = {
     q: state.profile.targetRoles?.[0] || "Software Engineer",
     location: state.profile.preferences?.locations?.[0] || "",
@@ -3344,6 +3346,18 @@ function Agent({ state, reload }) {
     () => localStorage.getItem("jobhuntr-optimize-resume") === "true",
   );
   const [running, setRunning] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const statusCloseRef = useRef(null);
+  const latestRun = state.agentRuns[0] || null;
+  useEffect(() => {
+    if (!statusOpen) return undefined;
+    statusCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setStatusOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [statusOpen]);
   const payload = () => ({
     q: form.q,
     location: form.location,
@@ -3444,15 +3458,8 @@ function Agent({ state, reload }) {
             clock.
           </p>
         </div>
-        {state.agentRuns.length > 0 && (
-          <button
-            className="secondary"
-            onClick={() =>
-              document
-                .querySelector(".v2-hunt-history")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-          >
+        {latestRun && (
+          <button className="secondary" onClick={() => setStatusOpen(true)}>
             View last infinite session
           </button>
         )}
@@ -3464,6 +3471,9 @@ function Agent({ state, reload }) {
             You have {state.queue.length} queued job
             {state.queue.length === 1 ? "" : "s"} waiting to be reviewed
           </span>
+          <button className="secondary" onClick={() => setTab("queue")}>
+            View Submission Queue <ChevronRight size={15} />
+          </button>
         </div>
       )}
       <div className="card v2-hunt-builder">
@@ -3803,6 +3813,69 @@ function Agent({ state, reload }) {
           )}
         </div>
       </div>
+      {statusOpen && latestRun && (
+        <div
+          className="v2-session-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="session-status-title"
+        >
+          <button
+            className="v2-session-backdrop"
+            aria-label="Close infinite session details"
+            onClick={() => setStatusOpen(false)}
+          />
+          <div className="v2-session-content">
+            <div className="v2-session-head">
+              <div>
+                <span>INFINITE HUNTING SESSION</span>
+                <h3 id="session-status-title">Latest infinite session</h3>
+              </div>
+              <span className={`pill ${latestRun.status}`}>
+                {latestRun.status}
+              </span>
+            </div>
+            <p className="v2-session-time">
+              Started {new Date(latestRun.createdAt).toLocaleString()}
+            </p>
+            <div className="v2-session-stats">
+              <div>
+                <strong>{latestRun.inspected || 0}</strong>
+                <span>Inspected</span>
+              </div>
+              <div>
+                <strong>{latestRun.found || 0}</strong>
+                <span>Matched</span>
+              </div>
+              <div>
+                <strong>{latestRun.added || 0}</strong>
+                <span>Saved</span>
+              </div>
+            </div>
+            <div className="v2-session-steps">
+              {(latestRun.steps || []).map((step) => (
+                <div key={step.name}>
+                  <CheckCircle2 size={16} />
+                  <span>
+                    <b>{step.name}</b>
+                    <small>{step.detail}</small>
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="v2-session-actions">
+              <button
+                ref={statusCloseRef}
+                className="secondary"
+                onClick={() => setStatusOpen(false)}
+              >
+                Close
+              </button>
+              <button onClick={() => setTab("runs")}>Open all runs</button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
