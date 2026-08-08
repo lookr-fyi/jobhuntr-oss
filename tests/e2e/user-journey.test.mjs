@@ -101,6 +101,7 @@ test(
       });
       const desktopContext = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
+        permissions: ["clipboard-read", "clipboard-write"],
       });
       const page = await desktopContext.newPage();
       await page.goto(baseUrl);
@@ -852,6 +853,11 @@ test(
         .getByRole("button", { name: "Help me prepare for an interview" })
         .click();
       await page.getByText(/start by grounding your answer/).waitFor();
+      assert.match(page.url(), /#\/coach\?conversation=/);
+      await page.getByRole("button", { name: /Copy coach response/ }).click();
+      await page.getByText("Copied", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Share conversation" }).click();
+      await page.getByText("Link copied", { exact: true }).waitFor();
       await assertAccessible(page, "AI Coach");
       await page
         .getByRole("button", { name: "New coaching conversation" })
@@ -874,6 +880,17 @@ test(
         .getByText("Help me prepare for an interview", { exact: true })
         .last()
         .waitFor();
+      await page
+        .getByRole("button", {
+          name: "Delete Help me prepare for an interview",
+        })
+        .click();
+      const deleteCoachDialog = page.getByRole("alertdialog", {
+        name: "Delete coaching conversation?",
+      });
+      await deleteCoachDialog.waitFor();
+      await assertAccessible(page, "Delete coaching conversation confirmation");
+      await deleteCoachDialog.getByRole("button", { name: "Cancel" }).click();
 
       await page.getByRole("button", { name: "Gigs" }).click();
       await Promise.all([

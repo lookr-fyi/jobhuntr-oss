@@ -1437,6 +1437,23 @@ button:disabled {
   display: flex;
   flex-direction: column;
 }
+.v2-coach-chat-actions {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #475569;
+  font-size: 12px;
+}
+.v2-coach-chat-actions span {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .v2-coach-workspace {
   display: grid;
   grid-template-columns: 270px minmax(0, 1fr);
@@ -1639,6 +1656,10 @@ button:disabled {
 .v2-chat-message.user {
   justify-content: flex-end;
 }
+.v2-chat-message.assistant {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+}
 .v2-chat-message p {
   margin: 0;
   padding: 11px 14px;
@@ -1650,6 +1671,24 @@ button:disabled {
 .v2-chat-message.assistant p {
   padding: 2px 0;
   background: transparent;
+}
+.v2-coach-copy {
+  grid-column: 2;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  color: #64748b;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+  box-shadow: none;
+}
+.v2-coach-copy:hover {
+  color: #1e293b;
+  background: #f1f5f9;
+  transform: none;
 }
 .v2-mini-coach {
   display: grid;

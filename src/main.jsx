@@ -31,6 +31,7 @@ import {
   Filter,
   MapPin,
   ExternalLink,
+  Copy,
   ListPlus,
   X,
 } from "lucide-react";
@@ -5279,6 +5280,9 @@ function OutreachPage({ state, reload }) {
 function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
   const [chatInput, setChatInput] = useState("");
+  const [copiedMessage, setCopiedMessage] = useState(null);
+  const [deleteConversationTarget, setDeleteConversationTarget] =
+    useState(null);
   const [conversations, setConversations] = useState(() => {
     try {
       const saved = JSON.parse(
@@ -5304,9 +5308,12 @@ function Coach({ state, reload }) {
       return [];
     }
   });
-  const [activeConversationId, setActiveConversationId] = useState(() =>
-    localStorage.getItem("jobhuntr-active-coach-conversation"),
-  );
+  const [activeConversationId, setActiveConversationId] = useState(() => {
+    const linked = new URLSearchParams(
+      window.location.hash.split("?")[1] || "",
+    ).get("conversation");
+    return linked || localStorage.getItem("jobhuntr-active-coach-conversation");
+  });
   const [jobId, setJobId] = useState(
     state.jobs.find((j) => j.status === "interview")?.id ||
       state.jobs[0]?.id ||
@@ -5345,6 +5352,40 @@ function Coach({ state, reload }) {
         ? next[0]?.id || null
         : activeConversationId;
     persistConversations(next, nextActive);
+    setDeleteConversationTarget(null);
+  };
+  useEffect(() => {
+    if (view !== "chat") return;
+    const params = new URLSearchParams();
+    if (activeConversation?.id)
+      params.set("conversation", activeConversation.id);
+    const hash = `#/coach${params.size ? `?${params}` : ""}`;
+    if (window.location.hash !== hash)
+      window.history.replaceState({ tab: "coach" }, "", hash);
+  }, [view, activeConversation?.id]);
+  useEffect(() => {
+    const followConversationLink = () => {
+      const id = new URLSearchParams(
+        window.location.hash.split("?")[1] || "",
+      ).get("conversation");
+      if (id && conversations.some((conversation) => conversation.id === id))
+        setActiveConversationId(id);
+    };
+    window.addEventListener("hashchange", followConversationLink);
+    return () =>
+      window.removeEventListener("hashchange", followConversationLink);
+  }, [conversations]);
+  const copyCoachText = async (content, index) => {
+    await navigator.clipboard.writeText(content);
+    setCopiedMessage(index);
+    window.setTimeout(() => setCopiedMessage(null), 1800);
+  };
+  const shareConversation = async () => {
+    if (!activeConversation?.id) return;
+    const url = `${window.location.origin}${window.location.pathname}#/coach?conversation=${encodeURIComponent(activeConversation.id)}`;
+    await navigator.clipboard.writeText(url);
+    setCopiedMessage("share");
+    window.setTimeout(() => setCopiedMessage(null), 1800);
   };
   const prepare = async () => {
     const created = await api("/api/coach/prepare", {
@@ -5397,6 +5438,14 @@ function Coach({ state, reload }) {
   };
   return (
     <section className="coach-page">
+      <ConfirmDialog
+        open={Boolean(deleteConversationTarget)}
+        title="Delete coaching conversation?"
+        description={`“${deleteConversationTarget?.title || "This conversation"}” and its local message history will be permanently removed.`}
+        confirmLabel="Delete conversation"
+        onClose={() => setDeleteConversationTarget(null)}
+        onConfirm={() => deleteConversation(deleteConversationTarget.id)}
+      />
       <div className="card coach-toolbar">
         <div className="segmented">
           <button
@@ -5487,7 +5536,7 @@ function Coach({ state, reload }) {
                     </button>
                     <button
                       className="v2-coach-delete"
-                      onClick={() => deleteConversation(conversation.id)}
+                      onClick={() => setDeleteConversationTarget(conversation)}
                       aria-label={`Delete ${conversation.title}`}
                     >
                       <Trash2 size={15} />
@@ -5505,6 +5554,16 @@ function Coach({ state, reload }) {
             </div>
           </aside>
           <div className="v2-coach-chat card">
+            {activeConversation && (
+              <div className="v2-coach-chat-actions">
+                <span>{activeConversation.title}</span>
+                <button className="text-button" onClick={shareConversation}>
+                  {copiedMessage === "share"
+                    ? "Link copied"
+                    : "Share conversation"}
+                </button>
+              </div>
+            )}
             <div className="v2-coach-stage" aria-label="Coaching progress">
               <span className={messages.length ? "complete" : "active"}>1</span>
               <i />
@@ -5525,9 +5584,9 @@ function Coach({ state, reload }) {
                   </div>
                   <h2>Hi, I'm AI Coach!</h2>
                   <p>
-                    I'm your private and personal career coach. I can help you
-                    sharpen your story, prepare for interviews, and decide what
-                    to do next.
+                    I'm your private and personal AI career coach. My service is
+                    fast and free. I can help sharpen your story, prepare for
+                    interviews, and decide what to do next.
                   </p>
                   <strong>How can I help you today?</strong>
                   <div className="v2-coach-prompts">
@@ -5558,6 +5617,20 @@ function Coach({ state, reload }) {
                       </span>
                     )}
                     <p>{message.content}</p>
+                    {message.role === "assistant" && (
+                      <button
+                        className="v2-coach-copy"
+                        aria-label={`Copy coach response ${index + 1}`}
+                        onClick={() => copyCoachText(message.content, index)}
+                      >
+                        {copiedMessage === index ? (
+                          <CheckCircle2 size={14} />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                        {copiedMessage === index ? "Copied" : "Copy"}
+                      </button>
+                    )}
                   </div>
                 ))
               )}
