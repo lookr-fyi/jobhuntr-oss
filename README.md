@@ -53,8 +53,10 @@ npm run dev          # local API + Vite frontend
 npm run build        # build frontend into dist/public
 npm start            # serve API; also serves built frontend if present
 npm test             # backend API smoke tests
+npm run lint         # static checks for browser, server, scripts, and tests
+npm run format       # format JavaScript, JSX, CSS, JSON, Markdown, and workflows
 npm run secret:scan  # scan repository for obvious secrets before publishing
-npm run verify       # secret scan + tests + production build
+npm run verify       # secret scan + formatting + lint + tests + production build
 ```
 
 The server binds to `127.0.0.1` by default so other devices on the network cannot access personal job-search data. Set `HOST` explicitly only if you understand the exposure.

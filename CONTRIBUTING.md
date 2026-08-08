@@ -15,6 +15,8 @@ Before opening a pull request, run:
 npm run verify
 ```
 
+The verification gate checks formatting, ESLint rules (including React Hooks), the secret scanner, the complete test suite, and a production frontend build. Use `npm run format` to apply the repository style automatically.
+
 ## Privacy requirements
 
 - Never commit `.env` files, exports, resumes, notes, credentials, or production data.
