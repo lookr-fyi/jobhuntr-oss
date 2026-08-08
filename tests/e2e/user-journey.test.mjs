@@ -112,7 +112,8 @@ test(
       await page.getByText("E2E tailored resume").first().waitFor();
 
       await page.getByRole("button", { name: "Submission Queue" }).click();
-      await page.getByRole("button", { name: "Add to queue" }).click();
+      await page.getByRole("button", { name: /Search Jobs/ }).click();
+      await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
       const checklistCount = await checklist.count();

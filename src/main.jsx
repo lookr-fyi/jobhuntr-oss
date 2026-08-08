@@ -1028,6 +1028,7 @@ function Queue({ state, reload }) {
   );
   const [query, setQuery] = useState("");
   const [queueTab, setQueueTab] = useState("apply");
+  const [sourceSelectedId, setSourceSelectedId] = useState("");
   const active = state.submissions.filter(
     (item) => !["archived", "submitted"].includes(item.status),
   );
@@ -1038,6 +1039,26 @@ function Queue({ state, reload }) {
       .includes(query.toLowerCase());
   });
   const selected = active.find((item) => item.id === selectedId) || filtered[0];
+  const queuedJobIds = new Set(active.map((item) => item.jobId));
+  const sourceJobs = state.jobs.filter((job) => {
+    if (
+      queuedJobIds.has(job.id) ||
+      ["applied", "rejected"].includes(job.status)
+    )
+      return false;
+    const isManual = ["manual", "import", "csv import"].includes(
+      String(job.source || "").toLowerCase(),
+    );
+    return queueTab === "manual" ? isManual : !isManual;
+  });
+  const visibleSourceJobs = sourceJobs.filter((job) =>
+    `${job.title} ${job.company} ${job.location}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
+  );
+  const sourceSelected =
+    visibleSourceJobs.find((job) => job.id === sourceSelectedId) ||
+    visibleSourceJobs[0];
   const create = async () => {
     const created = await api("/api/submissions", {
       method: "POST",
@@ -1049,6 +1070,22 @@ function Queue({ state, reload }) {
       }),
     });
     setSelectedId(created.id);
+    await reload();
+  };
+  const prepareJob = async (targetJobId) => {
+    const created = await api("/api/submissions", {
+      method: "POST",
+      body: JSON.stringify({
+        jobId: targetJobId,
+        resumeId: state.resumes[0]?.id || "",
+        coverLetterId:
+          state.coverLetters.find((item) => item.jobId === targetJobId)?.id ||
+          "",
+      }),
+    });
+    setSelectedId(created.id);
+    setJobId(targetJobId);
+    setQueueTab("apply");
     await reload();
   };
   return (
@@ -1076,25 +1113,113 @@ function Queue({ state, reload }) {
           className={queueTab === "search" ? "active" : ""}
           onClick={() => setQueueTab("search")}
         >
-          <Search size={15} /> Search Jobs <em>0</em>
+          <Search size={15} /> Search Jobs{" "}
+          <em>
+            {
+              state.jobs.filter(
+                (job) =>
+                  !queuedJobIds.has(job.id) &&
+                  !["manual", "import", "csv import"].includes(
+                    String(job.source || "").toLowerCase(),
+                  ),
+              ).length
+            }
+          </em>
         </button>
         <button
           className={queueTab === "manual" ? "active" : ""}
           onClick={() => setQueueTab("manual")}
         >
-          <Plus size={15} /> Manual Jobs <em>0</em>
+          <Plus size={15} /> Manual Jobs{" "}
+          <em>
+            {
+              state.jobs.filter(
+                (job) =>
+                  !queuedJobIds.has(job.id) &&
+                  ["manual", "import", "csv import"].includes(
+                    String(job.source || "").toLowerCase(),
+                  ),
+              ).length
+            }
+          </em>
         </button>
       </div>
       {queueTab !== "apply" ? (
-        <div className="v2-queue-placeholder">
-          <InboxIcon />
-          <h3>
-            {queueTab === "search"
-              ? "No search-only jobs"
-              : "No manually queued jobs"}
-          </h3>
-          <p>Jobs added through this workflow will appear here.</p>
-        </div>
+        <>
+          <div className="v2-queue-toolbar">
+            <div className="searchbox">
+              <Search size={16} />
+              <input
+                aria-label={`Search ${queueTab} jobs`}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search jobs or companies"
+              />
+            </div>
+          </div>
+          <div className="v2-queue-layout">
+            <div className="v2-queue-list">
+              <div className="v2-queue-list-head">
+                <span>{visibleSourceJobs.length} jobs</span>
+                <span>Source</span>
+              </div>
+              {visibleSourceJobs.map((job) => (
+                <button
+                  key={job.id}
+                  className={sourceSelected?.id === job.id ? "selected" : ""}
+                  onClick={() => setSourceSelectedId(job.id)}
+                >
+                  <span className="v2-job-logo">
+                    {(job.company || "J").slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="v2-queue-job-copy">
+                    <b>{job.title}</b>
+                    <small>{job.company}</small>
+                    <em>{job.fitScore || 0}% match</em>
+                  </span>
+                  <time>{job.source || "Manual"}</time>
+                </button>
+              ))}
+              {!visibleSourceJobs.length && (
+                <div className="v2-queue-empty">
+                  <InboxIcon />
+                  <h3>
+                    {queueTab === "search"
+                      ? "No search-only jobs"
+                      : "No manually added jobs"}
+                  </h3>
+                  <p>Matching jobs from this workflow will appear here.</p>
+                </div>
+              )}
+            </div>
+            <div className="v2-queue-detail">
+              {sourceSelected ? (
+                <div className="v2-source-job-detail">
+                  <span className="pill">{sourceSelected.source}</span>
+                  <h2>{sourceSelected.title}</h2>
+                  <p className="muted">
+                    {sourceSelected.company} · {sourceSelected.location}
+                  </p>
+                  <p>{sourceSelected.description}</p>
+                  <div className="chips">
+                    {(sourceSelected.tags || []).map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                  <button onClick={() => prepareJob(sourceSelected.id)}>
+                    <FileText size={16} /> Prepare application
+                  </button>
+                </div>
+              ) : (
+                <div className="v2-detail-empty">
+                  <Briefcase />
+                  <h3>Select a job</h3>
+                  <p>Job details and application actions will appear here.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       ) : (
         <>
           <div className="v2-queue-toolbar">
