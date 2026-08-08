@@ -441,7 +441,10 @@ test(
       await assertAccessible(page, "Job Board");
 
       await page.getByRole("button", { name: "ATS Resume" }).click();
-      await page.getByRole("button", { name: "Create New" }).click();
+      await page
+        .getByRole("heading", { name: "ATS Resume Templates" })
+        .waitFor();
+      await page.getByRole("button", { name: "Create New Template" }).click();
       const templateDialog = page.getByRole("dialog", {
         name: "Create New Template",
       });
@@ -495,6 +498,14 @@ test(
         .locator(".v2-resume-templates")
         .getByText("+ Additional Experience", { exact: true })
         .waitFor();
+      await page.getByLabel("Actions for E2E Leadership").click();
+      await page.getByRole("button", { name: "Edit Template" }).click();
+      const editTemplateDialog = page.getByRole("dialog", {
+        name: "Edit Template",
+      });
+      await editTemplateDialog.waitFor();
+      await page.getByLabel("Close template editor").click();
+      await editTemplateDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search resume templates").fill("E2E Leadership");
       assert.equal(
         await page
@@ -505,6 +516,22 @@ test(
         "template search should filter unrelated templates",
       );
       await page.getByLabel("Search resume templates").fill("");
+      await page.getByRole("button", { name: /Modified/ }).click();
+      assert.equal(
+        await page
+          .getByRole("button", { name: /Modified/ })
+          .getAttribute("aria-pressed"),
+        "true",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) => response.url().endsWith("/api/state") && response.ok(),
+        ),
+        page
+          .getByRole("button", { name: "Refresh", exact: true })
+          .first()
+          .click(),
+      ]);
       await page.getByLabel("Resume version name").fill("E2E tailored resume");
       await page
         .getByLabel("Resume content")

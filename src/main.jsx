@@ -4368,6 +4368,7 @@ function Resume({ state, reload, mode = "resume" }) {
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
+  const [templateSortOrder, setTemplateSortOrder] = useState("asc");
   const [templateDialog, setTemplateDialog] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [historyQuery, setHistoryQuery] = useState("");
@@ -4404,12 +4405,22 @@ function Resume({ state, reload, mode = "resume" }) {
         .toLowerCase()
         .includes(templateQuery.toLowerCase()),
     )
-    .sort((a, b) =>
-      templateSort === "newest"
-        ? new Date(b.updatedAt || b.createdAt || 0) -
-          new Date(a.updatedAt || a.createdAt || 0)
-        : a.name.localeCompare(b.name),
-    );
+    .sort((a, b) => {
+      const comparison =
+        templateSort === "modified"
+          ? new Date(a.updatedAt || a.createdAt || 0) -
+            new Date(b.updatedAt || b.createdAt || 0)
+          : a.name.localeCompare(b.name);
+      return templateSortOrder === "asc" ? comparison : -comparison;
+    });
+  const sortTemplates = (field) => {
+    if (templateSort === field) {
+      setTemplateSortOrder((order) => (order === "asc" ? "desc" : "asc"));
+    } else {
+      setTemplateSort(field);
+      setTemplateSortOrder("desc");
+    }
+  };
   const filteredResumes = state.resumes.filter((item) => {
     const template = state.templates.find(
       (candidate) => candidate.id === item.templateId,
@@ -5323,16 +5334,15 @@ function Resume({ state, reload, mode = "resume" }) {
       />
       <div className="v2-ats-header">
         <div>
-          <h2>ATS Resume</h2>
+          <h2>ATS Resume Templates</h2>
           <p>
-            Create reusable templates and generate tailored resumes for each
-            application.
+            {visibleTemplates.length} template
+            {visibleTemplates.length === 1 ? "" : "s"} available
           </p>
         </div>
-        <span>
-          {state.resumes.length} generated resume
-          {state.resumes.length === 1 ? "" : "s"}
-        </span>
+        <button onClick={() => openTemplateDialog()}>
+          <Plus size={16} /> Create New Template
+        </button>
       </div>
       <div className="v2-template-toolbar">
         <div className="searchbox">
@@ -5341,19 +5351,37 @@ function Resume({ state, reload, mode = "resume" }) {
             aria-label="Search resume templates"
             value={templateQuery}
             onChange={(event) => setTemplateQuery(event.target.value)}
-            placeholder="Search templates"
+            placeholder="Search templates..."
           />
         </div>
-        <select
-          aria-label="Sort resume templates"
-          value={templateSort}
-          onChange={(event) => setTemplateSort(event.target.value)}
+        <button className="text-button" onClick={reload}>
+          <RefreshCcw size={15} /> Refresh
+        </button>
+        <button
+          className={templateSort === "name" ? "secondary active" : "secondary"}
+          aria-pressed={templateSort === "name"}
+          onClick={() => sortTemplates("name")}
         >
-          <option value="name">Name</option>
-          <option value="newest">Newest</option>
-        </select>
-        <button onClick={() => openTemplateDialog()}>
-          <Plus size={16} /> Create New
+          Name{" "}
+          {templateSort === "name"
+            ? templateSortOrder === "asc"
+              ? "↑"
+              : "↓"
+            : ""}
+        </button>
+        <button
+          className={
+            templateSort === "modified" ? "secondary active" : "secondary"
+          }
+          aria-pressed={templateSort === "modified"}
+          onClick={() => sortTemplates("modified")}
+        >
+          Modified{" "}
+          {templateSort === "modified"
+            ? templateSortOrder === "asc"
+              ? "↑"
+              : "↓"
+            : ""}
         </button>
       </div>
       <div className="v2-resume-templates">
@@ -5364,7 +5392,8 @@ function Resume({ state, reload, mode = "resume" }) {
           >
             <button
               className="v2-template-select"
-              onClick={() => setTemplateId(template.id)}
+              aria-label={`Edit ${template.name} template`}
+              onClick={() => openTemplateDialog(template)}
             >
               <span className="v2-template-preview">
                 <FileText size={26} />
@@ -5381,6 +5410,13 @@ function Resume({ state, reload, mode = "resume" }) {
                     ) && <em className="v2-template-status">In Progress</em>}
                 </b>
                 <small>{template.description}</small>
+                <small className="v2-template-metadata">
+                  <Calendar size={12} /> Updated{" "}
+                  {new Date(
+                    template.updatedAt || template.createdAt || 0,
+                  ).toLocaleDateString()}
+                  <span>•</span> Local template
+                </small>
                 {template.additionalExperience && (
                   <small className="v2-template-enriched">
                     + Additional Experience
@@ -5389,23 +5425,25 @@ function Resume({ state, reload, mode = "resume" }) {
               </span>
             </button>
             <div className="v2-template-actions">
-              <button
-                className="text-button"
-                aria-label={`Edit ${template.name} template`}
-                onClick={() => openTemplateDialog(template)}
-              >
-                Edit
-              </button>
-              <button
-                className="text-button danger"
-                aria-label={`Delete ${template.name} template`}
-                disabled={state.templates.length <= 1}
-                onClick={() =>
-                  setDeleteTarget({ type: "template", item: template })
-                }
-              >
-                Delete
-              </button>
+              <details>
+                <summary aria-label={`Actions for ${template.name}`}>
+                  <MoreHorizontal size={17} />
+                </summary>
+                <div>
+                  <button onClick={() => openTemplateDialog(template)}>
+                    Edit Template
+                  </button>
+                  <button
+                    className="danger"
+                    disabled={state.templates.length <= 1}
+                    onClick={() =>
+                      setDeleteTarget({ type: "template", item: template })
+                    }
+                  >
+                    Delete
+                  </button>
+                </div>
+              </details>
             </div>
           </div>
         ))}
@@ -5652,11 +5690,14 @@ function Resume({ state, reload, mode = "resume" }) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="template-dialog-title"
-          onKeyDown={containDialogFocus}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setTemplateDialog(null);
+            containDialogFocus(event);
+          }}
         >
           <button
             className="v2-template-backdrop"
-            aria-label="Close template editor"
+            aria-label="Dismiss template editor"
             onClick={() => setTemplateDialog(null)}
           />
           <div className="v2-template-modal-content">
@@ -5667,7 +5708,16 @@ function Resume({ state, reload, mode = "resume" }) {
                   {templateDialog.id ? "Edit Template" : "Create New Template"}
                 </h3>
               </div>
-              <small>Step {templateDialog.step} of 5</small>
+              <div className="v2-template-wizard-meta">
+                <small>Step {templateDialog.step} of 5</small>
+                <button
+                  className="v2-run-delete"
+                  aria-label="Close template editor"
+                  onClick={() => setTemplateDialog(null)}
+                >
+                  <X size={17} />
+                </button>
+              </div>
             </div>
             <ol
               className="v2-template-progress"
