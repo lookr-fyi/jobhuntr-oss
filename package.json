@@ -1,6 +1,7 @@
 {
   "name": "jobhuntr-oss",
   "version": "1.0.0",
+  "author": "lookr-fyi",
   "private": false,
   "description": "Self-contained local-first job search CRM, document studio, career coach, and explainable hunt engine.",
   "main": "electron/main.mjs",
@@ -8,6 +9,8 @@
   "scripts": {
     "jobhuntr": "node scripts/one-line-run.mjs",
     "desktop": "npm run build && electron electron/main.mjs",
+    "dist:desktop": "npm run build && electron-builder",
+    "dist:desktop:dir": "npm run build && electron-builder --dir",
     "dev": "concurrently -n API,WEB -c cyan,magenta \"node --watch server/index.mjs\" \"vite --host 127.0.0.1\"",
     "start": "node server/index.mjs",
     "build": "vite build",
@@ -33,6 +36,40 @@
   "engines": {
     "node": ">=20"
   },
+  "build": {
+    "appId": "fyi.lookr.jobhuntr",
+    "productName": "JobHuntr",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "dist/public/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "src/jobhuntr-logo.png",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "src/jobhuntr-logo.png",
+      "target": "nsis"
+    },
+    "linux": {
+      "category": "Office",
+      "icon": "src/jobhuntr-logo.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  },
   "dependencies": {
     "express": "latest",
     "lucide-react": "latest",
@@ -46,6 +83,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "concurrently": "^10.0.4",
     "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.8.1",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.9.0",

@@ -13,6 +13,14 @@ npm run desktop
 
 This builds the frontend, starts the private loopback service, and opens JobHuntr in a native Electron window. The desktop shell uses context isolation, disables Node integration in the renderer, enables Chromium sandboxing, and stores workspace data under Electron's per-user application-data directory.
 
+To create a platform-native distributable:
+
+```bash
+npm run dist:desktop
+```
+
+Unsigned development packages are written to `release/`. Release signing and notarization require the platform-owner certificates and remain intentionally separate from local builds.
+
 The browser-based local launcher remains available for contributors and users who prefer it.
 
 ## One-line local run

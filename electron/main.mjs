@@ -1,10 +1,9 @@
 import { app, BrowserWindow, shell } from "electron";
-import { spawn } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
 
-let serverProcess;
 let mainWindow;
+let localUrl;
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 
@@ -29,37 +28,25 @@ const waitForServer = async (url) => {
   throw new Error("The local JobHuntr service did not start.");
 };
 
-const stopServer = () => {
-  if (!serverProcess) return;
-  try {
-    process.platform === "win32"
-      ? serverProcess.kill("SIGTERM")
-      : process.kill(-serverProcess.pid, "SIGTERM");
-  } catch {}
-  serverProcess = undefined;
-};
-
-const createWindow = async () => {
+const startServer = async () => {
+  if (localUrl) return localUrl;
   const port = await freePort();
   const url = `http://127.0.0.1:${port}`;
   const dataDir =
     process.env.JOBHUNTR_DATA_DIR || path.join(app.getPath("userData"), "data");
 
-  serverProcess = spawn(process.execPath, ["server/index.mjs"], {
-    cwd: projectRoot,
-    env: {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
-      NODE_ENV: "production",
-      HOST: "127.0.0.1",
-      PORT: String(port),
-      JOBHUNTR_DATA_DIR: dataDir,
-    },
-    stdio: "inherit",
-    detached: process.platform !== "win32",
-  });
-
+  process.env.NODE_ENV = "production";
+  process.env.HOST = "127.0.0.1";
+  process.env.PORT = String(port);
+  process.env.JOBHUNTR_DATA_DIR = dataDir;
+  await import(path.join(projectRoot, "server", "index.mjs"));
   await waitForServer(url);
+  localUrl = url;
+  return url;
+};
+
+const createWindow = async () => {
+  const url = await startServer();
 
   mainWindow = new BrowserWindow({
     title: "JobHuntr",
@@ -91,7 +78,6 @@ app.whenReady().then(async () => {
     await createWindow();
   } catch (error) {
     console.error(error);
-    stopServer();
     app.quit();
   }
 });
@@ -101,8 +87,5 @@ app.on("activate", () => {
 });
 
 app.on("window-all-closed", () => {
-  stopServer();
   if (process.platform !== "darwin") app.quit();
 });
-
-app.on("before-quit", stopServer);

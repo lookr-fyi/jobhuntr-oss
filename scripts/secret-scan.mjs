@@ -8,6 +8,7 @@ const ignored = new Set([
   ".git",
   "node_modules",
   "dist",
+  "release",
   "data",
   ".DS_Store",
   "package-lock.json",
@@ -40,6 +41,7 @@ function walk(dir) {
     if (ignored.has(ent.name)) continue;
     const p = path.join(dir, ent.name);
     const rel = path.relative(root, p);
+    if (ent.isSymbolicLink()) continue;
     if (ent.isDirectory()) walk(p);
     else {
       if (!allow.has(rel) && suspiciousNames.some((r) => r.test(ent.name)))

@@ -42,3 +42,22 @@ jobs:
           done
           grep -q '"mode":"local-only"' /tmp/jobhuntr-health.json
           curl -fsS http://127.0.0.1:8790/ | grep -q '<title>JobHuntr</title>'
+
+  desktop-package:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run dist:desktop:dir
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jobhuntr-desktop-${{ matrix.os }}
+          path: release/
+          retention-days: 7
