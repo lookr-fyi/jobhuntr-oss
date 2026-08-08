@@ -147,6 +147,7 @@ function App() {
               "resume",
               "cover-letter",
               "tracker",
+              "agent",
             ].includes(tab)
               ? "integrated-page-header"
               : ""
@@ -2461,6 +2462,8 @@ function Agent({ state, reload }) {
   };
   const [form, setForm] = useState(defaults);
   const [preview, setPreview] = useState(null);
+  const [selectedRuns, setSelectedRuns] = useState(["linkedin", "indeed"]);
+  const [optimizeResume, setOptimizeResume] = useState(false);
   const [running, setRunning] = useState(false);
   const payload = () => ({
     q: form.q,
@@ -2502,15 +2505,78 @@ function Agent({ state, reload }) {
       setRunning(false);
     }
   };
+  const workflows = [
+    ["linkedin", "in", "LinkedIn Jobs", "Search jobs and prepare applications from LinkedIn."],
+    ["indeed", "i", "Indeed", "Find matching roles across Indeed listings."],
+    ["glassdoor", "g", "Glassdoor", "Discover roles using company and salary context."],
+    ["company", "↗", "Company Career Page Search", "Search verified company career pages directly."],
+  ];
+  const toggleRun = (id) => setSelectedRuns((runs) =>
+    runs.includes(id) ? runs.filter((runId) => runId !== id) : [...runs, id],
+  );
   return (
-    <section className="hunt-layout">
-      <div className="card hunt-config">
-        <span className="eyebrow">EXPLAINABLE LOCAL AUTOMATION</span>
-        <h2>Configure a hunt</h2>
-        <p>
-          Searches the bundled offline catalog only. Preview every match and
-          reason before saving—no browser credentials or external submissions.
-        </p>
+    <section className="v2-hunt-page">
+      <div className="v2-page-intro v2-hunt-intro">
+        <div>
+          <h2>Infinite Hunting</h2>
+          <p>Automatically create new runs to search and apply to jobs around the clock.</p>
+        </div>
+        {state.agentRuns.length > 0 && (
+          <button className="secondary" onClick={() => document.querySelector(".v2-hunt-history")?.scrollIntoView({ behavior: "smooth" })}>
+            View last infinite session
+          </button>
+        )}
+      </div>
+      {state.queue?.length > 0 && (
+        <div className="v2-queue-banner">
+          <List size={20} />
+          <span>You have {state.queue.length} queued job{state.queue.length === 1 ? "" : "s"} waiting to be reviewed</span>
+        </div>
+      )}
+      <div className="card v2-hunt-builder">
+        <div className="v2-resume-source">
+          <div className="v2-section-heading">
+            <div className="v2-icon-tile"><FileText size={19} /></div>
+            <div><h3>Your resume</h3><p>JobHuntr uses your profile and resume to evaluate every opportunity.</p></div>
+          </div>
+          <div className="v2-resume-choice">
+            <div><strong>{state.profile.name || "Your JobHuntr profile"}</strong><span>{state.profile.targetRoles?.join(" · ") || "Add target roles in settings"}</span></div>
+            <BadgeCheck size={20} />
+          </div>
+        </div>
+        <div className="v2-ats-option">
+          <label className="v2-check-row">
+            <input type="checkbox" checked={optimizeResume} onChange={(e) => setOptimizeResume(e.target.checked)} />
+            <span><strong>Generate an optimized resume for each job</strong><small>Create a tailored, ATS-friendly version before adding the application to your queue.</small></span>
+          </label>
+        </div>
+        <div className="v2-run-picker">
+          <h3>Available runs</h3>
+          <p>Select where JobHuntr should search. You can combine multiple runs in one infinite hunt.</p>
+          <div className="v2-workflow-grid">
+            {workflows.map(([id, mark, title, description]) => {
+              const selected = selectedRuns.includes(id);
+              return <button type="button" className={`v2-workflow-card ${selected ? "selected" : ""}`} key={id} onClick={() => toggleRun(id)}>
+                <span className={`v2-platform-mark ${id}`}>{mark}</span>
+                <span className="v2-workflow-copy"><strong>{title}</strong><small>{description}</small></span>
+                <span className="v2-workflow-check">{selected ? "✓" : "+"}</span>
+              </button>;
+            })}
+          </div>
+        </div>
+        <div className="v2-selected-runs">
+          <h3>Runs in infinite hunt loop</h3>
+          <p>Selected runs execute in the order shown below.</p>
+          <div className="v2-loop-box">
+            {selectedRuns.length ? selectedRuns.map((id, index) => {
+              const workflow = workflows.find((item) => item[0] === id);
+              return <div className="v2-loop-row" key={id}><b>{index + 1}</b><span className={`v2-platform-mark ${id}`}>{workflow[1]}</span><div><strong>{workflow[2]}</strong><small>Ready for local preview</small></div><button className="text-button" onClick={() => toggleRun(id)}>Remove</button></div>;
+            }) : <div className="v2-loop-empty">Please select from available runs</div>}
+          </div>
+        </div>
+        <details className="v2-hunt-filters">
+          <summary>Search preferences</summary>
+          <div className="hunt-config-fields">
         <label>
           Role or keywords
           <input
@@ -2570,24 +2636,11 @@ function Agent({ state, reload }) {
             ))}
           </select>
         </label>
-        <div className="inline">
-          <button
-            className="secondary"
-            onClick={async () =>
-              setPreview(
-                await api("/api/agent-runs/preview", {
-                  method: "POST",
-                  body: JSON.stringify(payload()),
-                }),
-              )
-            }
-          >
-            Preview matches
-          </button>
-          <button disabled={running} onClick={run}>
-            <Bot size={16} />
-            {running ? "Running…" : "Run & save"}
-          </button>
+          </div>
+        </details>
+        <div className="v2-hunt-actions">
+          <button className="secondary" onClick={async () => setPreview(await api("/api/agent-runs/preview", { method: "POST", body: JSON.stringify(payload()) }))}>Preview matches</button>
+          <button disabled={running || selectedRuns.length === 0} onClick={run}><InfinityIcon size={17} />{running ? "Starting infinite hunt…" : "Start infinite hunt"}</button>
         </div>
         <button
           className="text-button"
@@ -2627,7 +2680,7 @@ function Agent({ state, reload }) {
           </>
         )}
       </div>
-      <div className="hunt-results">
+      <div className="hunt-results v2-hunt-results">
         {preview ? (
           <div className="card">
             <div className="row">
@@ -2681,7 +2734,7 @@ function Agent({ state, reload }) {
             </p>
           </div>
         )}
-        <div className="card">
+        <div className="card v2-hunt-history">
           <h3>Run history</h3>
           {state.agentRuns.length ? (
             state.agentRuns.map((run) => (

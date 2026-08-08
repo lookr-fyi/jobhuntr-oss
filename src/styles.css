@@ -842,6 +842,68 @@ button:disabled {
   grid-template-columns: 400px minmax(0, 1fr);
   gap: 18px;
 }
+.v2-hunt-page {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 24px 48px;
+}
+.v2-hunt-intro { margin-bottom: 24px; }
+.v2-queue-banner {
+  max-width: 840px; margin: 0 auto 20px; min-height: 48px; padding: 8px 16px;
+  display: flex; align-items: center; gap: 12px; border: 1px solid #e5e7eb;
+  border-radius: 8px; background: #f3f4f6; color: #374151; font-size: 14px;
+}
+.v2-hunt-builder {
+  max-width: 840px; margin: 0 auto; padding: 32px; border: 0;
+  border-radius: 16px; box-shadow: 0 20px 45px rgba(15, 23, 42, .08);
+}
+.v2-section-heading { display: flex; gap: 12px; align-items: flex-start; }
+.v2-section-heading h3, .v2-run-picker h3, .v2-selected-runs h3 { margin: 0 0 5px; font-size: 17px; }
+.v2-section-heading p, .v2-run-picker > p, .v2-selected-runs > p { margin: 0; color: #64748b; font-size: 13px; }
+.v2-icon-tile { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; background: #f1f5f9; color: #334155; }
+.v2-resume-choice { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 15px 16px; border: 1px solid #cbd5e1; border-radius: 10px; }
+.v2-resume-choice div { display: flex; flex-direction: column; gap: 3px; }
+.v2-resume-choice span, .v2-check-row small { display: block; color: #64748b; font-size: 12px; font-weight: 400; }
+.v2-resume-choice > svg { color: #16a34a; }
+.v2-ats-option { margin: 24px 0; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.v2-check-row { display: flex; gap: 11px; align-items: flex-start; color: #1e293b; }
+.v2-check-row input { width: 18px; height: 18px; margin-top: 1px; accent-color: #18181a; }
+.v2-check-row small { margin-top: 4px; }
+.v2-workflow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+button.v2-workflow-card { display: grid; grid-template-columns: 38px 1fr 24px; align-items: center; gap: 11px; text-align: left; min-height: 88px; padding: 14px; background: #fff; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 12px; }
+button.v2-workflow-card:hover { background: #fafafa; border-color: #94a3b8; }
+button.v2-workflow-card.selected { border-color: #18181a; box-shadow: inset 0 0 0 1px #18181a; }
+.v2-workflow-copy { display: flex; flex-direction: column; gap: 4px; }
+.v2-workflow-copy small { color: #64748b; line-height: 1.35; font-weight: 400; }
+.v2-workflow-check { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid #cbd5e1; border-radius: 50%; }
+.selected .v2-workflow-check { background: #18181a; border-color: #18181a; color: #fff; }
+.v2-platform-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 8px; font-weight: 800; text-transform: none; background: #eff6ff; color: #2563eb; }
+.v2-platform-mark.indeed { color: #2557a7; }
+.v2-platform-mark.glassdoor { color: #0caa41; background: #ecfdf5; }
+.v2-platform-mark.company { color: #475569; background: #f1f5f9; }
+.v2-selected-runs { margin-top: 28px; }
+.v2-loop-box { margin-top: 12px; padding: 16px; border: 1px solid #e2e8f0; border-radius: 16px; background: #f8fafc; }
+.v2-loop-row { display: grid; grid-template-columns: 28px 36px 1fr auto; gap: 10px; align-items: center; padding: 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; }
+.v2-loop-row + .v2-loop-row { margin-top: 10px; }
+.v2-loop-row > b { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #18181a; color: #fff; font-size: 12px; }
+.v2-loop-row > div { display: flex; flex-direction: column; }
+.v2-loop-row small { color: #64748b; }
+.v2-loop-row button { padding: 6px 9px; }
+.v2-loop-empty { padding: 30px; text-align: center; border: 2px dashed #cbd5e1; border-radius: 12px; background: #fff; color: #94a3b8; font-size: 13px; font-style: italic; }
+.v2-hunt-filters { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 20px; }
+.v2-hunt-filters summary { cursor: pointer; font-weight: 700; color: #334155; }
+.hunt-config-fields { margin-top: 14px; }
+.hunt-config-fields label { display: block; margin: 10px 0; font-size: 13px; font-weight: 700; color: #475569; }
+.v2-hunt-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.v2-hunt-results { max-width: 840px; margin: 24px auto 0; }
+@media (max-width: 760px) {
+  .v2-hunt-page { padding-inline: 0; }
+  .v2-hunt-builder { padding: 20px; }
+  .v2-workflow-grid { grid-template-columns: 1fr; }
+  .v2-loop-row { grid-template-columns: 28px 36px 1fr; }
+  .v2-loop-row button { grid-column: 3; justify-self: start; }
+}
 .hunt-config {
   align-self: start;
   position: sticky;
