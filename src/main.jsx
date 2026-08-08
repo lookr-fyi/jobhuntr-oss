@@ -3851,13 +3851,28 @@ function Resume({ state, reload, mode = "resume" }) {
       resumeId: state.resumes[0]?.id || "",
       jobId: jobId || state.jobs[0]?.id || "",
     });
-  const generateLetter = async (wizard = null) => {
+  const generateLetter = async (wizard = null, keepWizard = false) => {
     const options = wizard || { jobId };
     const created = await api("/api/cover-letters", {
       method: "POST",
       body: JSON.stringify(options),
     });
     setLetter(created);
+    setLetterWizard(
+      keepWizard ? { ...wizard, step: 5, result: created } : null,
+    );
+    await reload();
+  };
+  const finishLetterWizard = async () => {
+    if (!letterWizard?.result) return;
+    const saved = await api(`/api/cover-letters/${letterWizard.result.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: letterWizard.result.title,
+        body: letterWizard.result.body,
+      }),
+    });
+    setLetter(saved);
     setLetterWizard(null);
     await reload();
   };
@@ -4083,9 +4098,10 @@ function Resume({ state, reload, mode = "resume" }) {
               <>
                 <div className="v2-cover-step-head">
                   <span>STEP 5 OF 5</span>
-                  <h3>Review and generate</h3>
+                  <h3>Your Cover Letter</h3>
                   <p>
-                    Confirm the inputs before creating your editable letter.
+                    Review the generated result, make final edits, and save it
+                    to your cover-letter history.
                   </p>
                 </div>
                 <div className="v2-cover-review">
@@ -4106,12 +4122,44 @@ function Resume({ state, reload, mode = "resume" }) {
                     </b>
                   </div>
                 </div>
+                <div className="v2-cover-final-editor">
+                  <label>
+                    Cover letter title
+                    <input
+                      value={letterWizard.result?.title || ""}
+                      onChange={(event) =>
+                        setLetterWizard({
+                          ...letterWizard,
+                          result: {
+                            ...letterWizard.result,
+                            title: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Generated cover letter
+                    <textarea
+                      value={letterWizard.result?.body || ""}
+                      onChange={(event) =>
+                        setLetterWizard({
+                          ...letterWizard,
+                          result: {
+                            ...letterWizard.result,
+                            body: event.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </label>
+                </div>
               </>
             )}
             <div className="v2-cover-step-actions">
               <button
                 className="secondary"
-                disabled={letterWizard.step === 1}
+                disabled={letterWizard.step === 1 || letterWizard.step === 5}
                 onClick={() =>
                   setLetterWizard({
                     ...letterWizard,
@@ -4121,7 +4169,7 @@ function Resume({ state, reload, mode = "resume" }) {
               >
                 Previous
               </button>
-              {letterWizard.step < 5 ? (
+              {letterWizard.step < 4 ? (
                 <button
                   onClick={() =>
                     setLetterWizard({
@@ -4132,12 +4180,16 @@ function Resume({ state, reload, mode = "resume" }) {
                 >
                   Continue
                 </button>
-              ) : (
+              ) : letterWizard.step === 4 ? (
                 <button
                   disabled={!letterWizard.jobId}
-                  onClick={() => generateLetter(letterWizard)}
+                  onClick={() => generateLetter(letterWizard, true)}
                 >
                   <Sparkles size={16} /> Generate Cover Letter
+                </button>
+              ) : (
+                <button onClick={finishLetterWizard}>
+                  <Save size={16} /> Save and Finish
                 </button>
               )}
             </div>

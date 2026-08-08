@@ -630,7 +630,6 @@ test(
       await page
         .getByRole("heading", { name: "Choose the target job" })
         .waitFor();
-      await page.getByRole("button", { name: "Continue" }).click();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -640,13 +639,22 @@ test(
         ),
         page.getByRole("button", { name: "Generate Cover Letter" }).click(),
       ]);
+      await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
       await page.getByLabel("Cover letter title").fill("E2E product letter");
       await page
-        .getByLabel("Cover letter content")
+        .getByLabel("Generated cover letter")
         .fill(
           "Dear hiring team,\n\nI shipped measurable product improvements.",
         );
-      await page.getByRole("button", { name: "Save changes" }).click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/cover-letters/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save and Finish" }).click(),
+      ]);
       await page.getByText("E2E product letter").first().waitFor();
       await page
         .getByRole("button", { name: "Edit E2E product letter" })

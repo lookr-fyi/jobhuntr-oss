@@ -6943,6 +6943,22 @@ main > header.integrated-page-header {
   background: #eff6ff;
   font-size: 11px;
 }
+.v2-cover-final-editor {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+.v2-cover-final-editor label {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+.v2-cover-final-editor textarea {
+  min-height: 340px;
+  line-height: 1.65;
+}
 .v2-cover-step > label {
   display: block;
   margin-top: 16px;
