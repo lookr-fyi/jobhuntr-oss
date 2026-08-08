@@ -1,8 +1,8 @@
 {
   "name": "jobhuntr-oss",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "private": false,
-  "description": "Self-contained open-source JobHuntr: local-first job search CRM, resume/cover-letter assistant, and autonomous hunt simulator.",
+  "description": "Self-contained local-first job search CRM, document studio, career coach, and explainable hunt engine.",
   "type": "module",
   "scripts": {
     "jobhuntr": "node scripts/one-line-run.mjs",

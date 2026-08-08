@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const root = process.cwd();
 const ignored = new Set([
@@ -52,6 +53,43 @@ function walk(dir) {
   }
 }
 walk(root);
+
+function git(args) {
+  return execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024,
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+}
+
+try {
+  const commits = git(["rev-list", "--all"]).split("\n").filter(Boolean);
+  const scannedBlobs = new Set();
+  for (const commit of commits) {
+    const entries = git(["ls-tree", "-r", "--long", commit]).split("\n");
+    for (const entry of entries) {
+      const match = entry.match(/^\d+\s+blob\s+([a-f0-9]+)\s+(\d+)\t(.+)$/);
+      if (!match) continue;
+      const [, blob, rawSize, file] = match;
+      if (scannedBlobs.has(blob) || Number(rawSize) > 1_000_000) continue;
+      scannedBlobs.add(blob);
+      const base = path.basename(file);
+      if (!allow.has(file) && suspiciousNames.some((regex) => regex.test(base)))
+        findings.push(
+          `${commit.slice(0, 8)}:${file}: suspicious historical filename`,
+        );
+      if (allow.has(file)) continue;
+      const content = git(["show", `${commit}:${file}`]);
+      if (content.includes("\0")) continue;
+      for (const [regex, label] of patterns)
+        if (regex.test(content))
+          findings.push(`${commit.slice(0, 8)}:${file}: historical ${label}`);
+    }
+  }
+} catch {
+  console.warn("Git history was unavailable; scanned the working tree only.");
+}
 if (findings.length) {
   console.error(
     "Secret scan failed:\n" + findings.map((f) => " - " + f).join("\n"),
@@ -59,5 +97,5 @@ if (findings.length) {
   process.exit(1);
 }
 console.log(
-  "Secret scan passed: no obvious secrets or private env files found.",
+  "Secret scan passed: working tree and Git history contain no obvious secrets or private env files.",
 );

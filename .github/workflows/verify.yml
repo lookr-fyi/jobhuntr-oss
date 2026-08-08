@@ -16,3 +16,28 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+
+  clean-one-line-launch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Launch from a dependency-free checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d node_modules
+          JOBHUNTR_NO_OPEN=1 PORT=8790 ./run.sh > /tmp/jobhuntr-clean-launch.log 2>&1 &
+          launcher_pid=$!
+          cleanup() { kill -TERM "$launcher_pid" 2>/dev/null || true; wait "$launcher_pid" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for attempt in {1..120}; do
+            if curl -fsS http://127.0.0.1:8790/api/health > /tmp/jobhuntr-health.json; then break; fi
+            if ! kill -0 "$launcher_pid" 2>/dev/null; then cat /tmp/jobhuntr-clean-launch.log; exit 1; fi
+            sleep 1
+          done
+          grep -q '"mode":"local-only"' /tmp/jobhuntr-health.json
+          curl -fsS http://127.0.0.1:8790/ | grep -q 'JobHuntr OSS'

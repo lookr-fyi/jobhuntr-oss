@@ -1,6 +1,8 @@
 # JobHuntr OSS
 
-A self-contained, open-source rebuild of JobHuntr inspired by JobHuntr v2: job search CRM, local job board, resume/cover-letter assistant, and an autonomous hunt simulator.
+[![Verify](https://github.com/lookr-fyi/jobhuntr-oss/actions/workflows/verify.yml/badge.svg)](https://github.com/lookr-fyi/jobhuntr-oss/actions/workflows/verify.yml)
+
+A self-contained, open-source rebuild of JobHuntr inspired by JobHuntr v2: job search CRM, local job board, resume/cover-letter studio, career coach, and explainable autonomous hunt engine.
 
 ## One-line local run
 
@@ -73,3 +75,7 @@ See [`docs/OPEN_SOURCE_SCOPE.md`](docs/OPEN_SOURCE_SCOPE.md) and [`docs/SECURITY
 ## Contributing and license
 
 Contributions are welcome under the privacy and local-first requirements in [`CONTRIBUTING.md`](CONTRIBUTING.md). JobHuntr OSS is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+
+## Release evidence
+
+See the requirement-by-requirement [`completion audit`](docs/COMPLETION_AUDIT.md) and [`CHANGELOG.md`](CHANGELOG.md).
