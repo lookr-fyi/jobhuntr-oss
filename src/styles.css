@@ -6163,9 +6163,13 @@ main > header.integrated-page-header {
   font-size: 11px;
   font-weight: 700;
 }
+.v2-queue-filter-panel input,
 .v2-queue-filter-panel select {
   margin: 0;
   background: #fff;
+}
+.v2-queue-reset-filters {
+  align-self: end;
 }
 .v2-queue-layout {
   display: grid;

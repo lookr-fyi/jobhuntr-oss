@@ -3021,6 +3021,12 @@ function Queue({ state, reload, setTab }) {
   const [minimumAts, setMinimumAts] = useState(0);
   const [showAtsOnly, setShowAtsOnly] = useState(false);
   const [queueSort, setQueueSort] = useState("time");
+  const [queueLocation, setQueueLocation] = useState("");
+  const [queueSalary, setQueueSalary] = useState(0);
+  const [queueRemote, setQueueRemote] = useState("all");
+  const [queueJobType, setQueueJobType] = useState("all");
+  const [queueSeniority, setQueueSeniority] = useState("all");
+  const [queueSponsorship, setQueueSponsorship] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [submitOpen, setSubmitOpen] = useState(false);
@@ -3036,6 +3042,20 @@ function Queue({ state, reload, setTab }) {
         (job?.fitScore || 0) >= minimumFit &&
         (item.atsScore ?? 0) >= minimumAts &&
         (!showAtsOnly || item.atsDecision === "optimized") &&
+        (!queueLocation ||
+          String(job?.location || "")
+            .toLowerCase()
+            .includes(queueLocation.toLowerCase())) &&
+        maximumListedSalary(job || {}) >= queueSalary &&
+        (queueRemote === "all" ||
+          (queueRemote === "remote"
+            ? /remote|anywhere/i.test(job?.location || "")
+            : !/remote|anywhere/i.test(job?.location || ""))) &&
+        (queueJobType === "all" || boardJobType(job || {}) === queueJobType) &&
+        (queueSeniority === "all" ||
+          boardSeniority(job || {}) === queueSeniority) &&
+        (queueSponsorship === "all" ||
+          boardSponsorship(job || {}) === queueSponsorship) &&
         `${job?.title || ""} ${job?.company || ""}`
           .toLowerCase()
           .includes(query.toLowerCase())
@@ -3459,6 +3479,101 @@ function Queue({ state, reload, setTab }) {
                   <option value="ats">ATS score</option>
                 </select>
               </label>
+              <label>
+                Location
+                <input
+                  aria-label="Queue location"
+                  value={queueLocation}
+                  onChange={(event) => setQueueLocation(event.target.value)}
+                  placeholder="Remote, city, or state"
+                />
+              </label>
+              <label>
+                Minimum salary
+                <select
+                  aria-label="Minimum queue salary"
+                  value={queueSalary}
+                  onChange={(event) =>
+                    setQueueSalary(Number(event.target.value))
+                  }
+                >
+                  <option value="0">Any salary</option>
+                  {[120000, 150000, 175000, 200000].map((salary) => (
+                    <option value={salary} key={salary}>
+                      ${(salary / 1000).toFixed(0)}k+
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Work arrangement
+                <select
+                  aria-label="Queue work arrangement"
+                  value={queueRemote}
+                  onChange={(event) => setQueueRemote(event.target.value)}
+                >
+                  <option value="all">All arrangements</option>
+                  <option value="remote">Remote</option>
+                  <option value="onsite">On-site / hybrid</option>
+                </select>
+              </label>
+              <label>
+                Job type
+                <select
+                  aria-label="Queue job type"
+                  value={queueJobType}
+                  onChange={(event) => setQueueJobType(event.target.value)}
+                >
+                  <option value="all">All job types</option>
+                  <option value="full-time">Full-time</option>
+                  <option value="contract">Contract</option>
+                  <option value="internship">Internship</option>
+                </select>
+              </label>
+              <label>
+                Seniority
+                <select
+                  aria-label="Queue seniority"
+                  value={queueSeniority}
+                  onChange={(event) => setQueueSeniority(event.target.value)}
+                >
+                  <option value="all">All levels</option>
+                  <option value="entry">Entry level</option>
+                  <option value="mid">Mid level</option>
+                  <option value="senior">Senior</option>
+                  <option value="lead">Lead / Staff+</option>
+                </select>
+              </label>
+              <label>
+                Visa sponsorship
+                <select
+                  aria-label="Queue visa sponsorship"
+                  value={queueSponsorship}
+                  onChange={(event) => setQueueSponsorship(event.target.value)}
+                >
+                  <option value="all">Any sponsorship status</option>
+                  <option value="yes">Sponsorship mentioned</option>
+                  <option value="no">No sponsorship</option>
+                  <option value="unknown">Not specified</option>
+                </select>
+              </label>
+              <button
+                className="secondary v2-queue-reset-filters"
+                onClick={() => {
+                  setMinimumFit(0);
+                  setMinimumAts(0);
+                  setShowAtsOnly(false);
+                  setQueueSort("time");
+                  setQueueLocation("");
+                  setQueueSalary(0);
+                  setQueueRemote("all");
+                  setQueueJobType("all");
+                  setQueueSeniority("all");
+                  setQueueSponsorship("all");
+                }}
+              >
+                Clear filters
+              </button>
             </div>
           )}
           <div className="v2-queue-layout">

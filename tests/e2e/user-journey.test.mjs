@@ -539,12 +539,15 @@ test(
       ]);
       await page.getByText("3/4 answered").waitFor();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
+      await page.getByLabel("Queue job type").selectOption("full-time");
+      await page.getByLabel("Queue visa sponsorship").selectOption("unknown");
       await page
         .locator(".v2-ats-recommendation", { hasText: "ATS resume generated" })
         .first()
         .waitFor();
       await page.getByLabel("Sort submission queue").selectOption("ats");
       await page.getByLabel("Show jobs with ATS resume").selectOption("false");
+      await page.getByRole("button", { name: "Clear filters" }).click();
       await page.getByRole("button", { name: "Archive filtered" }).click();
       const archiveQueueDialog = page.getByRole("alertdialog", {
         name: "Archive filtered queue jobs?",
