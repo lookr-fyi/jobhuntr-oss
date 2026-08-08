@@ -294,6 +294,14 @@ test(
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Location").fill("Remote");
       await page.getByLabel("Minimum match").selectOption("25");
+      await page.getByLabel("Minimum board salary").selectOption("120000");
+      await page.getByLabel("Board work arrangement").selectOption("remote");
+      await page.getByLabel("Board source").selectOption("Seed Board");
+      await page.getByLabel("Sort by").selectOption("salary");
+      await page
+        .getByRole("button", { name: /Filters/ })
+        .getByText("5")
+        .waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -305,6 +313,17 @@ test(
       ]);
       await page.getByText(/opportunities$/).waitFor();
       await page.getByRole("link", { name: /View original post/ }).waitFor();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/board/search") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Clear all" }).click(),
+      ]);
+      await page.getByText("4 opportunities").waitFor();
+      await page.getByRole("button", { name: "Saved" }).first().waitFor();
       await assertAccessible(page, "Job Board");
 
       await page.getByRole("button", { name: "ATS Resume" }).click();

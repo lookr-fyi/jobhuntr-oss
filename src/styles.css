@@ -2495,7 +2495,7 @@ button.v2-audit-toggle:hover {
 }
 .v2-board-filters {
   display: grid;
-  grid-template-columns: repeat(3, minmax(150px, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
   gap: 14px;
   align-items: end;
   margin-top: 10px;
@@ -2504,6 +2504,21 @@ button.v2-audit-toggle:hover {
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 10px 25px rgb(15 23 42 / 6%);
+}
+.v2-board-filters > button {
+  align-self: end;
+}
+.v2-filter-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  margin-left: 2px;
+  padding: 0 5px;
+  color: #fff;
+  border-radius: 999px;
+  background: #2563eb;
+  font-size: 10px;
 }
 .v2-board-filters label {
   display: grid;
@@ -2599,6 +2614,10 @@ button.v2-board-row.selected {
   font-size: 11px;
   font-style: normal;
   font-weight: 700;
+}
+.v2-board-row em.saved {
+  color: #1d4ed8;
+  background: #dbeafe;
 }
 .v2-board-row-tags {
   display: flex;

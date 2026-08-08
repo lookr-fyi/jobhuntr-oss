@@ -589,7 +589,7 @@ function App() {
           <Overview state={state} setTab={setTab} reload={load} />
         )}{" "}
         {tab === "tracker" && <Tracker state={state} reload={load} />}{" "}
-        {tab === "board" && <Board reload={load} />}{" "}
+        {tab === "board" && <Board state={state} reload={load} />}{" "}
         {tab === "queue" && (
           <Queue state={state} reload={load} setTab={setTab} />
         )}{" "}
@@ -1892,15 +1892,18 @@ function Actions({ job, reload }) {
     </div>
   );
 }
-function Board({ reload }) {
+function Board({ state, reload }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [location, setLocation] = useState("");
   const [minimumFit, setMinimumFit] = useState(0);
+  const [minimumSalary, setMinimumSalary] = useState(0);
+  const [remoteType, setRemoteType] = useState("all");
+  const [source, setSource] = useState("all");
   const [sort, setSort] = useState("fit");
-  const [queuedUrls, setQueuedUrls] = useState(new Set());
+  const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
   const [queueing, setQueueing] = useState("");
   const [notice, setNotice] = useState("");
   const search = async () => {
@@ -1917,16 +1920,47 @@ function Board({ reload }) {
       body: JSON.stringify({ q: "" }),
     }).then(setResults);
   }, []);
+  const queuedUrls = new Set([
+    ...state.jobs.map((job) => job.url).filter(Boolean),
+    ...newlyQueuedUrls,
+  ]);
+  const salaryMaximum = (job) => {
+    const values = String(job.salary || "")
+      .match(/\d+(?:\.\d+)?\s*k?/gi)
+      ?.map((value) => {
+        const amount = Number.parseFloat(value);
+        return /k/i.test(value) ? amount * 1000 : amount;
+      });
+    return values?.length ? Math.max(...values) : 0;
+  };
   const visibleResults = results
-    .filter((job) => job.fitScore >= minimumFit)
+    .filter(
+      (job) =>
+        job.fitScore >= minimumFit &&
+        salaryMaximum(job) >= minimumSalary &&
+        (remoteType === "all" ||
+          (remoteType === "remote"
+            ? /remote|anywhere/i.test(job.location)
+            : !/remote|anywhere/i.test(job.location))) &&
+        (source === "all" || job.source === source),
+    )
     .sort((a, b) =>
       sort === "fit"
         ? b.fitScore - a.fitScore
-        : sort === "company"
-          ? a.company.localeCompare(b.company)
-          : a.title.localeCompare(b.title),
+        : sort === "salary"
+          ? salaryMaximum(b) - salaryMaximum(a)
+          : sort === "company"
+            ? a.company.localeCompare(b.company)
+            : a.title.localeCompare(b.title),
     );
   const selected = visibleResults[selectedIndex] || visibleResults[0];
+  const activeFilterCount = [
+    location,
+    minimumFit > 0,
+    minimumSalary > 0,
+    remoteType !== "all",
+    source !== "all",
+  ].filter(Boolean).length;
   const queueJob = async (job) => {
     setQueueing(job.url);
     setNotice("");
@@ -1939,7 +1973,7 @@ function Board({ reload }) {
         method: "POST",
         body: JSON.stringify({ jobId: tracked.id }),
       });
-      setQueuedUrls((current) => new Set(current).add(job.url));
+      setNewlyQueuedUrls((current) => new Set(current).add(job.url));
       setNotice(`${job.title} was added to your submission queue.`);
       reload();
     } finally {
@@ -1996,6 +2030,9 @@ function Board({ reload }) {
           onClick={() => setFiltersOpen((value) => !value)}
         >
           <Filter size={16} /> Filters
+          {activeFilterCount > 0 && (
+            <span className="v2-filter-count">{activeFilterCount}</span>
+          )}
         </button>
         <button type="submit">Search</button>
       </form>
@@ -2022,18 +2059,86 @@ function Board({ reload }) {
             </select>
           </label>
           <label>
+            Minimum salary
+            <select
+              aria-label="Minimum board salary"
+              value={minimumSalary}
+              onChange={(event) => setMinimumSalary(Number(event.target.value))}
+            >
+              <option value="0">Any salary</option>
+              {[120000, 150000, 175000, 200000].map((salary) => (
+                <option key={salary} value={salary}>
+                  ${(salary / 1000).toFixed(0)}k+
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Work arrangement
+            <select
+              aria-label="Board work arrangement"
+              value={remoteType}
+              onChange={(event) => setRemoteType(event.target.value)}
+            >
+              <option value="all">All arrangements</option>
+              <option value="remote">Remote</option>
+              <option value="onsite">On-site / hybrid</option>
+            </select>
+          </label>
+          <label>
+            Source
+            <select
+              aria-label="Board source"
+              value={source}
+              onChange={(event) => setSource(event.target.value)}
+            >
+              <option value="all">All sources</option>
+              {[
+                ...new Set(results.map((job) => job.source).filter(Boolean)),
+              ].map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Sort by
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value)}
             >
               <option value="fit">Best match</option>
+              <option value="salary">Highest salary</option>
               <option value="company">Company</option>
               <option value="title">Job title</option>
             </select>
           </label>
           <button className="secondary" onClick={search}>
             Apply filters
+          </button>
+          <button
+            className="text-button"
+            type="button"
+            disabled={!activeFilterCount}
+            onClick={async () => {
+              setLocation("");
+              setMinimumFit(0);
+              setMinimumSalary(0);
+              setRemoteType("all");
+              setSource("all");
+              setSort("fit");
+              setQ("");
+              setResults(
+                await api("/api/board/search", {
+                  method: "POST",
+                  body: JSON.stringify({ q: "", location: "" }),
+                }),
+              );
+              setSelectedIndex(0);
+            }}
+          >
+            Clear all
           </button>
         </div>
       )}
@@ -2051,7 +2156,7 @@ function Board({ reload }) {
           {visibleResults.map((j, i) => (
             <button
               type="button"
-              className={`v2-board-row ${selectedIndex === i ? "selected" : ""}`}
+              className={`v2-board-row ${selected?.url === j.url ? "selected" : ""}`}
               key={`${j.url}-${i}`}
               onClick={() => setSelectedIndex(i)}
             >
@@ -2063,6 +2168,7 @@ function Board({ reload }) {
                 </small>
                 <span className="v2-board-row-tags">
                   <em>{j.fitScore}% match</em>
+                  {queuedUrls.has(j.url) && <em className="saved">Saved</em>}
                   <small>Recently added</small>
                 </span>
               </span>
@@ -2099,7 +2205,7 @@ function Board({ reload }) {
               >
                 <ListPlus size={16} />
                 {queuedUrls.has(selected.url)
-                  ? "Queued"
+                  ? "Saved"
                   : queueing === selected.url
                     ? "Queueing…"
                     : "Queue"}

@@ -54,7 +54,7 @@ export const seedJobs = [
 export function emptyDb() {
   const createdAt = now();
   return {
-    meta: { version: 8, createdAt, updatedAt: createdAt },
+    meta: { version: 9, createdAt, updatedAt: createdAt },
     profile: {
       onboarded: false,
       name: "Local Job Hunter",
