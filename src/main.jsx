@@ -23,6 +23,7 @@ import {
   Columns3,
   Users,
   User,
+  ChevronLeft,
   ChevronRight,
   RefreshCcw,
   Medal,
@@ -8314,6 +8315,7 @@ function RunsPage({ state, setTab, reload }) {
   const [hideZero, setHideZero] = useState(false);
   const [showManualOnly, setShowManualOnly] = useState(false);
   const [showActionRequiredOnly, setShowActionRequiredOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [actionMenuOpen, setActionMenuOpen] = useState(null);
   const [newRunOpen, setNewRunOpen] = useState(false);
   const [newRunTemplate, setNewRunTemplate] = useState("linkedin");
@@ -8337,7 +8339,7 @@ function RunsPage({ state, setTab, reload }) {
       )
       .filter(Boolean),
   );
-  const visibleRuns = runs
+  const filteredRuns = runs
     .filter((run) => {
       const matchesSearch =
         `${run.runName || ""} ${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
@@ -8357,6 +8359,13 @@ function RunsPage({ state, setTab, reload }) {
         Number(actionRequiredRunIds.has(b.id)) -
         Number(actionRequiredRunIds.has(a.id)),
     );
+  const pageSize = 10;
+  const totalPages = Math.max(1, Math.ceil(filteredRuns.length / pageSize));
+  const effectivePage = Math.min(currentPage, totalPages);
+  const visibleRuns = filteredRuns.slice(
+    (effectivePage - 1) * pageSize,
+    effectivePage * pageSize,
+  );
   const toggleRun = (id) => {
     setSelectedIds((current) => {
       const next = new Set(current);
@@ -8440,7 +8449,10 @@ function RunsPage({ state, setTab, reload }) {
           <input
             aria-label="Search runs"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Search runs..."
           />
         </div>
@@ -8449,7 +8461,10 @@ function RunsPage({ state, setTab, reload }) {
             type="button"
             role="switch"
             aria-checked={showManualOnly}
-            onClick={() => setShowManualOnly((value) => !value)}
+            onClick={() => {
+              setShowManualOnly((value) => !value);
+              setCurrentPage(1);
+            }}
           >
             <span />
           </button>
@@ -8460,7 +8475,10 @@ function RunsPage({ state, setTab, reload }) {
             type="button"
             role="switch"
             aria-checked={hideZero}
-            onClick={() => setHideZero((value) => !value)}
+            onClick={() => {
+              setHideZero((value) => !value);
+              setCurrentPage(1);
+            }}
           >
             <span />
           </button>
@@ -8471,9 +8489,10 @@ function RunsPage({ state, setTab, reload }) {
             <input
               type="checkbox"
               checked={showActionRequiredOnly}
-              onChange={(event) =>
-                setShowActionRequiredOnly(event.target.checked)
-              }
+              onChange={(event) => {
+                setShowActionRequiredOnly(event.target.checked);
+                setCurrentPage(1);
+              }}
             />
             Action required only
           </label>
@@ -8592,6 +8611,33 @@ function RunsPage({ state, setTab, reload }) {
           </div>
         )}
       </div>
+      {filteredRuns.length > pageSize && (
+        <div className="v2-runs-pagination">
+          <span>
+            Showing {(effectivePage - 1) * pageSize + 1} to{" "}
+            {Math.min(effectivePage * pageSize, filteredRuns.length)} of{" "}
+            {filteredRuns.length} runs
+          </span>
+          <div>
+            <button
+              className="secondary"
+              disabled={effectivePage === 1}
+              onClick={() => setCurrentPage(Math.max(1, effectivePage - 1))}
+            >
+              <ChevronLeft size={15} /> Previous
+            </button>
+            <button
+              className="secondary"
+              disabled={effectivePage === totalPages}
+              onClick={() =>
+                setCurrentPage(Math.min(totalPages, effectivePage + 1))
+              }
+            >
+              Next <ChevronRight size={15} />
+            </button>
+          </div>
+        </div>
+      )}
       {selectedRun && (
         <div
           className="v2-session-modal"

@@ -5087,6 +5087,24 @@ select:focus {
   padding: 0;
   overflow: hidden;
 }
+.v2-runs-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 12px;
+}
+.v2-runs-pagination > div {
+  display: flex;
+  gap: 8px;
+}
+.v2-runs-pagination button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
 .v2-table-head,
 .v2-run-row {
   display: grid;
@@ -5380,6 +5398,10 @@ select:focus {
   }
   .v2-new-run-templates {
     grid-template-columns: 1fr;
+  }
+  .v2-runs-pagination {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .v2-table-head,
   .v2-run-row {
