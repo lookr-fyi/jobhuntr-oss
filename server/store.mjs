@@ -107,6 +107,7 @@ export function emptyDb() {
     coverLetters: [],
     templates: defaultTemplates(),
     submissions: [],
+    coachConversations: [],
     coachingSessions: [],
     outreachDrafts: [],
     huntPresets: [],
@@ -189,6 +190,7 @@ function migrate(db) {
       }));
     }
   }
+  db.coachConversations ||= [];
   db.coachingSessions ||= [];
   db.outreachDrafts ||= [];
   db.huntPresets ||= [];

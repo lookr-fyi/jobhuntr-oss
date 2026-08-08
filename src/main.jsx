@@ -6614,7 +6614,9 @@ function Coach({ state, reload }) {
   const [copiedMessage, setCopiedMessage] = useState(null);
   const [deleteConversationTarget, setDeleteConversationTarget] =
     useState(null);
+  const coachMigrationStarted = useRef(false);
   const [conversations, setConversations] = useState(() => {
+    if (state.coachConversations?.length) return state.coachConversations;
     try {
       const saved = JSON.parse(
         localStorage.getItem("jobhuntr-coach-conversations") || "[]",
@@ -6656,34 +6658,61 @@ function Coach({ state, reload }) {
     conversations.find(({ id }) => id === activeConversationId) ||
     (activeConversationId ? conversations[0] || null : null);
   const messages = activeConversation?.messages || [];
-  const persistConversations = (next, activeId = activeConversationId) => {
+  const selectConversationState = (next, activeId = activeConversationId) => {
     setConversations(next);
-    localStorage.setItem("jobhuntr-coach-conversations", JSON.stringify(next));
     if (activeId) {
       setActiveConversationId(activeId);
-      localStorage.setItem("jobhuntr-active-coach-conversation", activeId);
     } else {
       setActiveConversationId(null);
-      localStorage.removeItem("jobhuntr-active-coach-conversation");
     }
   };
+  useEffect(() => {
+    if (
+      coachMigrationStarted.current ||
+      state.coachConversations?.length ||
+      !conversations.length
+    )
+      return;
+    coachMigrationStarted.current = true;
+    const migrate = async () => {
+      const migrated = await Promise.all(
+        conversations.map((conversation) =>
+          api("/api/coach/conversations", {
+            method: "POST",
+            body: JSON.stringify({
+              id: conversation.id,
+              jobId: conversation.jobId || "",
+              title: conversation.title || "Career coaching session",
+              messages: conversation.messages || [],
+            }),
+          }),
+        ),
+      );
+      setConversations(migrated);
+      localStorage.removeItem("jobhuntr-coach-conversations");
+      localStorage.removeItem("jobhuntr-coach-chat");
+      await reload();
+    };
+    migrate();
+  }, [conversations, reload, state.coachConversations?.length]);
   const newConversation = () => {
     setChatInput("");
-    persistConversations(conversations, null);
+    selectConversationState(conversations, null);
   };
   const openConversation = (id) => {
     setChatInput("");
     setActiveConversationId(id);
-    localStorage.setItem("jobhuntr-active-coach-conversation", id);
   };
-  const deleteConversation = (id) => {
+  const deleteConversation = async (id) => {
+    await api(`/api/coach/conversations/${id}`, { method: "DELETE" });
     const next = conversations.filter((conversation) => conversation.id !== id);
     const nextActive =
       id === activeConversation?.id
         ? next[0]?.id || null
         : activeConversationId;
-    persistConversations(next, nextActive);
+    selectConversationState(next, nextActive);
     setDeleteConversationTarget(null);
+    await reload();
   };
   useEffect(() => {
     if (view !== "chat") return;
@@ -6734,7 +6763,7 @@ function Coach({ state, reload }) {
     setDraft(created);
     await reload();
   };
-  const sendCoachMessage = (message = chatInput) => {
+  const sendCoachMessage = async (message = chatInput) => {
     const prompt = message.trim();
     if (!prompt) return;
     const role =
@@ -6748,24 +6777,31 @@ function Coach({ state, reload }) {
       { role: "user", content: prompt },
       { role: "assistant", content: answer },
     ];
-    const id = activeConversation?.id || crypto.randomUUID();
-    const updated = {
-      ...activeConversation,
-      id,
+    const payload = {
       jobId,
       title:
         activeConversation?.title ||
         (prompt.length > 42 ? `${prompt.slice(0, 42)}…` : prompt),
       messages: nextMessages,
-      updatedAt: new Date().toISOString(),
     };
+    const updated = await api(
+      activeConversation
+        ? `/api/coach/conversations/${activeConversation.id}`
+        : "/api/coach/conversations",
+      {
+        method: activeConversation ? "PATCH" : "POST",
+        body: JSON.stringify(payload),
+      },
+    );
+    const id = updated.id;
     const nextConversations = activeConversation
       ? conversations.map((conversation) =>
           conversation.id === id ? updated : conversation,
         )
       : [updated, ...conversations];
-    persistConversations(nextConversations, id);
+    selectConversationState(nextConversations, id);
     setChatInput("");
+    await reload();
   };
   return (
     <section className="coach-page">

@@ -1125,9 +1125,17 @@ test(
       await assertAccessible(page, "Outreach");
 
       await page.getByRole("button", { name: "AI Coach" }).click();
-      await page
-        .getByRole("button", { name: "Help me prepare for an interview" })
-        .click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/coach/conversations") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page
+          .getByRole("button", { name: "Help me prepare for an interview" })
+          .click(),
+      ]);
       await page.getByText(/start by grounding your answer/).waitFor();
       assert.match(page.url(), /#\/coach\?conversation=/);
       await page.getByRole("button", { name: /Copy coach response/ }).click();
@@ -1140,7 +1148,15 @@ test(
         .click();
       await page.getByRole("heading", { name: "Hi, I'm AI Coach!" }).waitFor();
       await page.getByLabel("Message AI Coach").fill("Help me plan this week");
-      await page.getByRole("button", { name: /Get Started/ }).click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/coach/conversations") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: /Get Started/ }).click(),
+      ]);
       await page.getByText("2 saved locally").waitFor();
       await page.reload();
       await page
@@ -1423,6 +1439,11 @@ test(
       assert.equal(persisted.profile.lastName, "Hunter");
       assert.equal(persisted.profile.nickname, "E2E Builder");
       assert.equal(persisted.profileAudits.length, 1);
+      assert.equal(persisted.coachConversations.length, 2);
+      assert.equal(
+        persisted.coachConversations[0].messages[0].content,
+        "Help me plan this week",
+      );
       assert.ok(
         persisted.jobs.some(
           (job) =>

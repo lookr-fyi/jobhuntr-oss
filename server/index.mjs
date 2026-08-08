@@ -326,6 +326,9 @@ app.delete("/api/jobs/:id", async (req, res) => {
       db.coachingSessions = db.coachingSessions.filter(
         (x) => x.jobId !== req.params.id,
       );
+      db.coachConversations = db.coachConversations.filter(
+        (x) => x.jobId !== req.params.id,
+      );
       db.outreachDrafts = db.outreachDrafts.filter(
         (x) => x.jobId !== req.params.id,
       );
@@ -937,6 +940,71 @@ app.post("/api/coach/prepare", async (req, res) => {
   });
   if (!session) return res.status(404).json({ error: "Job not found" });
   res.status(201).json(session);
+});
+const CoachConversationSchema = z.object({
+  id: z.string().max(200).optional(),
+  jobId: z.string().max(200).optional().default(""),
+  title: z.string().trim().min(1).max(300),
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().min(1).max(30000),
+      }),
+    )
+    .max(200),
+});
+app.post("/api/coach/conversations", async (req, res) => {
+  const parsed = CoachConversationSchema.parse(req.body);
+  const conversation = await mutate((db) => {
+    const id = parsed.id || nanoid();
+    const existing = db.coachConversations.find((item) => item.id === id);
+    if (existing) return existing;
+    const item = {
+      ...parsed,
+      id,
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+    };
+    db.coachConversations.unshift(item);
+    auditEvent(db, "coach", "Saved a private AI Coach conversation.", {
+      conversationId: id,
+    });
+    return item;
+  });
+  res.status(201).json(conversation);
+});
+app.patch("/api/coach/conversations/:id", async (req, res) => {
+  const conversation = await mutate((db) => {
+    const item = db.coachConversations.find(
+      (entry) => entry.id === req.params.id,
+    );
+    if (!item) return null;
+    const parsed = CoachConversationSchema.parse({ ...item, ...req.body });
+    Object.assign(item, parsed, {
+      id: item.id,
+      createdAt: item.createdAt,
+      updatedAt: timestamp(),
+    });
+    return item;
+  });
+  if (!conversation)
+    return res.status(404).json({ error: "Coach conversation not found" });
+  res.json(conversation);
+});
+app.delete("/api/coach/conversations/:id", async (req, res) => {
+  const removed = await mutate((db) => {
+    const before = db.coachConversations.length;
+    db.coachConversations = db.coachConversations.filter(
+      (item) => item.id !== req.params.id,
+    );
+    if (db.coachConversations.length !== before)
+      auditEvent(db, "coach", "Deleted a private AI Coach conversation.", {
+        conversationId: req.params.id,
+      });
+    return db.coachConversations.length !== before;
+  });
+  res.status(removed ? 204 : 404).end();
 });
 app.patch("/api/coach/sessions/:id", async (req, res) => {
   const session = await mutate((db) => {
@@ -1600,7 +1668,11 @@ app.post("/api/import", async (req, res) => {
     return res
       .status(400)
       .json({ error: "Expected a JobHuntr export with jobs[]" });
-  if (imported.jobs.length > 5000 || (imported.activities?.length || 0) > 10000)
+  if (
+    imported.jobs.length > 5000 ||
+    (imported.activities?.length || 0) > 10000 ||
+    (imported.coachConversations?.length || 0) > 500
+  )
     return res
       .status(400)
       .json({ error: "Backup exceeds safe local import limits" });
@@ -1612,6 +1684,7 @@ app.post("/api/import", async (req, res) => {
     "coverLetters",
     "templates",
     "submissions",
+    "coachConversations",
     "coachingSessions",
     "outreachDrafts",
     "huntPresets",

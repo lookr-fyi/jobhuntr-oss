@@ -453,6 +453,42 @@ test("coach and outreach create private role-specific drafts", async () => {
   assert.match(outreach.body.body, new RegExp(job.company));
 });
 
+test("AI Coach conversations persist in portable local storage", async () => {
+  const state = (await req("/api/state")).body;
+  const created = await req("/api/coach/conversations", {
+    method: "POST",
+    body: JSON.stringify({
+      jobId: state.jobs[0].id,
+      title: "Prepare my product story",
+      messages: [
+        { role: "user", content: "Help me sharpen my product story." },
+        { role: "assistant", content: "Start with a measurable outcome." },
+      ],
+    }),
+  });
+  assert.equal(created.res.status, 201);
+  const updated = await req(`/api/coach/conversations/${created.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      messages: [
+        ...created.body.messages,
+        { role: "user", content: "How should I structure it?" },
+        { role: "assistant", content: "Use situation, action, and result." },
+      ],
+    }),
+  });
+  assert.equal(updated.res.status, 200);
+  assert.equal(updated.body.messages.length, 4);
+  assert.equal(
+    (await req("/api/state")).body.coachConversations[0].messages.length,
+    4,
+  );
+  const removed = await req(`/api/coach/conversations/${created.body.id}`, {
+    method: "DELETE",
+  });
+  assert.equal(removed.res.status, 204);
+});
+
 test("career stories ground coach sessions and practice answers persist", async () => {
   const story = await req("/api/career-stories", {
     method: "POST",
@@ -697,6 +733,14 @@ test("deleting a job cascades its private workflow records", async () => {
     method: "POST",
     body: JSON.stringify({ jobId }),
   });
+  await req("/api/coach/conversations", {
+    method: "POST",
+    body: JSON.stringify({
+      jobId,
+      title: "Temporary coaching chat",
+      messages: [{ role: "user", content: "Help with this role." }],
+    }),
+  });
   await req("/api/outreach/draft", {
     method: "POST",
     body: JSON.stringify({ jobId }),
@@ -712,6 +756,7 @@ test("deleting a job cascades its private workflow records", async () => {
     "jobs",
     "coverLetters",
     "coachingSessions",
+    "coachConversations",
     "outreachDrafts",
     "submissions",
   ])
