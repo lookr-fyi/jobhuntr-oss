@@ -150,6 +150,7 @@ function App() {
               "agent",
               "board",
               "outreach",
+              "audit",
             ].includes(tab)
               ? "integrated-page-header"
               : ""
@@ -2295,6 +2296,8 @@ function Gigs({ state, reload }) {
   );
 }
 function ProfileAudit({ state, reload }) {
+  const [profileUrl, setProfileUrl] = useState("");
+  const [expanded, setExpanded] = useState(true);
   const [form, setForm] = useState({
     headline: state.profile.headline || "",
     about: "",
@@ -2317,14 +2320,14 @@ function ProfileAudit({ state, reload }) {
     }
   };
   return (
-    <section className="audit-layout">
-      <div className="card audit-form">
-        <span className="eyebrow">PASTE-ONLY · NO SCRAPING</span>
-        <h2>Professional profile review</h2>
-        <p>
-          Paste only the sections you want reviewed. Analysis is deterministic
-          and stays in your local JSON workspace.
-        </p>
+    <section className="v2-audit-page">
+      <div className="v2-page-intro"><div><h2>LinkedIn Profile Audit</h2><p>Review your profile positioning and receive comprehensive, evidence-based feedback.</p></div></div>
+      <div className="v2-audit-url"><input value={profileUrl} onChange={(e) => setProfileUrl(e.target.value)} placeholder="https://www.linkedin.com/in/username" /><button disabled={running || !form.headline.trim()} onClick={run}>{running ? "Analyzing…" : "Analyze Profile"}</button></div>
+      <div className="v2-local-notice"><ShieldCheck size={18} /><span><strong>Private local analysis</strong> JobHuntr does not open LinkedIn or transmit your content. Paste the sections you want reviewed below.</span></div>
+      <button className="v2-audit-toggle" onClick={() => setExpanded(!expanded)}><span>{expanded ? "Hide" : "Show"} profile content and additional context</span><ChevronRight className={expanded ? "rotated" : ""} size={18} /></button>
+      <div className="audit-layout">
+      {expanded && <div className="card audit-form">
+        <span className="eyebrow">PROFILE CONTENT</span>
         <label>
           Headline
           <input
@@ -2366,7 +2369,7 @@ function ProfileAudit({ state, reload }) {
           JobHuntr does not open LinkedIn, use cookies, or transmit this
           content.
         </p>
-      </div>
+      </div>}
       <div className="audit-results">
         {audit ? (
           <div className="card">
@@ -2484,6 +2487,7 @@ function ProfileAudit({ state, reload }) {
             <p className="empty">No saved audits yet.</p>
           )}
         </div>
+      </div>
       </div>
     </section>
   );
