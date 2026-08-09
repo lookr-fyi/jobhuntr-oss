@@ -7456,6 +7456,15 @@ select:focus {
   }
 }
 @media (max-width: 700px) {
+  .v2-farewell-button {
+    right: auto;
+    bottom: 76px;
+    left: 16px;
+    max-width: calc(100vw - 96px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .v2-hunt-float {
     right: 14px;
     bottom: 74px;

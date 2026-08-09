@@ -3266,6 +3266,27 @@ test(
         false,
         "Overview should fit a 390px viewport",
       );
+      const floatingActions = await mobile.evaluate(() => {
+        const bounds = (selector) => {
+          const box = document.querySelector(selector).getBoundingClientRect();
+          return {
+            top: Math.round(box.top),
+            right: Math.round(box.right),
+            bottom: Math.round(box.bottom),
+            left: Math.round(box.left),
+          };
+        };
+        return {
+          farewell: bounds(".v2-farewell-button"),
+          hunt: bounds(".v2-hunt-float > button"),
+          navigation: bounds(".v2-sidebar"),
+        };
+      });
+      assert.ok(
+        floatingActions.farewell.bottom < floatingActions.navigation.top &&
+          floatingActions.farewell.right < floatingActions.hunt.left,
+        "mobile Overview actions must remain above the bottom navigation without overlapping each other",
+      );
       await assertAccessible(mobile, "Mobile Overview");
       await mobile
         .getByRole("button", { name: "Submission Queue", exact: true })
