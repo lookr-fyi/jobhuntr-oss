@@ -8,7 +8,10 @@ import http from "node:http";
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), "jobhuntr-test-"));
 process.env.NODE_ENV = "test";
 process.env.JOBHUNTR_DATA_DIR = dir;
-const app = (await import("../server/index.mjs")).default;
+const serverModule = await import("../server/index.mjs");
+const app = serverModule.default;
+const { runScheduledHunt } = serverModule;
+const { mutate } = await import("../server/store.mjs");
 const server = app.listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
 const req = async (url, options = {}) => {
@@ -246,6 +249,45 @@ test("agent run saves matches and logs actions", async () => {
       .every((item) => item.checklist.every((check) => check.done === false)),
     "generated documents must never auto-complete human review",
   );
+});
+
+test("infinite hunt schedule persists and can be stopped safely", async () => {
+  const invalid = await req("/api/infinite-hunt/start", {
+    method: "POST",
+    body: JSON.stringify({ intervalMinutes: 0, options: { q: "engineer" } }),
+  });
+  assert.equal(invalid.res.status, 400);
+  const started = await req("/api/infinite-hunt/start", {
+    method: "POST",
+    body: JSON.stringify({
+      intervalMinutes: 15,
+      options: {
+        q: "product engineer",
+        minFit: 55,
+        workflows: ["linkedin", "indeed"],
+      },
+    }),
+  });
+  assert.equal(started.res.status, 201);
+  assert.equal(started.body.enabled, true);
+  assert.equal(started.body.intervalMinutes, 15);
+  assert.ok(Date.parse(started.body.nextRunAt) > Date.now());
+  const persisted = (await req("/api/state")).body.infiniteHunt;
+  assert.equal(persisted.options.q, "product engineer");
+  assert.deepEqual(persisted.options.workflows, ["linkedin", "indeed"]);
+  const runsBefore = (await req("/api/state")).body.agentRuns.length;
+  await mutate((db) => {
+    db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
+  });
+  await runScheduledHunt(base);
+  const afterScheduledRun = (await req("/api/state")).body;
+  assert.equal(afterScheduledRun.agentRuns.length, runsBefore + 1);
+  assert.ok(afterScheduledRun.infiniteHunt.lastRunAt);
+  assert.ok(Date.parse(afterScheduledRun.infiniteHunt.nextRunAt) > Date.now());
+  const stopped = await req("/api/infinite-hunt/stop", { method: "POST" });
+  assert.equal(stopped.res.status, 200);
+  assert.equal(stopped.body.enabled, false);
+  assert.equal(stopped.body.nextRunAt, null);
 });
 
 test("agent run history can be permanently deleted without deleting saved jobs", async () => {

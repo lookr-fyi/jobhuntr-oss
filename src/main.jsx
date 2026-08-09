@@ -534,6 +534,15 @@ function App() {
       .catch((e) => setErr(e.message));
   useEffect(load, []);
   useEffect(() => {
+    if (!state?.infiniteHunt?.enabled) return undefined;
+    const refresh = window.setInterval(() => {
+      api("/api/state")
+        .then(setState)
+        .catch((error) => setErr(error.message));
+    }, 15_000);
+    return () => window.clearInterval(refresh);
+  }, [state?.infiniteHunt?.enabled]);
+  useEffect(() => {
     const showApiError = (event) => setErr(event.detail);
     window.addEventListener("jobhuntr:api-error", showApiError);
     return () => window.removeEventListener("jobhuntr:api-error", showApiError);
@@ -8860,6 +8869,9 @@ function Agent({ state, reload, setTab }) {
       (newRunDraft?.optimizeResume ??
         localStorage.getItem("jobhuntr-optimize-resume") === "true"),
   );
+  const [intervalMinutes, setIntervalMinutes] = useState(
+    state.infiniteHunt?.intervalMinutes || 60,
+  );
   const [running, setRunning] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [savingPreset, setSavingPreset] = useState(false);
@@ -8943,6 +8955,36 @@ function Agent({ state, reload, setTab }) {
       });
       localStorage.removeItem("jobhuntr-new-run-draft");
       await reload();
+    } finally {
+      setRunning(false);
+    }
+  };
+  const startInfiniteHunt = async () => {
+    setRunning(true);
+    try {
+      await api("/api/infinite-hunt/start", {
+        method: "POST",
+        body: JSON.stringify({
+          intervalMinutes: Number(intervalMinutes),
+          options: payload(),
+        }),
+      });
+      const result = await api("/api/agent-runs/start", {
+        method: "POST",
+        body: JSON.stringify(payload()),
+      });
+      setPreview({
+        matches: result.matches,
+        inspected: result.inspected,
+        alreadyTracked: result.duplicates,
+        options: result.options,
+        added: result.added,
+      });
+      localStorage.removeItem("jobhuntr-new-run-draft");
+      await reload();
+    } catch (error) {
+      await api("/api/infinite-hunt/stop", { method: "POST" }).catch(() => {});
+      throw error;
     } finally {
       setRunning(false);
     }
@@ -9040,6 +9082,31 @@ function Agent({ state, reload, setTab }) {
         </div>
       )}
       <div className="card v2-hunt-builder">
+        {state.infiniteHunt?.enabled && (
+          <div className="v2-queue-banner v2-infinite-active" role="status">
+            <CheckCircle2 size={20} />
+            <span>
+              Infinite Hunt is active every {state.infiniteHunt.intervalMinutes}{" "}
+              minute{state.infiniteHunt.intervalMinutes === 1 ? "" : "s"}.
+              <small>Recurring hunts continue while JobHuntr is running.</small>
+              {state.infiniteHunt.nextRunAt && (
+                <small>
+                  Next run{" "}
+                  {new Date(state.infiniteHunt.nextRunAt).toLocaleString()}
+                </small>
+              )}
+            </span>
+            <button
+              className="secondary"
+              onClick={async () => {
+                await api("/api/infinite-hunt/stop", { method: "POST" });
+                await reload();
+              }}
+            >
+              Stop Infinite Hunt
+            </button>
+          </div>
+        )}
         <div className="v2-resume-source">
           <div className="v2-section-heading">
             <div className="v2-icon-tile">
@@ -9251,7 +9318,35 @@ function Agent({ state, reload, setTab }) {
           >
             {previewing ? "Previewing matches…" : "Preview matches"}
           </button>
-          <button disabled={running || selectedRuns.length === 0} onClick={run}>
+          <button
+            className="secondary"
+            disabled={running || selectedRuns.length === 0}
+            onClick={run}
+          >
+            Run once
+          </button>
+          <label className="v2-hunt-interval">
+            Repeat
+            <select
+              aria-label="Infinite Hunt interval"
+              value={intervalMinutes}
+              disabled={running || state.infiniteHunt?.enabled}
+              onChange={(event) => setIntervalMinutes(event.target.value)}
+            >
+              <option value="15">Every 15 minutes</option>
+              <option value="60">Every hour</option>
+              <option value="240">Every 4 hours</option>
+              <option value="1440">Every day</option>
+            </select>
+          </label>
+          <button
+            disabled={
+              running ||
+              selectedRuns.length === 0 ||
+              state.infiniteHunt?.enabled
+            }
+            onClick={startInfiniteHunt}
+          >
             <InfinityIcon size={17} />
             {running ? "Starting infinite hunt…" : "Start infinite hunt"}
           </button>

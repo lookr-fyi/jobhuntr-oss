@@ -322,6 +322,9 @@ test(
       await page.unroute("**/api/agent-runs/preview");
       await page.getByRole("button", { name: "Start infinite hunt" }).click();
       await page.getByText(/eligible matches/).waitFor();
+      await page
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor();
       await page.getByRole("heading", { name: "Run history" }).waitFor();
       await page
         .getByRole("button", { name: "View last infinite session" })
@@ -335,6 +338,10 @@ test(
       await sessionDialog.getByText("Saved", { exact: true }).waitFor();
       await page.keyboard.press("Escape");
       await sessionDialog.waitFor({ state: "hidden" });
+      await page.getByRole("button", { name: "Stop Infinite Hunt" }).click();
+      await page
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor({ state: "hidden" });
 
       await page.getByRole("button", { name: "Agent Runs" }).click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();

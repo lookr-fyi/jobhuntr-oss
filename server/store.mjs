@@ -120,6 +120,15 @@ export function emptyDb() {
     profileAudits: [],
     gigs: [],
     agentRuns: [],
+    infiniteHunt: {
+      enabled: false,
+      intervalMinutes: 60,
+      options: null,
+      startedAt: null,
+      nextRunAt: null,
+      lastRunAt: null,
+      lastError: "",
+    },
     activities: [
       {
         id: nanoid(),
@@ -254,6 +263,21 @@ function migrate(input) {
     run.activities = records(run.activities);
     run.workflows = strings(run.workflows);
   }
+  db.infiniteHunt = isRecord(db.infiniteHunt)
+    ? db.infiniteHunt
+    : emptyDb().infiniteHunt;
+  db.infiniteHunt.enabled = Boolean(db.infiniteHunt.enabled);
+  db.infiniteHunt.intervalMinutes = Math.min(
+    1440,
+    Math.max(1, Number(db.infiniteHunt.intervalMinutes) || 60),
+  );
+  db.infiniteHunt.options = isRecord(db.infiniteHunt.options)
+    ? db.infiniteHunt.options
+    : null;
+  db.infiniteHunt.lastError = String(db.infiniteHunt.lastError || "").slice(
+    0,
+    500,
+  );
   db.activities = records(db.activities);
   for (const job of db.jobs) {
     job.notes = records(job.notes);

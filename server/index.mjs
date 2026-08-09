@@ -1591,6 +1591,55 @@ const huntOptions = (input, profile) =>
     optimizeResume: Boolean(input.optimizeResume),
   });
 
+const InfiniteHuntSchema = z.object({
+  intervalMinutes: z.coerce.number().int().min(1).max(1440),
+  options: HuntSchema,
+});
+
+app.post("/api/infinite-hunt/start", async (req, res) => {
+  const parsed = InfiniteHuntSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({ error: "Invalid infinite hunt schedule" });
+  const current = await readDb();
+  const options = huntOptions(parsed.data.options, current.profile);
+  if (options.optimizeResume && !isUsableResumeText(current.profile.resumeText))
+    return res.status(409).json({
+      error: "Add a real profile resume before generating tailored resumes",
+    });
+  const schedule = await mutate((db) => {
+    const startedAt = timestamp();
+    db.infiniteHunt = {
+      enabled: true,
+      intervalMinutes: parsed.data.intervalMinutes,
+      options,
+      startedAt,
+      nextRunAt: new Date(
+        Date.now() + parsed.data.intervalMinutes * 60_000,
+      ).toISOString(),
+      lastRunAt: db.infiniteHunt?.lastRunAt || null,
+      lastError: "",
+    };
+    auditEvent(
+      db,
+      "agent",
+      `Started infinite hunt every ${parsed.data.intervalMinutes} minute${parsed.data.intervalMinutes === 1 ? "" : "s"}.`,
+    );
+    return db.infiniteHunt;
+  });
+  res.status(201).json(schedule);
+});
+
+app.post("/api/infinite-hunt/stop", async (_req, res) => {
+  const schedule = await mutate((db) => {
+    db.infiniteHunt ||= {};
+    db.infiniteHunt.enabled = false;
+    db.infiniteHunt.nextRunAt = null;
+    auditEvent(db, "agent", "Stopped infinite hunt.");
+    return db.infiniteHunt;
+  });
+  res.json(schedule);
+});
+
 app.post("/api/agent-runs/preview", async (req, res) => {
   const db = await readDb();
   const options = huntOptions(req.body, db.profile);
@@ -1939,6 +1988,7 @@ const BackupSchema = z.object({
   profileAudits: z.array(BackupRecordSchema).max(1000).optional(),
   gigs: z.array(BackupRecordSchema).max(5000).optional(),
   agentRuns: z.array(BackupRecordSchema).max(5000).optional(),
+  infiniteHunt: BackupRecordSchema.optional(),
   activities: z.array(BackupRecordSchema).max(10000).optional(),
 });
 
@@ -1975,10 +2025,62 @@ if (fs.existsSync(publicDir)) {
   });
 }
 
+let schedulerBusy = false;
+export const runScheduledHunt = async (
+  baseUrl = `http://127.0.0.1:${PORT}`,
+) => {
+  if (schedulerBusy) return;
+  schedulerBusy = true;
+  try {
+    const db = await readDb();
+    const schedule = db.infiniteHunt;
+    if (
+      !schedule?.enabled ||
+      !schedule.options ||
+      !schedule.nextRunAt ||
+      Date.parse(schedule.nextRunAt) > Date.now()
+    )
+      return;
+    const nextRunAt = new Date(
+      Date.now() + schedule.intervalMinutes * 60_000,
+    ).toISOString();
+    await mutate((current) => {
+      if (!current.infiniteHunt?.enabled) return;
+      current.infiniteHunt.nextRunAt = nextRunAt;
+      current.infiniteHunt.lastError = "";
+    });
+    const response = await fetch(`${baseUrl}/api/agent-runs/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...schedule.options, origin: "infinite" }),
+    });
+    if (!response.ok) {
+      const detail = await response.json().catch(() => ({}));
+      throw new Error(detail.error || `Hunt failed with ${response.status}`);
+    }
+    await mutate((current) => {
+      if (!current.infiniteHunt) return;
+      current.infiniteHunt.lastRunAt = timestamp();
+      current.infiniteHunt.lastError = "";
+    });
+  } catch (error) {
+    await mutate((db) => {
+      if (!db.infiniteHunt) return;
+      db.infiniteHunt.lastError = safeText(error.message, 500);
+      auditEvent(db, "agent", "Infinite hunt run failed safely.");
+    }).catch(() => {});
+  } finally {
+    schedulerBusy = false;
+  }
+};
+
 if (process.env.NODE_ENV !== "test")
-  app.listen(PORT, HOST, () =>
+  app.listen(PORT, HOST, () => {
     console.log(
       `JobHuntr OSS running at http://${HOST}:${PORT} (local data: ${DB_PATH})`,
-    ),
-  );
+    );
+    const scheduler = setInterval(runScheduledHunt, 1000);
+    scheduler.unref();
+    void runScheduledHunt();
+  });
 export default app;
