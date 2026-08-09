@@ -1068,6 +1068,34 @@ test(
       await deleteNoteDialog.getByRole("button", { name: "Delete" }).click();
       await deleteNoteDialog.waitFor({ state: "hidden" });
       await page.getByText("E2E tracker note").waitFor({ state: "hidden" });
+      await page.getByLabel("Task description").fill("Prepare portfolio");
+      await page.getByLabel("Task due date").fill("2030-05-20");
+      await page.getByRole("button", { name: "Add", exact: true }).click();
+      const trackerTask = page
+        .locator(".task-row")
+        .filter({ hasText: "Prepare portfolio" });
+      await trackerTask.waitFor();
+      await trackerTask.getByRole("button", { name: "Edit" }).click();
+      await page
+        .getByLabel("Task description")
+        .fill("Prepare product portfolio");
+      await page.getByLabel("Task due date").fill("2030-05-21");
+      await page.getByRole("button", { name: "Save task" }).click();
+      await page.getByText("Prepare product portfolio").waitFor();
+      await page
+        .getByRole("button", {
+          name: "Delete task Prepare product portfolio",
+        })
+        .click();
+      const deleteTaskDialog = page.getByRole("alertdialog", {
+        name: "Delete task?",
+      });
+      await deleteTaskDialog.waitFor();
+      await deleteTaskDialog.getByRole("button", { name: "Delete" }).click();
+      await deleteTaskDialog.waitFor({ state: "hidden" });
+      await page
+        .getByText("Prepare product portfolio")
+        .waitFor({ state: "hidden" });
       await page.getByRole("button", { name: "Delete role" }).click();
       const deleteJobDialog = page.getByRole("alertdialog", {
         name: "Delete tracked job?",
@@ -1131,6 +1159,11 @@ test(
         ),
         page.getByLabel("Job status").selectOption("interview"),
       ]);
+      await page.waitForFunction(
+        () =>
+          document.querySelector('[aria-label="Job status"]')?.value ===
+          "interview",
+      );
       await page.getByLabel("Job status").selectOption("applied");
       const appliedDialog = page.getByRole("alertdialog", {
         name: "Confirm external submission",

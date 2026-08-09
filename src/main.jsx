@@ -2174,7 +2174,7 @@ function Tracker({ state, reload, setTab }) {
                 {["interview", "offer", "rejected"].includes(job.status) && (
                   <InterviewRounds job={job} reload={reload} />
                 )}
-                <Actions job={job} reload={reload} />
+                <Actions key={job.id} job={job} reload={reload} />
               </>
             )}
             {!editForm && (
@@ -2597,6 +2597,7 @@ function Actions({ job, reload }) {
   const [note, setNote] = useState("");
   const [task, setTask] = useState("Follow up with recruiter");
   const [taskDue, setTaskDue] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState("");
   const [editingContactId, setEditingContactId] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [contact, setContact] = useState({
@@ -2613,6 +2614,11 @@ function Actions({ job, reload }) {
       linkedIn: "",
     });
     setEditingContactId("");
+  };
+  const resetTask = () => {
+    setTask("");
+    setTaskDue("");
+    setEditingTaskId("");
   };
   return (
     <div className="job-actions">
@@ -2685,17 +2691,24 @@ function Actions({ job, reload }) {
         <button
           disabled={!task.trim()}
           onClick={async () => {
-            await api(`/api/jobs/${job.id}/tasks`, {
-              method: "POST",
-              body: JSON.stringify({ text: task, due: taskDue }),
-            });
-            setTask("");
-            setTaskDue("");
-            reload();
+            await api(
+              `/api/jobs/${job.id}/tasks${editingTaskId ? `/${editingTaskId}` : ""}`,
+              {
+                method: editingTaskId ? "PATCH" : "POST",
+                body: JSON.stringify({ text: task, due: taskDue }),
+              },
+            );
+            resetTask();
+            await reload();
           }}
         >
-          Add
+          {editingTaskId ? "Save task" : "Add"}
         </button>
+        {editingTaskId && (
+          <button className="secondary" onClick={() => resetTask()}>
+            Cancel task edit
+          </button>
+        )}
       </div>
       {(job.tasks || []).map((t) => (
         <div className="task-row" key={t.id}>
@@ -2720,15 +2733,27 @@ function Actions({ job, reload }) {
               )}
             </span>
           </label>
-          <button
-            className="icon danger"
-            aria-label={`Delete task ${t.text}`}
-            onClick={() =>
-              setDeleteTarget({ type: "task", id: t.id, label: t.text })
-            }
-          >
-            ×
-          </button>
+          <span className="inline">
+            <button
+              className="text-button"
+              onClick={() => {
+                setTask(t.text);
+                setTaskDue(t.due || "");
+                setEditingTaskId(t.id);
+              }}
+            >
+              Edit
+            </button>
+            <button
+              className="icon danger"
+              aria-label={`Delete task ${t.text}`}
+              onClick={() =>
+                setDeleteTarget({ type: "task", id: t.id, label: t.text })
+              }
+            >
+              ×
+            </button>
+          </span>
         </div>
       ))}
       <h3>Contacts</h3>
