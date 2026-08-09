@@ -1426,10 +1426,21 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
       jobs: [
         {
           ...after.jobs[0],
+          status: "queued",
           tags: "not-an-array",
           notes: "not-an-array",
           contacts: [null, { id: "valid-contact", name: "Alex" }],
-          statusHistory: "not-an-array",
+          statusHistory: [
+            { status: "interviewing", at: new Date().toISOString() },
+          ],
+        },
+      ],
+      submissions: [
+        {
+          id: "legacy-v2-submission",
+          jobId: after.jobs[0].id,
+          status: "applied",
+          checklist: [],
         },
       ],
       gigs: [{ id: "legacy-gig", title: "Legacy", statusHistory: "bad" }],
@@ -1443,7 +1454,10 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.deepEqual(normalized.jobs[0].tags, []);
   assert.deepEqual(normalized.jobs[0].notes, []);
   assert.equal(normalized.jobs[0].contacts.length, 1);
+  assert.equal(normalized.jobs[0].status, "interested");
   assert.equal(normalized.jobs[0].statusHistory.length, 1);
+  assert.equal(normalized.jobs[0].statusHistory[0].status, "interview");
+  assert.equal(normalized.submissions[0].status, "submitted");
   assert.equal(normalized.gigs[0].statusHistory.length, 1);
   assert.deepEqual(normalized.coachConversations[0].messages, []);
   assert.equal(normalized.meta.version, 10);

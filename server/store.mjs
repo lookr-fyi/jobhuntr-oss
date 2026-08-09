@@ -180,6 +180,39 @@ const isRecord = (value) =>
 const records = (value) => (Array.isArray(value) ? value.filter(isRecord) : []);
 const strings = (value) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+const JOB_STATUSES = new Set([
+  "saved",
+  "interested",
+  "submitting",
+  "applied",
+  "interview",
+  "offer",
+  "rejected",
+  "failed",
+  "skipped",
+  "removed",
+]);
+const normalizeJobStatus = (value, fallback = "saved") => {
+  const status = String(value || "").toLowerCase();
+  if (JOB_STATUSES.has(status)) return status;
+  return (
+    {
+      started: "saved",
+      queued: "interested",
+      submitted: "applied",
+      interviewing: "interview",
+      archived: "removed",
+    }[status] || fallback
+  );
+};
+const normalizeSubmissionStatus = (value) => {
+  const status = String(value || "").toLowerCase();
+  if (["draft", "ready", "submitted", "archived"].includes(status))
+    return status;
+  if (status === "applied") return "submitted";
+  if (["removed", "failed", "skipped"].includes(status)) return "archived";
+  return "draft";
+};
 
 function migrate(input) {
   const db = isRecord(input) ? input : {};
@@ -202,6 +235,7 @@ function migrate(input) {
     template.sections = strings(template.sections);
   db.submissions = records(db.submissions);
   for (const submission of db.submissions) {
+    submission.status = normalizeSubmissionStatus(submission.status);
     submission.checklist = records(submission.checklist);
     if (!Array.isArray(submission.applicationQuestions)) {
       submission.applicationQuestions = [
@@ -282,6 +316,7 @@ function migrate(input) {
   );
   db.activities = records(db.activities);
   for (const job of db.jobs) {
+    job.status = normalizeJobStatus(job.status);
     job.notes = records(job.notes);
     job.tasks = records(job.tasks);
     job.contacts = records(job.contacts);
@@ -289,6 +324,8 @@ function migrate(input) {
     job.matchReasons = strings(job.matchReasons);
     job.interviewRounds = records(job.interviewRounds);
     job.statusHistory = records(job.statusHistory);
+    for (const event of job.statusHistory)
+      event.status = normalizeJobStatus(event.status, job.status);
     if (!job.statusHistory.length)
       job.statusHistory = [
         { status: job.status || "saved", at: job.createdAt || now() },
