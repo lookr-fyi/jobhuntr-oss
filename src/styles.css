@@ -6420,6 +6420,7 @@ select:focus {
   border-top: 1px solid var(--v2-border);
 }
 .v2-run-row {
+  box-sizing: border-box;
   width: 100%;
   color: var(--v2-text);
   border-right: 0;
@@ -6637,6 +6638,18 @@ select:focus {
   padding: 18px;
   color: #64748b;
   text-align: center;
+}
+@media (max-width: 900px) {
+  .v2-table-head,
+  .v2-run-row {
+    grid-template-columns: 24px minmax(0, 1fr) 36px;
+  }
+  .v2-table-head > :nth-child(n + 3):nth-child(-n + 6),
+  .v2-run-row > :nth-child(3),
+  .v2-run-row > :nth-child(4),
+  .v2-run-row > :nth-child(5) {
+    display: none;
+  }
 }
 .v2-empty {
   padding: 64px 20px;

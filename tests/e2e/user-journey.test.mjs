@@ -3500,6 +3500,27 @@ test(
         );
         assert.equal(overflow, false, `${heading} should fit a 390px viewport`);
       }
+      await mobile.setViewportSize({ width: 768, height: 700 });
+      await mobile.locator('button[title="Agent Runs"]').click();
+      await mobile.getByRole("heading", { name: "Agent Runs" }).waitFor();
+      const tabletRunRow = mobile.locator(".v2-run-row").first();
+      assert.equal(
+        await tabletRunRow.evaluate((row) => {
+          const bounds = row.getBoundingClientRect();
+          const main = row.closest("main").getBoundingClientRect();
+          const columns = getComputedStyle(row).gridTemplateColumns.split(" ");
+          const action = row.querySelector('[aria-label^="Actions for"]');
+          const actionBounds = action.getBoundingClientRect();
+          return (
+            columns.length === 3 &&
+            bounds.right <= main.right &&
+            actionBounds.right <= main.right &&
+            getComputedStyle(action).display !== "none"
+          );
+        }),
+        true,
+        "tablet Agent Runs should preserve a visible action column without clipping the table",
+      );
       await mobile.setViewportSize({ width: 320, height: 568 });
       await mobile.locator('button[title="Job Board"]').click();
       await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
