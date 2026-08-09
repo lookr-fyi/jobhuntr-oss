@@ -388,6 +388,32 @@ test(
       );
       await page.locator('button[title="Overview"]').click();
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      assert.deepEqual(
+        await page.evaluate(() => {
+          const grid = document.querySelector(".v2-kpi-grid");
+          const cards = [...grid.children].map((card) =>
+            Math.round(card.getBoundingClientRect().top),
+          );
+          const gridStyle = window.getComputedStyle(grid);
+          return {
+            display: gridStyle.display,
+            direction: gridStyle.flexDirection,
+            gap: gridStyle.gap,
+            verticallyStacked: cards[0] < cards[1] && cards[1] < cards[2],
+            overviewGap: window.getComputedStyle(
+              document.querySelector(".v2-overview-top"),
+            ).gap,
+          };
+        }),
+        {
+          display: "flex",
+          direction: "column",
+          gap: "16px",
+          verticallyStacked: true,
+          overviewGap: "24px",
+        },
+        "Overview KPIs should use the authoritative v2 stacked desktop column",
+      );
       await assertAccessible(page, "Overview");
       await page.getByLabel("Applications evaluated").uncheck();
       assert.equal(

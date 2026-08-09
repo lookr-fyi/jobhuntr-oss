@@ -7122,13 +7122,13 @@ select:focus {
 }
 .v2-overview-top {
   display: grid;
-  grid-template-columns: minmax(320px, 0.72fr) minmax(480px, 1.28fr);
-  gap: 20px;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.4fr);
+  gap: 24px;
 }
 .v2-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .v2-kpi {
   display: flex;
@@ -7139,6 +7139,7 @@ select:focus {
   border-radius: 18px;
   background: white;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  flex: 1;
 }
 .v2-kpi strong {
   font-size: 32px;
@@ -7444,6 +7445,10 @@ select:focus {
   }
   .v2-overview-columns {
     grid-template-columns: 1fr;
+  }
+  .v2-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @media (max-width: 700px) {
