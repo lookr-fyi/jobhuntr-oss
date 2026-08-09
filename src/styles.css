@@ -815,48 +815,6 @@ button:disabled {
   width: 220px;
   min-width: 200px;
 }
-.tracker-filter-panel .filter-action-button {
-  flex: 0 0 auto;
-  padding: 8px 16px;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  background: #fff;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 500;
-}
-.tracker-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: #64748b;
-}
-.tracker-status-dot.applied {
-  background: #3b82f6;
-}
-.tracker-status-dot.interview {
-  background: #f59e0b;
-}
-.tracker-status-dot.submitting {
-  background: #f97316;
-}
-.tracker-status-dot.offer {
-  background: #10b981;
-}
-.tracker-status-dot.rejected,
-.tracker-status-dot.failed {
-  background: #ef4444;
-}
-.tracker-status-dot.skipped,
-.tracker-status-dot.removed {
-  background: #94a3b8;
-}
-.tracker-status-dot.offer {
-  background: #10b981;
-}
-.tracker-status-dot.rejected {
-  background: #ef4444;
-}
 .searchbox {
   display: flex;
   align-items: center;

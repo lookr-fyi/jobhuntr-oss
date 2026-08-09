@@ -2215,6 +2215,7 @@ function Tracker({ state, reload, setTab }) {
         <h2>Job Tracker</h2>
         <div>
           <span>{filtered.length} applications</span>
+          {runFilter !== "all" && <span>• Filtered by agent run</span>}
           <button className="secondary" onClick={() => setFunnelOpen(true)}>
             Funnel Analysis
           </button>
@@ -2234,7 +2235,6 @@ function Tracker({ state, reload, setTab }) {
       </span>
       <div className="tracker-filter-panel v2-tracker-filters-always job-tracker-filters">
         <div className="searchbox filter-group">
-          <Search size={16} />
           <input
             aria-label="Search tracked jobs"
             value={query}
@@ -2290,15 +2290,6 @@ function Tracker({ state, reload, setTab }) {
             ))}
           </select>
         </label>
-        <button
-          className="filter-action-button"
-          onClick={() => {
-            setVisibleStages(new Set(stages));
-            setRunFilter("all");
-          }}
-        >
-          Reset filters
-        </button>
       </div>
       <div className="tracker-workspace">
         <div className="kanban">

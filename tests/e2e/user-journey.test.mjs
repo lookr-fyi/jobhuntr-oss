@@ -1618,6 +1618,14 @@ test(
         await page.getByLabel("Filter by agent run").inputValue(),
         "automated",
       );
+      await page
+        .getByText("• Filtered by agent run", { exact: true })
+        .waitFor();
+      assert.equal(
+        await page.getByRole("button", { name: "Reset filters" }).count(),
+        0,
+        "the tracker should not expose the non-v2 reset control",
+      );
       await page.getByLabel("Rejected", { exact: true }).uncheck();
       await page
         .locator(".kanban-column .column-title", { hasText: "Queued" })
@@ -1627,7 +1635,11 @@ test(
         0,
         "hidden tracker statuses should remove their board columns",
       );
-      await page.getByRole("button", { name: "Reset filters" }).click();
+      await page.getByLabel("Rejected", { exact: true }).check();
+      await page.getByLabel("Filter by agent run").selectOption("all");
+      await page
+        .getByText("• Filtered by agent run", { exact: true })
+        .waitFor({ state: "hidden" });
       const trackerInsightsState = await (
         await page.request.get(`${baseUrl}/api/state`)
       ).json();
