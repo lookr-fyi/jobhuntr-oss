@@ -1857,6 +1857,7 @@ function Tracker({ state, reload, setTab }) {
   });
   const [selected, setSelected] = useState(trackerParams.get("job") || null);
   const [query, setQuery] = useState("");
+  const [columnVisibleCounts, setColumnVisibleCounts] = useState({});
   const [visibleStages, setVisibleStages] = useState(() => {
     const linkedStages = trackerParams
       .get("statuses")
@@ -2318,26 +2319,30 @@ function Tracker({ state, reload, setTab }) {
         <div className="kanban">
           {stages
             .filter((stage) => visibleStages.has(stage))
-            .map((stage) => (
-              <div
-                className="kanban-column status-column"
-                key={stage}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) =>
-                  requestStatusChange(e.dataTransfer.getData("jobId"), stage)
-                }
-              >
-                <div className="column-title status-column-header">
-                  <b className="status-title">{trackerStageLabel(stage)}</b>
-                  <span className="status-count">
-                    {filtered.filter((item) => item.status === stage).length}
-                  </span>
-                </div>
-                <div className="status-column-content">
-                  <div className="jobs-list">
-                    {filtered
-                      .filter((item) => item.status === stage)
-                      .map((item) => {
+            .map((stage) => {
+              const stageJobs = filtered.filter(
+                (item) => item.status === stage,
+              );
+              const paginationKey = `${stage}:${query.trim().toLowerCase()}`;
+              const visibleCount = columnVisibleCounts[paginationKey] || 20;
+              const visibleJobs = stageJobs.slice(0, visibleCount);
+              const remainingCount = stageJobs.length - visibleJobs.length;
+              return (
+                <div
+                  className="kanban-column status-column"
+                  key={stage}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) =>
+                    requestStatusChange(e.dataTransfer.getData("jobId"), stage)
+                  }
+                >
+                  <div className="column-title status-column-header">
+                    <b className="status-title">{trackerStageLabel(stage)}</b>
+                    <span className="status-count">{stageJobs.length}</span>
+                  </div>
+                  <div className="status-column-content">
+                    <div className="jobs-list">
+                      {visibleJobs.map((item) => {
                         const appliedAt = (item.statusHistory || []).findLast(
                           (event) => event.status === "applied",
                         )?.at;
@@ -2459,24 +2464,38 @@ function Tracker({ state, reload, setTab }) {
                           </article>
                         );
                       })}
-                    {MANUAL_TRACKER_STAGES.has(stage) && (
-                      <button
-                        className="v2-tracker-add-job"
-                        onClick={() => {
-                          setForm((current) => ({
-                            ...current,
-                            status: stage,
-                          }));
-                          setShowForm(true);
-                        }}
-                      >
-                        <Plus size={14} /> Add Job
-                      </button>
-                    )}
+                      {remainingCount > 0 && (
+                        <button
+                          className="load-more-button"
+                          onClick={() =>
+                            setColumnVisibleCounts((current) => ({
+                              ...current,
+                              [paginationKey]: visibleCount + 20,
+                            }))
+                          }
+                        >
+                          Load more ({remainingCount})
+                        </button>
+                      )}
+                      {MANUAL_TRACKER_STAGES.has(stage) && (
+                        <button
+                          className="v2-tracker-add-job"
+                          onClick={() => {
+                            setForm((current) => ({
+                              ...current,
+                              status: stage,
+                            }));
+                            setShowForm(true);
+                          }}
+                        >
+                          <Plus size={14} /> Add Job
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
         </div>
         {job && (
           <>

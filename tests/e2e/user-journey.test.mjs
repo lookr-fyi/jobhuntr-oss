@@ -1266,6 +1266,20 @@ test(
       await page.getByRole("button", { name: "Back to Cover Letters" }).click();
       await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
 
+      await Promise.all(
+        Array.from({ length: 21 }, (_, index) =>
+          page.request.post(`${baseUrl}/api/jobs`, {
+            data: {
+              company: `Pagination Company ${index + 1}`,
+              title: `Pagination Role ${index + 1}`,
+              location: "Remote",
+              status: "removed",
+            },
+          }),
+        ),
+      );
+      await page.reload();
+      await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
       await page.evaluate(() => {
         localStorage.setItem(
           "jobTracker_visibleStatuses",
@@ -1289,6 +1303,9 @@ test(
       const appliedColumn = page
         .locator(".kanban-column")
         .filter({ has: page.getByText("Applied", { exact: true }) });
+      const removedColumn = page
+        .locator(".kanban-column")
+        .filter({ has: page.getByText("Removed", { exact: true }) });
       assert.equal(
         await queuedColumn.getByRole("button", { name: "Add Job" }).count(),
         0,
@@ -1299,6 +1316,20 @@ test(
         1,
         "v2 manual lifecycle columns should retain Add Job",
       );
+      assert.equal(
+        await removedColumn.locator(".job-card").count(),
+        20,
+        "v2 tracker columns should render only the first 20 jobs",
+      );
+      const removedLoadMore = removedColumn.getByRole("button", {
+        name: /Load more \(/,
+      });
+      await removedLoadMore.click();
+      assert.ok(
+        (await removedColumn.locator(".job-card").count()) >= 21,
+        "Load more should reveal the remaining jobs in the same column",
+      );
+      await removedLoadMore.waitFor({ state: "hidden" });
       const firstTrackerColumn = page.locator(".status-column").first();
       assert.equal(
         await firstTrackerColumn.evaluate(
