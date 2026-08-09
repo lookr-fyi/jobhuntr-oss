@@ -1786,3 +1786,24 @@ test("mobile User Center tabs remain readable and keep the active tab visible", 
     /\.v2-user-tabs button \{\s*flex: 0 0 auto;\s*min-width: max-content;\s*padding: 11px 14px;[\s\S]*?scroll-snap-align: center;/,
   );
 });
+
+test("Easy Apply progress includes answered optional questions that still need verification", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const packet = source.slice(
+    source.indexOf("function SubmissionCard"),
+    source.indexOf("function Resume("),
+  );
+
+  assert.match(
+    packet,
+    /providedQuestions = reviewedQuestions\.filter\([\s\S]*?question\.required !== false \|\| Boolean\(question\.answer\?\.trim\(\)\)/,
+  );
+  assert.match(
+    packet,
+    /verifiedQuestionCount = providedQuestions\.filter\([\s\S]*?isApplicationQuestionReady/,
+  );
+  assert.match(packet, /provided verified/);
+});

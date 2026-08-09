@@ -2216,7 +2216,7 @@ test(
         ),
         page.getByRole("button", { name: "Filters" }).click(),
       ]);
-      await page.getByText("3/4 answered").waitFor();
+      await page.getByText(/3\/4 required answered/).waitFor();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
       await page.getByLabel("Queue job type").selectOption("full-time");
       await page.getByLabel("Queue visa sponsorship").selectOption("unknown");
@@ -2461,7 +2461,7 @@ test(
         ),
         queueQuestions.getByLabel("No", { exact: true }).click(),
       ]);
-      await page.getByText(/4\/4 answered/).waitFor();
+      await page.getByText(/4\/4 required answered/).waitFor();
       for (const question of [
         "Why are you interested in this role?",
         "What are your salary expectations?",
@@ -2483,7 +2483,7 @@ test(
           verification.click(),
         ]);
       }
-      await page.getByText(/4\/4 verified/).waitFor();
+      await page.getByText(/4\/4 provided verified/).waitFor();
       const editedVerification = queueQuestions
         .locator(".v2-question-card")
         .filter({ hasText: "Why are you interested in this role?" })
@@ -2496,9 +2496,9 @@ test(
         false,
         "editing a verified answer must invalidate verification immediately, before blur or reload",
       );
-      await page.getByText(/3\/4 verified/).waitFor();
+      await page.getByText(/3\/4 provided verified/).waitFor();
       await editedVerification.click();
-      await page.getByText(/4\/4 verified/).waitFor();
+      await page.getByText(/4\/4 provided verified/).waitFor();
       await page.waitForFunction(
         (checkbox) =>
           checkbox.disabled === false &&

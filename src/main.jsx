@@ -6221,7 +6221,11 @@ function SubmissionCard({ submission: s, state, reload }) {
   const answeredQuestionCount = requiredQuestions.filter(
     isValidApplicationAnswer,
   ).length;
-  const verifiedQuestionCount = requiredQuestions.filter(
+  const providedQuestions = reviewedQuestions.filter(
+    (question) =>
+      question.required !== false || Boolean(question.answer?.trim()),
+  );
+  const verifiedQuestionCount = providedQuestions.filter(
     isApplicationQuestionReady,
   ).length;
   const questionsReady = reviewedQuestions.every(isApplicationQuestionReady);
@@ -6504,8 +6508,9 @@ function SubmissionCard({ submission: s, state, reload }) {
               </p>
             </div>
             <span>
-              {answeredQuestionCount}/{requiredQuestions.length} answered
-              {` · ${verifiedQuestionCount}/${requiredQuestions.length} verified`}
+              {answeredQuestionCount}/{requiredQuestions.length} required
+              answered
+              {` · ${verifiedQuestionCount}/${providedQuestions.length} provided verified`}
             </span>
           </div>
           {s.applicationQuestions.map((question) => {
