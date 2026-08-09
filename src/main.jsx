@@ -2263,64 +2263,133 @@ function Tracker({ state, reload, setTab }) {
         </div>
       )}
       <div className="tracker-workspace">
-        <div
-          className="kanban"
-          style={{
-            gridTemplateColumns: `repeat(${Math.max(visibleStages.size, 1)}, minmax(230px, 1fr))`,
-          }}
-        >
+        <div className="kanban">
           {stages
             .filter((stage) => visibleStages.has(stage))
             .map((stage) => (
               <div
-                className="kanban-column"
+                className="kanban-column status-column"
                 key={stage}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) =>
                   requestStatusChange(e.dataTransfer.getData("jobId"), stage)
                 }
               >
-                <div className="column-title">
-                  <b>{trackerStageLabel(stage)}</b>
-                  <span>
+                <div className="column-title status-column-header">
+                  <b className="status-title">{trackerStageLabel(stage)}</b>
+                  <span className="status-count">
                     {filtered.filter((item) => item.status === stage).length}
                   </span>
                 </div>
-                {filtered
-                  .filter((item) => item.status === stage)
-                  .map((item) => (
-                    <button
-                      draggable
-                      onDragStart={(e) =>
-                        e.dataTransfer.setData("jobId", item.id)
-                      }
-                      onClick={() => selectJob(item.id)}
-                      className={`kanban-card ${item.id === selected ? "selected" : ""}`}
-                      key={item.id}
-                    >
-                      <div className="fit-ring">{item.fitScore}</div>
-                      <b>{item.title}</b>
-                      <span>{item.company}</span>
-                      <small>{item.location || "Location not set"}</small>
-                      {item.tasks?.some((t) => !t.done) && (
-                        <em>
-                          {item.tasks.filter((t) => !t.done).length} open
-                          task(s)
-                        </em>
-                      )}
-                    </button>
-                  ))}
-                {MANUAL_TRACKER_STAGES.has(stage) && (
-                  <button
-                    className="v2-tracker-add-job"
-                    onClick={() => {
-                      setForm((current) => ({ ...current, status: stage }));
-                      setShowForm(true);
-                    }}
-                  >
-                    <Plus size={14} /> Add Job
-                  </button>
-                )}
+                <div className="status-column-content">
+                  <div className="jobs-list">
+                    {filtered
+                      .filter((item) => item.status === stage)
+                      .map((item) => {
+                        const appliedAt = (item.statusHistory || []).findLast(
+                          (event) => event.status === "applied",
+                        )?.at;
+                        const packet = state.submissions
+                          .filter((submission) => submission.jobId === item.id)
+                          .sort(
+                            (a, b) =>
+                              new Date(b.updatedAt || b.createdAt || 0) -
+                              new Date(a.updatedAt || a.createdAt || 0),
+                          )[0];
+                        const shortDate = (value) =>
+                          value
+                            ? new Date(value).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : "";
+                        return (
+                          <article className="job-card" key={item.id}>
+                            <button
+                              draggable
+                              onDragStart={(e) =>
+                                e.dataTransfer.setData("jobId", item.id)
+                              }
+                              onClick={() => selectJob(item.id)}
+                              className={`kanban-card ${item.id === selected ? "selected" : ""}`}
+                            >
+                              <span className="job-card-header">
+                                <b className="job-title">{item.title}</b>
+                                {!item.workflowRunId && (
+                                  <span className="manual-badge">Manual</span>
+                                )}
+                              </span>
+                              <span className="job-card-body">
+                                <span className="company-name">
+                                  {item.company}
+                                </span>
+                                <small className="location">
+                                  {item.location || "Location not set"}
+                                </small>
+                                {appliedAt && (
+                                  <small className="application-date">
+                                    Applied: {shortDate(appliedAt)}
+                                  </small>
+                                )}
+                                {item.workflowRunId && (
+                                  <small className="ats-score">
+                                    ATS Score:{" "}
+                                    {packet?.atsScore ?? item.fitScore}%
+                                  </small>
+                                )}
+                                {item.workflowRunId &&
+                                  item.numApplicants > 0 && (
+                                    <small className="applicants-count">
+                                      {item.numApplicants} applicants
+                                    </small>
+                                  )}
+                                {item.tasks?.some((task) => !task.done) && (
+                                  <em>
+                                    {
+                                      item.tasks.filter((task) => !task.done)
+                                        .length
+                                    }{" "}
+                                    open task(s)
+                                  </em>
+                                )}
+                              </span>
+                            </button>
+                            <div className="job-card-footer">
+                              <small className="post-date">
+                                {item.postedAt || item.collectedAt
+                                  ? `Posted: ${shortDate(item.postedAt || item.collectedAt)}`
+                                  : ""}
+                              </small>
+                              {safeHttpUrl(item.url) && (
+                                <a
+                                  className="view-link"
+                                  href={safeHttpUrl(item.url)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  View Job
+                                </a>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      })}
+                    {MANUAL_TRACKER_STAGES.has(stage) && (
+                      <button
+                        className="v2-tracker-add-job"
+                        onClick={() => {
+                          setForm((current) => ({
+                            ...current,
+                            status: stage,
+                          }));
+                          setShowForm(true);
+                        }}
+                      >
+                        <Plus size={14} /> Add Job
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
         </div>

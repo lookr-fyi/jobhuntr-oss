@@ -1299,6 +1299,39 @@ test(
         1,
         "v2 manual lifecycle columns should retain Add Job",
       );
+      const firstTrackerColumn = page.locator(".status-column").first();
+      assert.equal(
+        await firstTrackerColumn.evaluate(
+          (column) => getComputedStyle(column).width,
+        ),
+        "300px",
+        "v2 tracker columns should retain their fixed desktop width",
+      );
+      const structuredTrackerCard = page.locator(".job-card").first();
+      await structuredTrackerCard.waitFor();
+      assert.equal(
+        await structuredTrackerCard.locator(".job-card-header").count(),
+        1,
+        "tracker cards should use the v2 title and badge header",
+      );
+      assert.equal(
+        await structuredTrackerCard.locator(".job-card-body").count(),
+        1,
+        "tracker cards should use the v2 company and application metadata body",
+      );
+      assert.equal(
+        await structuredTrackerCard.locator(".job-card-footer").count(),
+        1,
+        "tracker cards should use the v2 posted date and job link footer",
+      );
+      assert.ok(
+        (await page.locator(".manual-badge").count()) > 0,
+        "manually tracked jobs should be visibly distinguished like v2",
+      );
+      assert.ok(
+        (await page.locator(".ats-score").count()) > 0,
+        "automated tracker cards should expose their ATS score like v2",
+      );
       assert.equal(
         await page.getByLabel("Filter by agent run").inputValue(),
         "all",
