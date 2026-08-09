@@ -1496,16 +1496,22 @@ test(
       await structuredTrackerCard.waitFor();
       const dragCard = structuredTrackerCard.locator(".kanban-card");
       const dragCardTitle = await dragCard.locator(".job-title").innerText();
-      await page.getByRole("button", { name: "Copy URL" }).click();
-      await page.getByText("Tracker URL copied", { exact: true }).waitFor();
-      const trackerClipboardUrl = await page.evaluate(() =>
-        navigator.clipboard.readText(),
+      const [trackerExport] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name: "Export CSV" }).click(),
+      ]);
+      assert.match(
+        trackerExport.suggestedFilename(),
+        /^job-tracker-export-.*\.csv$/,
       );
-      assert.match(trackerClipboardUrl, /#\/tracker\?statuses=/);
-      assert.doesNotMatch(
-        trackerClipboardUrl,
-        /[?&]job=/,
-        "the header action should copy the filtered tracker view, not one job",
+      const exportStream = await trackerExport.createReadStream();
+      let trackerCsv = "";
+      for await (const chunk of exportStream) trackerCsv += chunk.toString();
+      assert.match(trackerCsv, /^Company,Job Title,Location,Status,/);
+      assert.match(
+        trackerCsv,
+        new RegExp(dragCardTitle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+        "the v2 header export should contain the currently filtered tracker jobs",
       );
       await dragCard.click({ button: "right" });
       await page

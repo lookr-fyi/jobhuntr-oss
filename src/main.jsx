@@ -2137,6 +2137,62 @@ function Tracker({ state, reload, setTab }) {
       1800,
     );
   };
+  const exportTrackerCsv = () => {
+    if (!filtered.length) return;
+    const escapeCsv = (value) => {
+      const text = String(value ?? "");
+      return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+    };
+    const headers = [
+      "Company",
+      "Job Title",
+      "Location",
+      "Status",
+      "Application URL",
+      "Application Date",
+      "Contact Person",
+      "ATS Score",
+      "Optimized ATS Score",
+      "Post Time",
+      "Number of Applicants",
+      "Status Insight",
+      "Workflow Run ID",
+      "Created At",
+      "Updated At",
+    ];
+    const rows = filtered.map((item) => [
+      item.company,
+      item.title,
+      item.location,
+      trackerStageLabel(item.status),
+      item.url,
+      item.applicationDatetime
+        ? new Date(item.applicationDatetime).toLocaleString()
+        : "",
+      item.hiringContactName || item.contacts?.[0]?.name || "",
+      item.fitScore ?? "",
+      item.optimizedAtsScore ?? "",
+      item.postedAt || "",
+      item.numApplicants ?? "",
+      item.statusInsight || "",
+      item.workflowRunId || "",
+      item.createdAt ? new Date(item.createdAt).toLocaleString() : "",
+      item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "",
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsv).join(","))
+      .join("\n");
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `job-tracker-export-${new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
   const saveEdit = async () => {
     if (!job || !editForm?.company.trim() || !editForm?.title.trim()) return;
     setEditBusy(true);
@@ -2218,13 +2274,12 @@ function Tracker({ state, reload, setTab }) {
             Funnel Analysis
           </button>
           <button
-            className="secondary copy-url-button"
-            title="Copy shareable URL"
-            onClick={() =>
-              copyTrackerUrl(getTrackerUrl(), "Tracker URL copied")
-            }
+            className="secondary export-button"
+            title="Export applications to CSV"
+            disabled={!filtered.length}
+            onClick={exportTrackerCsv}
           >
-            <Copy size={14} /> Copy URL
+            <Download size={16} /> Export CSV
           </button>
         </div>
       </div>

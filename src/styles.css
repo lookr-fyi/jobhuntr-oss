@@ -9581,7 +9581,7 @@ main > header.integrated-page-header {
   box-sizing: border-box;
   text-decoration: none;
 }
-.v2-tracker-header .copy-url-button {
+.v2-tracker-header .export-button {
   gap: 6px;
 }
 .v2-tracker-copy-status {
