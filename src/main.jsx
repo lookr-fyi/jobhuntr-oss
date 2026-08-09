@@ -2113,7 +2113,7 @@ function Tracker({ state, reload, setTab }) {
         : [];
       if (validSaved.length) return new Set(validSaved);
     } catch {
-      // Preserve the selected role so preparation can be retried.
+      // Recover malformed or obsolete local display preferences below.
     }
     // A malformed or obsolete preference should remain recoverable rather
     // than leaving a returning user with an apparently empty tracker.
@@ -2135,6 +2135,9 @@ function Tracker({ state, reload, setTab }) {
   const [showForm, setShowForm] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [editBusy, setEditBusy] = useState(false);
+  const [addBusy, setAddBusy] = useState(false);
+  const editBusyRef = useRef(false);
+  const addBusyRef = useRef(false);
   const [funnelOpen, setFunnelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteJobId, setDeleteJobId] = useState("");
@@ -2300,7 +2303,7 @@ function Tracker({ state, reload, setTab }) {
     const returnFocus = document.activeElement;
     jobDrawerCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !editBusyRef.current) {
         setSelected(null);
         setEditForm(null);
       }
@@ -2316,7 +2319,7 @@ function Tracker({ state, reload, setTab }) {
     const returnFocus = document.activeElement;
     addJobDrawerCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !addBusyRef.current) {
         setShowForm(false);
         setForm((current) => emptyTrackedRole(current.status));
       }
@@ -2436,7 +2439,14 @@ function Tracker({ state, reload, setTab }) {
     URL.revokeObjectURL(url);
   };
   const saveEdit = async () => {
-    if (!job || !editForm?.company.trim() || !editForm?.title.trim()) return;
+    if (
+      !job ||
+      !editForm?.company.trim() ||
+      !editForm?.title.trim() ||
+      editBusyRef.current
+    )
+      return;
+    editBusyRef.current = true;
     setEditBusy(true);
     try {
       const requestedStatus = editForm.status;
@@ -2453,11 +2463,15 @@ function Tracker({ state, reload, setTab }) {
       if (requestedStatus !== job.status)
         await requestStatusChange(job.id, requestedStatus);
     } finally {
+      editBusyRef.current = false;
       setEditBusy(false);
     }
   };
   const save = async () => {
-    if (!form.company.trim() || !form.title.trim()) return;
+    if (!form.company.trim() || !form.title.trim() || addBusyRef.current)
+      return;
+    addBusyRef.current = true;
+    setAddBusy(true);
     try {
       const created = await api("/api/jobs", {
         method: "POST",
@@ -2473,7 +2487,12 @@ function Tracker({ state, reload, setTab }) {
       setSelected(created.id);
       setShowForm(false);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the completed role in the drawer so creation can be retried.
+    } finally {
+      addBusyRef.current = false;
+      setAddBusy(false);
+    }
   };
   const remove = async () => {
     if (!deleteTarget) return;
@@ -2834,6 +2853,7 @@ function Tracker({ state, reload, setTab }) {
               tabIndex={-1}
               aria-label="Dismiss job details"
               onClick={() => {
+                if (editBusyRef.current) return;
                 setSelected(null);
                 setEditForm(null);
               }}
@@ -2857,6 +2877,7 @@ function Tracker({ state, reload, setTab }) {
                           !editForm.title.trim() ||
                           !editForm.company.trim()
                         }
+                        aria-busy={editBusy}
                         onClick={saveEdit}
                       >
                         {editBusy ? "Saving…" : "Save"}
@@ -3128,6 +3149,7 @@ function Tracker({ state, reload, setTab }) {
             tabIndex={-1}
             aria-label="Dismiss new job"
             onClick={() => {
+              if (addBusyRef.current) return;
               setShowForm(false);
               setForm((current) => emptyTrackedRole(current.status));
             }}
@@ -3143,14 +3165,18 @@ function Tracker({ state, reload, setTab }) {
               <h2 id="add-job-drawer-title">Add New Job</h2>
               <div className="job-drawer-header-buttons">
                 <button
-                  disabled={!form.company.trim() || !form.title.trim()}
+                  disabled={
+                    addBusy || !form.company.trim() || !form.title.trim()
+                  }
+                  aria-busy={addBusy}
                   onClick={save}
                 >
-                  Save
+                  {addBusy ? "Saving…" : "Save"}
                 </button>
                 <button
                   ref={addJobDrawerCloseRef}
                   className="secondary cancel-button"
+                  disabled={addBusy}
                   onClick={() => {
                     setShowForm(false);
                     setForm((current) => emptyTrackedRole(current.status));

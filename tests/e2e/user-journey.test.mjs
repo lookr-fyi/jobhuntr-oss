@@ -2591,10 +2591,35 @@ test(
       await addJobDialog
         .getByLabel("company", { exact: true })
         .fill("E2E Added Company");
-      await addJobDialog.getByRole("button", { name: "Save" }).click();
+      let addJobRequests = 0;
+      await page.route("**/api/jobs", async (route) => {
+        if (route.request().method() === "POST") addJobRequests += 1;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      });
+      await addJobDialog
+        .getByRole("button", { name: "Save" })
+        .evaluate((button) => {
+          button.click();
+          button.click();
+        });
+      const savingJob = addJobDialog.getByRole("button", { name: "Saving…" });
+      await savingJob.waitFor();
+      assert.equal(await savingJob.isDisabled(), true);
+      assert.equal(
+        await addJobDialog.getByRole("button", { name: "Cancel" }).isDisabled(),
+        true,
+        "the Add Job drawer must not dismiss while its request is pending",
+      );
       await page
         .getByRole("heading", { name: "E2E Added Role", exact: true })
         .waitFor();
+      assert.equal(
+        addJobRequests,
+        1,
+        "same-frame Save clicks must create only one tracked job",
+      );
+      await page.unroute("**/api/jobs");
       await page.getByRole("button", { name: "Close job details" }).click();
       const firstTrackerColumn = page.locator(".status-column").first();
       assert.equal(

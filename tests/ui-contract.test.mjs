@@ -297,6 +297,30 @@ test("confirmation dialogs reject duplicate actions and report truthful work", a
   );
 });
 
+test("Job Tracker saves cannot duplicate or dismiss in-flight work", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const tracker = source.slice(
+    source.indexOf("function Tracker"),
+    source.indexOf("function TrackerApplicationInsights"),
+  );
+
+  for (const action of ["editBusy", "addBusy"]) {
+    assert.match(tracker, new RegExp(`const ${action}Ref = useRef\\(false\\)`));
+    assert.match(tracker, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(tracker, new RegExp(`${action}Ref\\.current = false`));
+    assert.match(tracker, new RegExp(`aria-busy=\\{${action}\\}`));
+  }
+  assert.match(tracker, /editBusyRef\.current[\s\S]*?return/);
+  assert.match(tracker, /addBusyRef\.current\)\s*return/);
+  assert.match(tracker, /Escape" && !editBusyRef\.current/);
+  assert.match(tracker, /Escape" && !addBusyRef\.current/);
+  assert.match(tracker, /addBusy \? "Saving…" : "Save"/);
+  assert.match(tracker, /disabled=\{addBusy\}/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
