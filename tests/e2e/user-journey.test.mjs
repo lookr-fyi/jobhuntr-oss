@@ -4257,7 +4257,13 @@ test(
           const connect = style(
             ":scope > .v2-page-intro button:not(.secondary)",
           );
+          const rootStyle = getComputedStyle(root);
           return {
+            page: [
+              getComputedStyle(root.parentElement).padding,
+              rootStyle.maxWidth,
+              rootStyle.padding,
+            ],
             header: [header.padding, header.borderBottomWidth],
             heading: [heading.fontSize, heading.fontWeight],
             collect: [collect.padding, collect.fontSize, collect.fontWeight],
@@ -4265,10 +4271,11 @@ test(
           };
         }),
         {
-          header: ["24px 32px", "1px"],
-          heading: ["28px", "600"],
-          collect: ["12px 20px", "16px", "500"],
-          connect: ["12px 20px", "16px", "500"],
+          page: ["0px", "none", "0px 22px 48px"],
+          header: ["16.5px 22px", "1px"],
+          heading: ["19.25px", "600"],
+          collect: ["12px 20px", "11px", "500"],
+          connect: ["12px 20px", "11px", "500"],
         },
         "Outreach should retain the authoritative v2 header and action geometry",
       );

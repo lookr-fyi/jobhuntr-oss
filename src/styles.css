@@ -2007,9 +2007,12 @@ button:disabled {
   color: #111827;
 }
 .v2-outreach-page {
-  max-width: 1240px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
   margin: 0 auto;
-  padding: 8px 24px 48px;
+  padding: 0 22px 48px;
 }
 .v2-audit-page {
   box-sizing: border-box;
@@ -3678,8 +3681,8 @@ button.v2-audit-toggle:hover {
   }
 }
 .v2-outreach-page > .v2-page-intro {
-  margin: -8px -24px 0;
-  padding: 24px 32px;
+  margin: 0 -22px;
+  padding: 16.5px 22px;
   border-bottom: 1px solid #e5e7eb;
   background: #fff;
   box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
@@ -3687,7 +3690,7 @@ button.v2-audit-toggle:hover {
 .v2-outreach-page > .v2-page-intro h1 {
   margin: 0;
   color: #111827;
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -3698,7 +3701,7 @@ button.v2-audit-toggle:hover {
   gap: 8px;
   padding: 12px 20px;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-outreach-summary-row {
@@ -3706,7 +3709,7 @@ button.v2-audit-toggle:hover {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin: 16px 0;
+  margin: 16.5px 0;
 }
 .v2-outreach-stats {
   display: flex;
@@ -3720,11 +3723,11 @@ button.v2-audit-toggle:hover {
 }
 .v2-outreach-stats span {
   color: #64748b;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .v2-outreach-stats strong {
   color: #0f172a;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 .v2-outreach-summary-actions {
@@ -6240,6 +6243,9 @@ main:has(> .v2-hunt-page) {
   padding: 0;
 }
 main:has(> .v2-audit-page) {
+  padding: 0;
+}
+main:has(> .v2-outreach-page) {
   padding: 0;
 }
 main > header {
