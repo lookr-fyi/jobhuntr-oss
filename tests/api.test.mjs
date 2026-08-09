@@ -1605,6 +1605,7 @@ test("cover letters can be edited, printed safely, and removed", async () => {
       emphasis: "I improved conversion by 42% while leading delivery.",
       templateId: "modern",
       templateName: "Modern Impact",
+      documentName: "Product leadership letter",
       atsTemplateId: "clean-ats",
       resumeId: "profile-resume",
       jobDescription: "Build accessible React products for customers.",
@@ -1614,6 +1615,8 @@ test("cover letters can be edited, printed safely, and removed", async () => {
   });
   assert.equal(created.body.style, "story-driven");
   assert.equal(created.body.templateName, "Modern Impact");
+  assert.equal(created.body.documentName, "Product leadership letter");
+  assert.equal(created.body.title, "Product leadership letter");
   assert.equal(created.body.atsTemplateId, "clean-ats");
   assert.equal(
     created.body.jobDescription,

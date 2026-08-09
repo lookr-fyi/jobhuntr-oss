@@ -951,6 +951,7 @@ app.post("/api/cover-letters", async (req, res) => {
     const templateId = safeText(req.body.templateId, 50) || "classic";
     const templateName =
       safeText(req.body.templateName, 100) || "Classic Professional";
+    const documentName = safeText(req.body.documentName, 300);
     const templateContent = safeText(req.body.templateContent, 20000);
     const jobDescription = safeText(req.body.jobDescription, 5000);
     const resume = db.resumes.find((item) => item.id === req.body.resumeId);
@@ -990,13 +991,14 @@ app.post("/api/cover-letters", async (req, res) => {
       style,
       templateId,
       templateName,
+      documentName,
       templateContent: templateContent || defaultTemplate,
       jobDescription: jobDescription || job.description || "",
       opening,
       emphasis,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      title: `${job.company || "General"} cover letter`,
+      title: documentName || `${job.company || "General"} cover letter`,
       body,
     };
     db.coverLetters.unshift(item);

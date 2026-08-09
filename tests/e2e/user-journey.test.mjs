@@ -1993,6 +1993,11 @@ test(
       ]);
       const generatedCoverLetter = await coverLetterResponse.json();
       assert.equal(
+        generatedCoverLetter.title,
+        "E2E Product Cover Letter",
+        "the editable v2 wizard name should become the saved document title",
+      );
+      assert.equal(
         generatedCoverLetter.jobDescription,
         "Build accessible React product experiences and improve customer conversion.",
       );
