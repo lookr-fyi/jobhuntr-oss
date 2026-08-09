@@ -8728,7 +8728,7 @@ main > header.integrated-page-header {
 .v2-wizard-progress li:first-child::before {
   display: none;
 }
-.v2-wizard-progress li > span {
+.v2-wizard-progress li > button {
   position: relative;
   z-index: 1;
   width: 28px;
@@ -8737,16 +8737,25 @@ main > header.integrated-page-header {
   place-items: center;
   border: 2px solid #cbd5e1;
   border-radius: 50%;
+  padding: 0;
+  color: #64748b;
   background: #fff;
   font-size: 11px;
   font-weight: 700;
+}
+.v2-wizard-progress li > button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+.v2-wizard-progress li.complete > button:not(:disabled):hover {
+  transform: scale(1.08);
 }
 .v2-wizard-progress li.active,
 .v2-wizard-progress li.complete {
   color: #1e293b;
 }
-.v2-wizard-progress li.active > span,
-.v2-wizard-progress li.complete > span {
+.v2-wizard-progress li.active > button,
+.v2-wizard-progress li.complete > button {
   border-color: #18181a;
   background: #18181a;
   color: #fff;

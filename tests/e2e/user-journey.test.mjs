@@ -1983,6 +1983,18 @@ test(
         "generated cover letters should not introduce duplicate sentence punctuation",
       );
       await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
+      assert.equal(
+        await page.getByRole("button", { name: "Previous" }).isEnabled(),
+        true,
+        "v2 allows users to return from the final result without discarding their draft",
+      );
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Go to Job Information" })
+          .isEnabled(),
+        true,
+        "completed cover-letter steps should remain directly navigable",
+      );
       await assertNamedFormControls(page, "Generated Cover Letter");
       await page.getByTitle("Generated Cover Letter Preview").waitFor();
       await page.getByRole("link", { name: "Preview PDF" }).waitFor();

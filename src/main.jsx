@@ -6350,7 +6350,19 @@ function Resume({ state, reload, mode = "resume" }) {
                 }
                 key={label}
               >
-                <span>{letterWizard.step > index + 1 ? "✓" : index + 1}</span>
+                <button
+                  type="button"
+                  aria-label={`Go to ${label}`}
+                  aria-current={
+                    letterWizard.step === index + 1 ? "step" : undefined
+                  }
+                  disabled={index + 1 >= letterWizard.step}
+                  onClick={() =>
+                    setLetterWizard({ ...letterWizard, step: index + 1 })
+                  }
+                >
+                  {letterWizard.step > index + 1 ? "✓" : index + 1}
+                </button>
                 <b>{label}</b>
               </li>
             ))}
@@ -6919,7 +6931,7 @@ function Resume({ state, reload, mode = "resume" }) {
             <div className="v2-cover-step-actions">
               <button
                 className="secondary"
-                disabled={letterWizard.step === 1 || letterWizard.step === 5}
+                disabled={letterWizard.step === 1}
                 onClick={() =>
                   setLetterWizard({
                     ...letterWizard,
