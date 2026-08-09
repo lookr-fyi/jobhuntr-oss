@@ -4025,6 +4025,56 @@ test(
                 },
               ],
             },
+            huntPresets: [
+              {
+                id: "malformed-browser-preset",
+                name: { unsafe: true },
+                options: { q: { unsafe: true }, workflows: ["linkedin"] },
+              },
+              {
+                id: "malformed-browser-preset",
+                name: "Restored browser preset",
+                options: { q: "Restored role", workflows: ["indeed"] },
+              },
+            ],
+            profileAudits: [
+              {
+                id: "malformed-browser-audit",
+                input: {
+                  profileUrl: "javascript:alert(1)",
+                  headline: { unsafe: true },
+                  skills: ["Restored React", { unsafe: true }],
+                },
+                total: 500,
+                checks: [
+                  {
+                    section: { unsafe: true },
+                    score: -20,
+                    status: "unsafe",
+                    detail: { unsafe: true },
+                  },
+                ],
+                matchedTerms: ["restored", { unsafe: true }],
+                suggestions: ["Restored audit suggestion", { unsafe: true }],
+              },
+            ],
+            agentRuns: [
+              {
+                id: "malformed-browser-run",
+                runName: { unsafe: true },
+                search: { q: { unsafe: true } },
+                status: "unsafe",
+                matches: [
+                  {
+                    company: { unsafe: true },
+                    title: { unsafe: true },
+                    url: "javascript:alert(1)",
+                    reasons: ["Restored run reason", { unsafe: true }],
+                  },
+                ],
+                steps: [{ name: { unsafe: true }, detail: { unsafe: true } }],
+              },
+            ],
             jobs: documentRestorePoint.jobs.map((job, index) =>
               index === 0
                 ? {
@@ -4362,6 +4412,29 @@ test(
         0,
       );
       await assertAccessible(page, "Restored About Me");
+      await page
+        .getByRole("button", { name: "Infinite Hunting", exact: true })
+        .click();
+      await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      await page
+        .getByRole("button", {
+          name: "Restored browser preset",
+          exact: true,
+        })
+        .waitFor();
+      await assertAccessible(page, "Restored Infinite Hunting");
+      await page.getByRole("button", { name: "LinkedIn Audit" }).click();
+      await page
+        .getByRole("heading", { name: "LinkedIn Profile Audit" })
+        .waitFor();
+      await page
+        .locator(".recommendation", { hasText: "Restored audit suggestion" })
+        .waitFor();
+      assert.equal(
+        await page.getByText("[object Object]", { exact: true }).count(),
+        0,
+      );
+      await assertAccessible(page, "Restored LinkedIn Audit");
       const restoredDocumentWorkspace = await page.request.post(
         `${baseUrl}/api/import`,
         { data: documentRestorePoint },

@@ -2290,6 +2290,75 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           notes: { malformed: true },
         },
       ],
+      huntPresets: [
+        {
+          id: "duplicate-preset-id",
+          name: { malformed: true },
+          options: { q: { malformed: true }, workflows: ["linkedin", 42] },
+        },
+        {
+          id: "duplicate-preset-id",
+          name: "  Restored preset  ",
+          options: { q: "  Product Engineer  ", workflows: ["indeed"] },
+        },
+      ],
+      profileAudits: [
+        {
+          id: "restored-audit-id",
+          createdAt: { malformed: true },
+          input: {
+            profileUrl: "javascript:alert(1)",
+            headline: { malformed: true },
+            skills: ["  React  ", 42, "React"],
+          },
+          total: 500,
+          checks: [
+            {
+              section: { malformed: true },
+              score: -20,
+              status: "unsafe",
+              detail: { malformed: true },
+            },
+          ],
+          matchedTerms: ["  product  ", 42, "product"],
+          metrics: -1,
+          suggestions: ["  Add evidence  ", 42],
+        },
+      ],
+      agentRuns: [
+        {
+          id: "duplicate-run-id",
+          runName: { malformed: true },
+          status: "unsafe",
+          search: { q: { malformed: true } },
+          matches: [
+            {
+              company: { malformed: true },
+              title: { malformed: true },
+              url: "javascript:alert(1)",
+              reasons: ["  Restored reason  ", 42],
+            },
+          ],
+          steps: [{ name: { malformed: true }, detail: { malformed: true } }],
+        },
+        {
+          id: "duplicate-run-id",
+          runName: "  Restored run  ",
+          search: { q: "  Restored role  " },
+        },
+      ],
+      activities: [
+        {
+          id: "duplicate-activity-id",
+          message: { malformed: true },
+        },
+        {
+          id: "duplicate-activity-id",
+          type: { malformed: true },
+          message: "  Restored activity  ",
+          data: { runId: "  duplicate-run-id  ", nested: { unsafe: true } },
+        },
+      ],
       outreachDrafts: [
         {
           id: "duplicate-outreach-id",
@@ -2358,6 +2427,45 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
         answer: "Second restored answer",
       },
     ],
+  );
+  assert.deepEqual(
+    normalized.huntPresets.map(({ id, name }) => ({ id, name })),
+    [
+      { id: "duplicate-preset-id", name: "Hunt preset 1" },
+      { id: "duplicate-preset-id-2", name: "Restored preset" },
+    ],
+  );
+  assert.equal(normalized.profileAudits[0].input.profileUrl, "");
+  assert.deepEqual(normalized.profileAudits[0].input.skills, ["React"]);
+  assert.equal(normalized.profileAudits[0].total, 100);
+  assert.equal(normalized.profileAudits[0].checks[0].section, "Section 1");
+  assert.equal(normalized.profileAudits[0].checks[0].score, 0);
+  assert.equal(normalized.profileAudits[0].checks[0].status, "improve");
+  assert.deepEqual(normalized.profileAudits[0].matchedTerms, ["product"]);
+  assert.deepEqual(normalized.profileAudits[0].suggestions, ["Add evidence"]);
+  assert.deepEqual(
+    normalized.agentRuns.map(({ id, runName }) => ({ id, runName })),
+    [
+      { id: "duplicate-run-id", runName: "Local hunt" },
+      { id: "duplicate-run-id-2", runName: "Restored run" },
+    ],
+  );
+  assert.equal(normalized.agentRuns[0].matches[0].company, "Unknown company");
+  assert.equal(normalized.agentRuns[0].matches[0].url, "");
+  assert.deepEqual(normalized.agentRuns[0].matches[0].reasons, [
+    "Restored reason",
+  ]);
+  assert.deepEqual(
+    normalized.activities.find(
+      (activity) => activity.message === "Restored activity",
+    ),
+    {
+      id: "duplicate-activity-id-2",
+      at: "",
+      type: "system",
+      message: "Restored activity",
+      data: { runId: "duplicate-run-id" },
+    },
   );
   assert.equal(normalized.templates.length, 2);
   assert.equal(normalized.templates[0].name, "Resume Template 1");

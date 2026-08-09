@@ -652,16 +652,22 @@ function migrate(input) {
       createdAt: boundedText(draft.createdAt, 100),
       updatedAt: boundedText(draft.updatedAt, 100),
     }));
-  db.huntPresets = records(db.huntPresets);
-  for (const preset of db.huntPresets) {
-    preset.options = normalizeHuntOptions(
-      isRecord(preset.options) ? preset.options : preset,
-      preset.name,
-    );
-    delete preset.requiredKeywords;
-    delete preset.excludeKeywords;
-    delete preset.workflows;
-  }
+  const presetIds = new Set();
+  db.huntPresets = records(db.huntPresets)
+    .slice(0, 1000)
+    .map((preset, index) => {
+      const name = boundedText(preset.name, 100) || `Hunt preset ${index + 1}`;
+      return {
+        id: uniqueLegacyId(preset.id, "legacy-hunt-preset", index, presetIds),
+        name,
+        options: normalizeHuntOptions(
+          isRecord(preset.options) ? preset.options : preset,
+          name,
+        ),
+        createdAt: boundedText(preset.createdAt, 100),
+        updatedAt: boundedText(preset.updatedAt, 100),
+      };
+    });
   const storyIds = new Set();
   db.careerStories = records(db.careerStories)
     .slice(0, 1000)
@@ -687,7 +693,50 @@ function migrate(input) {
     session.matchedStoryIds = session.matchedStoryIds.filter((id) =>
       validStoryIds.has(id),
     );
-  db.profileAudits = records(db.profileAudits);
+  const auditIds = new Set();
+  db.profileAudits = records(db.profileAudits)
+    .slice(0, 50)
+    .map((audit, index) => {
+      const input = isRecord(audit.input) ? audit.input : {};
+      return {
+        id: uniqueLegacyId(audit.id, "legacy-profile-audit", index, auditIds),
+        createdAt: boundedText(audit.createdAt, 100),
+        input: {
+          profileUrl: safeStoredHttpUrl(input.profileUrl, 1000),
+          targetContext: boundedText(input.targetContext, 50000),
+          headline: boundedText(input.headline, 1000),
+          about: boundedText(input.about, 30000),
+          experience: boundedText(input.experience, 100000),
+          skills: Array.isArray(input.skills)
+            ? normalizeProfileList(input.skills, 100, 200)
+            : boundedText(input.skills, 10000),
+        },
+        total: numericPreference(audit.total, 0, 0, 100, true),
+        checks: records(audit.checks)
+          .map((check, checkIndex) => ({
+            section:
+              boundedText(check.section, 100) || `Section ${checkIndex + 1}`,
+            score: numericPreference(check.score, 0, 0, 100, true),
+            status: check.status === "strong" ? "strong" : "improve",
+            detail: boundedText(check.detail, 2000),
+          }))
+          .slice(0, 50),
+        matchedTerms: normalizeProfileList(audit.matchedTerms, 100, 100),
+        metrics: numericPreference(audit.metrics, 0, 0, 100000, true),
+        suggestions: normalizeProfileList(audit.suggestions, 100, 2000),
+        stats: isRecord(audit.stats)
+          ? Object.fromEntries(
+              Object.entries(audit.stats)
+                .filter(([key]) => /^[A-Za-z][A-Za-z0-9]{0,49}$/.test(key))
+                .slice(0, 50)
+                .map(([key, value]) => [
+                  key,
+                  numericPreference(value, 0, 0, 1000000, true),
+                ]),
+            )
+          : {},
+      };
+    });
   const gigIds = new Set();
   db.gigs = records(db.gigs)
     .slice(0, 5000)
@@ -722,38 +771,47 @@ function migrate(input) {
         updatedAt: boundedText(gig.updatedAt, 100),
       };
     });
-  db.agentRuns = records(db.agentRuns);
-  for (const run of db.agentRuns) {
-    run.id = String(run.id || nanoid()).slice(0, 200);
-    run.runName = String(
-      (typeof run.runName === "string" && run.runName) ||
-        run.search?.q ||
-        run.q ||
-        "Local hunt",
-    ).slice(0, 200);
+  const runIds = new Set();
+  db.agentRuns = records(db.agentRuns).slice(0, 100);
+  for (const [runIndex, run] of db.agentRuns.entries()) {
+    run.id = uniqueLegacyId(run.id, "legacy-agent-run", runIndex, runIds);
+    run.runName =
+      boundedText(run.runName, 200) ||
+      boundedText(run.search?.q, 200) ||
+      boundedText(run.q, 200) ||
+      "Local hunt";
     run.status = ["pending", "running", "completed", "failed"].includes(
       run.status,
     )
       ? run.status
       : "completed";
-    run.matches = records(run.matches).map((match) => ({
-      company: String(match.company || "Unknown company").slice(0, 300),
-      title: String(match.title || "Untitled role").slice(0, 500),
-      location: String(match.location || "").slice(0, 500),
-      url: String(match.url || "").slice(0, 2000),
-      fitScore: Math.min(100, Math.max(0, Number(match.fitScore) || 0)),
-      reasons: strings(match.reasons).map((reason) => reason.slice(0, 500)),
-    }));
+    run.matches = records(run.matches)
+      .slice(0, 10000)
+      .map((match) => ({
+        company: boundedText(match.company, 300) || "Unknown company",
+        title: boundedText(match.title, 500) || "Untitled role",
+        location: boundedText(match.location, 500),
+        url: safeStoredHttpUrl(match.url),
+        fitScore: Math.min(100, Math.max(0, Number(match.fitScore) || 0)),
+        reasons: strings(match.reasons)
+          .map((reason) => boundedText(reason, 500))
+          .filter(Boolean)
+          .slice(0, 100),
+      }));
     run.steps = records(
       Array.isArray(run.steps) ? run.steps : run.activities,
     ).map((step) => ({
-      name: String(step.name || step.title || "Workflow step").slice(0, 200),
+      name:
+        boundedText(step.name, 200) ||
+        boundedText(step.title, 200) ||
+        "Workflow step",
       status: ["pending", "running", "completed", "failed"].includes(
         step.status,
       )
         ? step.status
         : "completed",
-      detail: String(step.detail || step.description || "").slice(0, 2000),
+      detail:
+        boundedText(step.detail, 2000) || boundedText(step.description, 2000),
     }));
     run.actions = strings(run.actions)
       .map((action) => action.slice(0, 2000))
@@ -780,6 +838,8 @@ function migrate(input) {
       "originalResumes",
     ])
       run[counter] = Math.max(0, Number(run[counter]) || 0);
+    run.createdAt = boundedText(run.createdAt, 100);
+    run.completedAt = boundedText(run.completedAt, 100);
   }
   db.infiniteHunt = isRecord(db.infiniteHunt)
     ? db.infiniteHunt
@@ -799,7 +859,25 @@ function migrate(input) {
     0,
     500,
   );
-  db.activities = records(db.activities);
+  const activityIds = new Set();
+  db.activities = records(db.activities)
+    .slice(0, 500)
+    .map((activity, index) => ({
+      id: uniqueLegacyId(activity.id, "legacy-activity", index, activityIds),
+      at: boundedText(activity.at, 100),
+      type: boundedText(activity.type, 100) || "system",
+      message: boundedText(activity.message, 2000),
+      data: isRecord(activity.data)
+        ? Object.fromEntries(
+            Object.entries(activity.data)
+              .filter(([key]) => /^[A-Za-z][A-Za-z0-9]{0,49}$/.test(key))
+              .slice(0, 50)
+              .map(([key, value]) => [key, boundedText(value, 500)])
+              .filter(([, value]) => value),
+          )
+        : {},
+    }))
+    .filter((activity) => activity.message);
   const jobIds = new Set();
   db.jobs = db.jobs.slice(0, 10000).map((job, jobIndex) => {
     const id = uniqueLegacyId(job.id, "legacy-job", jobIndex, jobIds);
