@@ -1186,6 +1186,7 @@ function Onboarding({ profile, reload }) {
               <label>
                 Your name
                 <input
+                  name="onboarding-name"
                   autoFocus
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -1195,6 +1196,7 @@ function Onboarding({ profile, reload }) {
               <label>
                 Primary target role
                 <input
+                  name="onboarding-target-role"
                   value={form.role}
                   onChange={(e) => setForm({ ...form, role: e.target.value })}
                 />
@@ -1202,6 +1204,7 @@ function Onboarding({ profile, reload }) {
               <label>
                 Home location
                 <input
+                  name="onboarding-home-location"
                   value={form.location}
                   onChange={(e) =>
                     setForm({ ...form, location: e.target.value })
@@ -1229,6 +1232,7 @@ function Onboarding({ profile, reload }) {
               <label>
                 Skills, comma-separated
                 <textarea
+                  name="onboarding-skills"
                   value={form.skills}
                   onChange={(e) => setForm({ ...form, skills: e.target.value })}
                 />
@@ -1269,6 +1273,7 @@ function Onboarding({ profile, reload }) {
                 <b>{form.resumeFileName || "Choose your resume"}</b>
                 <span>PDF, HTML, or TXT · 10 MB maximum</span>
                 <input
+                  name="onboarding-resume-file"
                   aria-label="Upload resume during setup"
                   type="file"
                   accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
@@ -1315,6 +1320,7 @@ function Onboarding({ profile, reload }) {
               <label>
                 Resume text
                 <textarea
+                  name="onboarding-resume-text"
                   value={form.resumeText}
                   onChange={(event) =>
                     setForm({
@@ -1350,6 +1356,7 @@ function Onboarding({ profile, reload }) {
               <label>
                 Preferred locations
                 <input
+                  name="onboarding-preferred-locations"
                   value={form.preferredLocations}
                   onChange={(e) =>
                     setForm({ ...form, preferredLocations: e.target.value })
@@ -1360,6 +1367,7 @@ function Onboarding({ profile, reload }) {
                 <label>
                   Minimum salary
                   <input
+                    name="onboarding-minimum-salary"
                     type="number"
                     min="0"
                     value={form.minSalary}
@@ -1371,6 +1379,7 @@ function Onboarding({ profile, reload }) {
                 <label>
                   Weekly application goal
                   <input
+                    name="onboarding-weekly-goal"
                     type="number"
                     min="1"
                     max="100"
@@ -1383,6 +1392,7 @@ function Onboarding({ profile, reload }) {
               </div>
               <label className="check v2-onboarding-check">
                 <input
+                  name="onboarding-remote-jobs"
                   type="checkbox"
                   checked={form.remote}
                   onChange={(e) =>
@@ -1653,6 +1663,7 @@ function Overview({ state, setTab, reload }) {
               ].map(([key, label, color]) => (
                 <label key={key}>
                   <input
+                    name={`overview-chart-${key}`}
                     type="checkbox"
                     checked={chartVisibility[key]}
                     onChange={() =>

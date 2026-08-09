@@ -173,15 +173,49 @@ test(
         "background navigation must be inert during onboarding",
       );
 
-      await page.getByRole("button", { name: "Use demo profile" }).click();
+      await page.getByRole("button", { name: "Set up my workspace" }).click();
       await page
-        .getByRole("button", { name: "Use demo profile" })
-        .waitFor({ state: "hidden" });
+        .getByRole("heading", { name: "What are you looking for?" })
+        .waitFor();
+      await assertNamedFormControls(page, "Onboarding role setup");
+      await page.getByLabel("Your name").fill("E2E Job Hunter");
+      await page.getByLabel("Primary target role").fill("Product Engineer");
+      await page.getByLabel("Home location").fill("San Francisco, CA");
+      await page.getByRole("button", { name: /Continue/ }).click();
+      await page
+        .getByRole("heading", { name: "Show us your strengths" })
+        .waitFor();
+      await assertNamedFormControls(page, "Onboarding skills setup");
+      await page
+        .getByLabel("Skills, comma-separated")
+        .fill("React, TypeScript, Product strategy");
+      await page.getByRole("button", { name: /Continue/ }).click();
+      await page
+        .getByRole("heading", { name: "Add your resume privately" })
+        .waitFor();
+      await assertNamedFormControls(page, "Onboarding resume setup");
+      await page
+        .getByLabel("Resume text")
+        .fill(
+          "Product engineer with nine years of React and TypeScript delivery. Increased activation by 42 percent and led accessible platform launches across three teams.",
+        );
+      await page.getByRole("button", { name: /Continue/ }).click();
+      await page
+        .getByRole("heading", { name: "Set your search preferences" })
+        .waitFor();
+      await assertNamedFormControls(page, "Onboarding preference setup");
+      await page.getByLabel("Preferred locations").fill("Remote, California");
+      await page.getByLabel("Minimum salary").fill("150000");
+      await page.getByLabel("Weekly application goal").fill("7");
+      await page
+        .getByRole("button", { name: "Open my command center" })
+        .click();
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
       assert.equal(
         await page.locator("main").getAttribute("aria-hidden"),
         null,
       );
-      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await assertNamedFormControls(page, "Overview");
       await page
         .getByRole("heading", { name: /Top Contributors of/ })
         .waitFor();
@@ -333,11 +367,18 @@ test(
         return Boolean(text && text.length > 20 && text !== previous);
       }, initialMotivation);
       await page.getByRole("button", { name: /I got an offer/ }).click();
-      await page.getByRole("dialog", { name: "Congrats!" }).waitFor();
+      const farewellDialog = page.getByRole("dialog", { name: "Congrats!" });
+      await farewellDialog.waitFor();
+      assert.equal(
+        await farewellDialog
+          .getByRole("button", { name: "Oops—bring me back" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "the farewell dialog should focus its safe return action",
+      );
+      await assertAccessible(page, "Overview farewell dialog");
       await page.keyboard.press("Escape");
-      await page.getByRole("dialog", { name: "Congrats!" }).waitFor({
-        state: "hidden",
-      });
+      await farewellDialog.waitFor({ state: "hidden" });
 
       await page.locator('button[title="ATS Templates"]').click();
       await page
@@ -345,6 +386,7 @@ test(
         .click();
       const initialResume = page.getByLabel("Resume content");
       await initialResume.waitFor();
+      await initialResume.fill("");
       assert.equal(
         await page.getByRole("button", { name: "Save version" }).isDisabled(),
         true,
@@ -460,15 +502,15 @@ test(
       await page.getByLabel("Action required only").check();
       assert.equal(await page.locator(".v2-run-row").count(), 1);
       await page.getByLabel("Action required only").uncheck();
-      await page.getByLabel("Search runs").fill("Software Engineer");
+      await page.getByLabel("Search runs").fill("Product Engineer");
       assert.equal(await page.locator(".v2-run-row").count(), 1);
       const runTrigger = page.getByRole("button", {
-        name: "Software Engineer",
+        name: "Product Engineer",
         exact: true,
       });
       await runTrigger.click();
       const runDialog = page.getByRole("dialog", {
-        name: "Software Engineer",
+        name: "Product Engineer",
       });
       await runDialog.waitFor();
       assert.equal(
@@ -504,7 +546,7 @@ test(
       const linkedRunId = runState.agentRuns[0].id;
       await page.goto(`${baseUrl}/#/runs?run=${linkedRunId}`);
       const linkedRunDialog = page.getByRole("dialog", {
-        name: "Software Engineer",
+        name: "Product Engineer",
       });
       await linkedRunDialog.waitFor();
       await page.reload();
