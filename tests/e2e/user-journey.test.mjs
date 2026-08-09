@@ -1598,6 +1598,30 @@ test(
         .click();
       await page.goto(`${baseUrl}/#/queue?packet=${linkedPacketId}`);
       await page.getByText("Application documents", { exact: true }).waitFor();
+      const activeQueueState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const activeQueueJobIds = activeQueueState.submissions
+        .filter(
+          (submission) =>
+            !["archived", "submitted"].includes(submission.status),
+        )
+        .map((submission) => submission.jobId);
+      assert.equal(
+        await page
+          .getByLabel("Tracked role")
+          .locator("option")
+          .evaluateAll(
+            (options, queuedIds) =>
+              options
+                .map((option) => option.value)
+                .filter(Boolean)
+                .some((value) => queuedIds.includes(value)),
+            activeQueueJobIds,
+          ),
+        false,
+        "active application packets must not remain selectable for duplicate queueing",
+      );
       const interestAnswer = page.getByLabel(
         "Why are you interested in this role?",
       );

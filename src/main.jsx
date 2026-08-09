@@ -4551,6 +4551,14 @@ function Queue({ state, reload, setTab }) {
     filtered.find((item) => item.id === selectedId) || filtered[0];
   const selectedPacketId = selected?.id || "";
   const queuedJobIds = new Set(active.map((item) => item.jobId));
+  const queueableJobs = state.jobs.filter(
+    (job) =>
+      !queuedJobIds.has(job.id) &&
+      !["applied", "rejected"].includes(job.status),
+  );
+  const selectedQueueJobId = queueableJobs.some((job) => job.id === jobId)
+    ? jobId
+    : queueableJobs[0]?.id || "";
   const sourceJobs = state.jobs.filter((job) => {
     if (
       queuedJobIds.has(job.id) ||
@@ -4577,13 +4585,15 @@ function Queue({ state, reload, setTab }) {
     );
   };
   const create = async () => {
+    if (!selectedQueueJobId) return;
     const created = await api("/api/submissions", {
       method: "POST",
       body: JSON.stringify({
-        jobId,
-        resumeId: recommendedResume(jobId),
+        jobId: selectedQueueJobId,
+        resumeId: recommendedResume(selectedQueueJobId),
         coverLetterId:
-          state.coverLetters.find((x) => x.jobId === jobId)?.id || "",
+          state.coverLetters.find((x) => x.jobId === selectedQueueJobId)?.id ||
+          "",
       }),
     });
     setSelectedId(created.id);
@@ -4935,18 +4945,19 @@ function Queue({ state, reload, setTab }) {
               <select
                 name="submission-queue-job"
                 aria-label="Tracked role"
-                value={jobId}
+                value={selectedQueueJobId}
                 onChange={(e) => setJobId(e.target.value)}
               >
-                {state.jobs
-                  .filter((j) => !["applied", "rejected"].includes(j.status))
-                  .map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.company} — {j.title}
-                    </option>
-                  ))}
+                {!queueableJobs.length && (
+                  <option value="">No unqueued roles available</option>
+                )}
+                {queueableJobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.company} — {j.title}
+                  </option>
+                ))}
               </select>
-              <button disabled={!jobId} onClick={create}>
+              <button disabled={!selectedQueueJobId} onClick={create}>
                 <Plus size={15} /> Add to queue
               </button>
             </div>
