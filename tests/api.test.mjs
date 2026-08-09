@@ -394,10 +394,25 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
   await mutate((db) => {
     db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
   });
+  await runScheduledHunt("http://127.0.0.1:1");
+  const afterFailedScheduledRun = (await req("/api/state")).body;
+  assert.equal(afterFailedScheduledRun.infiniteHunt.enabled, true);
+  assert.ok(
+    afterFailedScheduledRun.infiniteHunt.lastError,
+    "a failed scheduled hunt must preserve a user-visible diagnostic",
+  );
+  assert.ok(
+    Date.parse(afterFailedScheduledRun.infiniteHunt.nextRunAt) > Date.now(),
+    "a failed run must advance its schedule instead of retrying continuously",
+  );
+  await mutate((db) => {
+    db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
+  });
   await runScheduledHunt(base);
   const afterScheduledRun = (await req("/api/state")).body;
   assert.equal(afterScheduledRun.agentRuns.length, runsBefore + 1);
   assert.ok(afterScheduledRun.infiniteHunt.lastRunAt);
+  assert.equal(afterScheduledRun.infiniteHunt.lastError, "");
   assert.ok(Date.parse(afterScheduledRun.infiniteHunt.nextRunAt) > Date.now());
   const stopped = await req("/api/infinite-hunt/stop", { method: "POST" });
   assert.equal(stopped.res.status, 200);

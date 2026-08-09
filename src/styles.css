@@ -1759,6 +1759,11 @@ button:disabled {
 .v2-infinite-active small {
   color: #475569;
 }
+.v2-infinite-active .v2-infinite-error {
+  margin-top: 3px;
+  color: #b42318;
+  font-weight: 650;
+}
 .v2-hunt-interval {
   display: grid;
   gap: 3px;

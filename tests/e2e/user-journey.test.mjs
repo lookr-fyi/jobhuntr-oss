@@ -604,6 +604,23 @@ test(
       await page
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor();
+      await page.route("**/api/state", async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        body.infiniteHunt = {
+          ...body.infiniteHunt,
+          lastError: "Scheduled hunt could not reach the local worker",
+        };
+        await route.fulfill({ response, json: body });
+      });
+      await page.reload();
+      await page
+        .getByRole("alert")
+        .getByText(
+          "Last scheduled run failed: Scheduled hunt could not reach the local worker",
+        )
+        .waitFor();
+      await page.unroute("**/api/state");
       await page.getByRole("heading", { name: "Run history" }).waitFor();
       assert.equal(
         await page

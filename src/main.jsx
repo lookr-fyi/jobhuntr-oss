@@ -10943,6 +10943,11 @@ function Agent({ state, reload, setTab }) {
                   Next run {formatDateTime(state.infiniteHunt.nextRunAt)}
                 </small>
               )}
+              {state.infiniteHunt.lastError && (
+                <small className="v2-infinite-error" role="alert">
+                  Last scheduled run failed: {state.infiniteHunt.lastError}
+                </small>
+              )}
             </span>
             <button
               className="secondary"
