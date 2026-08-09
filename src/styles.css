@@ -8954,24 +8954,75 @@ main > header.integrated-page-header {
 .v2-ats-header h2 {
   margin: 0 0 5px;
   font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 .v2-ats-header p {
   margin: 0;
   color: var(--v2-secondary);
 }
+.v2-ats-header .v2-ats-create-button {
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+}
 .v2-template-toolbar {
   grid-column: 1/-1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .v2-template-toolbar .searchbox {
+  position: relative;
+  box-sizing: border-box;
+  width: 400px;
   flex: 1;
   max-width: 400px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.v2-template-toolbar .searchbox > svg {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 8px;
+  color: #6b7280;
+  transform: translateY(-50%);
 }
 .v2-template-toolbar input {
+  box-sizing: border-box;
   width: 100%;
   margin: 0;
+  padding: 8px 8px 8px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.v2-template-toolbar .text-button {
+  margin-left: auto;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent !important;
+  color: #4b5563 !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+.v2-template-toolbar button.secondary {
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent !important;
+  color: #4b5563 !important;
+  font-size: 14px;
+  font-weight: 500;
+}
+.v2-template-toolbar button.secondary.active {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  font-weight: 600;
 }
 .v2-resume-templates {
   grid-column: 1/-1;

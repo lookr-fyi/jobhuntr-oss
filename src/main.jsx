@@ -6911,7 +6911,10 @@ function Resume({ state, reload, mode = "resume" }) {
             {visibleTemplates.length === 1 ? "" : "s"} available
           </p>
         </div>
-        <button onClick={() => openTemplateDialog()}>
+        <button
+          className="v2-ats-create-button"
+          onClick={() => openTemplateDialog()}
+        >
           <Plus size={16} /> Create New Template
         </button>
       </div>

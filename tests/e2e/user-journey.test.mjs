@@ -807,6 +807,44 @@ test(
       await page
         .getByRole("heading", { name: "ATS Resume Templates" })
         .waitFor();
+      assert.deepEqual(
+        await page.locator("section.resume-studio").evaluate((root) => {
+          const style = (selector) =>
+            getComputedStyle(root.querySelector(selector));
+          const heading = style(".v2-ats-header h2");
+          const create = style(".v2-ats-create-button");
+          const searchbox = style(".v2-template-toolbar .searchbox");
+          const search = style(".v2-template-toolbar input");
+          const activeSort = style(
+            '.v2-template-toolbar button.secondary[aria-pressed="true"]',
+          );
+          return {
+            heading: [heading.fontSize, heading.fontWeight],
+            create: [
+              create.paddingTop,
+              create.paddingRight,
+              create.borderRadius,
+              create.fontSize,
+              create.fontWeight,
+            ],
+            searchboxWidth: searchbox.width,
+            search: [search.padding, search.borderRadius, search.fontSize],
+            activeSort: [
+              activeSort.padding,
+              activeSort.backgroundColor,
+              activeSort.fontSize,
+            ],
+          };
+        }),
+        {
+          heading: ["26px", "600"],
+          create: ["12px", "20px", "6px", "16px", "500"],
+          searchboxWidth: "400px",
+          search: ["8px 8px 8px 40px", "6px", "14px"],
+          activeSort: ["4px 8px", "rgb(243, 244, 246)", "14px"],
+        },
+        "ATS template controls should retain the authoritative v2 dimensions",
+      );
       await page.getByRole("button", { name: "Create New Template" }).click();
       const templateDialog = page.getByRole("dialog", {
         name: "Create New Template",
