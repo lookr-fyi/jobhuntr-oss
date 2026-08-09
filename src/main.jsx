@@ -9665,7 +9665,7 @@ function ProfileAudit({ state, reload }) {
       />
       <div className="v2-page-intro">
         <div>
-          <h2>LinkedIn Profile Audit</h2>
+          <h1>LinkedIn Profile Audit</h1>
           <p>
             Review your profile positioning and receive comprehensive,
             evidence-based feedback.
@@ -9676,6 +9676,7 @@ function ProfileAudit({ state, reload }) {
         <label>
           LinkedIn profile URL <span>Optional reference</span>
           <input
+            name="linkedin-profile-url"
             value={profileUrl}
             onChange={(e) => setProfileUrl(e.target.value)}
             onKeyDown={(event) => {
@@ -9720,6 +9721,7 @@ function ProfileAudit({ state, reload }) {
           How would you like to improve your LinkedIn profile? (e.g., enter your
           targeted job&apos;s description)
           <textarea
+            name="linkedin-audit-context"
             value={form.targetContext}
             onChange={(event) =>
               setForm({ ...form, targetContext: event.target.value })
@@ -9753,6 +9755,7 @@ function ProfileAudit({ state, reload }) {
             <label>
               Headline
               <input
+                name="linkedin-headline"
                 value={form.headline}
                 maxLength="1000"
                 onChange={(e) => setForm({ ...form, headline: e.target.value })}
@@ -9765,6 +9768,7 @@ function ProfileAudit({ state, reload }) {
             <label>
               About section
               <textarea
+                name="linkedin-about"
                 value={form.about}
                 onChange={(e) => setForm({ ...form, about: e.target.value })}
                 placeholder="Your positioning, evidence, motivation, and call to action…"
@@ -9776,6 +9780,7 @@ function ProfileAudit({ state, reload }) {
             <label>
               Experience highlights
               <textarea
+                name="linkedin-experience"
                 className="audit-experience"
                 value={form.experience}
                 onChange={(e) =>
@@ -9790,6 +9795,7 @@ function ProfileAudit({ state, reload }) {
             <label>
               Skills, comma-separated
               <input
+                name="linkedin-skills"
                 value={form.skills}
                 onChange={(e) => setForm({ ...form, skills: e.target.value })}
               />

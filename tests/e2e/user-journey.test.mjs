@@ -1997,6 +1997,7 @@ test(
         .fill(
           "Target product engineering roles focused on conversion experiments and React.",
         );
+      await assertNamedFormControls(page, "LinkedIn Audit");
       await page.getByRole("button", { name: "Analyze Profile" }).click();
       await page.locator(".audit-score").waitFor();
       await page
