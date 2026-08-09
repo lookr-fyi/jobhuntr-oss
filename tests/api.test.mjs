@@ -1461,6 +1461,24 @@ test("bulk packet archiving is atomic when any packet is invalid", async () => {
     ),
     ["archived", "archived"],
   );
+  const rejectedArchivedSubmission = await req(
+    `/api/submissions/${packetIds[0]}/submit`,
+    {
+      method: "POST",
+      body: JSON.stringify({ confirmedByUser: true }),
+    },
+  );
+  assert.equal(rejectedArchivedSubmission.res.status, 409);
+  assert.match(
+    rejectedArchivedSubmission.body.error,
+    /ready application packet/i,
+  );
+  assert.equal(
+    (await req("/api/state")).body.submissions.find(
+      (packet) => packet.id === packetIds[0],
+    ).status,
+    "archived",
+  );
 });
 
 test("rapid application review edits cannot overwrite each other", async () => {

@@ -1497,6 +1497,7 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     if (!job) return { blockedJob: true, item };
     if (!isJobEligibleForSubmission(job))
       return { blockedJobStatus: true, item };
+    if (item.status === "archived") return { blockedPacketStatus: true, item };
     if (
       !Array.isArray(item.checklist) ||
       item.checklist.length < 3 ||
@@ -1593,6 +1594,10 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     return res.status(409).json({
       error:
         "This opportunity is no longer active, so its application packet cannot be submitted",
+    });
+  if (submission.blockedPacketStatus)
+    return res.status(409).json({
+      error: "Only a ready application packet can be recorded as submitted",
     });
   if (submission.blockedQuestions)
     return res.status(409).json({

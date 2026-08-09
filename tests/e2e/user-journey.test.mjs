@@ -2461,6 +2461,48 @@ test(
       );
       await externalProof.check();
       assert.equal(await directSubmitButton.isEnabled(), true);
+      const rejectedDirectSubmission = async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        await route.fulfill({
+          status: 503,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Simulated submission write failure" }),
+        });
+      };
+      await page.route("**/api/submissions/*/submit", rejectedDirectSubmission);
+      const rejectedDirectResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/submit") &&
+          response.request().method() === "POST" &&
+          response.status() === 503,
+      );
+      await directSubmitButton.click();
+      await page.getByRole("button", { name: "Recording…" }).waitFor();
+      const activePacket = queueQuestions.locator("..");
+      for (const control of [
+        whyAnswer,
+        editedVerification,
+        page.getByLabel("Review resume alignment"),
+        resumeAttachment,
+        externalProof,
+        activePacket.getByRole("button", { name: "Remove" }),
+      ])
+        assert.equal(
+          await control.isDisabled(),
+          true,
+          "final submission must lock every packet mutation and destructive action",
+        );
+      await rejectedDirectResponse;
+      await page.unroute(
+        "**/api/submissions/*/submit",
+        rejectedDirectSubmission,
+      );
+      await directSubmitButton.waitFor();
+      assert.equal(
+        await externalProof.isChecked(),
+        true,
+        "a failed local record should preserve explicit external confirmation for retry",
+      );
       await externalProof.uncheck();
       await page.getByRole("button", { name: "Start Submitting" }).click();
       const submitDialog = page.getByRole("dialog", {

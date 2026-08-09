@@ -1561,7 +1561,10 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
     /setChecklistAnswers\(\(current\) => \(\{ \.\.\.current, \[id\]: done \}\)\)/,
   );
   assert.match(card, /if \(!saved\) \{[\s\S]*?Boolean\(persisted\?\.done\)/);
-  assert.match(card, /disabled=\{pendingChecklistIds\.has\(item\.id\)\}/);
+  assert.match(
+    card,
+    /disabled=\{packetLocked \|\| pendingChecklistIds\.has\(item\.id\)\}/,
+  );
   assert.match(card, /pendingChecklistIds\.size > 0/);
   assert.match(card, /const \[attachmentDraft, setAttachmentDraft\]/);
   assert.match(
@@ -1571,10 +1574,13 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /const attachmentRevisionRef = useRef\(\{\}\)/);
   assert.match(card, /const updateAttachment = async \(field, value\) =>/);
   assert.match(card, /await updatePacket\(\{ \[field\]: value \}\)/);
-  assert.match(card, /disabled=\{pendingAttachmentFields\.has\("resumeId"\)\}/);
   assert.match(
     card,
-    /disabled=\{pendingAttachmentFields\.has\("coverLetterId"\)\}/,
+    /disabled=\{packetLocked \|\| pendingAttachmentFields\.has\("resumeId"\)\}/,
+  );
+  assert.match(
+    card,
+    /disabled=\{\s*packetLocked \|\| pendingAttachmentFields\.has\("coverLetterId"\)\s*\}/,
   );
   assert.match(card, /pendingAttachmentFields\.size > 0/);
   assert.match(card, /const \[verificationDraft, setVerificationDraft\]/);
@@ -1615,8 +1621,23 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
     source,
     /onPointerDown=\{\(event\) => \{[\s\S]*?if \(event\.button === 0\) onIntent\?\.\(question\.id\)/,
   );
-  assert.match(source, /disabled=\{pending \|\| !valid\}/);
+  assert.match(source, /disabled=\{disabled \|\| pending \|\| !valid\}/);
   assert.match(source, /aria-busy=\{pending\}/);
+  assert.match(card, /const archivingPacketRef = useRef\(false\)/);
+  assert.match(
+    card,
+    /const packetLocked = recordingSubmission \|\| archivingPacket/,
+  );
+  assert.match(
+    card,
+    /const archivePacket = async \(\) => \{[\s\S]*?archivingPacketRef\.current = true[\s\S]*?await updatePacket\(\{ status: "archived" \}\)/,
+  );
+  assert.match(card, /disabled=\{packetLocked\}/);
+  assert.match(
+    card,
+    /disabled=\{packetLocked \|\| pendingChecklistIds\.has\(item\.id\)\}/,
+  );
+  assert.match(card, /\{archivingPacket \? "Removing…" : "Remove"\}/);
 });
 
 test("FAQ deletion persists before mutating the form and cannot bless newer edits", async () => {

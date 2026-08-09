@@ -6042,6 +6042,7 @@ function QuestionVerification({
   onChange,
   onIntent,
   pending = false,
+  disabled = false,
 }) {
   const skipped =
     question.required === false && !String(question.answer || "").trim();
@@ -6062,7 +6063,7 @@ function QuestionVerification({
         name={`verify-question-${question.id}`}
         aria-label={`Verification checkbox ${question.id}`}
         checked={Boolean(question.verified)}
-        disabled={pending || !valid}
+        disabled={disabled || pending || !valid}
         aria-busy={pending}
         onPointerDown={(event) => {
           if (event.button === 0) onIntent?.(question.id);
@@ -6081,9 +6082,12 @@ function QuestionVerification({
 function SubmissionCard({ submission: s, state, reload }) {
   const packetUpdateQueue = useRef(Promise.resolve());
   const recordingSubmissionRef = useRef(false);
+  const archivingPacketRef = useRef(false);
   const [externalSubmissionVerified, setExternalSubmissionVerified] =
     useState(false);
   const [recordingSubmission, setRecordingSubmission] = useState(false);
+  const [archivingPacket, setArchivingPacket] = useState(false);
+  const packetLocked = recordingSubmission || archivingPacket;
   const answerDraftKey = `jobhuntr-application-answer-draft:${s.id}`;
   const [initialAnswerDraft] = useState(() => {
     try {
@@ -6245,6 +6249,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     return (await update.catch(() => false)) === true;
   };
   const updateChecklist = async (id, done) => {
+    if (recordingSubmissionRef.current || archivingPacketRef.current) return;
     const revision = (checklistRevisionRef.current[id] || 0) + 1;
     checklistRevisionRef.current[id] = revision;
     setChecklistAnswers((current) => ({ ...current, [id]: done }));
@@ -6268,6 +6273,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateAttachment = async (field, value) => {
+    if (recordingSubmissionRef.current || archivingPacketRef.current) return;
     const revision = (attachmentRevisionRef.current[field] || 0) + 1;
     attachmentRevisionRef.current[field] = revision;
     setAttachmentDraft((current) => ({ ...current, [field]: value }));
@@ -6281,6 +6287,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateQuestion = async (id, answer, trackDraft = false) => {
+    if (recordingSubmissionRef.current || archivingPacketRef.current) return;
     const canonicalAnswer = canonicalApplicationAnswer(answer);
     if (trackDraft) {
       const nextRevision = (answerRevisionRef.current[id] || 0) + 1;
@@ -6306,6 +6313,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       });
   };
   const verifyQuestion = async (id, verified) => {
+    if (recordingSubmissionRef.current || archivingPacketRef.current) return;
     const question = (s.applicationQuestions || []).find(
       (candidate) => candidate.id === id,
     );
@@ -6348,6 +6356,7 @@ function SubmissionCard({ submission: s, state, reload }) {
   const recordExternalSubmission = async () => {
     if (
       recordingSubmissionRef.current ||
+      archivingPacketRef.current ||
       !checklistReady ||
       pendingChecklistIds.size > 0 ||
       pendingAttachmentFields.size > 0 ||
@@ -6372,6 +6381,17 @@ function SubmissionCard({ submission: s, state, reload }) {
     } finally {
       recordingSubmissionRef.current = false;
       setRecordingSubmission(false);
+    }
+  };
+  const archivePacket = async () => {
+    if (archivingPacketRef.current || recordingSubmissionRef.current) return;
+    archivingPacketRef.current = true;
+    setArchivingPacket(true);
+    try {
+      await updatePacket({ status: "archived" });
+    } finally {
+      archivingPacketRef.current = false;
+      setArchivingPacket(false);
     }
   };
   return (
@@ -6508,6 +6528,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                             type="radio"
                             name={`question-${question.id}`}
                             value={option}
+                            disabled={packetLocked}
                             checked={
                               (draftAnswers[question.id] ?? question.answer) ===
                               option
@@ -6530,6 +6551,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                     onChange={verifyQuestion}
                     onIntent={markVerificationIntent}
                     pending={pendingVerificationIds.has(question.id)}
+                    disabled={packetLocked}
                   />
                 </div>
               );
@@ -6542,6 +6564,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                     <select
                       name={`question-${question.id}`}
                       value={draftAnswers[question.id] ?? question.answer ?? ""}
+                      disabled={packetLocked}
                       onChange={(event) =>
                         updateQuestion(question.id, event.target.value, true)
                       }
@@ -6561,6 +6584,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                     onChange={verifyQuestion}
                     onIntent={markVerificationIntent}
                     pending={pendingVerificationIds.has(question.id)}
+                    disabled={packetLocked}
                   />
                 </div>
               );
@@ -6573,6 +6597,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                     name={`question-${question.id}`}
                     rows={2}
                     maxLength={10000}
+                    disabled={packetLocked}
                     value={draftAnswers[question.id] ?? question.answer ?? ""}
                     placeholder="Enter your answer…"
                     onChange={(event) => {
@@ -6610,6 +6635,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                   onChange={verifyQuestion}
                   onIntent={markVerificationIntent}
                   pending={pendingVerificationIds.has(question.id)}
+                  disabled={packetLocked}
                 />
               </div>
             );
@@ -6635,7 +6661,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                   ? checklistAnswers[item.id]
                   : item.done
               }
-              disabled={pendingChecklistIds.has(item.id)}
+              disabled={packetLocked || pendingChecklistIds.has(item.id)}
               onChange={(e) => updateChecklist(item.id, e.target.checked)}
             />
             {item.text}
@@ -6673,7 +6699,7 @@ function SubmissionCard({ submission: s, state, reload }) {
           <select
             name={`resume-attachment-${s.id}`}
             value={effectiveResumeId}
-            disabled={pendingAttachmentFields.has("resumeId")}
+            disabled={packetLocked || pendingAttachmentFields.has("resumeId")}
             onChange={(event) =>
               updateAttachment("resumeId", event.target.value)
             }
@@ -6700,7 +6726,9 @@ function SubmissionCard({ submission: s, state, reload }) {
           <select
             name={`cover-letter-attachment-${s.id}`}
             value={effectiveCoverLetterId}
-            disabled={pendingAttachmentFields.has("coverLetterId")}
+            disabled={
+              packetLocked || pendingAttachmentFields.has("coverLetterId")
+            }
             onChange={(event) =>
               updateAttachment("coverLetterId", event.target.value)
             }
@@ -6720,6 +6748,12 @@ function SubmissionCard({ submission: s, state, reload }) {
             type="checkbox"
             name={`external-submission-confirmed-${s.id}`}
             checked={externalSubmissionVerified}
+            disabled={
+              packetLocked ||
+              pendingChecklistIds.size > 0 ||
+              pendingAttachmentFields.size > 0 ||
+              pendingVerificationIds.size > 0
+            }
             onChange={(event) =>
               setExternalSubmissionVerified(event.target.checked)
             }
@@ -6734,7 +6768,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         <button
           className="success"
           disabled={
-            recordingSubmission ||
+            packetLocked ||
             !checklistReady ||
             pendingChecklistIds.size > 0 ||
             pendingAttachmentFields.size > 0 ||
@@ -6751,9 +6785,16 @@ function SubmissionCard({ submission: s, state, reload }) {
         </button>
         <button
           className="secondary"
-          onClick={() => updatePacket({ status: "archived" })}
+          disabled={
+            packetLocked ||
+            pendingChecklistIds.size > 0 ||
+            pendingAttachmentFields.size > 0 ||
+            pendingVerificationIds.size > 0
+          }
+          aria-busy={archivingPacket}
+          onClick={archivePacket}
         >
-          Remove
+          {archivingPacket ? "Removing…" : "Remove"}
         </button>
       </div>
       {safeHttpUrl(job?.url) && (
