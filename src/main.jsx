@@ -10898,23 +10898,39 @@ function ProfileAudit({ state, reload }) {
   const [audit, setAudit] = useState(state.profileAudits[0] || null);
   const [deleteAudit, setDeleteAudit] = useState(null);
   const [running, setRunning] = useState(false);
+  const runningAuditRef = useRef(false);
+  const profileRevision = useRef(0);
+  const editProfileUrl = (value) => {
+    profileRevision.current += 1;
+    setProfileUrl(value);
+    setAudit(null);
+  };
+  const editAuditForm = (next) => {
+    profileRevision.current += 1;
+    setForm(next);
+    setAudit(null);
+  };
   const profileUrlValid =
     !profileUrl.trim() ||
     /^https:\/\/(www\.)?linkedin\.com\/(in|pub)\/[^/?#]+/i.test(
       profileUrl.trim(),
     );
   const run = async () => {
+    if (runningAuditRef.current) return;
+    runningAuditRef.current = true;
+    const auditRevision = profileRevision.current;
     setRunning(true);
     try {
       const result = await api("/api/profile-audits", {
         method: "POST",
         body: JSON.stringify({ ...form, profileUrl }),
       });
-      setAudit(result);
+      if (profileRevision.current === auditRevision) setAudit(result);
       await reload();
     } catch {
       // Preserve the pasted profile content so the audit can be retried.
     } finally {
+      runningAuditRef.current = false;
       setRunning(false);
     }
   };
@@ -10948,7 +10964,7 @@ function ProfileAudit({ state, reload }) {
           name="linkedin-profile-url"
           aria-label="LinkedIn profile URL"
           value={profileUrl}
-          onChange={(e) => setProfileUrl(e.target.value)}
+          onChange={(e) => editProfileUrl(e.target.value)}
           onKeyDown={(event) => {
             if (
               event.key === "Enter" &&
@@ -10970,6 +10986,7 @@ function ProfileAudit({ state, reload }) {
             !form.headline.trim() ||
             !profileUrlValid
           }
+          aria-busy={running}
           onClick={run}
         >
           {running ? "Analyzing…" : "Analyze Profile"}
@@ -10999,7 +11016,7 @@ function ProfileAudit({ state, reload }) {
             name="linkedin-audit-context"
             value={form.targetContext}
             onChange={(event) =>
-              setForm({ ...form, targetContext: event.target.value })
+              editAuditForm({ ...form, targetContext: event.target.value })
             }
             placeholder="Paste your target job description, specific goals, or areas you would like to focus on…"
           />
@@ -11033,7 +11050,9 @@ function ProfileAudit({ state, reload }) {
                 name="linkedin-headline"
                 value={form.headline}
                 maxLength="1000"
-                onChange={(e) => setForm({ ...form, headline: e.target.value })}
+                onChange={(e) =>
+                  editAuditForm({ ...form, headline: e.target.value })
+                }
                 placeholder="Product engineer | AI workflows | Shipped 0→1 products"
               />
             </label>
@@ -11045,7 +11064,9 @@ function ProfileAudit({ state, reload }) {
               <textarea
                 name="linkedin-about"
                 value={form.about}
-                onChange={(e) => setForm({ ...form, about: e.target.value })}
+                onChange={(e) =>
+                  editAuditForm({ ...form, about: e.target.value })
+                }
                 placeholder="Your positioning, evidence, motivation, and call to action…"
               />
             </label>
@@ -11059,7 +11080,7 @@ function ProfileAudit({ state, reload }) {
                 className="audit-experience"
                 value={form.experience}
                 onChange={(e) =>
-                  setForm({ ...form, experience: e.target.value })
+                  editAuditForm({ ...form, experience: e.target.value })
                 }
                 placeholder="Paste representative experience bullets…"
               />
@@ -11072,7 +11093,9 @@ function ProfileAudit({ state, reload }) {
               <input
                 name="linkedin-skills"
                 value={form.skills}
-                onChange={(e) => setForm({ ...form, skills: e.target.value })}
+                onChange={(e) =>
+                  editAuditForm({ ...form, skills: e.target.value })
+                }
               />
             </label>
             <p className="hint">
@@ -11186,6 +11209,7 @@ function ProfileAudit({ state, reload }) {
                 >
                   <button
                     onClick={() => {
+                      profileRevision.current += 1;
                       setAudit(item);
                       setProfileUrl(item.input.profileUrl || "");
                       setContextExpanded(Boolean(item.input.targetContext));

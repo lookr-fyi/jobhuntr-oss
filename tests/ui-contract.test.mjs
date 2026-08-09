@@ -493,6 +493,35 @@ test("Gig creation and applications are single-flight and retryable", async () =
   );
 });
 
+test("LinkedIn audits cannot duplicate or publish stale results", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const audit = source.slice(
+    source.indexOf("function ProfileAudit"),
+    source.indexOf("function Agent"),
+  );
+
+  assert.match(audit, /const runningAuditRef = useRef\(false\)/);
+  assert.match(audit, /const profileRevision = useRef\(0\)/);
+  assert.match(audit, /if \(runningAuditRef\.current\) return/);
+  assert.match(audit, /runningAuditRef\.current = true/);
+  assert.match(audit, /runningAuditRef\.current = false/);
+  assert.match(audit, /const auditRevision = profileRevision\.current/);
+  assert.match(
+    audit,
+    /if \(profileRevision\.current === auditRevision\) setAudit\(result\)/,
+  );
+  assert.match(audit, /const editProfileUrl = \(value\) => \{/);
+  assert.match(audit, /const editAuditForm = \(next\) => \{/);
+  assert.ok(
+    (audit.match(/profileRevision\.current \+= 1/g) || []).length >= 3,
+    "URL edits, form edits, and history selection must invalidate pending audits",
+  );
+  assert.match(audit, /aria-busy=\{running\}/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
