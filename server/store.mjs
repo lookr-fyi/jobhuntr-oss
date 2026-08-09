@@ -5,6 +5,11 @@ import { nanoid } from "nanoid";
 export const DATA_DIR = path.resolve(process.env.JOBHUNTR_DATA_DIR || "./data");
 export const DB_PATH = path.join(DATA_DIR, "jobhuntr.json");
 export const BACKUP_PATH = path.join(DATA_DIR, "jobhuntr.backup.json");
+const secureMode = async (target, mode) => {
+  try {
+    await fs.chmod(target, mode);
+  } catch {}
+};
 
 const now = () => new Date().toISOString();
 const hoursAgo = (hours) =>
@@ -268,9 +273,12 @@ function migrate(input) {
 }
 
 async function ensure() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(DATA_DIR, { recursive: true, mode: 0o700 });
+  await secureMode(DATA_DIR, 0o700);
   try {
     await fs.access(DB_PATH);
+    await secureMode(DB_PATH, 0o600);
+    await secureMode(BACKUP_PATH, 0o600);
   } catch {
     await writeDb(emptyDb());
   }
@@ -291,6 +299,7 @@ export async function readDb() {
         path.join(DATA_DIR, `jobhuntr.corrupt-${Date.now()}.json`),
       );
       await fs.copyFile(BACKUP_PATH, DB_PATH);
+      await secureMode(DB_PATH, 0o600);
       return backup;
     } catch {
       throw new Error(`Local JobHuntr data is unreadable: ${error.message}`);
@@ -299,15 +308,18 @@ export async function readDb() {
 }
 
 export async function writeDb(db) {
-  await fs.mkdir(DATA_DIR, { recursive: true });
+  await fs.mkdir(DATA_DIR, { recursive: true, mode: 0o700 });
+  await secureMode(DATA_DIR, 0o700);
   db.meta = db.meta || {};
   db.meta.updatedAt = now();
   const tmp = `${DB_PATH}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(db, null, 2));
+  await fs.writeFile(tmp, JSON.stringify(db, null, 2), { mode: 0o600 });
   try {
     await fs.copyFile(DB_PATH, BACKUP_PATH);
+    await secureMode(BACKUP_PATH, 0o600);
   } catch {}
   await fs.rename(tmp, DB_PATH);
+  await secureMode(DB_PATH, 0o600);
   return db;
 }
 

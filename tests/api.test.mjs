@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import http from "node:http";
 
 const dir = await fs.mkdtemp(path.join(os.tmpdir(), "jobhuntr-test-"));
 process.env.NODE_ENV = "test";
@@ -25,9 +26,41 @@ test("health and initial state are local-only", async () => {
   assert.equal(body.host, "127.0.0.1");
   assert.equal(res.headers.get("x-frame-options"), "SAMEORIGIN");
   assert.equal(res.headers.get("x-powered-by"), null);
+  assert.match(
+    res.headers.get("content-security-policy"),
+    /base-uri 'none'.*object-src 'none'.*form-action 'self'/,
+  );
+  const hostileHostStatus = await new Promise((resolve, reject) => {
+    const request = http.get(
+      `${base}/api/health`,
+      { headers: { Host: "attacker.example" } },
+      (response) => {
+        response.resume();
+        resolve(response.statusCode);
+      },
+    );
+    request.on("error", reject);
+  });
+  assert.equal(hostileHostStatus, 421);
+  const hostileOrigin = await fetch(`${base}/api/health`, {
+    headers: { Origin: "https://attacker.example" },
+  });
+  assert.equal(hostileOrigin.status, 403);
+  const sameOrigin = await fetch(`${base}/api/health`, {
+    headers: { Origin: base },
+  });
+  assert.equal(sameOrigin.status, 200);
   const state = (await req("/api/state")).body;
   assert.ok(state.jobs.length >= 2);
   assert.ok(state.summary.totalJobs >= 2);
+  if (process.platform !== "win32") {
+    const dbPath = path.join(dir, "jobhuntr.json");
+    await fs.chmod(dir, 0o755);
+    await fs.chmod(dbPath, 0o644);
+    await req("/api/state");
+    assert.equal((await fs.stat(dir)).mode & 0o777, 0o700);
+    assert.equal((await fs.stat(dbPath)).mode & 0o777, 0o600);
+  }
 });
 
 test("serialized local writes do not lose concurrent jobs", async () => {

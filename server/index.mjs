@@ -24,7 +24,29 @@ const APP_VERSION = JSON.parse(
 const app = express();
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || "127.0.0.1";
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost", "[::1]"]);
 app.disable("x-powered-by");
+app.use((req, res, next) => {
+  const requestHost = String(req.headers.host || "");
+  let hostname = "";
+  try {
+    hostname = new URL(`http://${requestHost}`).hostname.toLowerCase();
+  } catch {}
+  if (!LOOPBACK_HOSTS.has(hostname))
+    return res
+      .status(421)
+      .json({ error: "JobHuntr accepts loopback requests only" });
+  const origin = req.headers.origin;
+  if (origin) {
+    try {
+      if (new URL(origin).host !== requestHost)
+        return res.status(403).json({ error: "Cross-origin request blocked" });
+    } catch {
+      return res.status(403).json({ error: "Invalid request origin" });
+    }
+  }
+  next();
+});
 app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "no-referrer");
@@ -35,7 +57,7 @@ app.use((_req, res, next) => {
   );
   res.setHeader(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'",
+    "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'",
   );
   next();
 });
