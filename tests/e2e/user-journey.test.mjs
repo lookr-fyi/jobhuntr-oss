@@ -1005,6 +1005,14 @@ test(
         { direction: "column", circle: [32, 32] },
         "ATS wizard progress should retain v2's stacked labels and 32px step circles",
       );
+      assert.equal(
+        await templateDialog.locator(".v2-a4-dropzone").evaluate((dropzone) => {
+          const bounds = dropzone.getBoundingClientRect();
+          return Math.abs(bounds.width / bounds.height - 210 / 297) < 0.01;
+        }),
+        true,
+        "the resume uploader should retain v2's A4 page proportions",
+      );
       const templateNameInput = templateDialog.getByLabel("Template name");
       await templateNameInput.click();
       await page.keyboard.press("ControlOrMeta+A");
@@ -1032,14 +1040,25 @@ test(
         });
       await templateDialog.getByRole("alert").waitFor();
       assert.match(await templateDialog.getByRole("alert").innerText(), /pdf/i);
-      await templateDialog
-        .getByLabel("Upload resume for ATS template")
-        .setInputFiles({
-          name: "e2e-resume.pdf",
-          mimeType: "application/pdf",
-          buffer: resumePdf,
-        });
-      await templateDialog.getByText(/Resume uploaded successfully/).waitFor();
+      const resumeDrop = await page.evaluateHandle(
+        ({ encoded }) => {
+          const bytes = Uint8Array.from(atob(encoded), (character) =>
+            character.charCodeAt(0),
+          );
+          const transfer = new DataTransfer();
+          transfer.items.add(
+            new File([bytes], "e2e-resume.pdf", {
+              type: "application/pdf",
+            }),
+          );
+          return transfer;
+        },
+        { encoded: resumePdf.toString("base64") },
+      );
+      await templateDialog.locator(".v2-a4-dropzone").dispatchEvent("drop", {
+        dataTransfer: resumeDrop,
+      });
+      await templateDialog.getByText(/Resume Uploaded Successfully/).waitFor();
       await templateDialog.getByRole("button", { name: /Next/ }).click();
       await templateDialog.getByText("Edit your cloned resume").waitFor();
       assert.equal(

@@ -6047,6 +6047,36 @@ function Resume({ state, reload, mode = "resume" }) {
       ).join(", "),
       newSection: "",
     });
+  const loadTemplateResumeFile = async (file) => {
+    if (!file) return;
+    setTemplateDialog((current) => ({
+      ...current,
+      extractingFile: true,
+      uploadError: "",
+      uploadedFileName: file.name,
+      originalResume: "",
+      editedResume: "",
+    }));
+    try {
+      const content = await extractResumeFileText(file);
+      setTemplateDialog((current) => ({
+        ...current,
+        extractingFile: false,
+        uploadError: "",
+        uploadedFileName: file.name,
+        originalResume: content,
+        editedResume: content,
+      }));
+    } catch (error) {
+      setTemplateDialog((current) => ({
+        ...current,
+        extractingFile: false,
+        uploadError: error.message,
+        originalResume: "",
+        editedResume: "",
+      }));
+    }
+  };
   const saveTemplate = async () => {
     const payload = {
       name: templateDialog.name,
@@ -7493,68 +7523,69 @@ function Resume({ state, reload, mode = "resume" }) {
                     }
                   />
                 </label>
-                <label className="v2-template-dropzone">
-                  <Upload size={30} />
-                  <b>
-                    {templateDialog.uploadedFileName || "Choose a resume file"}
-                  </b>
-                  <span>
-                    PDF, HTML, or text · processed only on this device
-                  </span>
-                  <input
-                    name="ats-template-resume-file"
-                    aria-label="Upload resume for ATS template"
-                    type="file"
-                    accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
-                    onChange={async (event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      setTemplateDialog((current) => ({
-                        ...current,
-                        extractingFile: true,
-                        uploadError: "",
-                        uploadedFileName: file.name,
-                        originalResume: "",
-                        editedResume: "",
-                      }));
-                      try {
-                        const content = await extractResumeFileText(file);
-                        setTemplateDialog((current) => ({
-                          ...current,
-                          extractingFile: false,
-                          uploadError: "",
-                          uploadedFileName: file.name,
-                          originalResume: content,
-                          editedResume: content,
-                        }));
-                      } catch (error) {
-                        setTemplateDialog((current) => ({
-                          ...current,
-                          extractingFile: false,
-                          uploadError: error.message,
-                          originalResume: "",
-                          editedResume: "",
-                        }));
-                      } finally {
-                        event.target.value = "";
+                {!templateDialog.originalResume ? (
+                  <label
+                    className="v2-template-dropzone v2-a4-dropzone"
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      if (!templateDialog.extractingFile) {
+                        loadTemplateResumeFile(event.dataTransfer.files?.[0]);
                       }
                     }}
-                  />
-                </label>
-                {templateDialog.extractingFile && (
-                  <div className="v2-template-upload-progress" role="status">
-                    <RefreshCcw size={18} /> Extracting resume text locally…
+                  >
+                    <span className="v2-a4-sheet" aria-hidden="true">
+                      <i className="v2-a4-header" />
+                      <i className="v2-a4-line wide" />
+                      <i className="v2-a4-line" />
+                      <i className="v2-a4-line" />
+                      <i className="v2-a4-line" />
+                      <i className="v2-a4-subheader" />
+                      <i className="v2-a4-line wide" />
+                      <i className="v2-a4-line" />
+                      <i className="v2-a4-line" />
+                    </span>
+                    <span className="v2-a4-overlay">
+                      {templateDialog.extractingFile ? (
+                        <>
+                          <b>Analyzing your resume locally…</b>
+                          <small>This may take a moment</small>
+                        </>
+                      ) : (
+                        <>
+                          Click or drag and drop your current resume.
+                          <small>
+                            PDF, HTML, or text · processed only on this device
+                          </small>
+                        </>
+                      )}
+                    </span>
+                    <input
+                      name="ats-template-resume-file"
+                      aria-label="Upload resume for ATS template"
+                      type="file"
+                      disabled={templateDialog.extractingFile}
+                      accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        await loadTemplateResumeFile(file);
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="v2-a4-upload-success" role="status">
+                    <CheckCircle2 size={48} />
+                    <h4>Resume Uploaded Successfully!</h4>
+                    <p>File: {templateDialog.uploadedFileName}</p>
+                    <p>
+                      Your resume has been converted and is ready for editing.
+                    </p>
                   </div>
                 )}
                 {templateDialog.uploadError && (
                   <div className="v2-submit-safety-note" role="alert">
                     {templateDialog.uploadError}
-                  </div>
-                )}
-                {templateDialog.originalResume && (
-                  <div className="v2-template-upload-success" role="status">
-                    <CheckCircle2 size={18} /> Resume uploaded successfully and
-                    ready to edit.
                   </div>
                 )}
               </div>
