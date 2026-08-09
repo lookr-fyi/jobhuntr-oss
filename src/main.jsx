@@ -7460,7 +7460,9 @@ function Resume({ state, reload, mode = "resume" }) {
           className="v2-template-modal"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="template-dialog-title"
+          aria-label={
+            templateDialog.id ? "Edit Template" : "Create New Template"
+          }
           onKeyDown={(event) => {
             if (event.key === "Escape") setTemplateDialog(null);
             containDialogFocus(event);
@@ -7474,21 +7476,19 @@ function Resume({ state, reload, mode = "resume" }) {
           />
           <div className="v2-template-modal-content">
             <div className="v2-template-wizard-head">
+              <button
+                ref={templateDialogCloseRef}
+                className="v2-template-wizard-back"
+                aria-label="Close template editor"
+                onClick={() => setTemplateDialog(null)}
+              >
+                <ChevronLeft size={20} />
+              </button>
               <div>
-                <span>ATS TEMPLATE WIZARD</span>
-                <h3 id="template-dialog-title">
-                  {templateDialog.id ? "Edit Template" : "Create New Template"}
-                </h3>
+                <h3>{templateDialog.name || "New ATS Template"}</h3>
               </div>
               <div className="v2-template-wizard-meta">
                 <small>Step {templateDialog.step} of 5</small>
-                <button
-                  className="v2-run-delete"
-                  aria-label="Close template editor"
-                  onClick={() => setTemplateDialog(null)}
-                >
-                  <X size={17} />
-                </button>
               </div>
             </div>
             <ol
@@ -7891,7 +7891,6 @@ function Resume({ state, reload, mode = "resume" }) {
             )}
             <div className="v2-template-modal-actions">
               <button
-                ref={templateDialogCloseRef}
                 className="secondary"
                 onClick={() =>
                   templateDialog.step === 1

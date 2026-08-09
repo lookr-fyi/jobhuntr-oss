@@ -1008,6 +1008,29 @@ test(
         },
         "the ATS wizard should replace the route content like v2 instead of floating as a desktop card",
       );
+      await templateDialog
+        .getByRole("heading", { name: /New ATS Template -/ })
+        .waitFor();
+      assert.equal(
+        await templateDialog
+          .getByLabel("Close template editor")
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "the full-route wizard should focus v2's back control on entry",
+      );
+      assert.equal(
+        await templateDialog.evaluate((dialog) => {
+          const progress = dialog
+            .querySelector(".v2-template-progress")
+            .getBoundingClientRect();
+          const footer = dialog
+            .querySelector(".v2-template-modal-actions")
+            .getBoundingClientRect();
+          return progress.top >= footer.top && progress.bottom <= footer.bottom;
+        }),
+        true,
+        "v2's progress indicator should live inside the desktop navigation footer",
+      );
       await assertNamedFormControls(page, "ATS Resume template wizard");
       assert.equal(
         await templateDialog
@@ -1037,6 +1060,14 @@ test(
         true,
         "the resume uploader should retain v2's A4 page proportions",
       );
+      assert.equal(
+        Math.round(
+          (await templateDialog.locator(".v2-a4-dropzone").boundingBox())
+            .height,
+        ),
+        700,
+        "the desktop A4 uploader should retain v2's 70vh document scale",
+      );
       const templateNameInput = templateDialog.getByLabel("Template name");
       await templateNameInput.click();
       await page.keyboard.press("ControlOrMeta+A");
@@ -1049,6 +1080,9 @@ test(
         "typing in the ATS wizard must not move focus to another control after state updates",
       );
       assert.equal(await templateNameInput.inputValue(), "E2E Leadership");
+      await templateDialog
+        .getByRole("heading", { name: "E2E Leadership", exact: true })
+        .waitFor();
       const pdfBuilder = await page.context().newPage();
       await pdfBuilder.setContent(
         "<html><body><h1>Product Engineer</h1><p>React, TypeScript, leadership, and 40% performance gains across customer-facing products.</p></body></html>",

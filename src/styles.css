@@ -9528,9 +9528,33 @@ main > header.integrated-page-header {
 }
 .v2-template-wizard-head {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: 16px;
+}
+.v2-template-wizard-head > div:first-of-type {
+  min-width: 0;
+  flex: 1;
+}
+.v2-template-wizard-head h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-template-wizard-back {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  place-items: center;
+  padding: 0;
+  color: #334155;
+  border: 0;
+  background: transparent;
+}
+.v2-template-wizard-back:hover {
+  color: #1d4ed8;
+  border: 0;
+  background: #eff6ff;
 }
 .v2-template-wizard-head > div > span {
   color: #2563eb;
@@ -10943,9 +10967,13 @@ main > header.integrated-page-header {
     border-bottom: 1px solid #e2e8f0;
   }
   .v2-template-modal-content > .v2-template-progress {
-    flex: none;
+    position: absolute;
+    z-index: 3;
+    bottom: 10px;
+    left: 50%;
     width: min(620px, calc(100% - 48px));
-    margin: 16px auto;
+    margin: 0;
+    transform: translateX(-50%);
   }
   .v2-template-modal-content > .v2-template-step {
     box-sizing: border-box;
@@ -10956,12 +10984,26 @@ main > header.integrated-page-header {
     margin-bottom: 16px;
     overflow: auto;
   }
+  .v2-template-dropzone.v2-a4-dropzone {
+    height: 70vh;
+  }
   .v2-template-modal-actions {
+    min-height: 72px;
     flex: none;
+    align-items: center;
+    justify-content: space-between;
     margin: 0;
     padding: 16px 24px;
     border-top: 1px solid #e2e8f0;
     background: #fff;
+  }
+}
+@media (min-width: 681px) and (max-width: 1099px) {
+  .v2-template-modal-content > .v2-template-progress {
+    position: static;
+    width: min(620px, calc(100% - 32px));
+    margin: 12px auto;
+    transform: none;
   }
 }
 @media (max-width: 680px) {
