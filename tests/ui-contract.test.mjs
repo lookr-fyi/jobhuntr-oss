@@ -680,6 +680,27 @@ test("task completion toggles serialize independently per task", async () => {
   );
 });
 
+test("clipboard actions fail closed when desktop permission is unavailable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /const writeClipboardText = async \(value\) => \{/);
+  assert.match(source, /if \(!navigator\.clipboard\?\.writeText\)\s*throw/);
+  assert.match(source, /document\.execCommand\("copy"\)/);
+  assert.match(source, /catch \{\s*return false;\s*\}/);
+  assert.equal(
+    (source.match(/navigator\.clipboard\.writeText/g) || []).length,
+    1,
+    "all clipboard writes must pass through the contained helper",
+  );
+  assert.ok(
+    (source.match(/await writeClipboardText\(/g) || []).length >= 3,
+    "tracker and coach copy actions must use the safe helper",
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

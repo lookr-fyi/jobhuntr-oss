@@ -297,6 +297,29 @@ const safeHttpUrl = (value) => {
     return "";
   }
 };
+const writeClipboardText = async (value) => {
+  try {
+    if (!navigator.clipboard?.writeText)
+      throw new Error("Clipboard unavailable");
+    await navigator.clipboard.writeText(String(value));
+    return true;
+  } catch {
+    try {
+      const input = document.createElement("textarea");
+      input.value = String(value);
+      input.setAttribute("readonly", "");
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
+      const copied = document.execCommand("copy");
+      input.remove();
+      return copied;
+    } catch {
+      return false;
+    }
+  }
+};
 const isUsableResumeText = (value) => {
   const text = String(value || "").trim();
   return (
@@ -2363,18 +2386,7 @@ function Tracker({ state, reload, setTab }) {
     return `${window.location.origin}${window.location.pathname}#/tracker${params.size ? `?${params}` : ""}`;
   };
   const copyTrackerUrl = async (url, feedback) => {
-    try {
-      await navigator.clipboard.writeText(url);
-    } catch {
-      const input = document.createElement("textarea");
-      input.value = url;
-      input.style.position = "fixed";
-      input.style.opacity = "0";
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      input.remove();
-    }
+    if (!(await writeClipboardText(url))) return;
     setCopiedTrackerUrl(feedback);
     window.setTimeout(
       () =>
@@ -9362,14 +9374,14 @@ function Coach({ state, reload }) {
       window.removeEventListener("hashchange", followConversationLink);
   }, [conversations]);
   const copyCoachText = async (content, index) => {
-    await navigator.clipboard.writeText(content);
+    if (!(await writeClipboardText(content))) return;
     setCopiedMessage(index);
     window.setTimeout(() => setCopiedMessage(null), 1800);
   };
   const shareConversation = async () => {
     if (!activeConversation?.id) return;
     const url = `${window.location.origin}${window.location.pathname}#/coach?conversation=${encodeURIComponent(activeConversation.id)}`;
-    await navigator.clipboard.writeText(url);
+    if (!(await writeClipboardText(url))) return;
     setCopiedMessage("share");
     window.setTimeout(() => setCopiedMessage(null), 1800);
   };
