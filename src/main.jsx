@@ -1857,7 +1857,10 @@ function Tracker({ state, reload, setTab }) {
   });
   const [selected, setSelected] = useState(trackerParams.get("job") || null);
   const [query, setQuery] = useState("");
-  const [columnVisibleCounts, setColumnVisibleCounts] = useState({});
+  const [columnPagination, setColumnPagination] = useState({
+    query: "",
+    counts: {},
+  });
   const [visibleStages, setVisibleStages] = useState(() => {
     const linkedStages = trackerParams
       .get("statuses")
@@ -2220,7 +2223,14 @@ function Tracker({ state, reload, setTab }) {
           <input
             aria-label="Search tracked jobs"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              const nextQuery = e.target.value;
+              setQuery(nextQuery);
+              setColumnPagination({
+                query: nextQuery.trim().toLowerCase(),
+                counts: {},
+              });
+            }}
             placeholder="Search jobs..."
           />
         </div>
@@ -2323,8 +2333,11 @@ function Tracker({ state, reload, setTab }) {
               const stageJobs = filtered.filter(
                 (item) => item.status === stage,
               );
-              const paginationKey = `${stage}:${query.trim().toLowerCase()}`;
-              const visibleCount = columnVisibleCounts[paginationKey] || 20;
+              const normalizedQuery = query.trim().toLowerCase();
+              const visibleCount =
+                columnPagination.query === normalizedQuery
+                  ? columnPagination.counts[stage] || 20
+                  : 20;
               const visibleJobs = stageJobs.slice(0, visibleCount);
               const remainingCount = stageJobs.length - visibleJobs.length;
               return (
@@ -2342,6 +2355,27 @@ function Tracker({ state, reload, setTab }) {
                   </div>
                   <div className="status-column-content">
                     <div className="jobs-list">
+                      {stageJobs.length === 0 && (
+                        <div className="empty-column">
+                          <p>
+                            {query.trim() ? "No matches" : "No applications"}
+                          </p>
+                          {MANUAL_TRACKER_STAGES.has(stage) && (
+                            <button
+                              className="v2-tracker-add-job"
+                              onClick={() => {
+                                setForm((current) => ({
+                                  ...current,
+                                  status: stage,
+                                }));
+                                setShowForm(true);
+                              }}
+                            >
+                              <Plus size={14} /> Add Job
+                            </button>
+                          )}
+                        </div>
+                      )}
                       {visibleJobs.map((item) => {
                         const appliedAt = (item.statusHistory || []).findLast(
                           (event) => event.status === "applied",
@@ -2468,29 +2502,35 @@ function Tracker({ state, reload, setTab }) {
                         <button
                           className="load-more-button"
                           onClick={() =>
-                            setColumnVisibleCounts((current) => ({
-                              ...current,
-                              [paginationKey]: visibleCount + 20,
+                            setColumnPagination((current) => ({
+                              query: normalizedQuery,
+                              counts: {
+                                ...(current.query === normalizedQuery
+                                  ? current.counts
+                                  : {}),
+                                [stage]: visibleCount + 20,
+                              },
                             }))
                           }
                         >
                           Load more ({remainingCount})
                         </button>
                       )}
-                      {MANUAL_TRACKER_STAGES.has(stage) && (
-                        <button
-                          className="v2-tracker-add-job"
-                          onClick={() => {
-                            setForm((current) => ({
-                              ...current,
-                              status: stage,
-                            }));
-                            setShowForm(true);
-                          }}
-                        >
-                          <Plus size={14} /> Add Job
-                        </button>
-                      )}
+                      {stageJobs.length > 0 &&
+                        MANUAL_TRACKER_STAGES.has(stage) && (
+                          <button
+                            className="v2-tracker-add-job"
+                            onClick={() => {
+                              setForm((current) => ({
+                                ...current,
+                                status: stage,
+                              }));
+                              setShowForm(true);
+                            }}
+                          >
+                            <Plus size={14} /> Add Job
+                          </button>
+                        )}
                     </div>
                   </div>
                 </div>

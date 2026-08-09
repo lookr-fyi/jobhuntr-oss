@@ -1330,6 +1330,32 @@ test(
         "Load more should reveal the remaining jobs in the same column",
       );
       await removedLoadMore.waitFor({ state: "hidden" });
+      const trackerSearch = page.getByLabel("Search tracked jobs");
+      await trackerSearch.fill("no-such-job-e2e-9f3a");
+      await page.getByText("No matches", { exact: true }).first().waitFor();
+      assert.equal(
+        await page.getByText("No matches", { exact: true }).count(),
+        9,
+        "every visible v2 tracker column should explain an empty search",
+      );
+      assert.equal(
+        await queuedColumn.getByRole("button", { name: "Add Job" }).count(),
+        0,
+        "empty automated columns should not offer manual creation",
+      );
+      assert.equal(
+        await appliedColumn.getByRole("button", { name: "Add Job" }).count(),
+        1,
+        "empty manual columns should keep Add Job inside the empty state",
+      );
+      await trackerSearch.fill("");
+      await removedColumn.locator(".job-card").first().waitFor();
+      assert.equal(
+        await removedColumn.locator(".job-card").count(),
+        20,
+        "changing the search should reset v2 column pagination",
+      );
+      await removedLoadMore.waitFor();
       const firstTrackerColumn = page.locator(".status-column").first();
       assert.equal(
         await firstTrackerColumn.evaluate(
