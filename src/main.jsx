@@ -6121,6 +6121,13 @@ function SubmissionCard({ submission: s, state, reload }) {
     () => new Set(Object.keys(initialAnswerDraft)),
   );
   const answerRevisionRef = useRef({});
+  const [checklistAnswers, setChecklistAnswers] = useState(() =>
+    Object.fromEntries((s.checklist || []).map((item) => [item.id, item.done])),
+  );
+  const [pendingChecklistIds, setPendingChecklistIds] = useState(
+    () => new Set(),
+  );
+  const checklistRevisionRef = useRef({});
   const [answerDraftRestored, setAnswerDraftRestored] = useState(
     Boolean(Object.keys(initialAnswerDraft).length),
   );
@@ -6168,6 +6175,9 @@ function SubmissionCard({ submission: s, state, reload }) {
     isApplicationQuestionReady,
   ).length;
   const questionsReady = reviewedQuestions.every(isApplicationQuestionReady);
+  const checklistReady = (s.checklist || []).every((item) =>
+    pendingChecklistIds.has(item.id) ? checklistAnswers[item.id] : item.done,
+  );
   const resumeLabel = attachedResume?.name
     ? attachedResume.name
     : s.resumeId === "profile-resume"
@@ -6189,9 +6199,26 @@ function SubmissionCard({ submission: s, state, reload }) {
     return (await update.catch(() => false)) === true;
   };
   const updateChecklist = async (id, done) => {
-    await updatePacket({
+    const revision = (checklistRevisionRef.current[id] || 0) + 1;
+    checklistRevisionRef.current[id] = revision;
+    setChecklistAnswers((current) => ({ ...current, [id]: done }));
+    setPendingChecklistIds((current) => new Set(current).add(id));
+    const saved = await updatePacket({
       checklistItem: { id, done },
       status: "ready",
+    });
+    if (checklistRevisionRef.current[id] !== revision) return;
+    if (!saved) {
+      const persisted = (s.checklist || []).find((item) => item.id === id);
+      setChecklistAnswers((current) => ({
+        ...current,
+        [id]: Boolean(persisted?.done),
+      }));
+    }
+    setPendingChecklistIds((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
     });
   };
   const updateQuestion = async (id, answer, trackDraft = false) => {
@@ -6234,7 +6261,8 @@ function SubmissionCard({ submission: s, state, reload }) {
   const recordExternalSubmission = async () => {
     if (
       recordingSubmissionRef.current ||
-      !s.checklist.every((item) => item.done) ||
+      !checklistReady ||
+      pendingChecklistIds.size > 0 ||
       !externalSubmissionVerified ||
       !selectedResumeReady ||
       !questionsReady
@@ -6499,7 +6527,12 @@ function SubmissionCard({ submission: s, state, reload }) {
             <input
               type="checkbox"
               name={`checklist-${s.id}-${item.id}`}
-              checked={item.done}
+              checked={
+                pendingChecklistIds.has(item.id)
+                  ? checklistAnswers[item.id]
+                  : item.done
+              }
+              disabled={pendingChecklistIds.has(item.id)}
               onChange={(e) => updateChecklist(item.id, e.target.checked)}
             />
             {item.text}
@@ -6595,7 +6628,8 @@ function SubmissionCard({ submission: s, state, reload }) {
           className="success"
           disabled={
             recordingSubmission ||
-            !s.checklist.every((x) => x.done) ||
+            !checklistReady ||
+            pendingChecklistIds.size > 0 ||
             !externalSubmissionVerified ||
             !selectedResumeReady ||
             !questionsReady

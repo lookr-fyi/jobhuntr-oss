@@ -1548,6 +1548,20 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   );
   assert.match(card, /next\.delete\(id\)/);
   assert.match(card, /Unsaved application answers restored for review\./);
+  assert.match(card, /const \[checklistAnswers, setChecklistAnswers\]/);
+  assert.match(card, /const \[pendingChecklistIds, setPendingChecklistIds\]/);
+  assert.match(card, /const checklistRevisionRef = useRef\(\{\}\)/);
+  assert.match(
+    card,
+    /pendingChecklistIds\.has\(item\.id\)[\s\S]*?\? checklistAnswers\[item\.id\][\s\S]*?: item\.done/,
+  );
+  assert.match(
+    card,
+    /setChecklistAnswers\(\(current\) => \(\{ \.\.\.current, \[id\]: done \}\)\)/,
+  );
+  assert.match(card, /if \(!saved\) \{[\s\S]*?Boolean\(persisted\?\.done\)/);
+  assert.match(card, /disabled=\{pendingChecklistIds\.has\(item\.id\)\}/);
+  assert.match(card, /pendingChecklistIds\.size > 0/);
 });
 
 test("FAQ deletion persists before mutating the form and cannot bless newer edits", async () => {

@@ -2261,6 +2261,34 @@ test(
         true,
         "typing, blurring, and immediately verifying must persist the final verified state in request order",
       );
+      await page.route("**/api/submissions/*", async (route) => {
+        if (route.request().method() === "PATCH")
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        await route.continue();
+      });
+      const delayedChecklist = page.getByLabel("Review resume alignment");
+      if (!(await delayedChecklist.isChecked())) {
+        const delayedChecklistResponse = page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        );
+        await delayedChecklist.click();
+        assert.equal(
+          await delayedChecklist.isChecked(),
+          true,
+          "Easy Apply checklist progress should update immediately",
+        );
+        assert.equal(
+          await delayedChecklist.isDisabled(),
+          true,
+          "a pending checklist write should reject duplicate clicks",
+        );
+        await delayedChecklistResponse;
+        await delayedChecklist.waitFor({ state: "visible" });
+      }
+      await page.unroute("**/api/submissions/*");
       for (const item of [
         "Review resume alignment",
         "Review cover letter",
