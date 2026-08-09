@@ -615,6 +615,54 @@ test("Infinite Hunt startup atomically persists its schedule and initial run", a
   assert.equal(persisted.agentRuns[0].id, started.body.run.id);
 });
 
+test("a hung scheduled hunt times out and cannot freeze future cycles", async () => {
+  await mutate((db) => {
+    db.infiniteHunt = {
+      enabled: true,
+      intervalMinutes: 15,
+      startedAt: new Date(Date.now() - 60_000).toISOString(),
+      nextRunAt: new Date(Date.now() - 1000).toISOString(),
+      lastRunAt: null,
+      lastError: "",
+      generation: "hung-schedule-generation",
+      options: {
+        q: "scheduler recovery engineer",
+        minFit: 0,
+        maxResults: 5,
+        workflows: ["indeed"],
+      },
+    };
+  });
+  const hungServer = http.createServer((request) => {
+    request.resume();
+    // Intentionally never respond. JobHuntr must abort this request itself.
+  });
+  await new Promise((resolve) => hungServer.listen(0, "127.0.0.1", resolve));
+  const timedOutRun = runScheduledHunt(
+    `http://127.0.0.1:${hungServer.address().port}`,
+    25,
+  );
+  await timedOutRun;
+  await new Promise((resolve, reject) => {
+    hungServer.close((error) => (error ? reject(error) : resolve()));
+    hungServer.closeAllConnections();
+  });
+  let state = (await req("/api/state")).body;
+  assert.match(state.infiniteHunt.lastError, /abort|timeout/i);
+  assert.ok(Date.parse(state.infiniteHunt.nextRunAt) > Date.now());
+
+  await mutate((db) => {
+    db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
+  });
+  await runScheduledHunt(base, 1000);
+  state = (await req("/api/state")).body;
+  assert.ok(
+    state.infiniteHunt.lastRunAt,
+    "the scheduler lock must be released so the next due cycle can run",
+  );
+  assert.equal(state.infiniteHunt.lastError, "");
+});
+
 test("agent run history can be permanently deleted without deleting saved jobs", async () => {
   await mutate((db) => {
     db.agentRuns.unshift({

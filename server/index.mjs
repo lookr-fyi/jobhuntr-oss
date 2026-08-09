@@ -2720,6 +2720,7 @@ export const claimScheduledHunt = async (observedSchedule) => {
 };
 export const runScheduledHunt = async (
   baseUrl = `http://127.0.0.1:${PORT}`,
+  requestTimeoutMs = 120_000,
 ) => {
   if (schedulerBusy) return;
   schedulerBusy = true;
@@ -2739,6 +2740,9 @@ export const runScheduledHunt = async (
     const response = await fetch(`${baseUrl}/api/agent-runs/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(
+        Math.max(1, Math.min(Number(requestTimeoutMs) || 120_000, 300_000)),
+      ),
       body: JSON.stringify({
         ...claim.options,
         origin: "infinite",
