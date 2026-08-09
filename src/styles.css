@@ -5942,6 +5942,7 @@ select:focus {
   justify-content: space-between;
   margin-bottom: 24px;
 }
+.v2-page-intro h1,
 .v2-page-intro h2 {
   font-size: 24px;
   margin-bottom: 5px;

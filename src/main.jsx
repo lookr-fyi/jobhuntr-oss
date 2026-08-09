@@ -10755,7 +10755,7 @@ function RunsPage({ state, setTab, reload }) {
     <section className="v2-runs-page">
       <div className="v2-page-intro">
         <div>
-          <h2>Agent Runs</h2>
+          <h1>Agent Runs</h1>
           <p>Manage and monitor your job hunting agent runs</p>
         </div>
         <div className="inline">
@@ -10775,6 +10775,7 @@ function RunsPage({ state, setTab, reload }) {
         <div className="searchbox">
           <Search size={16} />
           <input
+            name="agent-run-search"
             aria-label="Search runs"
             value={query}
             onChange={(event) => {
@@ -10816,6 +10817,7 @@ function RunsPage({ state, setTab, reload }) {
           <label className="check">
             <input
               type="checkbox"
+              name="action-required-only"
               checked={showActionRequiredOnly}
               onChange={(event) => {
                 setShowActionRequiredOnly(event.target.checked);
@@ -10855,6 +10857,7 @@ function RunsPage({ state, setTab, reload }) {
       <div className="card v2-runs-table">
         <div className="v2-table-head">
           <input
+            name="select-visible-agent-runs"
             aria-label="Select all visible runs"
             type="checkbox"
             checked={
@@ -10872,6 +10875,7 @@ function RunsPage({ state, setTab, reload }) {
         {visibleRuns.map((run) => (
           <div className="v2-run-row" key={run.id}>
             <input
+              name={`select-agent-run-${run.id}`}
               aria-label={`Select ${run.search?.q || "run"}`}
               type="checkbox"
               checked={selectedIds.has(run.id)}
@@ -11152,6 +11156,7 @@ function RunsPage({ state, setTab, reload }) {
             <label>
               Run Name
               <input
+                name="new-agent-run-name"
                 value={newRunName}
                 onChange={(event) => setNewRunName(event.target.value)}
                 placeholder="Software Engineer"
@@ -11160,6 +11165,7 @@ function RunsPage({ state, setTab, reload }) {
             <label className="v2-check-row v2-new-run-option">
               <input
                 type="checkbox"
+                name="new-agent-run-optimize-resume"
                 checked={newRunOptimize}
                 onChange={(event) => setNewRunOptimize(event.target.checked)}
               />

@@ -521,6 +521,7 @@ test(
         name: "Create New Agent Run",
       });
       await newRunDialog.waitFor();
+      await assertNamedFormControls(page, "Agent Runs and new-run dialog");
       assert.equal(
         await newRunDialog
           .getByRole("button", { name: "Close", exact: true })
@@ -570,6 +571,7 @@ test(
       );
       await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
+      await assertNamedFormControls(page, "Agent Runs");
       await assertAccessible(page, "Agent Runs");
       const huntStatus = page.getByRole("button", {
         name: "Open Infinite Hunting status",
