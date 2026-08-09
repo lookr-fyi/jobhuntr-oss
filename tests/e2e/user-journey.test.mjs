@@ -2299,6 +2299,7 @@ test(
       assert.equal(new URL(page.url()).hash, "#/settings");
       await page.reload();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
+      await assertNamedFormControls(page, "User Center profile");
       await page.getByLabel("First name").fill("E2E");
       await page.getByLabel("Last name").fill("Hunter");
       await page.getByLabel("Nickname (for job cards)").fill("E2E Builder");
@@ -2351,6 +2352,7 @@ test(
       await page.getByRole("menuitem", { name: "Profile & usage" }).click();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
       await page.getByRole("tab", { name: "About Me" }).click();
+      await assertNamedFormControls(page, "User Center About Me");
       assert.equal(new URL(page.url()).hash, "#/settings?tab=about");
       await page
         .getByLabel("Long-form career context")
@@ -2431,6 +2433,7 @@ test(
         "deleted FAQ questions should remain deleted after reload",
       );
       await page.getByRole("tab", { name: "Settings" }).click();
+      await assertNamedFormControls(page, "User Center settings");
       assert.equal(new URL(page.url()).hash, "#/settings?tab=settings");
       await page.getByLabel("Weekly application goal").waitFor();
       await page.getByLabel("ATS template application threshold").fill("85");
@@ -2447,6 +2450,7 @@ test(
       await assertAccessible(page, "User Center");
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
+      await assertNamedFormControls(page, "Settings and data");
       await page.getByLabel("Import JobHuntr JSON backup").setInputFiles({
         name: "e2e-backup.json",
         mimeType: "application/json",

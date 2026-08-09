@@ -11497,6 +11497,7 @@ function SettingsPage({ state, reload, setTab }) {
                 <label key={key}>
                   {label}
                   <input
+                    name={`profile-${key}`}
                     value={form[key] || ""}
                     placeholder={placeholder}
                     onChange={(event) =>
@@ -11517,6 +11518,7 @@ function SettingsPage({ state, reload, setTab }) {
                 <label key={key}>
                   {key === "headline" ? "Professional headline" : "Location"}
                   <input
+                    name={`profile-${key}`}
                     value={form[key] || ""}
                     onChange={(event) =>
                       setForm({ ...form, [key]: event.target.value })
@@ -11548,6 +11550,7 @@ function SettingsPage({ state, reload, setTab }) {
               <b>{form.resumeFileName || "Replace resume from a file"}</b>
               <span>PDF, HTML, or TXT · processed only on this device</span>
               <input
+                name="profile-resume-file"
                 aria-label="Replace base resume"
                 type="file"
                 accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
@@ -11594,6 +11597,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Resume text
               <textarea
+                name="profile-resume-text"
                 aria-label="Base resume text"
                 value={form.resumeText}
                 onChange={(event) => {
@@ -11691,9 +11695,9 @@ function SettingsPage({ state, reload, setTab }) {
                       </b>
                       <small>
                         {session.questions?.length || 0} questions · Updated{" "}
-                        {new Date(
+                        {formatCalendarDate(
                           session.updatedAt || session.createdAt,
-                        ).toLocaleDateString()}
+                        )}
                       </small>
                     </span>
                     <ChevronRight size={16} />
@@ -11750,6 +11754,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Long-form career context
               <textarea
+                name="profile-career-context"
                 value={form.additionalInfo}
                 onChange={(event) =>
                   setForm({ ...form, additionalInfo: event.target.value })
@@ -11809,6 +11814,7 @@ function SettingsPage({ state, reload, setTab }) {
                     <label>
                       <span>{faq.question}</span>
                       <textarea
+                        name={`profile-faq-${faq.id || index}`}
                         aria-label={faq.question}
                         rows={2}
                         value={faq.answer}
@@ -11863,6 +11869,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Target roles
               <input
+                name="settings-target-roles"
                 value={form.targetRoles}
                 onChange={(event) =>
                   setForm({ ...form, targetRoles: event.target.value })
@@ -11872,6 +11879,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Skills
               <input
+                name="settings-skills"
                 value={form.skills}
                 onChange={(event) =>
                   setForm({ ...form, skills: event.target.value })
@@ -11881,6 +11889,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Preferred locations
               <input
+                name="settings-locations"
                 value={form.locations || ""}
                 onChange={(e) =>
                   setForm({ ...form, locations: e.target.value })
@@ -11890,6 +11899,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Minimum salary
               <input
+                name="settings-minimum-salary"
                 type="number"
                 value={form.minSalary || 0}
                 onChange={(e) =>
@@ -11900,6 +11910,7 @@ function SettingsPage({ state, reload, setTab }) {
             <label>
               Weekly application goal
               <input
+                name="settings-weekly-application-goal"
                 type="number"
                 min="1"
                 max="100"
@@ -11915,6 +11926,7 @@ function SettingsPage({ state, reload, setTab }) {
                 <strong>{form.atsThreshold}%</strong>
               </span>
               <input
+                name="settings-ats-threshold"
                 type="range"
                 min="50"
                 max="100"
@@ -11935,6 +11947,7 @@ function SettingsPage({ state, reload, setTab }) {
             </label>
             <label className="check">
               <input
+                name="settings-remote-roles"
                 type="checkbox"
                 checked={form.remote}
                 onChange={(e) => setForm({ ...form, remote: e.target.checked })}
@@ -12137,6 +12150,7 @@ function Privacy({ state }) {
               <small>JobHuntr export · up to 5,000 jobs or 50 MB</small>
             </span>
             <input
+              name="restore-workspace-file"
               type="file"
               accept=".json,application/json"
               aria-label="Import JobHuntr JSON backup"
@@ -12182,6 +12196,7 @@ function Privacy({ state }) {
               <small>Requires company and title columns</small>
             </span>
             <input
+              name="import-jobs-csv"
               type="file"
               accept=".csv,text/csv"
               aria-label="Import jobs CSV"
