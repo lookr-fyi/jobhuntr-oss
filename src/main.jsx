@@ -6063,7 +6063,9 @@ function QuestionVerification({
         checked={Boolean(question.verified)}
         disabled={pending || !valid}
         aria-busy={pending}
-        onPointerDown={() => onIntent?.(question.id)}
+        onPointerDown={(event) => {
+          if (event.button === 0) onIntent?.(question.id);
+        }}
         onChange={(event) => onChange(question.id, event.target.checked)}
       />
       <span>
@@ -6135,6 +6137,13 @@ function SubmissionCard({ submission: s, state, reload }) {
   );
   const verificationRevisionRef = useRef({});
   const verificationIntentIdsRef = useRef(new Set());
+  const markVerificationIntent = (id) => {
+    verificationIntentIdsRef.current.add(id);
+    // Pointer presses can be cancelled or released away from the checkbox,
+    // which means onChange never runs. Keep this blur guard gesture-scoped so
+    // a cancelled click cannot suppress a later answer save indefinitely.
+    window.setTimeout(() => verificationIntentIdsRef.current.delete(id), 0);
+  };
   const [checklistAnswers, setChecklistAnswers] = useState(() =>
     Object.fromEntries((s.checklist || []).map((item) => [item.id, item.done])),
   );
@@ -6509,7 +6518,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                       ) || question
                     }
                     onChange={verifyQuestion}
-                    onIntent={(id) => verificationIntentIdsRef.current.add(id)}
+                    onIntent={markVerificationIntent}
                     pending={pendingVerificationIds.has(question.id)}
                   />
                 </div>
@@ -6540,7 +6549,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                       ) || question
                     }
                     onChange={verifyQuestion}
-                    onIntent={(id) => verificationIntentIdsRef.current.add(id)}
+                    onIntent={markVerificationIntent}
                     pending={pendingVerificationIds.has(question.id)}
                   />
                 </div>
@@ -6589,7 +6598,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                     ) || question
                   }
                   onChange={verifyQuestion}
-                  onIntent={(id) => verificationIntentIdsRef.current.add(id)}
+                  onIntent={markVerificationIntent}
                   pending={pendingVerificationIds.has(question.id)}
                 />
               </div>

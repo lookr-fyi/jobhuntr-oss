@@ -1584,6 +1584,10 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   );
   assert.match(card, /const verificationRevisionRef = useRef\(\{\}\)/);
   assert.match(card, /const verificationIntentIdsRef = useRef\(new Set\(\)\)/);
+  assert.match(
+    card,
+    /const markVerificationIntent = \(id\) => \{[\s\S]*?window\.setTimeout\(\(\) => verificationIntentIdsRef\.current\.delete\(id\), 0\)/,
+  );
   assert.match(card, /pendingVerification\?\.answerRevision/);
   assert.match(
     card,
@@ -1601,7 +1605,7 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   );
   assert.match(
     source,
-    /onPointerDown=\{\(\) => onIntent\?\.\(question\.id\)\}/,
+    /onPointerDown=\{\(event\) => \{[\s\S]*?if \(event\.button === 0\) onIntent\?\.\(question\.id\)/,
   );
   assert.match(source, /disabled=\{pending \|\| !valid\}/);
   assert.match(source, /aria-busy=\{pending\}/);

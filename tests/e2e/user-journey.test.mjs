@@ -2291,6 +2291,34 @@ test(
         true,
         "typing, blurring, and immediately verifying must persist the final verified state in request order",
       );
+      await editedVerification.dispatchEvent("pointerdown", { button: 2 });
+      await page.waitForTimeout(10);
+      await whyAnswer.fill(
+        "The product mission, customer impact, and role scope match my experience.",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        whyAnswer.press("Tab"),
+      ]);
+      assert.equal(
+        await editedVerification.isChecked(),
+        false,
+        "a cancelled non-primary verification press must not suppress a later answer save",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        editedVerification.click(),
+      ]);
       await page.route("**/api/submissions/*", async (route) => {
         if (route.request().method() === "PATCH")
           await new Promise((resolve) => setTimeout(resolve, 250));
@@ -4697,7 +4725,7 @@ test(
         await page
           .getByLabel("Why are you interested in this role?")
           .inputValue(),
-        "The product mission and customer impact match my experience.",
+        "The product mission, customer impact, and role scope match my experience.",
       );
       const faqPanel = page.locator(".v2-faq-panel");
       assert.equal(
@@ -4719,7 +4747,7 @@ test(
         await page
           .getByLabel("Why are you interested in this role?")
           .inputValue(),
-        "The product mission and customer impact match my experience.",
+        "The product mission, customer impact, and role scope match my experience.",
         "FAQ refresh should restore the persisted answer",
       );
       await faqPanel.locator("button", { hasText: "Delete" }).click();
