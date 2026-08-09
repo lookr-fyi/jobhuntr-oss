@@ -10690,11 +10690,12 @@ function Agent({ state, reload, setTab }) {
   });
   const defaults = {
     q: newRunDraft?.q || state.profile.targetRoles?.[0] || "Software Engineer",
-    location: state.profile.preferences?.locations?.[0] || "",
-    minFit: 60,
-    maxResults: 25,
-    required: "",
-    excluded: "",
+    location:
+      newRunDraft?.location || state.profile.preferences?.locations?.[0] || "",
+    minFit: newRunDraft?.minFit ?? 60,
+    maxResults: newRunDraft?.maxResults ?? 25,
+    required: (newRunDraft?.requiredKeywords || []).join(", "),
+    excluded: (newRunDraft?.excludeKeywords || []).join(", "),
   };
   const [form, setForm] = useState(defaults);
   const [preview, setPreview] = useState(null);
@@ -11913,6 +11914,29 @@ function RunsPage({ state, setTab, reload }) {
               </button>
               <button
                 onClick={() => {
+                  const options = selectedRun.options || {};
+                  localStorage.setItem(
+                    "jobhuntr-new-run-draft",
+                    JSON.stringify({
+                      runName:
+                        selectedRun.runName ||
+                        selectedRun.search?.q ||
+                        "Local hunt",
+                      origin: "manual",
+                      q: selectedRun.search?.q || options.q || "",
+                      location:
+                        selectedRun.search?.location || options.location || "",
+                      minFit: selectedRun.minFit ?? options.minFit ?? 60,
+                      maxResults: options.maxResults ?? 25,
+                      requiredKeywords: options.requiredKeywords || [],
+                      excludeKeywords: options.excludeKeywords || [],
+                      workflows:
+                        selectedRun.workflows || options.workflows || [],
+                      optimizeResume: Boolean(
+                        selectedRun.optimizeResume ?? options.optimizeResume,
+                      ),
+                    }),
+                  );
                   setSelectedRun(null);
                   setTab("agent");
                 }}

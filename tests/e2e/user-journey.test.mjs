@@ -656,10 +656,28 @@ test(
         /#\/runs\?run=/,
         "the v2 Overview action should deep-link directly to the latest run",
       );
-      await latestRunDialog
-        .getByRole("button", { name: "Close", exact: true })
-        .click();
+      await latestRunDialog.getByRole("button", { name: "Run again" }).click();
       await latestRunDialog.waitFor({ state: "hidden" });
+      await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      await page.getByText("Indeed", { exact: true }).last().waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-loop-row strong").allTextContents(),
+        ["Indeed", "LinkedIn Jobs"],
+        "Run again should restore the original workflow order",
+      );
+      assert.equal(
+        await page
+          .getByLabel("Generate an optimized resume for each job")
+          .isChecked(),
+        true,
+        "Run again should restore resume optimization",
+      );
+      await page.getByText("Search preferences").click();
+      assert.equal(
+        await page.getByLabel("Role or keywords").inputValue(),
+        "Product Engineer",
+        "Run again should restore the original search query",
+      );
 
       await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
