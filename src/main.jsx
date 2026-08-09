@@ -707,6 +707,9 @@ function App() {
         : "overview",
   );
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const [mobileNavigation, setMobileNavigation] = useState(
+    () => window.matchMedia("(max-width: 760px)").matches,
+  );
   const navigationRef = useRef(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
@@ -775,9 +778,11 @@ function App() {
   useEffect(() => {
     const mobileNavigation = window.matchMedia("(max-width: 760px)");
     const collapseDesktopNavigation = (event) => {
-      if (!event.matches) return;
-      setSidebarHovered(false);
-      setUserMenuOpen(false);
+      setMobileNavigation(event.matches);
+      if (event.matches) {
+        setSidebarHovered(false);
+        setUserMenuOpen(false);
+      }
     };
     mobileNavigation.addEventListener("change", collapseDesktopNavigation);
     return () =>
@@ -982,8 +987,8 @@ function App() {
             className={tab === "settings" ? "active" : ""}
             title="Profile and settings"
             aria-current={tab === "settings" ? "page" : undefined}
-            aria-haspopup="menu"
-            aria-expanded={userMenuOpen}
+            aria-haspopup={mobileNavigation ? undefined : "menu"}
+            aria-expanded={mobileNavigation ? undefined : userMenuOpen}
           >
             <span className="v2-avatar">
               <User size={15} />

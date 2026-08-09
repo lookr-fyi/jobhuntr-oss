@@ -2989,6 +2989,13 @@ test(
       await assertAccessible(page, "Gigs");
 
       await page.locator('[title="Profile and settings"]').click();
+      assert.equal(
+        await page
+          .locator('[title="Profile and settings"]')
+          .getAttribute("aria-haspopup"),
+        "menu",
+        "the desktop workspace trigger should advertise its real menu",
+      );
       const workspaceMenu = page.getByRole("menu", {
         name: "Local workspace menu",
       });
@@ -3547,6 +3554,13 @@ test(
           );
         }
         if (navigation === "Profile and settings") {
+          assert.equal(
+            await mobile
+              .locator('button[title="Profile and settings"]')
+              .getAttribute("aria-haspopup"),
+            null,
+            "the mobile profile shortcut must not advertise a menu it never opens",
+          );
           const userTabs = mobile.getByRole("tablist", {
             name: "User Center",
           });
