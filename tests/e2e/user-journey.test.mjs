@@ -3409,6 +3409,30 @@ test(
             "ATS resume history should remain fully visible at 390px",
           );
         }
+        if (navigation === "Profile and settings") {
+          const userTabs = mobile.getByRole("tablist", {
+            name: "User Center",
+          });
+          assert.equal(
+            await userTabs.getByRole("tab").count(),
+            4,
+            "mobile User Center should expose every v2 tab",
+          );
+          assert.equal(
+            await userTabs.getByRole("tab").evaluateAll((tabs) =>
+              tabs.every((tab) => {
+                const bounds = tab.getBoundingClientRect();
+                return bounds.left >= 0 && bounds.right <= innerWidth;
+              }),
+            ),
+            true,
+            "every User Center tab, including Settings, must be immediately visible on mobile",
+          );
+          await userTabs.getByRole("tab", { name: "Settings" }).click();
+          await mobile
+            .getByRole("heading", { name: "Career preferences" })
+            .waitFor();
+        }
         if (navigation === "Job Tracker") {
           assert.equal(
             await mobile

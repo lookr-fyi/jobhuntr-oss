@@ -3287,8 +3287,15 @@ section.gigs-page .v2-gigs-intro p {
   }
 }
 @media (max-width: 560px) {
+  .v2-user-tabs {
+    overflow-x: visible;
+  }
   .v2-user-tabs button {
-    padding: 11px 14px;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 11px 3px;
+    font-size: 12px;
+    white-space: nowrap;
   }
   .v2-user-details-grid,
   .v2-user-details-section.professional .v2-user-details-grid,
