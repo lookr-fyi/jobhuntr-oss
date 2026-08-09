@@ -1150,6 +1150,25 @@ test(
         },
         "the queue command surface should retain authoritative v2 dimensions",
       );
+      const applyRunsTab = page.getByRole("tab", {
+        name: /From Apply Runs/,
+      });
+      await applyRunsTab.focus();
+      await page.keyboard.press("ArrowRight");
+      const searchRunsTab = page.getByRole("tab", {
+        name: /From Search Runs/,
+      });
+      assert.equal(await searchRunsTab.getAttribute("aria-selected"), "true");
+      assert.equal(
+        await searchRunsTab.evaluate((tab) => tab === document.activeElement),
+        true,
+      );
+      assert.equal(
+        await page.getByRole("tabpanel").getAttribute("aria-labelledby"),
+        "queue-tab-search",
+      );
+      await page.keyboard.press("Home");
+      assert.equal(await applyRunsTab.getAttribute("aria-selected"), "true");
       assert.equal(
         await page.getByText(/processed in your next Infinite Hunt/i).count(),
         0,

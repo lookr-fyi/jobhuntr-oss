@@ -4582,6 +4582,22 @@ function Queue({ state, reload, setTab }) {
     setSubmitIndex(0);
     setSubmissionConfirmed(false);
   };
+  const queueTabs = ["apply", "search", "manual"];
+  const handleQueueTabKeyDown = (event, value) => {
+    const currentIndex = queueTabs.indexOf(value);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight")
+      nextIndex = (currentIndex + 1) % queueTabs.length;
+    else if (event.key === "ArrowLeft")
+      nextIndex = (currentIndex - 1 + queueTabs.length) % queueTabs.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = queueTabs.length - 1;
+    else return;
+    event.preventDefault();
+    const nextTab = queueTabs[nextIndex];
+    setQueueTab(nextTab);
+    document.getElementById(`queue-tab-${nextTab}`)?.focus();
+  };
   const recordCurrentSubmission = async () => {
     if (!currentSubmitPacket || !submissionConfirmed) return;
     setSubmittingReady(true);
@@ -4673,20 +4689,32 @@ function Queue({ state, reload, setTab }) {
         </div>
       </div>
       <div className="v2-queue-tabs">
-        <div className="v2-queue-tab-buttons" role="tablist">
+        <div
+          className="v2-queue-tab-buttons"
+          role="tablist"
+          aria-label="Submission sources"
+        >
           <button
+            id="queue-tab-apply"
             role="tab"
             aria-selected={queueTab === "apply"}
+            aria-controls="queue-panel-apply"
+            tabIndex={queueTab === "apply" ? 0 : -1}
             className={queueTab === "apply" ? "active" : ""}
             onClick={() => setQueueTab("apply")}
+            onKeyDown={(event) => handleQueueTabKeyDown(event, "apply")}
           >
             <ClipboardListIcon /> From Apply Runs <em>{active.length}</em>
           </button>
           <button
+            id="queue-tab-search"
             role="tab"
             aria-selected={queueTab === "search"}
+            aria-controls="queue-panel-search"
+            tabIndex={queueTab === "search" ? 0 : -1}
             className={queueTab === "search" ? "active" : ""}
             onClick={() => setQueueTab("search")}
+            onKeyDown={(event) => handleQueueTabKeyDown(event, "search")}
           >
             <Search size={15} /> From Search Runs{" "}
             <em>
@@ -4702,10 +4730,14 @@ function Queue({ state, reload, setTab }) {
             </em>
           </button>
           <button
+            id="queue-tab-manual"
             role="tab"
             aria-selected={queueTab === "manual"}
+            aria-controls="queue-panel-manual"
+            tabIndex={queueTab === "manual" ? 0 : -1}
             className={queueTab === "manual" ? "active" : ""}
             onClick={() => setQueueTab("manual")}
+            onKeyDown={(event) => handleQueueTabKeyDown(event, "manual")}
           >
             <Briefcase size={15} /> From Job Board{" "}
             <em>
@@ -4758,72 +4790,80 @@ function Queue({ state, reload, setTab }) {
         </div>
       </div>
       {queueTab !== "apply" ? (
-        <>
-          <div className="v2-queue-layout">
-            <div className="v2-queue-list">
-              <div className="v2-queue-list-head">
-                <span>{visibleSourceJobs.length} jobs</span>
-                <span>Source</span>
+        <div
+          id={`queue-panel-${queueTab}`}
+          className="v2-queue-layout"
+          role="tabpanel"
+          aria-labelledby={`queue-tab-${queueTab}`}
+        >
+          <div className="v2-queue-list">
+            <div className="v2-queue-list-head">
+              <span>{visibleSourceJobs.length} jobs</span>
+              <span>Source</span>
+            </div>
+            {visibleSourceJobs.map((job) => (
+              <button
+                key={job.id}
+                className={sourceSelected?.id === job.id ? "selected" : ""}
+                onClick={() => setSourceSelectedId(job.id)}
+              >
+                <span className="v2-job-logo">
+                  {(job.company || "J").slice(0, 1).toUpperCase()}
+                </span>
+                <span className="v2-queue-job-copy">
+                  <b>{job.title}</b>
+                  <small>{job.company}</small>
+                  <em>{job.fitScore || 0}% match</em>
+                </span>
+                <time>{job.source || "Manual"}</time>
+              </button>
+            ))}
+            {!visibleSourceJobs.length && (
+              <div className="v2-queue-empty">
+                <InboxIcon />
+                <h3>
+                  {queueTab === "search"
+                    ? "No search-only jobs"
+                    : "No manually added jobs"}
+                </h3>
+                <p>Matching jobs from this workflow will appear here.</p>
               </div>
-              {visibleSourceJobs.map((job) => (
-                <button
-                  key={job.id}
-                  className={sourceSelected?.id === job.id ? "selected" : ""}
-                  onClick={() => setSourceSelectedId(job.id)}
-                >
-                  <span className="v2-job-logo">
-                    {(job.company || "J").slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="v2-queue-job-copy">
-                    <b>{job.title}</b>
-                    <small>{job.company}</small>
-                    <em>{job.fitScore || 0}% match</em>
-                  </span>
-                  <time>{job.source || "Manual"}</time>
-                </button>
-              ))}
-              {!visibleSourceJobs.length && (
-                <div className="v2-queue-empty">
-                  <InboxIcon />
-                  <h3>
-                    {queueTab === "search"
-                      ? "No search-only jobs"
-                      : "No manually added jobs"}
-                  </h3>
-                  <p>Matching jobs from this workflow will appear here.</p>
-                </div>
-              )}
-            </div>
-            <div className="v2-queue-detail">
-              {sourceSelected ? (
-                <div className="v2-source-job-detail">
-                  <span className="pill">{sourceSelected.source}</span>
-                  <h2>{sourceSelected.title}</h2>
-                  <p className="muted">
-                    {sourceSelected.company} · {sourceSelected.location}
-                  </p>
-                  <p>{sourceSelected.description}</p>
-                  <div className="chips">
-                    {(sourceSelected.tags || []).map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
-                  </div>
-                  <button onClick={() => prepareJob(sourceSelected.id)}>
-                    <FileText size={16} /> Prepare application
-                  </button>
-                </div>
-              ) : (
-                <div className="v2-detail-empty">
-                  <Briefcase />
-                  <h3>Select a job</h3>
-                  <p>Job details and application actions will appear here.</p>
-                </div>
-              )}
-            </div>
+            )}
           </div>
-        </>
+          <div className="v2-queue-detail">
+            {sourceSelected ? (
+              <div className="v2-source-job-detail">
+                <span className="pill">{sourceSelected.source}</span>
+                <h2>{sourceSelected.title}</h2>
+                <p className="muted">
+                  {sourceSelected.company} · {sourceSelected.location}
+                </p>
+                <p>{sourceSelected.description}</p>
+                <div className="chips">
+                  {(sourceSelected.tags || []).map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+                <button onClick={() => prepareJob(sourceSelected.id)}>
+                  <FileText size={16} /> Prepare application
+                </button>
+              </div>
+            ) : (
+              <div className="v2-detail-empty">
+                <Briefcase />
+                <h3>Select a job</h3>
+                <p>Job details and application actions will appear here.</p>
+              </div>
+            )}
+          </div>
+        </div>
       ) : (
-        <>
+        <div
+          id="queue-panel-apply"
+          className="v2-queue-panel"
+          role="tabpanel"
+          aria-labelledby="queue-tab-apply"
+        >
           <div className="v2-queue-toolbar">
             <div className="v2-create-packet">
               <select
@@ -5082,7 +5122,7 @@ function Queue({ state, reload, setTab }) {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
       {submitOpen && (
         <div
@@ -11599,9 +11639,7 @@ function SettingsPage({ state, reload, setTab }) {
     event.preventDefault();
     const nextTab = userTabs[nextIndex][0];
     selectTab(nextTab);
-    requestAnimationFrame(() =>
-      document.getElementById(`user-tab-${nextTab}`)?.focus(),
-    );
+    document.getElementById(`user-tab-${nextTab}`)?.focus();
   };
   return (
     <section className="v2-settings-page">
