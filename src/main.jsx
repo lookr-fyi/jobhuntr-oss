@@ -13540,12 +13540,13 @@ function Privacy({ state }) {
   const [backupError, setBackupError] = useState("");
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [inspectingBackup, setInspectingBackup] = useState(false);
+  const [importingCsv, setImportingCsv] = useState(false);
   const restoreCancelRef = useRef(null);
   const restoreReturnFocusRef = useRef(null);
-  const restoringRef = useRef(restoring);
-  useEffect(() => {
-    restoringRef.current = restoring;
-  }, [restoring]);
+  const restoringRef = useRef(false);
+  const backupInspectionId = useRef(0);
+  const importingCsvRef = useRef(false);
   const [csvFile, setCsvFile] = useState(null);
   const [result, setResult] = useState(null);
   useEffect(() => {
@@ -13563,7 +13564,8 @@ function Privacy({ state }) {
     };
   }, [restoreOpen]);
   const restore = async () => {
-    if (!backupFile) return;
+    if (!backupFile || restoringRef.current) return;
+    restoringRef.current = true;
     setRestoring(true);
     setBackupError("");
     try {
@@ -13577,38 +13579,51 @@ function Privacy({ state }) {
       setBackupError(error.message || "The workspace could not be restored.");
       setRestoreOpen(false);
     } finally {
+      restoringRef.current = false;
       setRestoring(false);
     }
   };
   const inspectBackup = async (file) => {
+    const inspectionId = ++backupInspectionId.current;
     setBackupFile(file || null);
     setBackupPreview(null);
     setBackupError("");
+    setInspectingBackup(false);
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) {
       setBackupError("JobHuntr backups must be 50 MB or smaller.");
       return;
     }
+    setInspectingBackup(true);
     try {
       const preview = await api("/api/import/preview", {
         method: "POST",
         body: await file.text(),
         suppressGlobalError: true,
       });
-      setBackupPreview(preview);
+      if (backupInspectionId.current === inspectionId)
+        setBackupPreview(preview);
     } catch (error) {
-      setBackupError(
-        error.message || "This file is not a valid JobHuntr JSON backup.",
-      );
+      if (backupInspectionId.current === inspectionId)
+        setBackupError(
+          error.message || "This file is not a valid JobHuntr JSON backup.",
+        );
+    } finally {
+      if (backupInspectionId.current === inspectionId)
+        setInspectingBackup(false);
     }
   };
   const importCsv = async () => {
-    if (!csvFile) return;
+    if (!csvFile || importingCsvRef.current) return;
+    importingCsvRef.current = true;
+    setImportingCsv(true);
     const jobs = parseCsv(await csvFile.text());
     if (!jobs.length) {
       setResult({
         error: "No rows with company and title columns were found.",
       });
+      importingCsvRef.current = false;
+      setImportingCsv(false);
       return;
     }
     try {
@@ -13617,7 +13632,12 @@ function Privacy({ state }) {
         body: JSON.stringify({ jobs }),
       });
       setResult(response);
-    } catch {}
+    } catch {
+      // Keep the selected CSV available so importing can be retried.
+    } finally {
+      importingCsvRef.current = false;
+      setImportingCsv(false);
+    }
   };
   return (
     <section className="v2-data-page">
@@ -13707,6 +13727,7 @@ function Privacy({ state }) {
               type="file"
               accept=".json,application/json"
               aria-label="Import JobHuntr JSON backup"
+              disabled={inspectingBackup || restoring}
               onChange={(e) => inspectBackup(e.target.files?.[0])}
             />
           </label>
@@ -13735,10 +13756,11 @@ function Privacy({ state }) {
             </p>
           )}
           <button
-            disabled={!backupPreview}
+            disabled={!backupPreview || inspectingBackup || restoring}
+            aria-busy={inspectingBackup}
             onClick={() => setRestoreOpen(true)}
           >
-            Review restore
+            {inspectingBackup ? "Inspecting…" : "Review restore"}
           </button>
         </div>
         <div className="card v2-data-card">
@@ -13758,14 +13780,19 @@ function Privacy({ state }) {
               type="file"
               accept=".csv,text/csv"
               aria-label="Import jobs CSV"
+              disabled={importingCsv}
               onChange={(e) => {
                 setCsvFile(e.target.files?.[0]);
                 setResult(null);
               }}
             />
           </label>
-          <button disabled={!csvFile} onClick={importCsv}>
-            Import CSV
+          <button
+            disabled={!csvFile || importingCsv}
+            aria-busy={importingCsv}
+            onClick={importCsv}
+          >
+            {importingCsv ? "Importing…" : "Import CSV"}
           </button>
           {result && (
             <p className={result.error ? "error" : "success-message"}>
@@ -13786,7 +13813,9 @@ function Privacy({ state }) {
         <div
           className="modal-backdrop"
           onMouseDown={(event) =>
-            event.target === event.currentTarget && setRestoreOpen(false)
+            event.target === event.currentTarget &&
+            !restoringRef.current &&
+            setRestoreOpen(false)
           }
         >
           <div
@@ -13819,7 +13848,11 @@ function Privacy({ state }) {
               >
                 Cancel
               </button>
-              <button disabled={restoring} onClick={restore}>
+              <button
+                disabled={restoring}
+                aria-busy={restoring}
+                onClick={restore}
+              >
                 {restoring ? "Restoring…" : "Replace workspace"}
               </button>
             </div>

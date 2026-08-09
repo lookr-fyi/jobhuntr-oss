@@ -574,6 +574,37 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /const clearFilters = async \(\) => \{/);
 });
 
+test("backup restore and CSV imports reject duplicate or stale work", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const privacy = source.slice(source.indexOf("function Privacy"));
+
+  assert.match(privacy, /const restoringRef = useRef\(false\)/);
+  assert.match(privacy, /const backupInspectionId = useRef\(0\)/);
+  assert.match(privacy, /const importingCsvRef = useRef\(false\)/);
+  assert.match(privacy, /if \(!backupFile \|\| restoringRef\.current\) return/);
+  assert.match(privacy, /restoringRef\.current = true/);
+  assert.match(privacy, /restoringRef\.current = false/);
+  assert.match(privacy, /const inspectionId = \+\+backupInspectionId\.current/);
+  assert.ok(
+    (privacy.match(/backupInspectionId\.current === inspectionId/g) || [])
+      .length >= 3,
+    "only the newest backup inspection may change preview state",
+  );
+  assert.match(privacy, /if \(!csvFile \|\| importingCsvRef\.current\) return/);
+  assert.match(privacy, /importingCsvRef\.current = true/);
+  assert.match(privacy, /importingCsvRef\.current = false/);
+  assert.match(privacy, /aria-busy=\{inspectingBackup\}/);
+  assert.match(privacy, /aria-busy=\{importingCsv\}/);
+  assert.match(privacy, /aria-busy=\{restoring\}/);
+  assert.match(
+    privacy,
+    /!restoringRef\.current[\s\S]*?setRestoreOpen\(false\)/,
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
