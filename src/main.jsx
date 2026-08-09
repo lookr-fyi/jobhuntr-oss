@@ -14549,7 +14549,8 @@ function SettingsPage({ state, reload, setTab }) {
                 : answer.question !== faqDeleteTarget.question,
             ),
           }));
-          if (formRevision.current === deletionRevision) setSaved(true);
+          if (!formDirty && formRevision.current === deletionRevision)
+            setSaved(true);
         }}
       />
       <div className="v2-page-intro">
@@ -14897,15 +14898,19 @@ function SettingsPage({ state, reload, setTab }) {
                 <div className="v2-faq-header-actions">
                   <button
                     className="secondary"
+                    disabled={savingProfile}
                     onClick={() => {
-                      setForm({ ...form, faqAnswers: p.faqAnswers || [] });
-                      setSaved(false);
+                      editForm({
+                        ...form,
+                        faqAnswers: p.faqAnswers || [],
+                      });
                     }}
                   >
                     <RefreshCcw size={14} /> Refresh
                   </button>
                   <button
                     className={faqDeleteMode ? "danger" : "secondary"}
+                    disabled={savingProfile}
                     aria-pressed={faqDeleteMode}
                     onClick={() => setFaqDeleteMode(!faqDeleteMode)}
                   >
@@ -14942,6 +14947,7 @@ function SettingsPage({ state, reload, setTab }) {
                     {faqDeleteMode && (
                       <button
                         className="danger v2-faq-delete-question"
+                        disabled={savingProfile}
                         aria-label={`Delete ${faq.question}`}
                         onClick={() => setFaqDeleteTarget({ ...faq, index })}
                       >

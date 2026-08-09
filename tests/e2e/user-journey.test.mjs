@@ -4506,6 +4506,11 @@ test(
         exact: true,
       });
       await removableAnswer.waitFor({ state: "detached" });
+      assert.equal(
+        await page.getByText("Changes saved locally.").count(),
+        0,
+        "deleting an FAQ must not claim that other dirty User Center edits were saved",
+      );
       await page.reload();
       assert.equal(
         await page

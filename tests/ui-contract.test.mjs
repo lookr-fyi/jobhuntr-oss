@@ -1491,7 +1491,14 @@ test("FAQ deletion persists before mutating the form and cannot bless newer edit
   assert.doesNotMatch(deletion, /JSON\.stringify\(\{ \.\.\.p,/);
   assert.match(
     deletion,
-    /if \(formRevision\.current === deletionRevision\) setSaved\(true\)/,
+    /if \(!formDirty && formRevision\.current === deletionRevision\)\s*setSaved\(true\)/,
+  );
+  const refreshStart = settings.indexOf("<RefreshCcw size={14} /> Refresh");
+  assert.notEqual(refreshStart, -1);
+  const refreshButton = settings.lastIndexOf("<button", refreshStart);
+  assert.match(
+    settings.slice(refreshButton, refreshStart),
+    /disabled=\{savingProfile\}[\s\S]*?editForm\(/,
   );
 });
 
