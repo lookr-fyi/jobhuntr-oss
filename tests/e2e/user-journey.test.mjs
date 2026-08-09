@@ -1341,6 +1341,16 @@ test(
         );
       await page.getByRole("button", { name: "Analyze ATS fit" }).click();
       await page.locator(".score", { hasText: "ATS alignment" }).waitFor();
+      await page
+        .getByLabel("Resume content")
+        .fill(
+          "Senior product engineer. Increased conversion by 42%. React, TypeScript, Python, and accessible design systems.",
+        );
+      await page
+        .locator(".score", { hasText: "ATS alignment" })
+        .waitFor({ state: "hidden" });
+      await page.getByRole("button", { name: "Analyze ATS fit" }).click();
+      await page.locator(".score", { hasText: "ATS alignment" }).waitFor();
       await page.getByRole("button", { name: "Save version" }).click();
       await page.getByText("E2E tailored resume").first().waitFor();
       await page

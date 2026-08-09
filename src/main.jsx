@@ -7430,7 +7430,10 @@ function Resume({ state, reload, mode = "resume" }) {
               name="resume-target-job"
               aria-label="Target job"
               value={jobId}
-              onChange={(e) => setJobId(e.target.value)}
+              onChange={(e) => {
+                setJobId(e.target.value);
+                setScore(null);
+              }}
             >
               {state.jobs.map((j) => (
                 <option value={j.id} key={j.id}>
@@ -7445,7 +7448,10 @@ function Resume({ state, reload, mode = "resume" }) {
             ref={resumeRef}
             className="resume"
             value={resume}
-            onChange={(e) => setResume(e.target.value)}
+            onChange={(e) => {
+              setResume(e.target.value);
+              setScore(null);
+            }}
             placeholder={
               "SUMMARY\nYour concise positioning statement\n\nEXPERIENCE\n- Accomplished X, measured by Y"
             }
@@ -7565,6 +7571,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         onClick={() => {
                           setPreview(item);
                           setResume(item.content);
+                          setScore(null);
                           setName(item.name);
                           setTemplateId(item.templateId);
                           if (item.jobId) setJobId(item.jobId);
