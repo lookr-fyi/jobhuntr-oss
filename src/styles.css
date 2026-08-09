@@ -7030,8 +7030,7 @@ main > header.integrated-page-header {
   display: grid;
   gap: 10px;
 }
-.v2-application-questions > label,
-.v2-application-questions > fieldset {
+.v2-question-card {
   display: grid;
   gap: 7px;
   padding: 12px;
@@ -7039,10 +7038,12 @@ main > header.integrated-page-header {
   border-radius: 8px;
   background: #f8fafc;
 }
-.v2-application-questions > fieldset {
+.v2-question-card > fieldset {
   margin: 0;
+  padding: 0;
+  border: 0;
 }
-.v2-application-questions > label > span,
+.v2-question-card > label > span,
 .v2-application-questions legend > span {
   display: flex;
   align-items: center;
@@ -7093,6 +7094,21 @@ main > header.integrated-page-header {
   width: 14px;
   height: 14px;
   margin: 0;
+}
+.v2-question-verification {
+  align-items: flex-start;
+  margin-top: 3px;
+  padding-top: 9px;
+  border-top: 1px solid #e2e8f0;
+}
+.v2-question-verification span {
+  display: grid !important;
+  justify-content: initial !important;
+  gap: 2px !important;
+}
+.v2-question-verification small {
+  color: #64748b;
+  font-weight: 400;
 }
 .v2-packet-checklist .check:last-child {
   border-bottom: 0;

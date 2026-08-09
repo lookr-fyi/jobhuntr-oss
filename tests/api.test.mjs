@@ -507,7 +507,11 @@ test("submission queue enforces review before local submission", async () => {
   );
   const questions = packet.body.applicationQuestions.map((question, index) =>
     index === 0
-      ? { ...question, answer: "I build products that match this mission." }
+      ? {
+          ...question,
+          answer: "I build products that match this mission.",
+          verified: true,
+        }
       : question,
   );
   const answered = await req(`/api/submissions/${packet.body.id}`, {
@@ -581,9 +585,43 @@ test("submission queue enforces review before local submission", async () => {
   );
   assert.equal(unansweredSubmit.res.status, 409);
   assert.match(unansweredSubmit.body.error, /required application question/i);
+  const unverifiedQuestions = tampered.body.applicationQuestions.map(
+    (question, index) => ({
+      ...question,
+      verified: index !== 1,
+      answer:
+        index === 0
+          ? "I build products that match this mission."
+          : index === 1
+            ? "$150,000 base, depending on the complete package."
+            : index === 2
+              ? "Within 2 weeks"
+              : "No",
+    }),
+  );
+  const unverified = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      checklist,
+      status: "ready",
+      resumeId: "profile-resume",
+      applicationQuestions: unverifiedQuestions,
+    }),
+  });
+  assert.equal(unverified.body.status, "draft");
+  const unverifiedSubmit = await req(
+    `/api/submissions/${packet.body.id}/submit`,
+    {
+      method: "POST",
+      body: JSON.stringify({ confirmedByUser: true }),
+    },
+  );
+  assert.equal(unverifiedSubmit.res.status, 409);
+  assert.match(unverifiedSubmit.body.error, /explicitly verify/i);
   const completeQuestions = tampered.body.applicationQuestions.map(
     (question, index) => ({
       ...question,
+      verified: true,
       answer:
         index === 0
           ? "I build products that match this mission."

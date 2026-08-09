@@ -915,6 +915,7 @@ const applicationQuestionsFor = (db) => {
     options,
     required: true,
     confident: false,
+    verified: false,
   }));
 };
 const isValidApplicationAnswer = (question) => {
@@ -1007,10 +1008,14 @@ app.patch("/api/submissions/:id", async (req, res) => {
             : safeText(existing.answer, 10000),
         };
         updated.confident = isValidApplicationAnswer(updated);
+        updated.verified = Boolean(incoming?.verified) && updated.confident;
         return updated;
       });
       db.profile.faqAnswers = item.applicationQuestions
-        .filter(isValidApplicationAnswer)
+        .filter(
+          (question) =>
+            isValidApplicationAnswer(question) && question.verified === true,
+        )
         .map((question) => ({
           question: question.question,
           answer: question.answer,
@@ -1026,7 +1031,10 @@ app.patch("/api/submissions/:id", async (req, res) => {
     else if (["draft", "ready"].includes(req.body.status))
       item.status =
         item.checklist.every((entry) => entry.done) &&
-        item.applicationQuestions.every(isValidApplicationAnswer)
+        item.applicationQuestions.every(
+          (question) =>
+            isValidApplicationAnswer(question) && question.verified === true,
+        )
           ? "ready"
           : "draft";
     item.updatedAt = timestamp();
@@ -1051,7 +1059,12 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
       !item.checklist.every((x) => x.done)
     )
       return { blocked: true, item };
-    if (!item.applicationQuestions.every(isValidApplicationAnswer))
+    if (
+      !item.applicationQuestions.every(
+        (question) =>
+          isValidApplicationAnswer(question) && question.verified === true,
+      )
+    )
       return { blockedQuestions: true, item };
     const attachedResume =
       item.resumeId === "profile-resume"
@@ -1094,7 +1107,8 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     });
   if (submission.blockedQuestions)
     return res.status(409).json({
-      error: "Answer every required application question before submitting",
+      error:
+        "Answer and explicitly verify every required application question before submitting",
     });
   res.json(submission);
 });

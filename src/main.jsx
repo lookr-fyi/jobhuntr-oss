@@ -4263,6 +4263,26 @@ function ClipboardListIcon() {
 function InboxIcon() {
   return <Download size={24} />;
 }
+function QuestionVerification({ question, onChange }) {
+  const valid = isValidApplicationAnswer(question);
+  return (
+    <label className="check v2-question-verification">
+      <input
+        type="checkbox"
+        aria-label={`Verification checkbox ${question.id}`}
+        checked={Boolean(question.verified)}
+        disabled={!valid}
+        onChange={(event) => onChange(question.id, event.target.checked)}
+      />
+      <span>
+        <strong>I verified this exact answer</strong>
+        <small>
+          I compared this exact answer with the employer&apos;s current form.
+        </small>
+      </span>
+    </label>
+  );
+}
 function SubmissionCard({ submission: s, state, reload }) {
   const [externalSubmissionVerified, setExternalSubmissionVerified] =
     useState(false);
@@ -4279,8 +4299,11 @@ function SubmissionCard({ submission: s, state, reload }) {
   const answeredQuestionCount = (s.applicationQuestions || []).filter(
     isValidApplicationAnswer,
   ).length;
+  const verifiedQuestionCount = (s.applicationQuestions || []).filter(
+    (question) => isValidApplicationAnswer(question) && question.verified,
+  ).length;
   const questionsReady =
-    answeredQuestionCount === (s.applicationQuestions || []).length;
+    verifiedQuestionCount === (s.applicationQuestions || []).length;
   const resumeLabel = attachedResume?.name
     ? attachedResume.name
     : s.resumeId === "profile-resume"
@@ -4306,8 +4329,14 @@ function SubmissionCard({ submission: s, state, reload }) {
     const applicationQuestions = (s.applicationQuestions || []).map(
       (question) =>
         question.id === id
-          ? { ...question, answer, confident: true }
+          ? { ...question, answer, confident: true, verified: false }
           : question,
+    );
+    await updatePacket({ applicationQuestions });
+  };
+  const verifyQuestion = async (id, verified) => {
+    const applicationQuestions = (s.applicationQuestions || []).map(
+      (question) => (question.id === id ? { ...question, verified } : question),
     );
     await updatePacket({ applicationQuestions });
   };
@@ -4417,6 +4446,7 @@ function SubmissionCard({ submission: s, state, reload }) {
             </div>
             <span>
               {answeredQuestionCount}/{s.applicationQuestions.length} answered
+              {` · ${verifiedQuestionCount}/${s.applicationQuestions.length} verified`}
             </span>
           </div>
           {s.applicationQuestions.map((question) => {
@@ -4429,62 +4459,81 @@ function SubmissionCard({ submission: s, state, reload }) {
             );
             if (question.questionType === "multiple_choice") {
               return (
-                <fieldset key={question.id}>
-                  <legend>{prompt}</legend>
-                  <div className="v2-question-options">
-                    {(question.options || []).map((option) => (
-                      <label key={option}>
-                        <input
-                          type="radio"
-                          name={`question-${question.id}`}
-                          value={option}
-                          checked={question.answer === option}
-                          onChange={() => updateQuestion(question.id, option)}
-                        />
-                        {option}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
+                <div className="v2-question-card" key={question.id}>
+                  <fieldset>
+                    <legend>{prompt}</legend>
+                    <div className="v2-question-options">
+                      {(question.options || []).map((option) => (
+                        <label key={option}>
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            value={option}
+                            checked={question.answer === option}
+                            onChange={() => updateQuestion(question.id, option)}
+                          />
+                          {option}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <QuestionVerification
+                    question={question}
+                    onChange={verifyQuestion}
+                  />
+                </div>
               );
             }
             if (question.questionType === "dropdown") {
               return (
-                <label key={question.id}>
-                  {prompt}
-                  <select
-                    value={question.answer || ""}
-                    onChange={(event) =>
-                      updateQuestion(question.id, event.target.value)
-                    }
-                  >
-                    <option value="">Select an answer…</option>
-                    {(question.options || []).map((option) => (
-                      <option key={option}>{option}</option>
-                    ))}
-                  </select>
-                </label>
+                <div className="v2-question-card" key={question.id}>
+                  <label>
+                    {prompt}
+                    <select
+                      value={question.answer || ""}
+                      onChange={(event) =>
+                        updateQuestion(question.id, event.target.value)
+                      }
+                    >
+                      <option value="">Select an answer…</option>
+                      {(question.options || []).map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <QuestionVerification
+                    question={question}
+                    onChange={verifyQuestion}
+                  />
+                </div>
               );
             }
             return (
-              <label key={question.id}>
-                {prompt}
-                <textarea
-                  rows={2}
-                  defaultValue={question.answer || ""}
-                  placeholder="Enter your answer…"
-                  onBlur={(event) => {
-                    if (event.target.value !== (question.answer || ""))
-                      updateQuestion(question.id, event.target.value);
-                  }}
+              <div className="v2-question-card" key={question.id}>
+                <label>
+                  {prompt}
+                  <textarea
+                    rows={2}
+                    defaultValue={question.answer || ""}
+                    placeholder="Enter your answer…"
+                    onBlur={(event) => {
+                      if (event.target.value !== (question.answer || ""))
+                        updateQuestion(question.id, event.target.value);
+                    }}
+                  />
+                </label>
+                <QuestionVerification
+                  question={question}
+                  onChange={verifyQuestion}
                 />
-              </label>
+              </div>
             );
           })}
           {!questionsReady && (
             <p className="error-text" role="alert">
-              Answer every required question and verify each response before
-              recording the external submission.
+              Answer every required question, compare it with the employer form,
+              and explicitly verify each response before recording the external
+              submission.
             </p>
           )}
         </section>

@@ -784,10 +784,16 @@ test(
       const whyAnswer = queueQuestions.getByLabel(
         /Why are you interested in this role/,
       );
-      assert.equal(
-        await whyAnswer.inputValue(),
-        "The product mission matches my experience.",
-      );
+      await whyAnswer.fill("The product mission matches my experience.");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        whyAnswer.press("Tab"),
+      ]);
       const salaryAnswer = queueQuestions.getByLabel(
         /What are your salary expectations/,
       );
@@ -803,11 +809,48 @@ test(
         ),
         salaryAnswer.press("Tab"),
       ]);
-      await queueQuestions
-        .getByLabel(/When are you available to start/)
-        .selectOption("Within 2 weeks");
-      await queueQuestions.getByLabel("No", { exact: true }).check();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        queueQuestions
+          .getByLabel(/When are you available to start/)
+          .selectOption("Within 2 weeks"),
+      ]);
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        queueQuestions.getByLabel("No", { exact: true }).click(),
+      ]);
       await page.getByText(/4\/4 answered/).waitFor();
+      for (const question of [
+        "Why are you interested in this role?",
+        "What are your salary expectations?",
+        "When are you available to start?",
+        "Will you require work authorization sponsorship?",
+      ]) {
+        const verification = queueQuestions
+          .locator(".v2-question-card")
+          .filter({ hasText: question })
+          .getByRole("checkbox");
+        await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.url().includes("/api/submissions/") &&
+              response.request().method() === "PATCH" &&
+              response.ok(),
+          ),
+          verification.click(),
+        ]);
+      }
+      await page.getByText(/4\/4 verified/).waitFor();
       for (const item of [
         "Review resume alignment",
         "Review cover letter",

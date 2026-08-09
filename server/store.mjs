@@ -225,6 +225,8 @@ function migrate(input) {
       submission.applicationQuestions = records(
         submission.applicationQuestions,
       );
+    for (const question of submission.applicationQuestions)
+      question.verified = Boolean(question.verified);
   }
   db.coachConversations = records(db.coachConversations);
   for (const conversation of db.coachConversations)
