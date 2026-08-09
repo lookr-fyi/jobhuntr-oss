@@ -985,6 +985,13 @@ test(
         name: "Create New Template",
       });
       await assertNamedFormControls(page, "ATS Resume template wizard");
+      assert.equal(
+        await templateDialog
+          .getByRole("button", { name: "Go to template step 2: Edit Clone" })
+          .isDisabled(),
+        true,
+        "future ATS wizard steps must not be selectable before their prerequisites are completed",
+      );
       const templateNameInput = templateDialog.getByLabel("Template name");
       await templateNameInput.click();
       await page.keyboard.press("ControlOrMeta+A");
@@ -1022,6 +1029,14 @@ test(
       await templateDialog.getByText(/Resume uploaded successfully/).waitFor();
       await templateDialog.getByRole("button", { name: /Next/ }).click();
       await templateDialog.getByText("Edit your cloned resume").waitFor();
+      assert.equal(
+        await templateDialog
+          .getByRole("button", { name: "Go to template step 1: Upload" })
+          .locator("svg")
+          .count(),
+        1,
+        "completed ATS wizard steps should use v2's checkmark treatment",
+      );
       assert.match(
         await templateDialog.getByLabel("Cloned resume content").inputValue(),
         /TypeScript.*40% performance gains/,

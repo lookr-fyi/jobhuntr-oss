@@ -9591,8 +9591,8 @@ main > header.integrated-page-header {
   color: #1d4ed8;
   font-weight: 700;
 }
-.v2-template-progress li.active:not(:last-child)::after {
-  background: #93c5fd;
+.v2-template-progress li.completed:not(:last-child)::after {
+  background: #cbd5e1;
 }
 .v2-template-progress i {
   display: grid;
@@ -9608,6 +9608,15 @@ main > header.integrated-page-header {
 .v2-template-progress li.active i {
   color: #fff;
   background: #2563eb;
+}
+.v2-template-progress li.completed:not(.current) {
+  color: #475569;
+  font-weight: 400;
+}
+.v2-template-progress li.completed i {
+  color: #475569;
+  border: 2px solid #cbd5e1;
+  background: #f1f5f9;
 }
 .v2-template-step {
   display: grid;

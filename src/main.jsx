@@ -14,6 +14,7 @@ import {
   Sparkles,
   Upload,
   Download,
+  Check,
   CheckCircle2,
   Settings,
   Save,
@@ -6024,6 +6025,7 @@ function Resume({ state, reload, mode = "resume" }) {
     setTemplateDialog({
       id: template?.id || null,
       step: 1,
+      completedSteps: template ? [1, 2, 3, 4] : [],
       name:
         template?.name ||
         `New ATS Template - ${new Date().toLocaleDateString()}`,
@@ -6075,6 +6077,12 @@ function Resume({ state, reload, mode = "resume" }) {
     if (templateDialog.step !== 4) {
       setTemplateDialog({
         ...templateDialog,
+        completedSteps: [
+          ...new Set([
+            ...(templateDialog.completedSteps || []),
+            templateDialog.step,
+          ]),
+        ],
         step: templateDialog.step + 1,
       });
       return;
@@ -6091,7 +6099,14 @@ function Resume({ state, reload, mode = "resume" }) {
         jobId: templateDialog.testJobId,
       }),
     });
-    setTemplateDialog({ ...templateDialog, scoreResult, step: 5 });
+    setTemplateDialog({
+      ...templateDialog,
+      completedSteps: [
+        ...new Set([...(templateDialog.completedSteps || []), 4]),
+      ],
+      scoreResult,
+      step: 5,
+    });
   };
   const saveResume = async () => {
     const content = resumeRef.current?.value ?? resume;
@@ -7417,7 +7432,13 @@ function Resume({ state, reload, mode = "resume" }) {
                 (label, index) => (
                   <li
                     key={label}
-                    className={templateDialog.step >= index + 1 ? "active" : ""}
+                    className={`${
+                      templateDialog.step === index + 1 ? "active current" : ""
+                    } ${
+                      templateDialog.completedSteps?.includes(index + 1)
+                        ? "completed"
+                        : ""
+                    }`.trim()}
                     aria-current={
                       templateDialog.step === index + 1 ? "step" : undefined
                     }
@@ -7426,16 +7447,8 @@ function Resume({ state, reload, mode = "resume" }) {
                       type="button"
                       className="v2-template-progress-step"
                       disabled={
-                        ![
-                          true,
-                          Boolean(templateDialog.originalResume),
-                          Boolean(templateDialog.editedResume),
-                          Boolean(
-                            templateDialog.testJobId ||
-                            templateDialog.scoreResult,
-                          ),
-                          Boolean(templateDialog.scoreResult),
-                        ][index]
+                        templateDialog.step !== index + 1 &&
+                        !templateDialog.completedSteps?.includes(index + 1)
                       }
                       aria-label={`Go to template step ${index + 1}: ${label}`}
                       onClick={() =>
@@ -7445,7 +7458,13 @@ function Resume({ state, reload, mode = "resume" }) {
                         })
                       }
                     >
-                      <i>{index + 1}</i>
+                      <i>
+                        {templateDialog.completedSteps?.includes(index + 1) ? (
+                          <Check size={14} aria-hidden="true" />
+                        ) : (
+                          index + 1
+                        )}
+                      </i>
                       <span>{label}</span>
                     </button>
                   </li>
