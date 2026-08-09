@@ -8,7 +8,8 @@
   "type": "module",
   "scripts": {
     "jobhuntr": "node scripts/one-line-run.mjs",
-    "desktop": "npm run build && electron electron/main.mjs",
+    "desktop": "node scripts/one-line-desktop.mjs",
+    "desktop:launch": "npm run build && electron electron/main.mjs",
     "dist:desktop": "npm run build && electron-builder",
     "dist:desktop:dir": "npm run build && npm run package:dir",
     "package:dir": "electron-builder --dir",

@@ -25,6 +25,7 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
     "src/main.jsx",
     "src/csv.js",
     "scripts/one-line-run.mjs",
+    "scripts/one-line-desktop.mjs",
   ]
     .map(read)
     .join("\n");

@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import net from "node:net";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 
 const freePort = () =>
   new Promise((resolve) => {
@@ -68,3 +68,23 @@ test(
     }
   },
 );
+
+test("one-command desktop launcher bootstraps and opens Electron", async () => {
+  const output = execFileSync(
+    process.execPath,
+    ["scripts/one-line-desktop.mjs"],
+    {
+      cwd: process.cwd(),
+      env: { ...process.env, JOBHUNTR_DESKTOP_DRY_RUN: "1" },
+      encoding: "utf8",
+    },
+  );
+  const plan = JSON.parse(output);
+  assert.equal(plan.launch, "npm run desktop:launch");
+  assert.equal(path.resolve(plan.root), process.cwd());
+  const pkg = JSON.parse(
+    await fs.readFile(path.join(process.cwd(), "package.json"), "utf8"),
+  );
+  assert.equal(pkg.scripts.desktop, "node scripts/one-line-desktop.mjs");
+  assert.match(pkg.scripts["desktop:launch"], /electron electron\/main\.mjs/);
+});

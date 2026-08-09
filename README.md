@@ -7,11 +7,14 @@ A self-contained, local-first Electron rebuild of the JobHuntr v2 experience: jo
 ## Electron desktop app
 
 ```bash
-npm install
 npm run desktop
 ```
 
-This builds the frontend, starts the private loopback service, and opens JobHuntr in a native Electron window. The desktop shell uses context isolation, disables Node integration in the renderer, enables Chromium sandboxing, and stores workspace data under Electron's per-user application-data directory.
+That single command installs locked dependencies when needed, builds the frontend,
+starts the private loopback service, and opens JobHuntr in a native Electron
+window. The desktop shell uses context isolation, disables Node integration in
+the renderer, enables Chromium sandboxing, and stores workspace data under
+Electron's per-user application-data directory.
 
 To create a platform-native distributable:
 
@@ -76,7 +79,7 @@ Writes are atomic and serialized. JobHuntr also maintains `./data/jobhuntr.backu
 
 ```bash
 npm run dev          # local API + Vite frontend
-npm run desktop      # build and launch the Electron desktop app
+npm run desktop      # install if needed, build, and launch Electron
 npm run build        # build frontend into dist/public
 npm start            # serve API; also serves built frontend if present
 npm test             # backend API smoke tests
