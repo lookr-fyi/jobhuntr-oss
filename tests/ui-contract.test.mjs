@@ -117,3 +117,14 @@ test("an uncaught renderer failure has a local recovery screen", async () => {
   assert.match(source, /Your local workspace was not cleared or uploaded/);
   assert.match(source, /<ErrorBoundary>\s*<App \/>\s*<\/ErrorBoundary>/);
 });
+
+test("dense v2 controls keep usable touch targets on compact screens", async () => {
+  const styles = await readFile(
+    new URL("../src/styles.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(styles, /@media \(max-width: 760px\), \(pointer: coarse\)/);
+  assert.match(styles, /\.v2-run-delete,[\s\S]*?min-width: 36px/);
+  assert.match(styles, /\.v2-coach-delete[\s\S]*?min-height: 36px/);
+});

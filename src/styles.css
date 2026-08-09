@@ -6989,6 +6989,28 @@ select:focus {
     justify-content: center;
   }
 }
+@media (max-width: 760px), (pointer: coarse) {
+  .v2-overview-refresh,
+  .v2-hunt-page .text-button,
+  .v2-queue-page .text-button,
+  .v2-runs-page button,
+  .resume-studio button,
+  .v2-gig-view-toggle button,
+  .job-card-footer .view-link,
+  .v2-coach-delete {
+    min-height: 36px;
+  }
+  .v2-hunt-page .text-button,
+  .v2-run-delete,
+  .v2-coach-delete {
+    min-width: 36px;
+  }
+  .v2-run-link,
+  .job-card-footer .view-link {
+    display: inline-flex;
+    align-items: center;
+  }
+}
 .v2-error-toast strong {
   color: #991b1b;
   font-size: 13px;
