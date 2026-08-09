@@ -2805,6 +2805,23 @@ test(
         .getByLabel("title", { exact: true })
         .fill("Abandoned draft title");
       await page.keyboard.press("Escape");
+      const discardNewJobDialog = page.getByRole("alertdialog", {
+        name: "Discard new job?",
+      });
+      await discardNewJobDialog.waitFor();
+      await assertAccessible(page, "Discard new Job Tracker role confirmation");
+      await discardNewJobDialog.getByRole("button", { name: "Cancel" }).click();
+      await discardNewJobDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await addJobDialog.getByLabel("title", { exact: true }).inputValue(),
+        "Abandoned draft title",
+        "canceling discard should preserve a new tracked role draft",
+      );
+      await page.keyboard.press("Escape");
+      await discardNewJobDialog.waitFor();
+      await discardNewJobDialog
+        .getByRole("button", { name: "Discard Job" })
+        .click();
       await addJobDialog.waitFor({ state: "hidden" });
       assert.equal(
         await appliedAddJob.evaluate(
