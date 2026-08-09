@@ -384,7 +384,7 @@ test(
           }),
         {
           borderRadius: "8px",
-          fontSize: "16px",
+          fontSize: "11px",
           fontWeight: "500",
           padding: "12px 20px",
         },
@@ -1952,12 +1952,12 @@ test(
           };
         }),
         {
-          heading: ["26px", "600"],
-          subtitle: ["15px", "rgb(75, 85, 99)"],
-          refresh: ["12px 20px", "16px", "6px"],
-          search: ["8px 12px 8px 40px", "15px", "6px"],
-          filter: ["8px 12px", "15px", "200px", "200px"],
-          toggle: ["8px 12px", "16px", "rgb(37, 99, 235)"],
+          heading: ["17.875px", "600"],
+          subtitle: ["10.3125px", "rgb(75, 85, 99)"],
+          refresh: ["12px 20px", "11px", "6px"],
+          search: ["8px 12px 8px 40px", "10.3125px", "6px"],
+          filter: ["8px 12px", "10.3125px", "200px", "200px"],
+          toggle: ["8px 12px", "11px", "rgb(37, 99, 235)"],
         },
         "generated resume history should retain the authoritative v2 control geometry",
       );

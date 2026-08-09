@@ -7440,7 +7440,7 @@ select:focus {
 .v2-farewell-actions button {
   padding: 12px 20px;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-overview-hero-meta {
@@ -11235,14 +11235,14 @@ main > header.integrated-page-header {
 .v2-resume-history-head h2 {
   margin: 0 0 4px;
   color: #111827;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1.25;
 }
 .v2-resume-history-head p {
   margin: 0;
   color: #4b5563;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 .v2-resume-history-head button.secondary {
@@ -11252,7 +11252,7 @@ main > header.integrated-page-header {
   border-radius: 6px;
   background: #fff;
   color: #374151;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-resume-history-toolbar {
@@ -11286,7 +11286,7 @@ main > header.integrated-page-header {
   padding: 8px 12px 8px 40px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .v2-resume-history-toolbar select {
   box-sizing: border-box;
@@ -11299,14 +11299,14 @@ main > header.integrated-page-header {
   border-radius: 6px;
   background: #fff;
   color: #374151;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .v2-resume-history-toolbar .text-button {
   padding: 8px 12px;
   border: 0;
   background: transparent;
   color: #2563eb;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-resume-groups {
