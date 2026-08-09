@@ -278,6 +278,60 @@ small {
   color: #2563eb;
   font-size: 22px;
 }
+.v2-startup-error {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: #f8fafc;
+}
+.v2-startup-error > div {
+  width: min(100%, 520px);
+  padding: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 45px rgb(15 23 42 / 8%);
+  text-align: center;
+}
+.v2-startup-error-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-grid;
+  place-items: center;
+  margin-bottom: 16px;
+  color: #b45309;
+  border-radius: 12px;
+  background: #fffbeb;
+}
+.v2-startup-error h1 {
+  margin: 4px 0 10px;
+  color: #0f172a;
+  font-size: 24px;
+}
+.v2-startup-error p:not(.eyebrow) {
+  margin: 0 auto 16px;
+  color: #64748b;
+  line-height: 1.6;
+}
+.v2-startup-error code {
+  display: block;
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  color: #991b1b;
+  border-radius: 7px;
+  background: #fef2f2;
+  font-size: 11px;
+}
+.v2-startup-error button {
+  margin-bottom: 14px;
+}
+.v2-startup-error small {
+  display: block;
+  color: #64748b;
+  line-height: 1.5;
+}
 a {
   color: #2563eb;
 }

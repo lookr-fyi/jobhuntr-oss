@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   ShieldCheck,
+  ShieldAlert,
   Sparkles,
   Upload,
   Download,
@@ -578,10 +579,39 @@ function App() {
     ["gigs", CircleDollarSign, "Gigs", "career"],
     ["coach", MessageSquare, "AI Coach", "career"],
   ];
+  if (!state && err)
+    return (
+      <main className="v2-startup-error" role="main">
+        <div role="alert">
+          <span className="v2-startup-error-icon">
+            <ShieldAlert size={24} />
+          </span>
+          <p className="eyebrow">LOCAL WORKSPACE</p>
+          <h1>JobHuntr couldn&apos;t open your workspace</h1>
+          <p>
+            Your data has not been cleared or uploaded. Retry the private local
+            service before changing any files.
+          </p>
+          <code>{err}</code>
+          <button
+            onClick={() => {
+              setErr("");
+              load();
+            }}
+          >
+            Retry opening JobHuntr
+          </button>
+          <small>
+            If retrying does not work, preserve JobHuntr&apos;s local data
+            directory so its automatic recovery backup remains available.
+          </small>
+        </div>
+      </main>
+    );
   if (!state)
     return (
-      <div className="splash">
-        <Sparkles /> Loading local JobHuntr…
+      <div className="splash" role="status" aria-live="polite">
+        <Sparkles aria-hidden="true" /> Loading local JobHuntr…
       </div>
     );
   return (

@@ -99,6 +99,31 @@ test(
         executablePath: chromePath,
         headless: true,
       });
+      const recoveryContext = await browser.newContext({
+        viewport: { width: 1024, height: 760 },
+      });
+      const recoveryPage = await recoveryContext.newPage();
+      let blockInitialState = true;
+      await recoveryPage.route("**/api/state", async (route) => {
+        if (blockInitialState) await route.abort("failed");
+        else await route.continue();
+      });
+      await recoveryPage.goto(baseUrl);
+      await recoveryPage
+        .getByRole("heading", {
+          name: "JobHuntr couldn't open your workspace",
+        })
+        .waitFor();
+      await assertAccessible(recoveryPage, "Startup recovery");
+      blockInitialState = false;
+      await recoveryPage
+        .getByRole("button", { name: "Retry opening JobHuntr" })
+        .click();
+      await recoveryPage
+        .getByRole("button", { name: "Use demo profile" })
+        .waitFor();
+      await recoveryContext.close();
+
       const desktopContext = await browser.newContext({
         viewport: { width: 1440, height: 1000 },
         permissions: ["clipboard-read", "clipboard-write"],
