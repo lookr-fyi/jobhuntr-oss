@@ -793,7 +793,7 @@ button:disabled {
   user-select: none;
 }
 .status-filter-label.hidden {
-  color: #9ca3af;
+  color: #64748b;
 }
 .status-filter-label.applied.visible {
   color: #2563eb;
@@ -9564,7 +9564,7 @@ main > header.integrated-page-header {
   justify-content: space-between;
   margin-bottom: 18px;
 }
-.v2-tracker-header h2 {
+.v2-tracker-header h1 {
   margin: 0;
   font-size: 26px;
 }

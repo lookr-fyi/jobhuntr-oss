@@ -2266,7 +2266,7 @@ function Tracker({ state, reload, setTab }) {
         }}
       />
       <div className="v2-tracker-header">
-        <h2>Job Tracker</h2>
+        <h1>Job Tracker</h1>
         <div>
           <span>{filtered.length} applications</span>
           {runFilter !== "all" && <span>• Filtered by agent run</span>}
