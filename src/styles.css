@@ -4290,6 +4290,12 @@ button.v2-board-row.selected {
 .v2-hunt-intro {
   margin-bottom: 24px;
 }
+.v2-page-intro.v2-hunt-intro h2 {
+  margin-bottom: 8px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+}
 .v2-queue-banner {
   max-width: 840px;
   margin: 0 auto 20px;

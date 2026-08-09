@@ -10081,6 +10081,9 @@ function Agent({ state, reload, setTab }) {
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
   const latestRun = state.agentRuns[0] || null;
+  const queuedSubmissions = state.submissions.filter((submission) =>
+    ["draft", "ready"].includes(submission.status),
+  );
   useEffect(() => {
     localStorage.setItem(
       "jobhuntr-infinite-workflows",
@@ -10267,17 +10270,17 @@ function Agent({ state, reload, setTab }) {
           </p>
         </div>
         {latestRun && (
-          <button className="secondary" onClick={() => setStatusOpen(true)}>
+          <button onClick={() => setStatusOpen(true)}>
             View last infinite session
           </button>
         )}
       </div>
-      {state.queue?.length > 0 && (
+      {queuedSubmissions.length > 0 && (
         <div className="v2-queue-banner">
           <List size={20} />
           <span>
-            You have {state.queue.length} queued job
-            {state.queue.length === 1 ? "" : "s"} waiting to be reviewed
+            You have {queuedSubmissions.length} queued job
+            {queuedSubmissions.length === 1 ? "" : "s"} waiting to be reviewed
           </span>
           <button className="secondary" onClick={() => setTab("queue")}>
             View Submission Queue <ChevronRight size={15} />

@@ -452,6 +452,22 @@ test(
         .getByRole("button", { name: "Infinite Hunting", exact: true })
         .click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-hunt-intro").evaluate((intro) => {
+          const heading = getComputedStyle(intro.querySelector("h2"));
+          return {
+            headingFontSize: heading.fontSize,
+            headingFontWeight: heading.fontWeight,
+            headingMarginBottom: heading.marginBottom,
+          };
+        }),
+        {
+          headingFontSize: "26px",
+          headingFontWeight: "600",
+          headingMarginBottom: "8px",
+        },
+        "Infinite Hunting should retain the authoritative v2 heading dimensions",
+      );
       assert.equal(
         await page.locator(".v2-loop-row").count(),
         2,
@@ -511,6 +527,13 @@ test(
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor();
       await page.getByRole("heading", { name: "Run history" }).waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "View last infinite session" })
+          .evaluate((button) => getComputedStyle(button).backgroundColor),
+        "rgb(24, 24, 26)",
+        "the v2 session action should remain a primary button",
+      );
       await page
         .getByRole("button", { name: "View last infinite session" })
         .click();
@@ -1083,6 +1106,15 @@ test(
         .getByText(/^Queued (just now|\d+ min)/)
         .first()
         .waitFor();
+      await page
+        .getByRole("button", { name: "Infinite Hunting", exact: true })
+        .click();
+      await page
+        .getByText(/You have \d+ queued jobs? waiting to be reviewed/)
+        .waitFor();
+      await page.getByRole("button", { name: "View Submission Queue" }).click();
+      await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
+      await page.getByText("Application documents", { exact: true }).waitFor();
       await page.getByLabel("Cover letter attachment").waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Minimum queue match score").selectOption("40");
