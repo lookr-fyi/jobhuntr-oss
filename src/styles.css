@@ -8646,6 +8646,7 @@ main > header.integrated-page-header {
 }
 .v2-cover-wizard-title {
   min-width: 0;
+  flex: 1;
 }
 .v2-cover-name-button {
   display: flex;
@@ -9376,6 +9377,58 @@ main > header.integrated-page-header {
     background: #fff;
   }
 }
+@media (max-width: 1099px) {
+  .v2-cover-wizard {
+    position: fixed;
+    inset: 0 0 0 64px;
+    z-index: 110;
+    display: flex;
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    margin: 0 !important;
+    padding-bottom: 72px;
+    overflow: hidden;
+  }
+  .v2-cover-wizard-head,
+  .v2-cover-wizard > .v2-wizard-progress {
+    flex: none;
+  }
+  .v2-cover-wizard > .v2-wizard-progress {
+    width: 100%;
+    box-sizing: border-box;
+    margin: 14px 0;
+  }
+  .v2-cover-step {
+    width: calc(100% - 32px);
+    min-height: 0;
+    flex: 1;
+    margin: 0 auto;
+    overflow: auto;
+  }
+  .v2-cover-step-actions {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 64px;
+    z-index: 112;
+    min-height: 72px;
+    align-items: center;
+    margin: 0;
+    padding: 14px 18px;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+  }
+}
+@media (max-width: 760px) {
+  .v2-cover-wizard {
+    inset: 0 0 60px;
+  }
+  .v2-cover-step-actions {
+    bottom: 60px;
+    left: 0;
+  }
+}
 @media (max-width: 900px) {
   .v2-cover-layout {
     grid-template-columns: 1fr;
@@ -9400,6 +9453,9 @@ main > header.integrated-page-header {
   }
 }
 @media (max-width: 600px) {
+  .v2-cover-name-button h2 {
+    font-size: 20px;
+  }
   .v2-cover-name-editor input {
     width: calc(100vw - 150px);
     min-width: 0;
@@ -9417,7 +9473,7 @@ main > header.integrated-page-header {
   }
   .v2-wizard-progress {
     overflow-x: auto;
-    grid-template-columns: repeat(5, minmax(92px, 1fr));
+    grid-template-columns: repeat(5, minmax(68px, 1fr));
   }
   .v2-cover-style-grid,
   .v2-cover-review {

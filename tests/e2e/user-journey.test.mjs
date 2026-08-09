@@ -1989,9 +1989,7 @@ test(
         "v2 allows users to return from the final result without discarding their draft",
       );
       assert.equal(
-        await page
-          .getByRole("button", { name: "Go to Job Information" })
-          .isEnabled(),
+        await page.getByRole("button", { name: "Go to Job Info" }).isEnabled(),
         true,
         "completed cover-letter steps should remain directly navigable",
       );
@@ -3814,6 +3812,48 @@ test(
             { left: 16, right: 374, headerDirection: "column" },
             "ATS resume history should remain fully visible at 390px",
           );
+        }
+        if (navigation === "Cover Letter") {
+          await mobile
+            .getByRole("button", { name: "Create Cover Letter" })
+            .click();
+          await mobile
+            .getByRole("heading", { name: "Choose a Template" })
+            .waitFor();
+          assert.deepEqual(
+            await mobile.locator(".v2-cover-wizard").evaluate((wizard) => {
+              const footer = wizard.querySelector(".v2-cover-step-actions");
+              const navigation = document.querySelector(".v2-sidebar");
+              const wizardBounds = wizard.getBoundingClientRect();
+              const footerBounds = footer.getBoundingClientRect();
+              const navigationBounds = navigation.getBoundingClientRect();
+              return {
+                wizard: [
+                  wizardBounds.left,
+                  wizardBounds.top,
+                  wizardBounds.right,
+                  wizardBounds.bottom,
+                ],
+                footerAboveNavigation:
+                  footerBounds.bottom <= navigationBounds.top + 1,
+                continueVisible:
+                  footer.querySelector("button:last-child").offsetParent !==
+                  null,
+              };
+            }),
+            {
+              wizard: [0, 0, 390, 784],
+              footerAboveNavigation: true,
+              continueVisible: true,
+            },
+            "the cover-letter wizard should remain fully operable above mobile navigation",
+          );
+          await mobile
+            .getByRole("button", { name: "Back to cover letters" })
+            .click();
+          await mobile
+            .getByRole("heading", { name: "Cover Letters" })
+            .waitFor();
         }
         if (navigation === "Profile and settings") {
           assert.equal(

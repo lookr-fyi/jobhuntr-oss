@@ -6267,13 +6267,7 @@ function Resume({ state, reload, mode = "resume" }) {
   };
   if (mode === "cover-letter") {
     if (letterWizard) {
-      const wizardSteps = [
-        "Choose Template",
-        "Edit Template",
-        "Select Resume",
-        "Job Information",
-        "Final Result",
-      ];
+      const wizardSteps = ["Template", "Edit", "Resume", "Job Info", "Result"];
       const selectedJob = state.jobs.find(
         (item) => item.id === letterWizard.jobId,
       );
