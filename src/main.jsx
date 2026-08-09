@@ -4005,8 +4005,9 @@ function Queue({ state, reload, setTab }) {
         <div>
           <strong>Review before you submit</strong>
           <p>
-            Confirmed queued jobs are processed in your next Infinite Hunt. New
-            application answers can be saved in your About Me profile.
+            Complete each packet checklist first. This local edition records
+            your confirmation but never submits to an external website. New
+            verified answers can be saved in your About Me profile.
           </p>
           <button
             className="text-button"

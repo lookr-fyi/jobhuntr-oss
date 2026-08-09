@@ -713,6 +713,12 @@ test(
       await assertAccessible(page, "ATS Resume");
 
       await page.locator('button[title="Submission Queue"]').click();
+      await page.getByText(/never submits to an external website/i).waitFor();
+      assert.equal(
+        await page.getByText(/processed in your next Infinite Hunt/i).count(),
+        0,
+        "the local-only queue must not claim that Infinite Hunt submits external forms",
+      );
       await page
         .locator(".v2-ats-recommendation")
         .filter({ hasText: /ATS resume generated|Original resume meets/ })
