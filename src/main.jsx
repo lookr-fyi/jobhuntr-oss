@@ -4660,6 +4660,9 @@ function Queue({ state, reload, setTab }) {
   const [submitIndex, setSubmitIndex] = useState(0);
   const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
   const [submittingReady, setSubmittingReady] = useState(false);
+  const [creatingPacketFor, setCreatingPacketFor] = useState("");
+  const creatingPacketRef = useRef(false);
+  const submittingReadyRef = useRef(false);
   const submitCloseRef = useRef(null);
   const active = state.submissions.filter((item) => {
     const job = state.jobs.find((candidate) => candidate.id === item.jobId);
@@ -4740,7 +4743,9 @@ function Queue({ state, reload, setTab }) {
     );
   };
   const create = async () => {
-    if (!selectedQueueJobId) return;
+    if (!selectedQueueJobId || creatingPacketRef.current) return;
+    creatingPacketRef.current = true;
+    setCreatingPacketFor(selectedQueueJobId);
     try {
       const created = await api("/api/submissions", {
         method: "POST",
@@ -4754,9 +4759,17 @@ function Queue({ state, reload, setTab }) {
       });
       setSelectedId(created.id);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the selected role available so packet creation can be retried.
+    } finally {
+      creatingPacketRef.current = false;
+      setCreatingPacketFor("");
+    }
   };
   const prepareJob = async (targetJobId) => {
+    if (!targetJobId || creatingPacketRef.current) return;
+    creatingPacketRef.current = true;
+    setCreatingPacketFor(targetJobId);
     try {
       const created = await api("/api/submissions", {
         method: "POST",
@@ -4772,7 +4785,12 @@ function Queue({ state, reload, setTab }) {
       setJobId(targetJobId);
       setQueueTab("apply");
       await reload();
-    } catch {}
+    } catch {
+      // Leave the source job selected so preparation can be retried.
+    } finally {
+      creatingPacketRef.current = false;
+      setCreatingPacketFor("");
+    }
   };
   useEffect(() => {
     if (!submitOpen) return undefined;
@@ -4834,7 +4852,13 @@ function Queue({ state, reload, setTab }) {
     document.getElementById(`queue-tab-${nextTab}`)?.focus();
   };
   const recordCurrentSubmission = async () => {
-    if (!currentSubmitPacket || !submissionConfirmed) return;
+    if (
+      !currentSubmitPacket ||
+      !submissionConfirmed ||
+      submittingReadyRef.current
+    )
+      return;
+    submittingReadyRef.current = true;
     setSubmittingReady(true);
     try {
       await api(`/api/submissions/${currentSubmitPacket.id}/submit`, {
@@ -4855,6 +4879,7 @@ function Queue({ state, reload, setTab }) {
     } catch {
       // Keep the reviewed packet open when recording fails.
     } finally {
+      submittingReadyRef.current = false;
       setSubmittingReady(false);
     }
   };
@@ -5083,8 +5108,15 @@ function Queue({ state, reload, setTab }) {
                     <span key={tag}>{tag}</span>
                   ))}
                 </div>
-                <button onClick={() => prepareJob(sourceSelected.id)}>
-                  <FileText size={16} /> Prepare application
+                <button
+                  disabled={Boolean(creatingPacketFor)}
+                  aria-busy={creatingPacketFor === sourceSelected.id}
+                  onClick={() => prepareJob(sourceSelected.id)}
+                >
+                  <FileText size={16} />{" "}
+                  {creatingPacketFor === sourceSelected.id
+                    ? "Preparing…"
+                    : "Prepare application"}
                 </button>
               </div>
             ) : (
@@ -5120,8 +5152,15 @@ function Queue({ state, reload, setTab }) {
                   </option>
                 ))}
               </select>
-              <button disabled={!selectedQueueJobId} onClick={create}>
-                <Plus size={15} /> Add to queue
+              <button
+                disabled={!selectedQueueJobId || Boolean(creatingPacketFor)}
+                aria-busy={creatingPacketFor === selectedQueueJobId}
+                onClick={create}
+              >
+                <Plus size={15} />{" "}
+                {creatingPacketFor === selectedQueueJobId
+                  ? "Adding…"
+                  : "Add to queue"}
               </button>
             </div>
           </div>
@@ -5447,6 +5486,7 @@ function Queue({ state, reload, setTab }) {
               </button>
               <button
                 disabled={submittingReady || !submissionConfirmed}
+                aria-busy={submittingReady}
                 onClick={recordCurrentSubmission}
               >
                 {submittingReady

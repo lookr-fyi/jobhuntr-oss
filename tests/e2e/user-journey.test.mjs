@@ -1802,9 +1802,27 @@ test(
         0,
         "terminal opportunities must not remain actionable in the submission queue",
       );
-      await page.getByRole("button", { name: "Prepare application" }).click();
+      let packetCreateRequests = 0;
+      await page.route("**/api/submissions", async (route) => {
+        if (route.request().method() === "POST") packetCreateRequests += 1;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      });
+      await page
+        .getByRole("button", { name: "Prepare application" })
+        .evaluate((button) => {
+          button.click();
+          button.click();
+        });
+      await page.getByRole("button", { name: "Preparing…" }).waitFor();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
+      assert.equal(
+        packetCreateRequests,
+        1,
+        "same-frame clicks must create only one application packet request",
+      );
+      await page.unroute("**/api/submissions");
       await assertAccessible(page, "Submission Queue");
       await assertNamedFormControls(page, "Submission Queue");
       const checklistCount = await checklist.count();

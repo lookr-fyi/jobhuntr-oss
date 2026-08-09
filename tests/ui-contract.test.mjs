@@ -235,6 +235,36 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   assert.match(recurring, /runningRef\.current/);
 });
 
+test("application packet actions are single-flight with truthful progress", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const queue = source.slice(
+    source.indexOf("function Queue("),
+    source.indexOf("function ClipboardListIcon"),
+  );
+
+  assert.match(queue, /const creatingPacketRef = useRef\(false\)/);
+  assert.match(queue, /const submittingReadyRef = useRef\(false\)/);
+  assert.match(
+    queue,
+    /if \(!selectedQueueJobId \|\| creatingPacketRef\.current\) return/,
+  );
+  assert.match(
+    queue,
+    /if \(!targetJobId \|\| creatingPacketRef\.current\) return/,
+  );
+  assert.match(queue, /submittingReadyRef\.current[\s\S]*?return/);
+  assert.match(queue, /creatingPacketRef\.current = true/);
+  assert.match(queue, /creatingPacketRef\.current = false/);
+  assert.match(queue, /submittingReadyRef\.current = true/);
+  assert.match(queue, /submittingReadyRef\.current = false/);
+  assert.match(queue, /"Preparing…"[\s\S]*?: "Prepare application"/);
+  assert.match(queue, /"Adding…"[\s\S]*?: "Add to queue"/);
+  assert.match(queue, /aria-busy=\{submittingReady\}/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
