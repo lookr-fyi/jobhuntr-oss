@@ -1447,6 +1447,7 @@ test(
       await appliedAddJob.click();
       const addJobDialog = page.getByRole("dialog", { name: "Add New Job" });
       await addJobDialog.waitFor();
+      await assertNamedFormControls(addJobDialog, "Add New Job drawer");
       assert.equal(
         await addJobDialog
           .getByRole("button", { name: "Cancel" })
@@ -1804,6 +1805,7 @@ test(
       await page.getByLabel("Job status").selectOption("interview");
       await page.getByRole("button", { name: "Add Round" }).click();
       const roundForm = page.locator(".interview-round-form");
+      await assertNamedFormControls(roundForm, "Interview round form");
       await roundForm.getByLabel("Round number").fill("1");
       await roundForm
         .getByLabel("Notes")
@@ -1839,6 +1841,10 @@ test(
       await funnelDialog.waitFor({ state: "hidden" });
       await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
       await page.getByLabel("Private job note").waitFor();
+      await assertNamedFormControls(
+        page.locator(".job-drawer"),
+        "Job details drawer",
+      );
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
@@ -1881,6 +1887,33 @@ test(
       await page
         .getByText("Prepare product portfolio")
         .waitFor({ state: "hidden" });
+      const contactForm = page.locator(".contact-form");
+      await contactForm.getByLabel("Name").fill("Alex Morgan");
+      await contactForm.getByLabel("Role").fill("Engineering Recruiter");
+      await contactForm.getByLabel("Email").fill("alex@example.com");
+      await contactForm
+        .getByLabel("LinkedIn profile")
+        .fill("https://www.linkedin.com/in/alex-morgan");
+      await page.getByRole("button", { name: "Add contact" }).click();
+      const trackerContact = page
+        .locator("article.contact")
+        .filter({ hasText: "Alex Morgan" });
+      await trackerContact.waitFor();
+      await trackerContact.getByRole("button", { name: "Edit" }).click();
+      await contactForm.getByLabel("Role").fill("Senior Recruiter");
+      await page.getByRole("button", { name: "Save contact" }).click();
+      await trackerContact.getByText("Senior Recruiter").waitFor();
+      await trackerContact
+        .getByRole("button", { name: "Delete contact Alex Morgan" })
+        .click();
+      const trackerDeleteContactDialog = page.getByRole("alertdialog", {
+        name: "Delete contact?",
+      });
+      await trackerDeleteContactDialog.waitFor();
+      await trackerDeleteContactDialog
+        .getByRole("button", { name: "Delete" })
+        .click();
+      await trackerContact.waitFor({ state: "hidden" });
       await page.goto(`${baseUrl}/#/tracker?job=${recordedSubmission.jobId}`);
       await page
         .getByRole("region", { name: "Submitted application evidence" })
@@ -1931,6 +1964,7 @@ test(
       await page
         .getByRole("heading", { name: "Edit Job", exact: true })
         .waitFor();
+      await assertNamedFormControls(jobEditForm, "Edit Job drawer");
       await jobEditForm
         .getByLabel("title", { exact: true })
         .fill("Founding Principal Product Engineer");
