@@ -1414,6 +1414,11 @@ app.patch("/api/submissions/:id", async (req, res) => {
       item.coverLetterId = coverLetterId;
     }
     if (questionUpdates) {
+      const explicitlyVerifiedQuestionIds = new Set(
+        questionUpdates
+          .filter((candidate) => candidate.verified === true)
+          .map((candidate) => safeText(candidate.id, 80)),
+      );
       invalidateChecklist(["Confirm application details"]);
       item.applicationQuestions = item.applicationQuestions.map((existing) => {
         const incoming = questionUpdates.find(
@@ -1436,7 +1441,9 @@ app.patch("/api/submissions/:id", async (req, res) => {
       });
       const verifiedAnswers = item.applicationQuestions.filter(
         (question) =>
-          isValidApplicationAnswer(question) && question.verified === true,
+          explicitlyVerifiedQuestionIds.has(question.id) &&
+          isValidApplicationAnswer(question) &&
+          question.verified === true,
       );
       for (const question of verifiedAnswers) {
         const normalizedQuestion = question.question.trim().toLowerCase();

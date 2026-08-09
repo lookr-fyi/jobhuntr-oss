@@ -1564,6 +1564,67 @@ test("rapid application review edits cannot overwrite each other", async () => {
   );
 });
 
+test("editing one Easy Apply answer does not re-remember unrelated verified answers", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Focused Memory Co",
+      title: "Application Integrity Engineer",
+      url: "https://focused-memory.example/apply",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+  });
+  const [verifiedQuestion, editedQuestion] = packet.body.applicationQuestions;
+  const verified = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      applicationQuestion: {
+        id: verifiedQuestion.id,
+        answer: "A focused answer that should be remembered exactly once.",
+        verified: true,
+      },
+    }),
+  });
+  assert.equal(verified.res.status, 200);
+  const beforeEdit = (await req("/api/state")).body;
+  const memoryEventsBefore = beforeEdit.activities.filter(
+    (activity) =>
+      activity.type === "about-me" &&
+      activity.data?.submissionId === packet.body.id,
+  ).length;
+  const rememberedBefore = structuredClone(beforeEdit.profile.faqAnswers);
+
+  const edited = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      applicationQuestion: {
+        id: editedQuestion.id,
+        answer: "$175,000 base depending on the complete package.",
+        verified: false,
+      },
+    }),
+  });
+  assert.equal(edited.res.status, 200);
+  const afterEdit = (await req("/api/state")).body;
+  assert.deepEqual(
+    afterEdit.profile.faqAnswers,
+    rememberedBefore,
+    "an unverified edit must not rewrite any remembered application answer",
+  );
+  assert.equal(
+    afterEdit.activities.filter(
+      (activity) =>
+        activity.type === "about-me" &&
+        activity.data?.submissionId === packet.body.id,
+    ).length,
+    memoryEventsBefore,
+    "an unverified edit must not claim unrelated answers were remembered again",
+  );
+});
+
 test("malformed Easy Apply updates are rejected without mutating the packet", async () => {
   const job = await req("/api/jobs", {
     method: "POST",
