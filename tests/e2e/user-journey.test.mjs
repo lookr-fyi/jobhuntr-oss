@@ -1183,8 +1183,28 @@ test(
       await page.getByRole("button", { name: "Back to Cover Letters" }).click();
       await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
 
+      await page.evaluate(() => {
+        localStorage.setItem(
+          "jobTracker_visibleStatuses",
+          JSON.stringify(["wishlist", "legacy-interview"]),
+        );
+        localStorage.setItem(
+          "jobTracker_selectedAgentRun",
+          "deleted-agent-run",
+        );
+      });
       await page.getByRole("button", { name: "Job Tracker" }).click();
       await page.getByText("Show Columns:", { exact: true }).waitFor();
+      assert.equal(
+        await page.locator(".tracker-status-filters input:checked").count(),
+        10,
+        "obsolete saved statuses should recover to every current v2 tracker column",
+      );
+      assert.equal(
+        await page.getByLabel("Filter by agent run").inputValue(),
+        "all",
+        "a deleted saved agent run should recover to All Runs",
+      );
       await page.goto(`${baseUrl}/#/tracker?job=${recordedSubmission.jobId}`);
       await page
         .getByRole("region", { name: "Submitted application evidence" })

@@ -1808,16 +1808,26 @@ function Tracker({ state, reload, setTab }) {
       const saved = JSON.parse(
         localStorage.getItem("jobTracker_visibleStatuses") || "null",
       );
-      if (Array.isArray(saved) && saved.length) return new Set(saved);
+      const validSaved = Array.isArray(saved)
+        ? saved.filter((stage) => TRACKER_STAGES.includes(stage))
+        : [];
+      if (validSaved.length) return new Set(validSaved);
     } catch {}
     return new Set(stages);
   });
-  const [runFilter, setRunFilter] = useState(
-    () =>
+  const [runFilter, setRunFilter] = useState(() => {
+    const requested =
       trackerParams.get("run") ||
       localStorage.getItem("jobTracker_selectedAgentRun") ||
+      "all";
+    const validRunFilters = new Set([
       "all",
-  );
+      "manual",
+      "automated",
+      ...(state.agentRuns || []).map((run) => run.id),
+    ]);
+    return validRunFilters.has(requested) ? requested : "all";
+  });
   const [showForm, setShowForm] = useState(false);
   const [editForm, setEditForm] = useState(null);
   const [editBusy, setEditBusy] = useState(false);
