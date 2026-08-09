@@ -7132,10 +7132,10 @@ function Resume({ state, reload, mode = "resume" }) {
           )}
         </div>
       </details>
-      <div className="card document-library">
+      <div className="v2-resume-history">
         <div className="v2-resume-history-head">
           <div>
-            <h3>Generated Resumes</h3>
+            <h2>Generated Resumes</h2>
             <p>{state.resumes.length} locally generated resumes</p>
           </div>
           <button className="secondary" onClick={reload}>
@@ -7253,11 +7253,10 @@ function Resume({ state, reload, mode = "resume" }) {
           </div>
         ) : (
           <div className="v2-resume-history-empty">
-            <FileText size={28} />
-            <p>No generated resumes yet.</p>
-            <span>
-              Generate a resume from one of your templates to see it here.
-            </span>
+            <p>
+              No generated resumes found. Generate a resume from one of your
+              templates to see it here.
+            </p>
           </div>
         )}
       </div>

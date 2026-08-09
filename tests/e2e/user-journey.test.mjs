@@ -956,6 +956,40 @@ test(
         false,
         "manual resume generation should not displace the default v2 library/history layout",
       );
+      assert.deepEqual(
+        await page.locator(".v2-resume-history").evaluate((root) => {
+          const style = (selector) =>
+            getComputedStyle(root.querySelector(selector));
+          const heading = style(".v2-resume-history-head h2");
+          const subtitle = style(".v2-resume-history-head p");
+          const refresh = style(".v2-resume-history-head button");
+          const search = style(".v2-resume-history-toolbar input");
+          const filter = style(".v2-resume-history-toolbar select");
+          const toggle = style(".v2-resume-history-toolbar .text-button");
+          return {
+            heading: [heading.fontSize, heading.fontWeight],
+            subtitle: [subtitle.fontSize, subtitle.color],
+            refresh: [refresh.padding, refresh.fontSize, refresh.borderRadius],
+            search: [search.padding, search.fontSize, search.borderRadius],
+            filter: [
+              filter.padding,
+              filter.fontSize,
+              filter.minWidth,
+              filter.width,
+            ],
+            toggle: [toggle.padding, toggle.fontSize, toggle.color],
+          };
+        }),
+        {
+          heading: ["26px", "600"],
+          subtitle: ["15px", "rgb(75, 85, 99)"],
+          refresh: ["12px 20px", "16px", "6px"],
+          search: ["8px 12px 8px 40px", "15px", "6px"],
+          filter: ["8px 12px", "15px", "200px", "200px"],
+          toggle: ["8px 12px", "16px", "rgb(37, 99, 235)"],
+        },
+        "generated resume history should retain the authoritative v2 control geometry",
+      );
       await page
         .getByText("Generate a resume manually", { exact: true })
         .click();
@@ -990,7 +1024,10 @@ test(
       await deleteResumeDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search resume history").fill("no such resume");
       await page
-        .getByText("No generated resumes yet.", { exact: true })
+        .getByText(
+          "No generated resumes found. Generate a resume from one of your templates to see it here.",
+          { exact: true },
+        )
         .waitFor();
       await page.getByLabel("Search resume history").fill("");
       assert.equal(
@@ -2984,6 +3021,22 @@ test(
                 left >= 0 && right <= 390 && width >= 100,
             ),
             "every Infinite Hunt action must remain fully visible and usable on a 390px window",
+          );
+        }
+        if (navigation === "ATS Templates") {
+          assert.deepEqual(
+            await mobile.locator(".v2-resume-history").evaluate((history) => {
+              const bounds = history.getBoundingClientRect();
+              return {
+                left: bounds.left,
+                right: bounds.right,
+                headerDirection: getComputedStyle(
+                  history.querySelector(".v2-resume-history-head"),
+                ).flexDirection,
+              };
+            }),
+            { left: 16, right: 374, headerDirection: "column" },
+            "ATS resume history should remain fully visible at 390px",
           );
         }
         if (navigation === "Job Tracker") {

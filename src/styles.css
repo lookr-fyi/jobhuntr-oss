@@ -1954,7 +1954,7 @@ button:disabled {
 }
 @media (max-width: 1000px) {
   .resume-studio {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .resume-editor {
     grid-row: auto;
@@ -9604,8 +9604,11 @@ main > header.integrated-page-header {
 .v2-manual-resume-builder > .resume-editor {
   margin-top: 12px;
 }
-.resume-studio > .document-library {
+.resume-studio > .v2-resume-history {
   grid-column: 1/-1;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 .resume-studio > .document-preview {
   grid-column: 1/-1;
@@ -9615,29 +9618,84 @@ main > header.integrated-page-header {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
-.v2-resume-history-head h3 {
+.v2-resume-history-head h2 {
   margin: 0 0 4px;
-  font-size: 22px;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 .v2-resume-history-head p {
   margin: 0;
-  color: #475569;
-  font-size: 12px;
+  color: #4b5563;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.v2-resume-history-head button.secondary {
+  gap: 8px;
+  padding: 12px 20px;
+  border-color: #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+  font-size: 16px;
+  font-weight: 500;
 }
 .v2-resume-history-toolbar {
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) 200px auto;
+  display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
 }
-.v2-resume-history-toolbar .searchbox,
-.v2-resume-history-toolbar input,
-.v2-resume-history-toolbar select {
+.v2-resume-history-toolbar .searchbox {
+  position: relative;
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 240px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.v2-resume-history-toolbar .searchbox > svg {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 8px;
+  color: #6b7280;
+  transform: translateY(-50%);
+}
+.v2-resume-history-toolbar input {
+  box-sizing: border-box;
   width: 100%;
   margin: 0;
+  padding: 8px 12px 8px 40px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 15px;
+}
+.v2-resume-history-toolbar select {
+  box-sizing: border-box;
+  width: auto;
+  flex: 0 0 auto;
+  min-width: 200px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+  font-size: 15px;
+}
+.v2-resume-history-toolbar .text-button {
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font-size: 16px;
+  font-weight: 500;
 }
 .v2-resume-groups {
   display: flex;
@@ -9733,20 +9791,19 @@ main > header.integrated-page-header {
   color: #111827;
 }
 .v2-resume-history-empty {
-  padding: 38px 20px;
+  padding: 20px;
   border: 1px dashed #cbd5e1;
-  border-radius: 10px;
-  background: #f8fafc;
-  color: #64748b;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #4b5563;
   text-align: center;
 }
 .v2-resume-history-empty p {
-  margin: 10px 0 4px;
-  color: #334155;
-  font-weight: 600;
-}
-.v2-resume-history-empty span {
-  font-size: 12px;
+  margin: 0;
+  color: #4b5563;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 @media (max-width: 900px) {
   .v2-template-toolbar {
@@ -9760,7 +9817,7 @@ main > header.integrated-page-header {
     grid-template-columns: 1fr;
   }
   .resume-studio > .resume-editor,
-  .resume-studio > .document-library {
+  .resume-studio > .v2-resume-history {
     grid-column: 1/-1;
   }
 }
@@ -9769,6 +9826,7 @@ main > header.integrated-page-header {
     grid-template-columns: 1fr;
   }
   .v2-resume-history-head {
+    flex-direction: column;
     align-items: flex-start;
   }
 }
