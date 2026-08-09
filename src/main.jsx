@@ -6943,18 +6943,21 @@ function Resume({ state, reload, mode = "resume" }) {
               </>
             )}
             <div className="v2-cover-step-actions">
-              <button
-                className="secondary"
-                disabled={letterWizard.step === 1}
-                onClick={() =>
-                  setLetterWizard({
-                    ...letterWizard,
-                    step: letterWizard.step - 1,
-                  })
-                }
-              >
-                Previous
-              </button>
+              {letterWizard.step === 1 ? (
+                <span aria-hidden="true" />
+              ) : (
+                <button
+                  className="secondary"
+                  onClick={() =>
+                    setLetterWizard({
+                      ...letterWizard,
+                      step: letterWizard.step - 1,
+                    })
+                  }
+                >
+                  <ChevronLeft size={16} /> Previous
+                </button>
+              )}
               {letterWizard.step < 4 ? (
                 <button
                   disabled={letterWizard.step === 3 && !coverSourceReady}
@@ -6965,7 +6968,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     })
                   }
                 >
-                  Continue
+                  Next <ChevronRight size={16} />
                 </button>
               ) : letterWizard.step === 4 ? (
                 <button

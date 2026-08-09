@@ -1863,6 +1863,13 @@ test(
       );
       await page.getByRole("button", { name: "Create Cover Letter" }).click();
       await page.getByRole("heading", { name: "Choose a Template" }).waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Previous", exact: true })
+          .count(),
+        0,
+        "v2 omits Previous entirely on the first cover-letter step",
+      );
       await page
         .getByRole("button", { name: "Edit cover letter template name" })
         .click();
@@ -1906,7 +1913,7 @@ test(
       );
       await assertAccessible(page, "Cover Letter wizard");
       await page.getByRole("button", { name: "Select Modern" }).click();
-      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Next", exact: true }).click();
       assert.equal(new URL(page.url()).hash, "#/cover-letter?step=2");
       await assertNamedFormControls(page, "Cover Letter template editor");
       await page
@@ -1928,7 +1935,7 @@ test(
         .fill("Make it more professional");
       await page.getByRole("button", { name: "Apply Prompt" }).click();
       await page.getByText("Prompt applied locally").waitFor();
-      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Next", exact: true }).click();
       const previewResumeButton = page.getByRole("button", {
         name: "Preview E2E tailored resume",
       });
@@ -1959,7 +1966,7 @@ test(
       await page
         .getByLabel("Cover Letter Instructions")
         .fill("Emphasize accessible product delivery and measurable outcomes.");
-      await page.getByRole("button", { name: "Continue" }).click();
+      await page.getByRole("button", { name: "Next", exact: true }).click();
       await page.getByRole("heading", { name: "Job Information" }).waitFor();
       await assertNamedFormControls(page, "Cover Letter job information");
       await page
