@@ -1880,6 +1880,17 @@ button:disabled {
     display: none;
   }
 }
+@media (max-width: 768px) {
+  .kanban {
+    gap: 12px;
+    padding: 16px 0;
+  }
+  .kanban-column {
+    width: 280px;
+    min-width: 250px;
+    max-width: 280px;
+  }
+}
 @media (max-width: 560px) {
   .job-drawer {
     width: 100%;

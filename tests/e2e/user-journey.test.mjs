@@ -2512,6 +2512,40 @@ test(
             "every Infinite Hunt action must remain fully visible and usable on a 390px window",
           );
         }
+        if (navigation === "Job Tracker") {
+          const mobileTrackerColumn = mobile.locator(".status-column").first();
+          assert.equal(
+            await mobileTrackerColumn.evaluate(
+              (column) => getComputedStyle(column).width,
+            ),
+            "280px",
+            "v2 tracker columns should use their compact mobile width",
+          );
+          await mobile.locator(".kanban-card").first().click();
+          const mobileJobDrawer = mobile.locator(".job-drawer");
+          await mobileJobDrawer.waitFor();
+          await mobile.waitForTimeout(350);
+          const mobileDrawerBounds = await mobileJobDrawer.evaluate(
+            (drawer) => {
+              const box = drawer.getBoundingClientRect();
+              return {
+                left: box.left,
+                right: box.right,
+                width: box.width,
+                viewportWidth: window.innerWidth,
+              };
+            },
+          );
+          assert.deepEqual(mobileDrawerBounds, {
+            left: 0,
+            right: 390,
+            width: 390,
+            viewportWidth: 390,
+          });
+          await mobile
+            .getByRole("button", { name: "Close job details" })
+            .click();
+        }
         const activeNavigationIsVisible = await mobile
           .locator(`button[title="${navigation}"]`)
           .evaluate((button) => {
