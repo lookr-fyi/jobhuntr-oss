@@ -379,6 +379,15 @@ test(
       await firstGuidanceTask.waitFor({ state: "hidden" });
       await guidance.click();
       await page.locator("main").hover({ position: { x: 400, y: 200 } });
+      await page.locator('button[title="Job Board"]').click();
+      await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      assert.match(
+        page.url(),
+        /#\/board/,
+        "the first pointer press on collapsed desktop navigation must navigate even while the sidebar expands",
+      );
+      await page.locator('button[title="Overview"]').click();
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
       await assertAccessible(page, "Overview");
       await page.getByLabel("Applications evaluated").uncheck();
       assert.equal(
@@ -2565,6 +2574,33 @@ test(
       await page
         .getByRole("heading", { name: "Hi, I'm your Career Coach!" })
         .waitFor();
+      assert.deepEqual(
+        await page.evaluate(() => {
+          const styles = (selector) =>
+            window.getComputedStyle(document.querySelector(selector));
+          return {
+            pageMaxWidth: styles(".coach-page").maxWidth,
+            pagePadding: styles(".coach-page").padding,
+            headingSize: styles(".v2-coach-welcome h2").fontSize,
+            headingWeight: styles(".v2-coach-welcome h2").fontWeight,
+            copyAlignment: styles(".v2-coach-welcome p").textAlign,
+            inputMaxWidth: styles(".v2-coach-input").maxWidth,
+            inputHeight: styles(".v2-coach-input textarea").minHeight,
+            actionSize: styles(".v2-coach-input button").fontSize,
+          };
+        }),
+        {
+          pageMaxWidth: "1200px",
+          pagePadding: "24px",
+          headingSize: "26px",
+          headingWeight: "600",
+          copyAlignment: "start",
+          inputMaxWidth: "768px",
+          inputHeight: "120px",
+          actionSize: "16px",
+        },
+        "Career Coach should preserve the v2 desktop content and composer proportions",
+      );
       await assertNamedFormControls(page, "Career Coach chat");
       assert.equal(
         await page.getByText("Invalid Date", { exact: true }).count(),

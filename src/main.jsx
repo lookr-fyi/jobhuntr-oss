@@ -880,6 +880,9 @@ function App() {
                 title={tooltip || label}
                 aria-current={tab === name ? "page" : undefined}
                 className={tab === name ? "active" : ""}
+                onPointerDown={(event) => {
+                  if (event.button === 0) setTab(name);
+                }}
                 onClick={() => setTab(name)}
               >
                 <Icon size={14} />
