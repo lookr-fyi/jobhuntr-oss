@@ -231,6 +231,43 @@ test("v2 personal profile details persist with bounded local input", async () =>
   assert.equal(invalid.res.status, 400);
 });
 
+test("FAQ deletion is isolated from unrelated profile fields", async () => {
+  const faq = {
+    id: "atomic-faq-delete",
+    question: "What motivates you?",
+    answer: "Building useful products.",
+  };
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      nickname: "Before isolated delete",
+      faqAnswers: [faq],
+    }),
+  });
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ nickname: "Preserved after isolated delete" }),
+  });
+  const removed = await req("/api/profile/faqs/delete", {
+    method: "POST",
+    body: JSON.stringify({ id: faq.id, question: faq.question }),
+  });
+  assert.equal(removed.res.status, 200);
+  assert.deepEqual(removed.body.faqAnswers, []);
+  const profile = (await req("/api/state")).body.profile;
+  assert.equal(profile.nickname, "Preserved after isolated delete");
+  assert.deepEqual(profile.faqAnswers, []);
+  assert.equal(
+    (
+      await req("/api/profile/faqs/delete", {
+        method: "POST",
+        body: JSON.stringify({ id: faq.id, question: faq.question }),
+      })
+    ).res.status,
+    404,
+  );
+});
+
 test("concurrent profile saves cannot race a valid resume back to a placeholder", async () => {
   await mutate((db) => {
     db.profile.resumeText = "Paste your resume here.";

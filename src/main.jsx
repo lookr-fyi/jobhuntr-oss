@@ -13144,21 +13144,23 @@ function SettingsPage({ state, reload, setTab }) {
         onConfirm={async () => {
           const deletionRevision = formRevision.current;
           const targetId = faqDeleteTarget.id;
-          const faqAnswers = form.faqAnswers.filter((answer, index) =>
-            targetId ? answer.id !== targetId : index !== faqDeleteTarget.index,
-          );
           setSaved(false);
-          await api("/api/profile", {
-            method: "PUT",
-            body: JSON.stringify({ ...p, faqAnswers }),
+          const result = await api("/api/profile/faqs/delete", {
+            method: "POST",
+            body: JSON.stringify({
+              id: targetId,
+              question: faqDeleteTarget.question,
+            }),
           });
+          if (!Array.isArray(result.faqAnswers))
+            throw new Error("FAQ deletion was not saved");
           await reload();
           setForm((current) => ({
             ...current,
-            faqAnswers: current.faqAnswers.filter((answer, index) =>
+            faqAnswers: current.faqAnswers.filter((answer) =>
               targetId
                 ? answer.id !== targetId
-                : index !== faqDeleteTarget.index,
+                : answer.question !== faqDeleteTarget.question,
             ),
           }));
           if (formRevision.current === deletionRevision) setSaved(true);

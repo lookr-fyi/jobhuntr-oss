@@ -355,6 +355,25 @@ app.put("/api/profile", async (req, res) => {
   res.json(result.profile);
 });
 
+app.post("/api/profile/faqs/delete", async (req, res) => {
+  const id = safeText(req.body?.id, 200);
+  const question = safeText(req.body?.question, 1000);
+  if (!id && !question)
+    return res.status(400).json({ error: "Choose an FAQ question to delete" });
+  const result = await mutate((db) => {
+    const faqAnswers = db.profile.faqAnswers || [];
+    const index = faqAnswers.findIndex((answer) =>
+      id ? answer.id === id : safeText(answer.question, 1000) === question,
+    );
+    if (index < 0) return null;
+    const [removed] = faqAnswers.splice(index, 1);
+    auditEvent(db, "about-me", `Deleted FAQ question “${removed.question}”.`);
+    return { faqAnswers: [...faqAnswers] };
+  });
+  if (!result) return res.status(404).json({ error: "FAQ question not found" });
+  res.json(result);
+});
+
 app.get("/api/jobs", async (_req, res) => {
   const db = await readDb();
   res.json(db.jobs);

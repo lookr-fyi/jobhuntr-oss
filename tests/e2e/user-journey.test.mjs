@@ -3913,8 +3913,8 @@ test(
       await Promise.all([
         page.waitForResponse(
           (response) =>
-            response.url().endsWith("/api/profile") &&
-            response.request().method() === "PUT" &&
+            response.url().endsWith("/api/profile/faqs/delete") &&
+            response.request().method() === "POST" &&
             response.ok(),
         ),
         deleteFaqDialog

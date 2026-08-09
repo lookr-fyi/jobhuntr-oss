@@ -941,7 +941,7 @@ test("FAQ deletion persists before mutating the form and cannot bless newer edit
     settings.indexOf('<div className="v2-page-intro">'),
   );
 
-  const request = deletion.indexOf('await api("/api/profile"');
+  const request = deletion.indexOf('await api("/api/profile/faqs/delete"');
   const localMutation = deletion.indexOf("setForm((current)");
   assert.ok(request >= 0, "FAQ deletion must persist the profile");
   assert.ok(
@@ -954,6 +954,7 @@ test("FAQ deletion persists before mutating the form and cannot bless newer edit
   );
   assert.match(deletion, /const deletionRevision = formRevision\.current/);
   assert.match(deletion, /const targetId = faqDeleteTarget\.id/);
+  assert.doesNotMatch(deletion, /JSON\.stringify\(\{ \.\.\.p,/);
   assert.match(
     deletion,
     /if \(formRevision\.current === deletionRevision\) setSaved\(true\)/,
