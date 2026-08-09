@@ -712,6 +712,9 @@ test(
         name: "Create New Agent Run",
       });
       await newRunDialog.waitFor();
+      await newRunDialog
+        .getByRole("heading", { name: "Create New Agent Run", level: 2 })
+        .waitFor();
       await assertNamedFormControls(page, "Agent Runs and new-run dialog");
       assert.equal(
         await newRunDialog
@@ -723,6 +726,14 @@ test(
       await newRunDialog
         .getByRole("radio", { name: /Glassdoor Auto Search/ })
         .click();
+      assert.equal(
+        await newRunDialog
+          .getByRole("radio", { name: /Glassdoor Auto Search/ })
+          .locator("small")
+          .evaluate((description) => getComputedStyle(description).color),
+        "rgb(71, 85, 105)",
+        "selected run templates should retain WCAG AA description contrast",
+      );
       await newRunDialog.getByLabel("Run Name").fill("Frontend Engineer");
       await newRunDialog.getByLabel("Generate ATS-optimized resumes").check();
       await newRunDialog.getByRole("button", { name: "Cancel" }).click();

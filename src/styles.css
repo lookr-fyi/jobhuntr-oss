@@ -6507,7 +6507,7 @@ select:focus {
   font-weight: 800;
   letter-spacing: 0.12em;
 }
-.v2-new-run-head h3 {
+.v2-new-run-head h2 {
   margin: 5px 0 0;
   font-size: 22px;
 }
@@ -6546,7 +6546,7 @@ select:focus {
 }
 .v2-new-run-templates small {
   margin-top: 3px;
-  color: #64748b;
+  color: #475569;
   font-size: 11px;
   line-height: 1.4;
 }

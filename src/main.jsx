@@ -11375,7 +11375,7 @@ function RunsPage({ state, setTab, reload }) {
             <div className="v2-new-run-head">
               <div>
                 <span>NEW WORKFLOW</span>
-                <h3 id="new-agent-run-title">Create New Agent Run</h3>
+                <h2 id="new-agent-run-title">Create New Agent Run</h2>
               </div>
               <button
                 ref={newRunCloseRef}
