@@ -522,6 +522,30 @@ test("LinkedIn audits cannot duplicate or publish stale results", async () => {
   assert.match(audit, /aria-busy=\{running\}/);
 });
 
+test("Interview round persistence is single-flight and retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const rounds = source.slice(
+    source.indexOf("function InterviewRounds"),
+    source.indexOf("function Actions"),
+  );
+
+  assert.match(rounds, /const busyRef = useRef\(false\)/);
+  assert.match(rounds, /if \(busyRef\.current\) return false/);
+  assert.match(rounds, /busyRef\.current = true/);
+  assert.match(rounds, /busyRef\.current = false/);
+  assert.match(rounds, /return true/);
+  assert.match(rounds, /return false/);
+  assert.match(rounds, /if \(!removed\) throw new Error/);
+  assert.match(rounds, /aria-busy=\{busy\}/);
+  assert.ok(
+    (rounds.match(/disabled=\{busy\}/g) || []).length >= 3,
+    "cancel, edit, and delete controls must lock during persistence",
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

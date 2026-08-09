@@ -3588,6 +3588,7 @@ function InterviewRounds({ job, reload }) {
   const [number, setNumber] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [deleteId, setDeleteId] = useState(null);
   const rounds = job.interviewRounds || [];
   const reset = () => {
@@ -3597,6 +3598,8 @@ function InterviewRounds({ job, reload }) {
     setNotes("");
   };
   const persist = async (next) => {
+    if (busyRef.current) return false;
+    busyRef.current = true;
     setBusy(true);
     try {
       await api(`/api/jobs/${job.id}`, {
@@ -3605,9 +3608,12 @@ function InterviewRounds({ job, reload }) {
       });
       await reload();
       reset();
+      return true;
     } catch {
       // The shared API error surface keeps the editor open for retry.
+      return false;
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
@@ -3643,7 +3649,10 @@ function InterviewRounds({ job, reload }) {
         description="This interview round and its notes will be permanently removed."
         onClose={() => setDeleteId(null)}
         onConfirm={async () => {
-          await persist(rounds.filter((round) => round.id !== deleteId));
+          const removed = await persist(
+            rounds.filter((round) => round.id !== deleteId),
+          );
+          if (!removed) throw new Error("Could not delete interview round");
           setDeleteId(null);
         }}
       />
@@ -3683,6 +3692,7 @@ function InterviewRounds({ job, reload }) {
           <div className="inline">
             <button
               disabled={busy || !number.trim() || !notes.trim()}
+              aria-busy={busy}
               onClick={save}
             >
               {busy ? "Saving…" : editingId ? "Update" : "Add"}
@@ -3699,11 +3709,16 @@ function InterviewRounds({ job, reload }) {
             <div className="row">
               <strong>{round.roundType}</strong>
               <span className="inline">
-                <button className="text-button" onClick={() => edit(round)}>
+                <button
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => edit(round)}
+                >
                   Edit
                 </button>
                 <button
                   className="text-button danger"
+                  disabled={busy}
                   onClick={() => setDeleteId(round.id)}
                 >
                   Delete
