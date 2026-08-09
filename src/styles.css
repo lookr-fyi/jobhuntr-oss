@@ -6619,6 +6619,19 @@ select:focus {
   color: var(--v2-text);
 }
 @media (max-width: 760px) {
+  .v2-runs-page > .v2-page-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .v2-runs-page > .v2-page-intro .inline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .v2-runs-page > .v2-page-intro .inline button {
+    justify-content: center;
+    white-space: nowrap;
+  }
   .v2-runs-toolbar {
     align-items: flex-start;
     flex-wrap: wrap;
@@ -6754,12 +6767,6 @@ select:focus {
     grid-template-columns: 1fr;
   }
   .v2-table-head {
-    display: none;
-  }
-  .v2-run-row {
-    grid-template-columns: 1fr 90px;
-  }
-  .v2-run-row > *:nth-child(n + 3) {
     display: none;
   }
 }

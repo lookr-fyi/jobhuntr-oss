@@ -3353,6 +3353,46 @@ test(
             "every Infinite Hunt action must remain fully visible and usable on a 390px window",
           );
         }
+        if (navigation === "Agent Runs") {
+          const runHeader = await mobile.evaluate(() => {
+            const heading = document
+              .querySelector(".v2-runs-page > .v2-page-intro h1")
+              .getBoundingClientRect();
+            const buttons = [
+              ...document.querySelectorAll(
+                ".v2-runs-page > .v2-page-intro .inline button",
+              ),
+            ].map((button) => button.getBoundingClientRect());
+            return {
+              headingBottom: Math.round(heading.bottom),
+              buttonTop: Math.round(buttons[0].top),
+              widths: buttons.map((button) => Math.round(button.width)),
+            };
+          });
+          assert.ok(
+            runHeader.buttonTop > runHeader.headingBottom &&
+              Math.abs(runHeader.widths[0] - runHeader.widths[1]) <= 1,
+            "mobile Agent Runs should stack a balanced action row below the full-width heading",
+          );
+          const runRow = mobile.locator(".v2-run-row").first();
+          assert.equal(
+            await runRow.evaluate((row) => {
+              const columns = window
+                .getComputedStyle(row)
+                .gridTemplateColumns.split(" ");
+              return `${columns.length}:${columns[0]}:${columns.at(-1)}`;
+            }),
+            "3:24px:36px",
+            "mobile Agent Runs should reserve a visible action column",
+          );
+          assert.equal(
+            await runRow
+              .getByRole("button", { name: /Actions for/ })
+              .isVisible(),
+            true,
+            "mobile users must be able to manage an individual agent run",
+          );
+        }
         if (navigation === "ATS Templates") {
           assert.deepEqual(
             await mobile.locator(".v2-resume-history").evaluate((history) => {
