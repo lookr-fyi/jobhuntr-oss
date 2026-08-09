@@ -270,7 +270,7 @@ test(
         state: "hidden",
       });
 
-      await page.getByRole("button", { name: "ATS Resume" }).click();
+      await page.getByRole("button", { name: "ATS Templates" }).click();
       await page
         .getByText("Generate a resume manually", { exact: true })
         .click();
@@ -540,7 +540,7 @@ test(
         .waitFor();
       await assertAccessible(page, "Job Board");
 
-      await page.getByRole("button", { name: "ATS Resume" }).click();
+      await page.getByRole("button", { name: "ATS Templates" }).click();
       await page
         .getByRole("heading", { name: "ATS Resume Templates" })
         .waitFor();
@@ -1366,7 +1366,7 @@ test(
       await deleteContactDialog.getByRole("button", { name: "Cancel" }).click();
       await assertAccessible(page, "Outreach");
 
-      await page.getByRole("button", { name: "Career Coach" }).click();
+      await page.getByRole("button", { name: "AI Career Coach" }).click();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -1791,13 +1791,13 @@ test(
         ["Infinite Hunting", "Infinite Hunting"],
         ["Agent Runs", "Agent Runs"],
         ["Submission Queue", "Submission Queue"],
-        ["ATS Resume", "ATS Resume"],
+        ["ATS Templates", "ATS Resume"],
         ["Cover Letter", "Cover Letters"],
         ["Job Tracker", "Job Tracker"],
         ["Outreach", "Outreach"],
         ["LinkedIn Audit", "LinkedIn Profile Audit"],
         ["Gigs", "Gigs"],
-        ["Career Coach", "Hi, I'm your Career Coach!"],
+        ["AI Career Coach", "Hi, I'm your Career Coach!"],
         ["Profile and settings", "User Center"],
         ["Data and privacy", "Settings & data"],
       ]) {

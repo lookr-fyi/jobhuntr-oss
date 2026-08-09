@@ -593,14 +593,14 @@ function App() {
     ["agent", InfinityIcon, "Infinite Hunting", "automation"],
     ["queue", ListChecks, "Submission Queue", "automation"],
     ["board", Briefcase, "Job Board", "automation"],
-    ["runs", List, "All Runs", "automation"],
-    ["resume", Sparkles, "ATS Resume", "documents"],
+    ["runs", List, "Agent Runs", "automation"],
+    ["resume", Sparkles, "ATS Templates", "documents"],
     ["cover-letter", FileText, "Cover Letter", "documents"],
     ["tracker", Columns3, "Job Tracker", "career"],
     ["outreach", Users, "Outreach", "career"],
     ["audit", Search, "LinkedIn Audit", "career"],
     ["gigs", CircleDollarSign, "Gigs", "career"],
-    ["coach", MessageSquare, "Career Coach", "career"],
+    ["coach", MessageSquare, "AI Career Coach", "career"],
   ];
   if (!state && err)
     return (
@@ -667,7 +667,7 @@ function App() {
                 <div className="v2-divider" />
               )}
               <button
-                title={name === "runs" ? "Agent Runs" : label}
+                title={label}
                 aria-current={tab === name ? "page" : undefined}
                 className={tab === name ? "active" : ""}
                 onClick={() => setTab(name)}
