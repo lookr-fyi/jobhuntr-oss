@@ -131,6 +131,22 @@ test(
       const page = await desktopContext.newPage();
       await page.goto(baseUrl);
 
+      assert.match(
+        await page.locator('meta[name="description"]').getAttribute("content"),
+        /private, local-first desktop workspace/,
+      );
+      const robots = await (
+        await page.request.get(`${baseUrl}/robots.txt`)
+      ).text();
+      assert.match(robots, /Disallow: \/$/m);
+      const llms = await (await page.request.get(`${baseUrl}/llms.txt`)).text();
+      assert.match(llms, /^# JobHuntr/m);
+      const onboardingProgress = page.getByRole("progressbar", {
+        name: "Setup step 1 of 3",
+      });
+      await onboardingProgress.waitFor();
+      assert.equal(await onboardingProgress.getAttribute("aria-valuenow"), "1");
+
       assert.equal(
         await page.locator("main").getAttribute("aria-hidden"),
         "true",

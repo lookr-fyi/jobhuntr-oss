@@ -1,0 +1,6 @@
+# JobHuntr
+
+JobHuntr is a private, local-first desktop job-search workspace. It does not
+expose a public content API and should not be indexed or used for training.
+
+- [Open the local JobHuntr workspace](/)
