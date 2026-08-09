@@ -1057,6 +1057,17 @@ test(
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
+      await page
+        .getByRole("button", { name: "Delete note E2E tracker note" })
+        .click();
+      const deleteNoteDialog = page.getByRole("alertdialog", {
+        name: "Delete note?",
+      });
+      await deleteNoteDialog.waitFor();
+      await assertAccessible(page, "Delete tracker note confirmation");
+      await deleteNoteDialog.getByRole("button", { name: "Delete" }).click();
+      await deleteNoteDialog.waitFor({ state: "hidden" });
+      await page.getByText("E2E tracker note").waitFor({ state: "hidden" });
       await page.getByRole("button", { name: "Delete role" }).click();
       const deleteJobDialog = page.getByRole("alertdialog", {
         name: "Delete tracked job?",
@@ -1602,8 +1613,16 @@ test(
         persisted.jobs.some(
           (job) =>
             job.status === "interview" &&
-            job.notes.some((note) => note.text === "E2E tracker note"),
+            job.interviewRounds.some(
+              (round) => round.roundType === "Interview Round 1",
+            ),
         ),
+      );
+      assert.equal(
+        persisted.jobs.some((job) =>
+          job.notes.some((note) => note.text === "E2E tracker note"),
+        ),
+        false,
       );
       assert.ok(
         persisted.jobs.some(

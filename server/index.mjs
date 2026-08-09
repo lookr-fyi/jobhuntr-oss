@@ -428,13 +428,15 @@ app.delete("/api/jobs/:id", async (req, res) => {
   res.status(ok ? 204 : 404).end();
 });
 app.post("/api/jobs/:id/notes", async (req, res) => {
+  const text = safeText(req.body.text, 4000);
+  if (!text) return res.status(400).json({ error: "Note text is required" });
   const note = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.params.id);
     if (!job) return null;
     const note = {
       id: nanoid(),
       at: timestamp(),
-      text: safeText(req.body.text, 4000),
+      text,
     };
     job.notes.unshift(note);
     auditEvent(db, "note", `Added note to ${job.company}.`, { jobId: job.id });
@@ -442,6 +444,20 @@ app.post("/api/jobs/:id/notes", async (req, res) => {
   });
   if (!note) return res.status(404).json({ error: "Job not found" });
   res.status(201).json(note);
+});
+app.delete("/api/jobs/:id/notes/:noteId", async (req, res) => {
+  const removed = await mutate((db) => {
+    const job = db.jobs.find((item) => item.id === req.params.id);
+    if (!job) return false;
+    const before = job.notes.length;
+    job.notes = job.notes.filter((note) => note.id !== req.params.noteId);
+    if (job.notes.length !== before)
+      auditEvent(db, "note", `Deleted note from ${job.company}.`, {
+        jobId: job.id,
+      });
+    return job.notes.length !== before;
+  });
+  res.status(removed ? 204 : 404).end();
 });
 
 app.post("/api/jobs/:id/contacts", async (req, res) => {
@@ -462,6 +478,42 @@ app.post("/api/jobs/:id/contacts", async (req, res) => {
   });
   if (!contact) return res.status(404).json({ error: "Job not found" });
   res.status(201).json(contact);
+});
+app.patch("/api/jobs/:id/contacts/:contactId", async (req, res) => {
+  const contact = await mutate((db) => {
+    const job = db.jobs.find((item) => item.id === req.params.id);
+    const item = job?.contacts.find(
+      (candidate) => candidate.id === req.params.contactId,
+    );
+    if (!item) return null;
+    const parsed = ContactSchema.safeParse({ ...item, ...req.body });
+    if (!parsed.success) return false;
+    Object.assign(item, parsed.data, { updatedAt: timestamp() });
+    auditEvent(db, "contact", `Updated contact for ${job.company}.`, {
+      jobId: job.id,
+    });
+    return item;
+  });
+  if (contact === false)
+    return res.status(400).json({ error: "Invalid contact details" });
+  if (!contact) return res.status(404).json({ error: "Contact not found" });
+  res.json(contact);
+});
+app.delete("/api/jobs/:id/contacts/:contactId", async (req, res) => {
+  const removed = await mutate((db) => {
+    const job = db.jobs.find((item) => item.id === req.params.id);
+    if (!job) return false;
+    const before = job.contacts.length;
+    job.contacts = job.contacts.filter(
+      (contact) => contact.id !== req.params.contactId,
+    );
+    if (job.contacts.length !== before)
+      auditEvent(db, "contact", `Deleted contact from ${job.company}.`, {
+        jobId: job.id,
+      });
+    return job.contacts.length !== before;
+  });
+  res.status(removed ? 204 : 404).end();
 });
 
 app.get("/api/templates", async (_req, res) => {
@@ -614,12 +666,16 @@ app.get("/print/cover-letter/:id", async (req, res) => {
   res.type("html").send(renderCoverLetterDocument(letter, db.profile, job));
 });
 app.post("/api/jobs/:id/tasks", async (req, res) => {
+  const text = safeText(req.body.text, 500);
+  if (!text) return res.status(400).json({ error: "Task text is required" });
+  if (req.body.due && !safeDueDate(req.body.due))
+    return res.status(400).json({ error: "Task due date is invalid" });
   const task = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.params.id);
     if (!job) return null;
     const task = {
       id: nanoid(),
-      text: safeText(req.body.text || "Follow up", 500),
+      text,
       due: safeDueDate(req.body.due),
       done: false,
       createdAt: timestamp(),
@@ -632,6 +688,12 @@ app.post("/api/jobs/:id/tasks", async (req, res) => {
   res.status(201).json(task);
 });
 app.patch("/api/jobs/:id/tasks/:taskId", async (req, res) => {
+  if (req.body.text !== undefined && !safeText(req.body.text, 500))
+    return res.status(400).json({ error: "Task text is required" });
+  if (req.body.due && !safeDueDate(req.body.due))
+    return res.status(400).json({ error: "Task due date is invalid" });
+  if (req.body.done !== undefined && typeof req.body.done !== "boolean")
+    return res.status(400).json({ error: "Task completion must be a boolean" });
   const task = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.params.id);
     const task = job?.tasks.find((t) => t.id === req.params.taskId);
@@ -655,6 +717,10 @@ app.delete("/api/jobs/:id/tasks/:taskId", async (req, res) => {
     if (!job) return false;
     const before = job.tasks.length;
     job.tasks = job.tasks.filter((task) => task.id !== req.params.taskId);
+    if (job.tasks.length !== before)
+      auditEvent(db, "task", `Deleted task from ${job.company}.`, {
+        jobId: job.id,
+      });
     return before !== job.tasks.length;
   });
   res.status(removed ? 204 : 404).end();

@@ -142,6 +142,15 @@ test("can add and update a tracked job", async () => {
     contact.body.linkedIn,
     "https://www.linkedin.com/in/alex-recruiter",
   );
+  const editedContact = await req(
+    `/api/jobs/${create.body.id}/contacts/${contact.body.id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ role: "Senior Recruiter" }),
+    },
+  );
+  assert.equal(editedContact.res.status, 200);
+  assert.equal(editedContact.body.role, "Senior Recruiter");
   const unsafeContact = await req(`/api/jobs/${create.body.id}/contacts`, {
     method: "POST",
     body: JSON.stringify({
@@ -150,6 +159,11 @@ test("can add and update a tracked job", async () => {
     }),
   });
   assert.equal(unsafeContact.res.status, 400);
+  const removedContact = await req(
+    `/api/jobs/${create.body.id}/contacts/${contact.body.id}`,
+    { method: "DELETE" },
+  );
+  assert.equal(removedContact.res.status, 204);
 });
 
 test("v2 personal profile details persist with bounded local input", async () => {
@@ -591,7 +605,13 @@ test("command center reports weekly goals and due-date priorities", async () => 
     method: "POST",
     body: JSON.stringify({ text: "Safe date", due: "not-a-date" }),
   });
-  assert.equal(invalid.body.due, "");
+  assert.equal(invalid.res.status, 400);
+  assert.match(invalid.body.error, /due date/i);
+  const empty = await req(`/api/jobs/${job.id}/tasks`, {
+    method: "POST",
+    body: JSON.stringify({ text: "   " }),
+  });
+  assert.equal(empty.res.status, 400);
   await req("/api/profile", {
     method: "PUT",
     body: JSON.stringify({ preferences: { weeklyApplicationGoal: 1 } }),
@@ -601,7 +621,15 @@ test("command center reports weekly goals and due-date priorities", async () => 
   assert.ok(summary.upcomingTasks.some((task) => task.id === upcoming.body.id));
   assert.equal(summary.weeklyGoal, 1);
   assert.ok(summary.weeklyGoalProgress >= 100);
-  const removed = await req(`/api/jobs/${job.id}/tasks/${invalid.body.id}`, {
+  const invalidDone = await req(
+    `/api/jobs/${job.id}/tasks/${upcoming.body.id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ done: "false" }),
+    },
+  );
+  assert.equal(invalidDone.res.status, 400);
+  const removed = await req(`/api/jobs/${job.id}/tasks/${upcoming.body.id}`, {
     method: "DELETE",
   });
   assert.equal(removed.res.status, 204);

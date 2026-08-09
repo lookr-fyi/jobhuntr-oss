@@ -2597,14 +2597,39 @@ function Actions({ job, reload }) {
   const [note, setNote] = useState("");
   const [task, setTask] = useState("Follow up with recruiter");
   const [taskDue, setTaskDue] = useState("");
+  const [editingContactId, setEditingContactId] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [contact, setContact] = useState({
     name: "",
     role: "Recruiter",
     email: "",
     linkedIn: "",
   });
+  const resetContact = () => {
+    setContact({
+      name: "",
+      role: "Recruiter",
+      email: "",
+      linkedIn: "",
+    });
+    setEditingContactId("");
+  };
   return (
     <div className="job-actions">
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={`Delete ${deleteTarget?.type || "item"}?`}
+        description={`“${deleteTarget?.label || "This item"}” will be permanently removed from this tracked job.`}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await api(
+            `/api/jobs/${job.id}/${deleteTarget.type}s/${deleteTarget.id}`,
+            { method: "DELETE" },
+          );
+          setDeleteTarget(null);
+          await reload();
+        }}
+      />
       <h3>Notes</h3>
       <div className="inline">
         <input
@@ -2628,10 +2653,21 @@ function Actions({ job, reload }) {
         </button>
       </div>
       {(job.notes || []).map((n) => (
-        <p className="note" key={n.id}>
-          {n.text}
-          <small>{new Date(n.at).toLocaleString()}</small>
-        </p>
+        <div className="note v2-record-row" key={n.id}>
+          <span>
+            {n.text}
+            <small>{new Date(n.at).toLocaleString()}</small>
+          </span>
+          <button
+            className="icon danger"
+            aria-label={`Delete note ${n.text}`}
+            onClick={() =>
+              setDeleteTarget({ type: "note", id: n.id, label: n.text })
+            }
+          >
+            ×
+          </button>
+        </div>
       ))}
       <h3>Tasks</h3>
       <div className="task-compose">
@@ -2687,12 +2723,9 @@ function Actions({ job, reload }) {
           <button
             className="icon danger"
             aria-label={`Delete task ${t.text}`}
-            onClick={async () => {
-              await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
-                method: "DELETE",
-              });
-              reload();
-            }}
+            onClick={() =>
+              setDeleteTarget({ type: "task", id: t.id, label: t.text })
+            }
           >
             ×
           </button>
@@ -2740,31 +2773,69 @@ function Actions({ job, reload }) {
       <button
         disabled={!contact.name.trim()}
         onClick={async () => {
-          await api(`/api/jobs/${job.id}/contacts`, {
-            method: "POST",
-            body: JSON.stringify(contact),
-          });
-          setContact({
-            name: "",
-            role: "Recruiter",
-            email: "",
-            linkedIn: "",
-          });
+          await api(
+            `/api/jobs/${job.id}/contacts${editingContactId ? `/${editingContactId}` : ""}`,
+            {
+              method: editingContactId ? "PATCH" : "POST",
+              body: JSON.stringify(contact),
+            },
+          );
+          resetContact();
           reload();
         }}
       >
-        Add contact
+        {editingContactId ? "Save contact" : "Add contact"}
       </button>
+      {editingContactId && (
+        <button className="secondary" onClick={resetContact}>
+          Cancel contact edit
+        </button>
+      )}
       {(job.contacts || []).map((c) => (
-        <p className="contact" key={c.id}>
-          <b>{c.name}</b> · {c.role}
-          {c.email && <small>{c.email}</small>}
-          {safeHttpUrl(c.linkedIn) && (
-            <a href={safeHttpUrl(c.linkedIn)} target="_blank" rel="noreferrer">
-              View LinkedIn profile
-            </a>
-          )}
-        </p>
+        <article className="contact v2-record-row" key={c.id}>
+          <span>
+            <b>{c.name}</b> · {c.role}
+            {c.email && <small>{c.email}</small>}
+            {safeHttpUrl(c.linkedIn) && (
+              <a
+                href={safeHttpUrl(c.linkedIn)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View LinkedIn profile
+              </a>
+            )}
+          </span>
+          <span className="inline">
+            <button
+              className="text-button"
+              onClick={() => {
+                setContact({
+                  name: c.name || "",
+                  role: c.role || "",
+                  email: c.email || "",
+                  linkedIn: c.linkedIn || "",
+                });
+                setEditingContactId(c.id);
+              }}
+            >
+              Edit
+            </button>
+            <button
+              className="icon danger"
+              aria-label={`Delete contact ${c.name}`}
+              onClick={() =>
+                setDeleteTarget({
+                  type: "contact",
+                  id: c.id,
+                  label: c.name,
+                })
+              }
+            >
+              ×
+            </button>
+          </span>
+        </article>
       ))}
     </div>
   );

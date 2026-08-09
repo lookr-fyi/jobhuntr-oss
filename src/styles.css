@@ -1223,6 +1223,17 @@ button:disabled {
   border-left: 3px solid #a5b4fc;
   padding: 8px 10px;
 }
+.v2-record-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.v2-record-row > span:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
 .tracker-list {
   padding: 0;
   overflow: hidden;
