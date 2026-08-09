@@ -812,7 +812,11 @@ test("submission queue enforces review before local submission", async () => {
   assert.match(unconfirmed.body.error, /explicit user confirmation/i);
   await req(`/api/submissions/${packet.body.id}`, {
     method: "PATCH",
-    body: JSON.stringify({ coverLetterId: "missing-cover-letter" }),
+    body: JSON.stringify({
+      coverLetterId: "missing-cover-letter",
+      checklist,
+      status: "ready",
+    }),
   });
   const missingLetter = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",
@@ -820,9 +824,26 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(missingLetter.res.status, 409);
   assert.match(missingLetter.body.error, /missing or empty cover letter/i);
-  await req(`/api/submissions/${packet.body.id}`, {
+  const attachmentChanged = await req(`/api/submissions/${packet.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({ coverLetterId: "" }),
+  });
+  assert.equal(attachmentChanged.body.status, "draft");
+  assert.equal(
+    attachmentChanged.body.checklist.find(
+      (item) => item.text === "Review cover letter",
+    ).done,
+    false,
+  );
+  assert.equal(
+    attachmentChanged.body.checklist.find(
+      (item) => item.text === "Confirm application details",
+    ).done,
+    false,
+  );
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ checklist, status: "ready" }),
   });
   const submitted = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",

@@ -4683,6 +4683,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       ? "Original profile resume"
       : "No resume attached";
   const updatePacket = async (body) => {
+    setExternalSubmissionVerified(false);
     await api(`/api/submissions/${s.id}`, {
       method: "PATCH",
       body: JSON.stringify(body),

@@ -1076,6 +1076,21 @@ app.patch("/api/submissions/:id", async (req, res) => {
       : req.body.checklistItem && typeof req.body.checklistItem === "object"
         ? [req.body.checklistItem]
         : null;
+    const explicitlyReviewedChecklistIds = new Set(
+      (checklistUpdates || [])
+        .filter((candidate) => candidate?.done === true)
+        .map((candidate) => safeText(candidate.id, 80)),
+    );
+    const invalidateChecklist = (labels) => {
+      item.checklist = item.checklist.map((entry) => ({
+        ...entry,
+        done:
+          labels.includes(entry.text) &&
+          !explicitlyReviewedChecklistIds.has(entry.id)
+            ? false
+            : entry.done,
+      }));
+    };
     if (checklistUpdates) {
       item.checklist = item.checklist.map((existing) => ({
         ...existing,
@@ -1084,10 +1099,24 @@ app.patch("/api/submissions/:id", async (req, res) => {
             ?.done ?? existing.done,
       }));
     }
-    if (req.body.resumeId !== undefined)
-      item.resumeId = safeText(req.body.resumeId, 50);
-    if (req.body.coverLetterId !== undefined)
-      item.coverLetterId = safeText(req.body.coverLetterId, 50);
+    if (req.body.resumeId !== undefined) {
+      const resumeId = safeText(req.body.resumeId, 50);
+      if (resumeId !== item.resumeId)
+        invalidateChecklist([
+          "Review resume alignment",
+          "Confirm application details",
+        ]);
+      item.resumeId = resumeId;
+    }
+    if (req.body.coverLetterId !== undefined) {
+      const coverLetterId = safeText(req.body.coverLetterId, 50);
+      if (coverLetterId !== item.coverLetterId)
+        invalidateChecklist([
+          "Review cover letter",
+          "Confirm application details",
+        ]);
+      item.coverLetterId = coverLetterId;
+    }
     const questionUpdates = Array.isArray(req.body.applicationQuestions)
       ? req.body.applicationQuestions
       : req.body.applicationQuestion &&
@@ -1095,6 +1124,7 @@ app.patch("/api/submissions/:id", async (req, res) => {
         ? [req.body.applicationQuestion]
         : null;
     if (questionUpdates) {
+      invalidateChecklist(["Confirm application details"]);
       item.applicationQuestions = item.applicationQuestions.map((existing) => {
         const incoming = questionUpdates.find(
           (candidate) => safeText(candidate?.id, 80) === existing.id,
@@ -1143,7 +1173,7 @@ app.patch("/api/submissions/:id", async (req, res) => {
         );
     }
     if (req.body.status === "archived") item.status = "archived";
-    else if (["draft", "ready"].includes(req.body.status))
+    else if (["draft", "ready"].includes(item.status))
       item.status =
         item.checklist.every((entry) => entry.done) &&
         item.applicationQuestions.every(

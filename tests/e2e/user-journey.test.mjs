@@ -1050,6 +1050,55 @@ test(
           checkbox.click(),
         ]);
       }
+      const currentResumeId = await resumeAttachment.inputValue();
+      const alternateResumeId = await resumeAttachment
+        .locator("option")
+        .evaluateAll(
+          (options, current) =>
+            options.find((option) => option.value && option.value !== current)
+              ?.value || "",
+          currentResumeId,
+        );
+      assert.ok(alternateResumeId, "a second reviewed resume should exist");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/state") &&
+            response.request().method() === "GET" &&
+            response.ok(),
+        ),
+        resumeAttachment.selectOption(alternateResumeId),
+      ]);
+      assert.equal(
+        await page.getByLabel("Review resume alignment").isChecked(),
+        false,
+        "changing the attached resume must invalidate its prior review",
+      );
+      assert.equal(
+        await page.getByLabel("Confirm application details").isChecked(),
+        false,
+        "changing packet evidence must invalidate final details review",
+      );
+      for (const item of [
+        "Review resume alignment",
+        "Confirm application details",
+      ]) {
+        await Promise.all([
+          page.waitForResponse(
+            (response) =>
+              response.url().includes("/api/submissions/") &&
+              response.request().method() === "PATCH" &&
+              response.ok(),
+          ),
+          page.getByLabel(item).click(),
+        ]);
+      }
       const directSubmitButton = page.getByRole("button", {
         name: "I submitted this externally",
       });
