@@ -444,6 +444,28 @@ test("Career Coach evidence saves are single-flight and preserve retry context",
   assert.match(stories, /savingStory\s*\? "Saving…"/);
 });
 
+test("Outreach draft edits cannot race an in-flight save", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const editor = source.slice(
+    source.indexOf("function OutreachEditor"),
+    source.indexOf("function Gigs"),
+  );
+
+  assert.match(editor, /const savingDraftRef = useRef\(false\)/);
+  assert.match(editor, /if \(savingDraftRef\.current\) return/);
+  assert.match(editor, /savingDraftRef\.current = true/);
+  assert.match(editor, /savingDraftRef\.current = false/);
+  assert.match(editor, /aria-busy=\{savingDraft\}/);
+  assert.match(editor, /savingDraft \? "Saving…" : "Save locally"/);
+  assert.ok(
+    (editor.match(/disabled=\{savingDraft\}/g) || []).length >= 4,
+    "status, subject, message, and save controls must lock together",
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

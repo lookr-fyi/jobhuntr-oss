@@ -9971,7 +9971,12 @@ function StoryVault({ stories, reload }) {
   );
 }
 function OutreachEditor({ draft, setDraft, reload }) {
+  const [savingDraft, setSavingDraft] = useState(false);
+  const savingDraftRef = useRef(false);
   const save = async (status = draft.status || "draft") => {
+    if (savingDraftRef.current) return;
+    savingDraftRef.current = true;
+    setSavingDraft(true);
     try {
       const updated = await api(`/api/outreach/${draft.id}`, {
         method: "PATCH",
@@ -9983,7 +9988,12 @@ function OutreachEditor({ draft, setDraft, reload }) {
       });
       setDraft(updated);
       await reload();
-    } catch {}
+    } catch {
+      // Preserve the edited message and status so saving can be retried.
+    } finally {
+      savingDraftRef.current = false;
+      setSavingDraft(false);
+    }
   };
   return (
     <div>
@@ -9992,6 +10002,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
         <select
           name={`outreach-status-${draft.id}`}
           aria-label="Outreach status"
+          disabled={savingDraft}
           value={draft.status || "draft"}
           onChange={(e) => {
             setDraft({ ...draft, status: e.target.value });
@@ -10007,6 +10018,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
         Subject
         <input
           name={`outreach-subject-${draft.id}`}
+          disabled={savingDraft}
           value={draft.subject}
           onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
         />
@@ -10016,12 +10028,17 @@ function OutreachEditor({ draft, setDraft, reload }) {
         <textarea
           name={`outreach-message-${draft.id}`}
           className="letter"
+          disabled={savingDraft}
           value={draft.body}
           onChange={(e) => setDraft({ ...draft, body: e.target.value })}
         />
       </label>
-      <button onClick={() => save()}>
-        <Save size={16} /> Save locally
+      <button
+        disabled={savingDraft}
+        aria-busy={savingDraft}
+        onClick={() => save()}
+      >
+        <Save size={16} /> {savingDraft ? "Saving…" : "Save locally"}
       </button>
       <p className="hint">
         Copy this draft into your preferred service manually. No message is sent
