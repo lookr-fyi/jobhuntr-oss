@@ -689,6 +689,29 @@ test(
         true,
         "run details should restore focus to the selected run",
       );
+      const runActions = page.getByRole("button", {
+        name: "Actions for Product Engineer",
+      });
+      await runActions.click();
+      const deleteRunMenuItem = page.getByRole("menuitem", { name: "Delete" });
+      await page.waitForFunction(
+        () => document.activeElement?.getAttribute("role") === "menuitem",
+      );
+      assert.equal(
+        await deleteRunMenuItem.evaluate(
+          (menuitem) => menuitem === document.activeElement,
+        ),
+        true,
+        "opening run actions should move focus into the menu",
+      );
+      await page.keyboard.press("Escape");
+      assert.equal(
+        await runActions.evaluate(
+          (button) => button === document.activeElement,
+        ),
+        true,
+        "closing run actions should restore focus to its trigger",
+      );
       const runState = await (
         await page.request.get(`${baseUrl}/api/state`)
       ).json();

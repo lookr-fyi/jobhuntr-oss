@@ -11021,6 +11021,35 @@ function RunsPage({ state, setTab, reload }) {
     };
   }, [newRunOpen]);
   useEffect(() => {
+    if (!actionMenuOpen) return undefined;
+    requestAnimationFrame(() =>
+      document.getElementById(`run-action-delete-${actionMenuOpen}`)?.focus(),
+    );
+    const closeActionMenu = (event) => {
+      const menuContainer = document.getElementById(
+        `run-actions-${actionMenuOpen}`,
+      );
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setActionMenuOpen(null);
+        document
+          .getElementById(`run-actions-trigger-${actionMenuOpen}`)
+          ?.focus();
+      } else if (
+        event.type === "mousedown" &&
+        !menuContainer?.contains(event.target)
+      ) {
+        setActionMenuOpen(null);
+      }
+    };
+    window.addEventListener("keydown", closeActionMenu);
+    window.addEventListener("mousedown", closeActionMenu);
+    return () => {
+      window.removeEventListener("keydown", closeActionMenu);
+      window.removeEventListener("mousedown", closeActionMenu);
+    };
+  }, [actionMenuOpen]);
+  useEffect(() => {
     const hash = selectedRun ? `#/runs?run=${selectedRun.id}` : "#/runs";
     if (window.location.hash !== hash)
       window.history.replaceState({ tab: "runs" }, "", hash);
@@ -11202,11 +11231,14 @@ function RunsPage({ state, setTab, reload }) {
             <span>{run.options?.autoApply ? "Apply" : "Search"}</span>
             <time>{formatRelativeTime(run.completedAt || run.createdAt)}</time>
             <strong>{run.added ?? run.found ?? 0}</strong>
-            <div className="v2-run-action-menu">
+            <div id={`run-actions-${run.id}`} className="v2-run-action-menu">
               <button
+                id={`run-actions-trigger-${run.id}`}
                 className="v2-run-delete"
                 aria-label={`Actions for ${run.runName || run.search?.q || "run"}`}
+                aria-haspopup="menu"
                 aria-expanded={actionMenuOpen === run.id}
+                aria-controls={`run-actions-menu-${run.id}`}
                 onClick={() =>
                   setActionMenuOpen((open) => (open === run.id ? null : run.id))
                 }
@@ -11214,8 +11246,9 @@ function RunsPage({ state, setTab, reload }) {
                 <MoreHorizontal size={16} />
               </button>
               {actionMenuOpen === run.id && (
-                <div role="menu">
+                <div id={`run-actions-menu-${run.id}`} role="menu">
                   <button
+                    id={`run-action-delete-${run.id}`}
                     role="menuitem"
                     onClick={() => {
                       setDeleteIds([run.id]);
