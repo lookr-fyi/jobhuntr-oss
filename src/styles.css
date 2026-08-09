@@ -9556,17 +9556,21 @@ main > header.integrated-page-header {
 }
 .v2-template-progress-step {
   display: flex;
-  width: auto;
-  min-height: 23px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 48px;
+  flex-direction: column;
   align-items: center;
-  gap: 7px;
+  justify-content: flex-start;
+  gap: 4px;
   padding: 0;
   color: inherit;
   border: 0;
   border-radius: 4px;
   background: transparent;
   font: inherit;
-  text-align: left;
+  text-align: center;
 }
 .v2-template-progress-step:hover:not(:disabled) {
   color: #1d4ed8;
@@ -9580,9 +9584,10 @@ main > header.integrated-page-header {
 }
 .v2-template-progress li:not(:last-child)::after {
   position: absolute;
-  right: 9px;
-  left: 32px;
-  bottom: -9px;
+  z-index: 0;
+  top: 15px;
+  right: calc(-50% + 20px);
+  left: calc(50% + 20px);
   height: 2px;
   background: #e2e8f0;
   content: "";
@@ -9596,14 +9601,19 @@ main > header.integrated-page-header {
 }
 .v2-template-progress i {
   display: grid;
-  width: 23px;
-  height: 23px;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
   flex: none;
   place-items: center;
   border-radius: 999px;
   background: #e2e8f0;
   font-style: normal;
-  font-size: 10px;
+  font-size: 14px;
+}
+.v2-template-progress span {
+  max-width: 60px;
+  line-height: 1.2;
 }
 .v2-template-progress li.active i {
   color: #fff;
@@ -10526,10 +10536,6 @@ main > header.integrated-page-header {
   }
   .v2-template-progress li {
     justify-content: center;
-  }
-  .v2-template-progress li:not(:last-child)::after {
-    right: -10px;
-    left: 28px;
   }
   .v2-template-step {
     padding: 15px;

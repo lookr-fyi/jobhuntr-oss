@@ -992,6 +992,19 @@ test(
         true,
         "future ATS wizard steps must not be selectable before their prerequisites are completed",
       );
+      assert.deepEqual(
+        await templateDialog
+          .getByRole("button", { name: "Go to template step 1: Upload" })
+          .evaluate((step) => {
+            const circle = step.querySelector("i").getBoundingClientRect();
+            return {
+              direction: getComputedStyle(step).flexDirection,
+              circle: [circle.width, circle.height],
+            };
+          }),
+        { direction: "column", circle: [32, 32] },
+        "ATS wizard progress should retain v2's stacked labels and 32px step circles",
+      );
       const templateNameInput = templateDialog.getByLabel("Template name");
       await templateNameInput.click();
       await page.keyboard.press("ControlOrMeta+A");
