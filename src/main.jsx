@@ -237,6 +237,7 @@ const TRACKER_STAGES = [
   "skipped",
   "removed",
 ];
+const DEFAULT_VISIBLE_TRACKER_STAGES = TRACKER_STAGES.slice(0, 6);
 const MANUAL_TRACKER_STAGES = new Set([
   "applied",
   "interview",
@@ -1869,14 +1870,16 @@ function Tracker({ state, reload, setTab }) {
       .filter((stage) => TRACKER_STAGES.includes(stage));
     if (linkedStages?.length) return new Set(linkedStages);
     try {
-      const saved = JSON.parse(
-        localStorage.getItem("jobTracker_visibleStatuses") || "null",
-      );
+      const stored = localStorage.getItem("jobTracker_visibleStatuses");
+      if (stored === null) return new Set(DEFAULT_VISIBLE_TRACKER_STAGES);
+      const saved = JSON.parse(stored);
       const validSaved = Array.isArray(saved)
         ? saved.filter((stage) => TRACKER_STAGES.includes(stage))
         : [];
       if (validSaved.length) return new Set(validSaved);
     } catch {}
+    // A malformed or obsolete preference should remain recoverable rather
+    // than leaving a returning user with an apparently empty tracker.
     return new Set(stages);
   });
   const [runFilter, setRunFilter] = useState(() => {

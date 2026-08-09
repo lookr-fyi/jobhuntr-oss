@@ -2542,6 +2542,13 @@ test(
           );
         }
         if (navigation === "Job Tracker") {
+          assert.equal(
+            await mobile
+              .locator(".tracker-status-filters input:checked")
+              .count(),
+            6,
+            "a new user should inherit v2's six active tracker columns while terminal columns stay hidden",
+          );
           const mobileTrackerColumn = mobile.locator(".status-column").first();
           assert.equal(
             await mobileTrackerColumn.evaluate(
