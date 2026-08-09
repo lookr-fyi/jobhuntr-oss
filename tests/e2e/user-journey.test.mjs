@@ -675,6 +675,9 @@ test(
         .check();
       await page.getByRole("button", { name: "Move Indeed up" }).click();
       await page.getByText("Search preferences", { exact: true }).click();
+      const presetRoleBeforeRace = await page
+        .getByLabel("Role or keywords")
+        .inputValue();
       await page
         .getByLabel("Exclude keywords")
         .fill("government-clearance-only");
@@ -702,6 +705,34 @@ test(
         true,
         "the recovered hunt draft should retain resume optimization",
       );
+      await page.getByText("Search preferences", { exact: true }).click();
+      let presetSaveCount = 0;
+      await page.route("**/api/hunt-presets", async (route) => {
+        presetSaveCount += 1;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        await route.continue();
+      });
+      const delayedPresetSave = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/hunt-presets") &&
+          response.request().method() === "POST" &&
+          response.ok(),
+      );
+      await page.getByRole("button", { name: "Save as preset" }).click();
+      await page.getByRole("button", { name: "Saving preset…" }).waitFor();
+      await page
+        .getByLabel("Role or keywords")
+        .fill("Newer unsaved hunt configuration");
+      await delayedPresetSave;
+      await page.getByRole("button", { name: "Save as preset" }).waitFor();
+      assert.equal(presetSaveCount, 1);
+      assert.equal(
+        await page.getByText("Preset saved locally").count(),
+        0,
+        "an older preset save must not bless newer Infinite Hunt edits",
+      );
+      await page.unroute("**/api/hunt-presets");
+      await page.getByLabel("Role or keywords").fill(presetRoleBeforeRace);
       await page.route("**/api/agent-runs/preview", (route) => route.abort());
       await page.getByRole("button", { name: "Preview matches" }).click();
       const apiError = page.getByRole("alert");

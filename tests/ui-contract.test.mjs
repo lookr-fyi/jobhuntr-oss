@@ -295,6 +295,23 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   );
   assert.match(agent, /aria-busy=\{stoppingInfinite\}/);
   assert.match(agent, /stoppingInfinite \? "Stopping…" : "Stop Infinite Hunt"/);
+  assert.match(agent, /const huntConfigurationRevisionRef = useRef\(0\)/);
+  assert.match(
+    agent,
+    /const markHuntConfigurationEdited = \(\) => \{[\s\S]*?huntConfigurationRevisionRef\.current \+= 1;[\s\S]*?setPresetSaved\(false\)/,
+  );
+  const savePreset = agent.slice(
+    agent.indexOf("const savePreset = async"),
+    agent.indexOf("const workflows = HUNT_WORKFLOWS"),
+  );
+  assert.match(
+    savePreset,
+    /const savingRevision = huntConfigurationRevisionRef\.current/,
+  );
+  assert.match(
+    savePreset,
+    /if \(huntConfigurationRevisionRef\.current === savingRevision\)\s*setPresetSaved\(true\)/,
+  );
 });
 
 test("Infinite Hunt recovers a bounded complete configuration draft", async () => {

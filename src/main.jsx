@@ -12711,6 +12711,7 @@ function Agent({ state, reload, setTab }) {
   const stoppingInfiniteRef = useRef(false);
   const previewingRef = useRef(false);
   const savingPresetRef = useRef(false);
+  const huntConfigurationRevisionRef = useRef(0);
   const [presetSaved, setPresetSaved] = useState(false);
   const [deletePreset, setDeletePreset] = useState(null);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -12766,10 +12767,15 @@ function Agent({ state, reload, setTab }) {
     profileResumeReady,
     selectedRuns,
   ]);
-  const editHuntForm = (next) => {
-    setForm(next);
+  const markHuntConfigurationEdited = () => {
+    huntConfigurationRevisionRef.current += 1;
+    setPresetSaved(false);
     setHuntDraftTouched(true);
     setHuntDraftRestored(false);
+  };
+  const editHuntForm = (next) => {
+    setForm(next);
+    markHuntConfigurationEdited();
   };
   useEffect(() => {
     if (!statusOpen) return undefined;
@@ -12915,13 +12921,15 @@ function Agent({ state, reload, setTab }) {
     savingPresetRef.current = true;
     setSavingPreset(true);
     setPresetSaved(false);
+    const savingRevision = huntConfigurationRevisionRef.current;
     try {
       await api("/api/hunt-presets", {
         method: "POST",
         body: JSON.stringify({ ...payload(), name: form.q }),
       });
       await reload();
-      setPresetSaved(true);
+      if (huntConfigurationRevisionRef.current === savingRevision)
+        setPresetSaved(true);
     } catch {
       // Keep the current hunt form available after the shared error is shown.
     } finally {
@@ -12932,8 +12940,7 @@ function Agent({ state, reload, setTab }) {
   const workflows = HUNT_WORKFLOWS;
   const saveRunOrder = (runs) => {
     setSelectedRuns(runs);
-    setHuntDraftTouched(true);
-    setHuntDraftRestored(false);
+    markHuntConfigurationEdited();
     localStorage.setItem("jobhuntr-infinite-workflows", JSON.stringify(runs));
   };
   const toggleRun = (id) =>
@@ -13061,8 +13068,7 @@ function Agent({ state, reload, setTab }) {
               disabled={!profileResumeReady}
               onChange={(e) => {
                 setOptimizeResume(e.target.checked);
-                setHuntDraftTouched(true);
-                setHuntDraftRestored(false);
+                markHuntConfigurationEdited();
                 localStorage.setItem(
                   "jobhuntr-optimize-resume",
                   String(e.target.checked),
@@ -13267,8 +13273,7 @@ function Agent({ state, reload, setTab }) {
               disabled={running || state.infiniteHunt?.enabled}
               onChange={(event) => {
                 setIntervalMinutes(event.target.value);
-                setHuntDraftTouched(true);
-                setHuntDraftRestored(false);
+                markHuntConfigurationEdited();
               }}
             >
               <option value="15">Every 15 minutes</option>
