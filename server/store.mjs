@@ -179,6 +179,51 @@ const isRecord = (value) =>
 const records = (value) => (Array.isArray(value) ? value.filter(isRecord) : []);
 const strings = (value) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+const HUNT_WORKFLOWS = new Set([
+  "linkedin",
+  "indeed",
+  "glassdoor",
+  "hiringcafe",
+  "jobright",
+  "simplify",
+  "workatastartup",
+  "ziprecruiter",
+  "dice",
+  "company",
+]);
+const normalizeHuntOptions = (value, fallbackName = "Software Engineer") => {
+  const source = isRecord(value) ? value : {};
+  const q = String(source.q || fallbackName || "Software Engineer")
+    .trim()
+    .slice(0, 200);
+  const workflows = [
+    ...new Set(
+      strings(source.workflows)
+        .map((workflow) => workflow.toLowerCase())
+        .filter((workflow) => HUNT_WORKFLOWS.has(workflow)),
+    ),
+  ].slice(0, 10);
+  return {
+    runName: String(source.runName || q || "Software Engineer")
+      .trim()
+      .slice(0, 200),
+    origin: source.origin === "manual" ? "manual" : "infinite",
+    q: q || "Software Engineer",
+    location: String(source.location || "").slice(0, 200),
+    minFit: Math.min(100, Math.max(0, Number(source.minFit ?? 60) || 0)),
+    maxResults: Math.min(100, Math.max(1, Number(source.maxResults) || 25)),
+    requiredKeywords: strings(source.requiredKeywords)
+      .map((keyword) => keyword.trim().slice(0, 100))
+      .filter(Boolean)
+      .slice(0, 20),
+    excludeKeywords: strings(source.excludeKeywords)
+      .map((keyword) => keyword.trim().slice(0, 100))
+      .filter(Boolean)
+      .slice(0, 20),
+    workflows: workflows.length ? workflows : ["linkedin", "indeed"],
+    optimizeResume: Boolean(source.optimizeResume),
+  };
+};
 const JOB_STATUSES = new Set([
   "interested",
   "submitting",
@@ -268,9 +313,13 @@ function migrate(input) {
   db.outreachDrafts = records(db.outreachDrafts);
   db.huntPresets = records(db.huntPresets);
   for (const preset of db.huntPresets) {
-    preset.requiredKeywords = strings(preset.requiredKeywords);
-    preset.excludeKeywords = strings(preset.excludeKeywords);
-    preset.workflows = strings(preset.workflows);
+    preset.options = normalizeHuntOptions(
+      isRecord(preset.options) ? preset.options : preset,
+      preset.name,
+    );
+    delete preset.requiredKeywords;
+    delete preset.excludeKeywords;
+    delete preset.workflows;
   }
   db.careerStories = records(db.careerStories);
   for (const story of db.careerStories) story.skills = strings(story.skills);
@@ -296,7 +345,17 @@ function migrate(input) {
   for (const run of db.agentRuns) {
     run.matches = records(run.matches);
     run.activities = records(run.activities);
-    run.workflows = strings(run.workflows);
+    run.options = normalizeHuntOptions(
+      isRecord(run.options) ? run.options : { ...run, ...run.search },
+      run.runName || run.search?.q,
+    );
+    run.workflows = run.options.workflows;
+    run.minFit = run.options.minFit;
+    run.optimizeResume = run.options.optimizeResume;
+    run.search = {
+      q: run.options.q,
+      location: run.options.location,
+    };
   }
   db.infiniteHunt = isRecord(db.infiniteHunt)
     ? db.infiniteHunt
@@ -310,7 +369,7 @@ function migrate(input) {
     Math.max(1, Number(db.infiniteHunt.intervalMinutes) || 60),
   );
   db.infiniteHunt.options = isRecord(db.infiniteHunt.options)
-    ? db.infiniteHunt.options
+    ? normalizeHuntOptions(db.infiniteHunt.options)
     : null;
   db.infiniteHunt.lastError = String(db.infiniteHunt.lastError || "").slice(
     0,

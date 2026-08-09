@@ -570,6 +570,35 @@ test("hunt presets persist locally and manual URL duplicates are not re-added", 
   assert.equal(preset.body.options.location, "Remote");
   const presets = (await req("/api/hunt-presets")).body;
   assert.ok(presets.some((x) => x.id === preset.body.id));
+  await mutate((db) => {
+    db.huntPresets.unshift({
+      id: "legacy-preset",
+      name: "Legacy platform hunt",
+      q: "platform engineer",
+      location: "Remote",
+      minFit: 72,
+      requiredKeywords: [" TypeScript ", 42],
+      excludeKeywords: ["clearance"],
+      workflows: ["indeed", "retired-board", "indeed"],
+      optimizeResume: true,
+    });
+  });
+  const migratedPreset = (await req("/api/state")).body.huntPresets.find(
+    (item) => item.id === "legacy-preset",
+  );
+  assert.deepEqual(migratedPreset.options, {
+    runName: "platform engineer",
+    origin: "infinite",
+    q: "platform engineer",
+    location: "Remote",
+    minFit: 72,
+    maxResults: 25,
+    requiredKeywords: ["TypeScript"],
+    excludeKeywords: ["clearance"],
+    workflows: ["indeed"],
+    optimizeResume: true,
+  });
+  assert.equal("workflows" in migratedPreset, false);
   const state = (await req("/api/state")).body;
   const original = state.jobs[0];
   const duplicate = await req("/api/jobs", {
