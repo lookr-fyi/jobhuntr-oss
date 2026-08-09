@@ -6491,6 +6491,30 @@ const normalizeCoverLetterWizard = (value) => {
     result,
   };
 };
+const SAVED_LETTER_DRAFT_KEY = "jobhuntr-saved-cover-letter-draft";
+const readSavedLetterDraft = () => {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(SAVED_LETTER_DRAFT_KEY));
+    if (
+      !value ||
+      typeof value.id !== "string" ||
+      typeof value.title !== "string" ||
+      typeof value.body !== "string" ||
+      typeof value.baselineUpdatedAt !== "string"
+    )
+      return null;
+    return {
+      id: value.id.slice(0, 200),
+      title: value.title.slice(0, 300),
+      body: value.body.slice(0, 100000),
+      baselineUpdatedAt: value.baselineUpdatedAt.slice(0, 100),
+    };
+  } catch {
+    return null;
+  }
+};
+const clearSavedLetterDraft = () =>
+  sessionStorage.removeItem(SAVED_LETTER_DRAFT_KEY);
 function Resume({ state, reload, mode = "resume" }) {
   const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
@@ -6955,6 +6979,7 @@ function Resume({ state, reload, mode = "resume" }) {
       });
       setLetter(saved);
       setSavedLetterSnapshot({ title: saved.title, body: saved.body });
+      clearSavedLetterDraft();
       await reload();
     } catch {
       // Keep unsaved edits in place so the user can retry.
@@ -6964,7 +6989,14 @@ function Resume({ state, reload, mode = "resume" }) {
     }
   };
   const editSavedLetter = (item) => {
-    setLetter(item);
+    const draft = readSavedLetterDraft();
+    const restored =
+      draft?.id === item.id &&
+      draft.baselineUpdatedAt === (item.updatedAt || item.createdAt || "")
+        ? { ...item, title: draft.title, body: draft.body }
+        : item;
+    if (draft && restored === item) clearSavedLetterDraft();
+    setLetter(restored);
     setSavedLetterSnapshot({ title: item.title, body: item.body });
     setConfirmDiscardLetter(false);
   };
@@ -6974,6 +7006,24 @@ function Resume({ state, reload, mode = "resume" }) {
     (letter.title !== savedLetterSnapshot.title ||
       letter.body !== savedLetterSnapshot.body),
   );
+  useEffect(() => {
+    if (
+      mode !== "cover-letter" ||
+      !letter ||
+      !savedLetterSnapshot ||
+      !hasUnsavedLetterChanges
+    )
+      return;
+    sessionStorage.setItem(
+      SAVED_LETTER_DRAFT_KEY,
+      JSON.stringify({
+        id: letter.id,
+        title: letter.title.slice(0, 300),
+        body: letter.body.slice(0, 100000),
+        baselineUpdatedAt: letter.updatedAt || letter.createdAt || "",
+      }),
+    );
+  }, [hasUnsavedLetterChanges, letter, mode, savedLetterSnapshot]);
   const closeSavedLetter = () => {
     if (savingLetterRef.current) return;
     if (hasUnsavedLetterChanges) {
@@ -7764,6 +7814,7 @@ function Resume({ state, reload, mode = "resume" }) {
           busyLabel="Discarding…"
           onClose={() => setConfirmDiscardLetter(false)}
           onConfirm={() => {
+            clearSavedLetterDraft();
             setLetter(null);
             setSavedLetterSnapshot(null);
           }}
@@ -7793,7 +7844,11 @@ function Resume({ state, reload, mode = "resume" }) {
             await api(`/api/cover-letters/${deleteTarget.item.id}`, {
               method: "DELETE",
             });
-            if (letter?.id === deleteTarget.item.id) setLetter(null);
+            if (letter?.id === deleteTarget.item.id) {
+              clearSavedLetterDraft();
+              setLetter(null);
+              setSavedLetterSnapshot(null);
+            }
             await reload();
           }}
         />

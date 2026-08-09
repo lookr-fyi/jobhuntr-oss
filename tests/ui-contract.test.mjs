@@ -530,6 +530,10 @@ test("saved cover letters retain a safe themed live editing workspace", async ()
     source,
     /disabled=\{savingLetter \|\| !hasUnsavedLetterChanges\}/,
   );
+  assert.match(source, /const SAVED_LETTER_DRAFT_KEY/);
+  assert.match(source, /const readSavedLetterDraft/);
+  assert.match(source, /baselineUpdatedAt/);
+  assert.match(source, /clearSavedLetterDraft\(\)/);
 });
 
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {

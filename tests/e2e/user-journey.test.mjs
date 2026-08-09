@@ -2481,6 +2481,25 @@ test(
         true,
         "editing the saved letter should expose its dirty state",
       );
+      await page.getByRole("button", { name: "Overview", exact: true }).click();
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await page
+        .getByRole("button", { name: "Cover Letter", exact: true })
+        .click();
+      await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
+      await page
+        .getByRole("button", { name: "Edit E2E product letter" })
+        .click();
+      assert.equal(
+        await page.getByLabel("Cover letter content").inputValue(),
+        "Dear hiring team,\n\nThis saved edit updates live and safely.",
+        "an in-progress edit should recover after navigating away and back",
+      );
+      assert.equal(
+        await page.getByRole("button", { name: "Save Changes" }).isEnabled(),
+        true,
+        "a recovered draft should remain visibly unsaved",
+      );
       await page.getByRole("button", { name: "Back to Cover Letters" }).click();
       await page
         .getByRole("alertdialog", { name: "Discard unsaved changes?" })
