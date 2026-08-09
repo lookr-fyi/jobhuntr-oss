@@ -696,17 +696,33 @@ test(
       );
       await page.getByText(/eligible matches/).waitFor();
       await page.unroute("**/api/agent-runs/preview");
-      const [scheduledInitialRunRequest] = await Promise.all([
-        page.waitForRequest((request) =>
-          request.url().endsWith("/api/agent-runs/start"),
-        ),
-        page.getByRole("button", { name: "Start infinite hunt" }).click(),
-      ]);
+      let scheduleStartRequests = 0;
+      await page.route("**/api/infinite-hunt/start", async (route) => {
+        scheduleStartRequests += 1;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      });
+      const scheduledRunRequest = page.waitForRequest((request) =>
+        request.url().endsWith("/api/agent-runs/start"),
+      );
+      await page
+        .getByRole("button", { name: "Start infinite hunt" })
+        .evaluate((button) => {
+          button.click();
+          button.click();
+        });
+      const scheduledInitialRunRequest = await scheduledRunRequest;
       assert.ok(
         scheduledInitialRunRequest.postDataJSON().scheduleGeneration,
         "the first Infinite Hunt run must be bound to its schedule generation",
       );
       await page.getByText(/eligible matches/).waitFor();
+      assert.equal(
+        scheduleStartRequests,
+        1,
+        "same-frame clicks must not create duplicate Infinite Hunt schedules",
+      );
+      await page.unroute("**/api/infinite-hunt/start");
       await page
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor();

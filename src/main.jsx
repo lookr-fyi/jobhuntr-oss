@@ -10993,6 +10993,9 @@ function Agent({ state, reload, setTab }) {
   const [running, setRunning] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [savingPreset, setSavingPreset] = useState(false);
+  const runningRef = useRef(false);
+  const previewingRef = useRef(false);
+  const savingPresetRef = useRef(false);
   const [presetSaved, setPresetSaved] = useState(false);
   const [deletePreset, setDeletePreset] = useState(null);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -11063,6 +11066,8 @@ function Agent({ state, reload, setTab }) {
     }
   };
   const run = async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
     setRunning(true);
     try {
       const result = await api("/api/agent-runs/start", {
@@ -11081,10 +11086,13 @@ function Agent({ state, reload, setTab }) {
     } catch {
       // Keep the configured run available after the shared error is shown.
     } finally {
+      runningRef.current = false;
       setRunning(false);
     }
   };
   const startInfiniteHunt = async () => {
+    if (runningRef.current) return;
+    runningRef.current = true;
     setRunning(true);
     let schedule = null;
     try {
@@ -11118,11 +11126,13 @@ function Agent({ state, reload, setTab }) {
           body: JSON.stringify({ generation: schedule.generation }),
         }).catch(() => {});
     } finally {
+      runningRef.current = false;
       setRunning(false);
     }
   };
   const previewMatches = async () => {
-    if (previewing) return;
+    if (previewingRef.current) return;
+    previewingRef.current = true;
     setPreviewing(true);
     try {
       setPreview(
@@ -11135,11 +11145,13 @@ function Agent({ state, reload, setTab }) {
       // The shared API error surface already explains the failure. Keep the
       // rejected request from escaping the click handler as a browser error.
     } finally {
+      previewingRef.current = false;
       setPreviewing(false);
     }
   };
   const savePreset = async () => {
-    if (savingPreset) return;
+    if (savingPresetRef.current) return;
+    savingPresetRef.current = true;
     setSavingPreset(true);
     setPresetSaved(false);
     try {
@@ -11152,6 +11164,7 @@ function Agent({ state, reload, setTab }) {
     } catch {
       // Keep the current hunt form available after the shared error is shown.
     } finally {
+      savingPresetRef.current = false;
       setSavingPreset(false);
     }
   };

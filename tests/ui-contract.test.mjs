@@ -207,6 +207,34 @@ test("Resume Studio save and scoring actions are single-flight and retryable", a
   assert.match(resumeStudio, /"Analyzing…" : "Analyze ATS fit"/);
 });
 
+test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const agent = source.slice(
+    source.indexOf("function Agent("),
+    source.indexOf("function AgentRuns"),
+  );
+
+  for (const action of ["running", "previewing", "savingPreset"]) {
+    assert.match(agent, new RegExp(`const ${action}Ref = useRef\\(false\\)`));
+    assert.match(agent, new RegExp(`if \\(${action}Ref\\.current\\) return`));
+    assert.match(agent, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(agent, new RegExp(`${action}Ref\\.current = false`));
+  }
+  const oneOff = agent.slice(
+    agent.indexOf("const run = async"),
+    agent.indexOf("const startInfiniteHunt"),
+  );
+  const recurring = agent.slice(
+    agent.indexOf("const startInfiniteHunt"),
+    agent.indexOf("const previewMatches"),
+  );
+  assert.match(oneOff, /runningRef\.current/);
+  assert.match(recurring, /runningRef\.current/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
