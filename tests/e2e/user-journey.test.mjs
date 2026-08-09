@@ -4637,6 +4637,7 @@ test(
           const apply = style(".v2-gig-campaigns article > button");
           return {
             root: [
+              getComputedStyle(root.parentElement).padding,
               getComputedStyle(root).maxWidth,
               getComputedStyle(root).padding,
             ],
@@ -4654,15 +4655,15 @@ test(
           };
         }),
         {
-          root: ["1200px", "20px"],
-          heading: ["26px", "600"],
-          subtitle: ["16px", "rgb(75, 85, 99)"],
-          sectionHeading: ["22px", "500"],
-          search: ["12px 16px", "9999px", "16px"],
+          root: ["0px", "1200px", "20px"],
+          heading: ["17.875px", "600"],
+          subtitle: ["11px", "rgb(75, 85, 99)"],
+          sectionHeading: ["15.125px", "500"],
+          search: ["8.25px 11px", "9999px", "11px"],
           card: ["20px", "12px"],
-          campaignTitle: ["20px", "500"],
-          earning: ["4px 8px", "15px"],
-          apply: ["12px 20px", "16px", "500"],
+          campaignTitle: ["13.75px", "500"],
+          earning: ["4px 8px", "10.3125px"],
+          apply: ["12px 20px", "11px", "500"],
         },
         "Gigs should retain the authoritative v2 page, search, and campaign geometry",
       );

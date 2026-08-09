@@ -2033,14 +2033,14 @@ section.gigs-page {
 section.gigs-page .v2-gigs-intro h2 {
   margin: 0 0 8px;
   color: #111827;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1.25;
 }
 section.gigs-page .v2-gigs-intro p {
   margin: 0;
   color: #4b5563;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
 }
 .v2-available-gigs {
@@ -2051,8 +2051,8 @@ section.gigs-page .v2-gigs-intro p {
 }
 .v2-gig-search,
 .v2-my-gig-search {
-  gap: 8px;
-  padding: 12px 16px;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #e5e7eb;
   border-radius: 9999px;
   background: #fff;
@@ -2063,7 +2063,7 @@ section.gigs-page .v2-gigs-intro p {
   border: 0;
   border-radius: 0;
   background: transparent;
-  font-size: 16px;
+  font-size: 1rem;
 }
 .v2-gig-search .icon-btn {
   flex: 0 0 auto;
@@ -2079,7 +2079,7 @@ section.gigs-page .v2-gigs-intro p {
 .v2-gig-campaign-empty {
   padding: 24px;
   color: #6b7280;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
   text-align: center;
 }
@@ -2110,23 +2110,23 @@ section.gigs-page .v2-gigs-intro p {
   border-radius: 6px;
   background: #d1fae5;
   color: #111827;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 .v2-gig-campaigns h3 {
   margin: 0 0 4px;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 500;
   line-height: 1.5;
 }
 .v2-gig-campaign-head small {
   color: #6b7280;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 .v2-gig-campaigns p {
   min-height: 48px;
   color: #4b5563;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
 }
 .v2-gig-campaigns .chips {
@@ -2142,7 +2142,7 @@ section.gigs-page .v2-gigs-intro p {
   align-self: flex-end;
   margin-left: auto;
   padding: 12px 20px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-gig-partner {
@@ -2163,7 +2163,7 @@ section.gigs-page .v2-gigs-intro p {
 .v2-gigs-section-title h3 {
   margin: 0 0 4px;
   color: #111827;
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 500;
   line-height: 1.25;
 }
@@ -6246,6 +6246,9 @@ main:has(> .v2-audit-page) {
   padding: 0;
 }
 main:has(> .v2-outreach-page) {
+  padding: 0;
+}
+main:has(> .gigs-page) {
   padding: 0;
 }
 main > header {
