@@ -2114,6 +2114,34 @@ if (fs.existsSync(publicDir)) {
 }
 
 let schedulerBusy = false;
+export const claimScheduledHunt = async (observedSchedule) => {
+  if (
+    !observedSchedule?.enabled ||
+    !observedSchedule.options ||
+    !observedSchedule.nextRunAt ||
+    Date.parse(observedSchedule.nextRunAt) > Date.now()
+  )
+    return null;
+  return mutate((db) => {
+    const live = db.infiniteHunt;
+    if (
+      !live?.enabled ||
+      !live.options ||
+      live.nextRunAt !== observedSchedule.nextRunAt ||
+      Date.parse(live.nextRunAt) > Date.now()
+    )
+      return null;
+    const claim = {
+      options: structuredClone(live.options),
+      dueAt: live.nextRunAt,
+    };
+    live.nextRunAt = new Date(
+      Date.now() + live.intervalMinutes * 60_000,
+    ).toISOString();
+    live.lastError = "";
+    return claim;
+  });
+};
 export const runScheduledHunt = async (
   baseUrl = `http://127.0.0.1:${PORT}`,
 ) => {
@@ -2129,18 +2157,12 @@ export const runScheduledHunt = async (
       Date.parse(schedule.nextRunAt) > Date.now()
     )
       return;
-    const nextRunAt = new Date(
-      Date.now() + schedule.intervalMinutes * 60_000,
-    ).toISOString();
-    await mutate((current) => {
-      if (!current.infiniteHunt?.enabled) return;
-      current.infiniteHunt.nextRunAt = nextRunAt;
-      current.infiniteHunt.lastError = "";
-    });
+    const claim = await claimScheduledHunt(schedule);
+    if (!claim) return;
     const response = await fetch(`${baseUrl}/api/agent-runs/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...schedule.options, origin: "infinite" }),
+      body: JSON.stringify({ ...claim.options, origin: "infinite" }),
     });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));

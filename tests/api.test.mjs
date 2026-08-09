@@ -10,7 +10,7 @@ process.env.NODE_ENV = "test";
 process.env.JOBHUNTR_DATA_DIR = dir;
 const serverModule = await import("../server/index.mjs");
 const app = serverModule.default;
-const { runScheduledHunt } = serverModule;
+const { claimScheduledHunt, runScheduledHunt } = serverModule;
 const { mutate } = await import("../server/store.mjs");
 const server = app.listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -325,6 +325,33 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
   await mutate((db) => {
     db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
   });
+  const staleSchedule = (await req("/api/state")).body.infiniteHunt;
+  const restarted = await req("/api/infinite-hunt/start", {
+    method: "POST",
+    body: JSON.stringify({
+      intervalMinutes: 30,
+      options: {
+        q: "frontend platform engineer",
+        minFit: 65,
+        workflows: ["glassdoor"],
+      },
+    }),
+  });
+  assert.equal(await claimScheduledHunt(staleSchedule), null);
+  const afterStaleClaim = (await req("/api/state")).body;
+  assert.equal(afterStaleClaim.agentRuns.length, runsBefore);
+  assert.equal(
+    afterStaleClaim.infiniteHunt.nextRunAt,
+    restarted.body.nextRunAt,
+    "a stale scheduler tick must not advance a restarted schedule",
+  );
+  assert.equal(
+    afterStaleClaim.infiniteHunt.options.q,
+    "frontend platform engineer",
+  );
+  await mutate((db) => {
+    db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
+  });
   await runScheduledHunt(base);
   const afterScheduledRun = (await req("/api/state")).body;
   assert.equal(afterScheduledRun.agentRuns.length, runsBefore + 1);
@@ -524,6 +551,18 @@ test("invalid jobs return a safe 400 response", async () => {
     ).status,
     originalStatus,
   );
+  const missingJob = await req("/api/jobs/not-a-real-job", {
+    method: "PATCH",
+    body: JSON.stringify({ title: "Must not update the workspace object" }),
+  });
+  assert.equal(missingJob.res.status, 404);
+  assert.equal(missingJob.body.error, "Job not found");
+  const missingSubmission = await req("/api/submissions/not-a-real-packet", {
+    method: "PATCH",
+    body: JSON.stringify({ status: "archived" }),
+  });
+  assert.equal(missingSubmission.res.status, 404);
+  assert.equal(missingSubmission.body.error, "Submission not found");
 });
 
 test("submission queue enforces review before local submission", async () => {

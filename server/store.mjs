@@ -355,7 +355,7 @@ export function mutate(fn) {
     const db = await readDb();
     const result = await fn(db);
     await writeDb(db);
-    return result ?? db;
+    return result === undefined ? db : result;
   });
   mutationQueue = operation.catch(() => {});
   return operation;
