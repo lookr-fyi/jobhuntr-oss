@@ -533,7 +533,30 @@ function migrate(input) {
         updatedAt: boundedText(session.updatedAt, 100),
       };
     });
-  db.outreachDrafts = records(db.outreachDrafts);
+  const outreachIds = new Set();
+  db.outreachDrafts = records(db.outreachDrafts)
+    .slice(0, 5000)
+    .map((draft, index) => ({
+      id: uniqueLegacyId(draft.id, "legacy-outreach-draft", index, outreachIds),
+      jobId: boundedText(draft.jobId, 200),
+      contactId: boundedText(draft.contactId, 200),
+      recipient: boundedText(draft.recipient, 200) || "Hiring team",
+      contactRole: boundedText(draft.contactRole, 200),
+      contactEmail: boundedText(draft.contactEmail, 300),
+      category: ["recruiter", "peer", "hiring_manager"].includes(draft.category)
+        ? draft.category
+        : "peer",
+      connectionDegree:
+        boundedText(draft.connectionDegree, 100) || "Company contact",
+      channel: draft.channel === "email" ? "email" : "linkedin",
+      subject: boundedText(draft.subject, 300) || `Outreach draft ${index + 1}`,
+      body: boundedText(draft.body, 20000),
+      status: ["draft", "sent", "replied", "archived"].includes(draft.status)
+        ? draft.status
+        : "draft",
+      createdAt: boundedText(draft.createdAt, 100),
+      updatedAt: boundedText(draft.updatedAt, 100),
+    }));
   db.huntPresets = records(db.huntPresets);
   for (const preset of db.huntPresets) {
     preset.options = normalizeHuntOptions(
@@ -577,7 +600,6 @@ function migrate(input) {
     if (!gig.statusHistory.length)
       gig.statusHistory = [{ status: gig.status, at: gig.createdAt || now() }];
   }
-  for (const draft of db.outreachDrafts) draft.status ||= "draft";
   db.agentRuns = records(db.agentRuns);
   for (const run of db.agentRuns) {
     run.id = String(run.id || nanoid()).slice(0, 200);
@@ -660,7 +682,23 @@ function migrate(input) {
     job.status = normalizeJobStatus(job.status);
     job.notes = records(job.notes);
     job.tasks = records(job.tasks);
-    job.contacts = records(job.contacts);
+    const contactIds = new Set();
+    job.contacts = records(job.contacts)
+      .slice(0, 1000)
+      .map((contact, index) => ({
+        id: uniqueLegacyId(
+          contact.id,
+          `legacy-contact-${boundedText(job.id, 80) || "job"}`,
+          index,
+          contactIds,
+        ),
+        name: boundedText(contact.name, 100) || `Contact ${index + 1}`,
+        role: boundedText(contact.role, 100),
+        email: boundedText(contact.email, 200),
+        linkedIn: boundedText(contact.linkedIn, 500),
+        createdAt: boundedText(contact.createdAt, 100),
+        updatedAt: boundedText(contact.updatedAt, 100),
+      }));
     job.tags = strings(job.tags);
     job.matchReasons = strings(job.matchReasons);
     job.interviewRounds = records(job.interviewRounds);

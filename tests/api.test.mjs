@@ -2042,7 +2042,23 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           status: "queued",
           tags: "not-an-array",
           notes: "not-an-array",
-          contacts: [null, { id: "valid-contact", name: "Alex" }],
+          contacts: [
+            null,
+            {
+              id: "duplicate-contact-id",
+              name: { malformed: true },
+              role: { malformed: true },
+              email: { malformed: true },
+              linkedIn: { malformed: true },
+            },
+            {
+              id: "duplicate-contact-id",
+              name: "  Alex Morgan  ",
+              role: "  Recruiter  ",
+              email: "  alex@example.com  ",
+              linkedIn: "  https://www.linkedin.com/in/alex  ",
+            },
+          ],
           statusHistory: [
             { status: "interviewing", at: new Date().toISOString() },
           ],
@@ -2159,6 +2175,35 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           notes: { malformed: true },
         },
       ],
+      outreachDrafts: [
+        {
+          id: "duplicate-outreach-id",
+          jobId: after.jobs[0].id,
+          contactId: "duplicate-contact-id",
+          recipient: { malformed: true },
+          contactRole: { malformed: true },
+          contactEmail: { malformed: true },
+          category: "unsupported",
+          connectionDegree: { malformed: true },
+          channel: "sms",
+          subject: { malformed: true },
+          body: { malformed: true },
+          status: "sending",
+        },
+        {
+          id: "duplicate-outreach-id",
+          jobId: after.jobs[0].id,
+          recipient: "  Alex Morgan  ",
+          contactRole: "  Recruiter  ",
+          contactEmail: "  alex@example.com  ",
+          category: "recruiter",
+          connectionDegree: "  Known contact  ",
+          channel: "email",
+          subject: "  Preserved outreach subject  ",
+          body: "  Preserved outreach body  ",
+          status: "replied",
+        },
+      ],
     }),
   });
   assert.equal(malformedNested.res.status, 200);
@@ -2190,7 +2235,22 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.notEqual(normalized.coverLetters[0].id, normalized.coverLetters[1].id);
   assert.deepEqual(normalized.jobs[0].tags, []);
   assert.deepEqual(normalized.jobs[0].notes, []);
-  assert.equal(normalized.jobs[0].contacts.length, 1);
+  assert.equal(normalized.jobs[0].contacts.length, 2);
+  assert.equal(normalized.jobs[0].contacts[0].name, "Contact 1");
+  assert.equal(normalized.jobs[0].contacts[0].role, "");
+  assert.equal(normalized.jobs[0].contacts[0].email, "");
+  assert.equal(normalized.jobs[0].contacts[0].linkedIn, "");
+  assert.equal(normalized.jobs[0].contacts[1].name, "Alex Morgan");
+  assert.equal(normalized.jobs[0].contacts[1].role, "Recruiter");
+  assert.equal(normalized.jobs[0].contacts[1].email, "alex@example.com");
+  assert.equal(
+    normalized.jobs[0].contacts[1].linkedIn,
+    "https://www.linkedin.com/in/alex",
+  );
+  assert.notEqual(
+    normalized.jobs[0].contacts[0].id,
+    normalized.jobs[0].contacts[1].id,
+  );
   assert.equal(normalized.jobs[0].status, "interested");
   assert.equal(normalized.jobs[0].statusHistory.length, 1);
   assert.equal(normalized.jobs[0].statusHistory[0].status, "interview");
@@ -2275,6 +2335,34 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
     "Read the product page",
   ]);
   assert.equal(normalized.coachingSessions[0].notes, "");
+  assert.equal(normalized.outreachDrafts[0].recipient, "Hiring team");
+  assert.equal(normalized.outreachDrafts[0].contactRole, "");
+  assert.equal(normalized.outreachDrafts[0].contactEmail, "");
+  assert.equal(normalized.outreachDrafts[0].category, "peer");
+  assert.equal(
+    normalized.outreachDrafts[0].connectionDegree,
+    "Company contact",
+  );
+  assert.equal(normalized.outreachDrafts[0].channel, "linkedin");
+  assert.equal(normalized.outreachDrafts[0].subject, "Outreach draft 1");
+  assert.equal(normalized.outreachDrafts[0].body, "");
+  assert.equal(normalized.outreachDrafts[0].status, "draft");
+  assert.equal(normalized.outreachDrafts[1].recipient, "Alex Morgan");
+  assert.equal(normalized.outreachDrafts[1].contactRole, "Recruiter");
+  assert.equal(normalized.outreachDrafts[1].contactEmail, "alex@example.com");
+  assert.equal(normalized.outreachDrafts[1].category, "recruiter");
+  assert.equal(normalized.outreachDrafts[1].connectionDegree, "Known contact");
+  assert.equal(normalized.outreachDrafts[1].channel, "email");
+  assert.equal(
+    normalized.outreachDrafts[1].subject,
+    "Preserved outreach subject",
+  );
+  assert.equal(normalized.outreachDrafts[1].body, "Preserved outreach body");
+  assert.equal(normalized.outreachDrafts[1].status, "replied");
+  assert.notEqual(
+    normalized.outreachDrafts[0].id,
+    normalized.outreachDrafts[1].id,
+  );
   assert.equal(normalized.meta.version, 11);
 
   for (const invalidBackup of [

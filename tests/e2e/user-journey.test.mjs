@@ -3992,6 +3992,27 @@ test(
         {
           data: {
             ...documentRestorePoint,
+            jobs: documentRestorePoint.jobs.map((job, index) =>
+              index === 0
+                ? {
+                    ...job,
+                    contacts: [
+                      {
+                        id: "duplicate-browser-contact",
+                        name: { unsafe: true },
+                        role: { unsafe: true },
+                        email: { unsafe: true },
+                        linkedIn: { unsafe: true },
+                      },
+                      {
+                        id: "duplicate-browser-contact",
+                        name: "Restored Contact",
+                        role: "Recruiter",
+                      },
+                    ],
+                  }
+                : job,
+            ),
             templates: [
               {
                 id: "malformed-browser-template",
@@ -4052,6 +4073,26 @@ test(
                 researchDone: ["Restored research task", "Unknown task"],
               },
             ],
+            outreachDrafts: [
+              {
+                id: "duplicate-browser-outreach",
+                jobId: documentRestorePoint.jobs[0].id,
+                recipient: { unsafe: true },
+                subject: { unsafe: true },
+                body: { unsafe: true },
+                status: "sending",
+                category: "unknown",
+              },
+              {
+                id: "duplicate-browser-outreach",
+                jobId: documentRestorePoint.jobs[0].id,
+                recipient: "Restored Contact",
+                subject: "Restored outreach subject",
+                body: "Restored outreach body",
+                status: "replied",
+                category: "recruiter",
+              },
+            ],
           },
         },
       );
@@ -4097,6 +4138,36 @@ test(
         .getByText("Restored measurable result", { exact: true })
         .waitFor();
       await assertAccessible(page, "Restored Career Coach");
+      await page.goto(`${baseUrl}/#/outreach`);
+      await page.getByRole("heading", { name: "Outreach" }).waitFor();
+      await page.getByText("Hiring team", { exact: true }).first().waitFor();
+      await page.getByText("Outreach draft 1", { exact: true }).waitFor();
+      await page.getByLabel("Show Connection Messages").check();
+      assert.equal(
+        await page.getByLabel("Subject").inputValue(),
+        "Outreach draft 1",
+      );
+      assert.equal(
+        await page
+          .getByRole("textbox", { name: "Message", exact: true })
+          .inputValue(),
+        "",
+      );
+      await page
+        .getByRole("button", { name: /Restored Contact/ })
+        .first()
+        .click();
+      assert.equal(
+        await page.getByLabel("Subject").inputValue(),
+        "Restored outreach subject",
+      );
+      assert.equal(
+        await page
+          .getByRole("textbox", { name: "Message", exact: true })
+          .inputValue(),
+        "Restored outreach body",
+      );
+      await assertAccessible(page, "Restored Outreach");
       const restoredDocumentWorkspace = await page.request.post(
         `${baseUrl}/api/import`,
         { data: documentRestorePoint },
