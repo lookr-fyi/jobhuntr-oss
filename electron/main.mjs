@@ -252,8 +252,11 @@ const createWindow = async () => {
       allowWindowCloseOnce = false;
       return;
     }
-    if (checkingClose) return;
     event.preventDefault();
+    // A second native close can arrive while the asynchronous hunt-status
+    // request is still pending. Keep every repeated event cancelled so a
+    // rapid double-close cannot bypass the tray handoff.
+    if (checkingClose) return;
     checkingClose = true;
     try {
       const response = await fetch(`${localUrl}/api/state`);

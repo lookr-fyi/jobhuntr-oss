@@ -55,6 +55,11 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
   assert.match(electronMain, /setPermissionCheckHandler/);
   assert.match(electronMain, /setPermissionRequestHandler/);
   assert.match(electronMain, /will-attach-webview/);
+  assert.match(
+    electronMain,
+    /event\.preventDefault\(\);[\s\S]*?if \(checkingClose\) return;[\s\S]*?checkingClose = true/,
+    "every repeated native close must remain cancelled during the asynchronous Infinite Hunt check",
+  );
 });
 
 test("public Git index excludes personal data and private environment files", () => {

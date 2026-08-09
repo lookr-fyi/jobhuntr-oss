@@ -129,7 +129,9 @@ test(
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor();
       await electronApp.evaluate(({ BrowserWindow }) => {
-        BrowserWindow.getAllWindows()[0].close();
+        const activeWindow = BrowserWindow.getAllWindows()[0];
+        activeWindow.close();
+        activeWindow.close();
       });
       await new Promise((resolve) => setTimeout(resolve, 500));
       assert.equal(
@@ -137,7 +139,7 @@ test(
           BrowserWindow.getAllWindows()[0].isVisible(),
         ),
         false,
-        "closing the window must keep an active Infinite Hunt alive in the tray",
+        "even rapid repeated closes must keep an active Infinite Hunt alive in the tray",
       );
       await electronApp.evaluate(({ app }) => {
         app.emit("activate");
