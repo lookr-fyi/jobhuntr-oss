@@ -266,10 +266,11 @@ test(
       const llms = await (await page.request.get(`${baseUrl}/llms.txt`)).text();
       assert.match(llms, /^# JobHuntr/m);
       const onboardingProgress = page.getByRole("progressbar", {
-        name: "Setup step 1 of 4",
+        name: "Setup introduction",
       });
       await onboardingProgress.waitFor();
-      assert.equal(await onboardingProgress.getAttribute("aria-valuenow"), "1");
+      assert.equal(await onboardingProgress.getAttribute("aria-valuenow"), "0");
+      await assertAccessible(page, "Onboarding introduction");
 
       assert.equal(
         await page.locator("main").getAttribute("aria-hidden"),
@@ -286,7 +287,14 @@ test(
       await page
         .getByRole("heading", { name: "What are you looking for?" })
         .waitFor();
+      assert.equal(
+        await page
+          .getByRole("progressbar", { name: "Setup step 1 of 4" })
+          .getAttribute("aria-valuenow"),
+        "1",
+      );
       await assertNamedFormControls(page, "Onboarding role setup");
+      await assertAccessible(page, "Onboarding role setup");
       await page.getByLabel("Your name").fill("E2E Job Hunter");
       await page.getByLabel("Primary target role").fill("Product Engineer");
       await page.getByLabel("Home location").fill("San Francisco, CA");
@@ -295,6 +303,7 @@ test(
         .getByRole("heading", { name: "Show us your strengths" })
         .waitFor();
       await assertNamedFormControls(page, "Onboarding skills setup");
+      await assertAccessible(page, "Onboarding skills setup");
       await page
         .getByLabel("Skills, comma-separated")
         .fill("React, TypeScript, Product strategy");
@@ -303,6 +312,7 @@ test(
         .getByRole("heading", { name: "Add your resume privately" })
         .waitFor();
       await assertNamedFormControls(page, "Onboarding resume setup");
+      await assertAccessible(page, "Onboarding resume setup");
       await page
         .getByLabel("Resume text")
         .fill(
@@ -313,9 +323,49 @@ test(
         .getByRole("heading", { name: "Set your search preferences" })
         .waitFor();
       await assertNamedFormControls(page, "Onboarding preference setup");
+      await assertAccessible(page, "Onboarding preference setup");
       await page.getByLabel("Preferred locations").fill("Remote, California");
       await page.getByLabel("Minimum salary").fill("150000");
       await page.getByLabel("Weekly application goal").fill("7");
+      await page.setViewportSize({ width: 320, height: 568 });
+      const mobileOnboarding = await page
+        .locator(".onboarding-shell")
+        .evaluate((shell) => ({
+          clientHeight: shell.clientHeight,
+          scrollHeight: shell.scrollHeight,
+          viewportHeight: window.innerHeight,
+          pageWidth: document.documentElement.scrollWidth,
+          viewportWidth: window.innerWidth,
+        }));
+      assert.equal(
+        mobileOnboarding.clientHeight <= mobileOnboarding.viewportHeight - 20,
+        true,
+        "the complete onboarding form must stay inside a compact desktop/mobile viewport",
+      );
+      assert.equal(
+        mobileOnboarding.scrollHeight > mobileOnboarding.clientHeight,
+        true,
+        "long onboarding steps must scroll inside their dialog instead of clipping actions",
+      );
+      assert.equal(
+        mobileOnboarding.pageWidth,
+        mobileOnboarding.viewportWidth,
+        "onboarding must not create horizontal overflow at 320px",
+      );
+      const openCommandCenter = page.getByRole("button", {
+        name: "Open my command center",
+      });
+      await openCommandCenter.scrollIntoViewIfNeeded();
+      assert.equal(
+        await openCommandCenter.evaluate((button) => {
+          const bounds = button.getBoundingClientRect();
+          return bounds.top >= 0 && bounds.bottom <= window.innerHeight;
+        }),
+        true,
+        "mobile users must be able to reach the final onboarding action",
+      );
+      await assertAccessible(page, "Mobile onboarding preference setup");
+      await page.setViewportSize({ width: 1440, height: 1000 });
       await page
         .getByRole("button", { name: "Open my command center" })
         .click();

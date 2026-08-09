@@ -1521,10 +1521,12 @@ function Onboarding({ profile, reload }) {
           <div
             className="v2-onboarding-progress"
             role="progressbar"
-            aria-label={`Setup step ${Math.max(1, step)} of 4`}
-            aria-valuemin="1"
+            aria-label={
+              step === 0 ? "Setup introduction" : `Setup step ${step} of 4`
+            }
+            aria-valuemin="0"
             aria-valuemax="4"
-            aria-valuenow={Math.max(1, step)}
+            aria-valuenow={step}
           >
             {[1, 2, 3, 4].map((value) => (
               <i key={value} className={step >= value ? "active" : ""} />
