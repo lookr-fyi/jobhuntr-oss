@@ -181,6 +181,38 @@ test(
         runtimeErrors.push(`${error.message} at ${page.url()}`),
       );
       await page.goto(baseUrl);
+      await page.locator(".app").waitFor();
+
+      const shellStyle = await page.evaluate(() => {
+        const bodyStyle = getComputedStyle(document.body);
+        const appStyle = getComputedStyle(document.querySelector(".app"));
+        const probe = document.createElement("div");
+        probe.style.width = "100px";
+        probe.style.padding = "10px";
+        document.body.append(probe);
+        const probeWidth = probe.getBoundingClientRect().width;
+        probe.remove();
+        return {
+          bodyFontSize: bodyStyle.fontSize,
+          bodyFontWeight: bodyStyle.fontWeight,
+          appWidth: appStyle.width,
+          appHeight: appStyle.height,
+          appOverflow: appStyle.overflow,
+          probeWidth,
+        };
+      });
+      assert.deepEqual(
+        shellStyle,
+        {
+          bodyFontSize: "11px",
+          bodyFontWeight: "400",
+          appWidth: "1440px",
+          appHeight: "1000px",
+          appOverflow: "hidden",
+          probeWidth: 100,
+        },
+        "the rendered shell should retain the authoritative v2 density and border-box geometry",
+      );
 
       assert.equal(
         await page
@@ -625,10 +657,12 @@ test(
         },
         "Infinite Hunting should retain the authoritative v2 heading dimensions",
       );
+      await page.setViewportSize({ width: 1440, height: 480 });
       assert.equal(
         await page.evaluate(() => {
-          window.scrollTo(0, document.documentElement.scrollHeight);
-          return window.scrollY > 0;
+          const main = document.querySelector("main");
+          main.scrollTo(0, main.scrollHeight);
+          return main.scrollTop > 0;
         }),
         true,
         "the Infinite Hunting fixture must be tall enough to exercise route scroll restoration",
@@ -636,10 +670,11 @@ test(
       await page.locator('button[title="Job Board"]').click();
       await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
       assert.equal(
-        await page.evaluate(() => window.scrollY),
+        await page.locator("main").evaluate((main) => main.scrollTop),
         0,
         "sidebar navigation must open every destination at its top edge",
       );
+      await page.setViewportSize({ width: 1440, height: 1000 });
       await page.locator('button[title="Infinite Hunting"]').click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
       assert.equal(

@@ -67,6 +67,30 @@ test("every JobHuntr CSS custom property is defined", async () => {
   );
 });
 
+test("the app shell retains the authoritative v2 global density and sizing reset", async () => {
+  const styles = await readFile(
+    new URL("../src/styles.css", import.meta.url),
+    "utf8",
+  );
+  const v2Shell = styles.slice(styles.indexOf("/* Electron JobHuntr v2 shell"));
+
+  assert.match(
+    v2Shell,
+    /\*,\s*\*::before,\s*\*::after\s*\{\s*box-sizing: border-box/,
+  );
+  assert.match(v2Shell, /html,\s*body\s*\{[\s\S]*?font-size: 11px/);
+  assert.match(v2Shell, /#root\s*\{[\s\S]*?height: 100%/);
+  assert.match(
+    v2Shell,
+    /\.app\s*\{[\s\S]*?width: 100vw[\s\S]*?height: 100vh[\s\S]*?overflow: hidden/,
+  );
+  assert.match(
+    v2Shell,
+    /main\s*\{\s*height: 100vh;\s*min-height: 100vh;[\s\S]*?overflow: auto/,
+    "the viewport-locked v2 shell must keep its main content independently scrollable",
+  );
+});
+
 test("user-triggered API actions contain rejected requests", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

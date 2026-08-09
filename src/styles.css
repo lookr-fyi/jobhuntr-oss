@@ -5732,9 +5732,27 @@ button.v2-workflow-card.selected {
   color: var(--v2-text);
   background: var(--v2-bg);
 }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html,
 body {
+  height: 100%;
   background: var(--v2-bg);
   color: var(--v2-text);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Display", sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+#root {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 button:focus-visible,
 a:focus-visible,
@@ -5747,7 +5765,11 @@ summary:focus-visible {
 }
 .app {
   display: block;
-  min-height: 100vh;
+  position: relative;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  overflow: hidden;
   background: var(--v2-bg);
 }
 .v2-sidebar {
@@ -6145,6 +6167,7 @@ summary:focus-visible {
   margin-bottom: 0;
 }
 main {
+  height: 100vh;
   min-height: 100vh;
   margin-left: 64px;
   padding: 32px;
