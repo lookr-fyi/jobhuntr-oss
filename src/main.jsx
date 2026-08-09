@@ -4046,10 +4046,16 @@ function Board({ state, reload }) {
   const [sort, setSort] = useState("fit");
   const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
   const [queueing, setQueueing] = useState("");
+  const [searching, setSearching] = useState(false);
+  const queueingRef = useRef("");
+  const searchingRef = useRef(false);
   const [notice, setNotice] = useState("");
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const leaderboardCloseRef = useRef(null);
   const search = async () => {
+    if (searchingRef.current) return;
+    searchingRef.current = true;
+    setSearching(true);
     try {
       const jobs = await api("/api/board/search", {
         method: "POST",
@@ -4057,7 +4063,12 @@ function Board({ state, reload }) {
       });
       setResults(jobs);
       setSelectedUrl("");
-    } catch {}
+    } catch {
+      // Keep the current feed visible so refreshing can be retried.
+    } finally {
+      searchingRef.current = false;
+      setSearching(false);
+    }
   };
   useEffect(() => {
     api("/api/board/search", {
@@ -4159,6 +4170,8 @@ function Board({ state, reload }) {
     source !== "all",
   ].filter(Boolean).length;
   const queueJob = async (job) => {
+    if (!job?.url || queueingRef.current || queuedUrls.has(job.url)) return;
+    queueingRef.current = job.url;
     setQueueing(job.url);
     setNotice("");
     try {
@@ -4172,12 +4185,27 @@ function Board({ state, reload }) {
       });
       setNewlyQueuedUrls((current) => new Set(current).add(job.url));
       setNotice(`${job.title} was added to your submission queue.`);
-      reload();
+      await reload();
     } catch {
       // The shared API error surface preserves the unqueued card for retry.
     } finally {
+      queueingRef.current = "";
       setQueueing("");
     }
+  };
+  const clearFilters = async () => {
+    if (searchingRef.current) return;
+    setLocation("");
+    setMinimumFit(0);
+    setMinimumSalary(0);
+    setRemoteType("all");
+    setJobType("all");
+    setSeniority("all");
+    setSponsorship("all");
+    setSource("all");
+    setSort("fit");
+    setQ("");
+    await search();
   };
   useEffect(() => {
     if (!leaderboardOpen) return undefined;
@@ -4227,8 +4255,14 @@ function Board({ state, reload }) {
             >
               <Trophy size={15} /> Leaderboard
             </button>
-            <button className="secondary" onClick={search}>
-              <RefreshCcw size={15} /> Refresh now
+            <button
+              className="secondary"
+              disabled={searching}
+              aria-busy={searching}
+              onClick={search}
+            >
+              <RefreshCcw size={15} />{" "}
+              {searching ? "Refreshing…" : "Refresh now"}
             </button>
           </div>
         </div>
@@ -4402,33 +4436,19 @@ function Board({ state, reload }) {
               <option value="title">Job title</option>
             </select>
           </label>
-          <button className="secondary" onClick={search}>
-            Apply filters
+          <button
+            className="secondary"
+            type="button"
+            disabled={searching}
+            onClick={search}
+          >
+            {searching ? "Applying…" : "Apply filters"}
           </button>
           <button
             className="text-button"
             type="button"
-            disabled={!activeFilterCount}
-            onClick={async () => {
-              try {
-                const jobs = await api("/api/board/search", {
-                  method: "POST",
-                  body: JSON.stringify({ q: "", location: "" }),
-                });
-                setLocation("");
-                setMinimumFit(0);
-                setMinimumSalary(0);
-                setRemoteType("all");
-                setJobType("all");
-                setSeniority("all");
-                setSponsorship("all");
-                setSource("all");
-                setSort("fit");
-                setQ("");
-                setResults(jobs);
-                setSelectedUrl("");
-              } catch {}
-            }}
+            disabled={searching || !activeFilterCount}
+            onClick={clearFilters}
           >
             Clear all
           </button>
@@ -4556,6 +4576,7 @@ function Board({ state, reload }) {
                 disabled={
                   queueing === selected.url || queuedUrls.has(selected.url)
                 }
+                aria-busy={queueing === selected.url}
               >
                 <ListPlus size={16} />
                 {queuedUrls.has(selected.url)

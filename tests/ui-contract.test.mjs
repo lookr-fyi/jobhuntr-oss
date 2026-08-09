@@ -546,6 +546,34 @@ test("Interview round persistence is single-flight and retryable", async () => {
   );
 });
 
+test("Job Board refresh and queue actions are single-flight", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const board = source.slice(
+    source.indexOf("function Board"),
+    source.indexOf("function Queue"),
+  );
+
+  assert.match(board, /const queueingRef = useRef\(""\)/);
+  assert.match(board, /const searchingRef = useRef\(false\)/);
+  assert.match(board, /if \(searchingRef\.current\) return/);
+  assert.match(board, /searchingRef\.current = true/);
+  assert.match(board, /searchingRef\.current = false/);
+  assert.match(
+    board,
+    /if \(!job\?\.url \|\| queueingRef\.current \|\| queuedUrls\.has\(job\.url\)\) return/,
+  );
+  assert.match(board, /queueingRef\.current = job\.url/);
+  assert.match(board, /queueingRef\.current = ""/);
+  assert.match(board, /await reload\(\)/);
+  assert.match(board, /type="button"[\s\S]*?onClick=\{search\}/);
+  assert.match(board, /aria-busy=\{searching\}/);
+  assert.match(board, /aria-busy=\{queueing === selected\.url\}/);
+  assert.match(board, /const clearFilters = async \(\) => \{/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
