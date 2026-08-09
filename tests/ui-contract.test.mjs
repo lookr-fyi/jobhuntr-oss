@@ -797,3 +797,32 @@ test("User Center saves are single-flight and cannot bless newer edits", async (
   assert.match(settings, /finally \{\s*setSavingProfile\(false\)/);
   assert.match(settings, /aria-busy=\{savingProfile\}/);
 });
+
+test("external submission recording is single-flight and retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const submission = source.slice(
+    source.indexOf("function SubmissionCard"),
+    source.indexOf("function ResumeStudioPage"),
+  );
+
+  assert.match(submission, /const recordingSubmissionRef = useRef\(false\)/);
+  assert.match(
+    submission,
+    /if \(\s*recordingSubmissionRef\.current[\s\S]*?\)\s*return;/,
+  );
+  assert.match(submission, /recordingSubmissionRef\.current = true/);
+  assert.match(
+    submission,
+    /finally \{\s*recordingSubmissionRef\.current = false;\s*setRecordingSubmission\(false\)/,
+  );
+  assert.match(submission, /await packetUpdateQueue\.current\.catch/);
+  assert.match(submission, /aria-busy=\{recordingSubmission\}/);
+  assert.match(submission, /recordingSubmission\s*\? "Recording…"/);
+  assert.match(
+    submission,
+    /catch \{\s*\/\/ Preserve the user's explicit verification/,
+  );
+});

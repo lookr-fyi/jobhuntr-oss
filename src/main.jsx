@@ -5707,8 +5707,10 @@ function QuestionVerification({ question, onChange }) {
 }
 function SubmissionCard({ submission: s, state, reload }) {
   const packetUpdateQueue = useRef(Promise.resolve());
+  const recordingSubmissionRef = useRef(false);
   const [externalSubmissionVerified, setExternalSubmissionVerified] =
     useState(false);
+  const [recordingSubmission, setRecordingSubmission] = useState(false);
   const [draftAnswers, setDraftAnswers] = useState(() =>
     Object.fromEntries(
       (s.applicationQuestions || [])
@@ -5799,6 +5801,32 @@ function SubmissionCard({ submission: s, state, reload }) {
         verified,
       },
     });
+  };
+  const recordExternalSubmission = async () => {
+    if (
+      recordingSubmissionRef.current ||
+      !s.checklist.every((item) => item.done) ||
+      !externalSubmissionVerified ||
+      !selectedResumeReady ||
+      !questionsReady
+    )
+      return;
+    recordingSubmissionRef.current = true;
+    setRecordingSubmission(true);
+    try {
+      await packetUpdateQueue.current.catch(() => {});
+      await api(`/api/submissions/${s.id}/submit`, {
+        method: "POST",
+        body: JSON.stringify({ confirmedByUser: true }),
+      });
+      setExternalSubmissionVerified(false);
+      await reload();
+    } catch {
+      // Preserve the user's explicit verification so a failed local write can retry.
+    } finally {
+      recordingSubmissionRef.current = false;
+      setRecordingSubmission(false);
+    }
   };
   return (
     <div className="packet">
@@ -6113,23 +6141,17 @@ function SubmissionCard({ submission: s, state, reload }) {
         <button
           className="success"
           disabled={
+            recordingSubmission ||
             !s.checklist.every((x) => x.done) ||
             !externalSubmissionVerified ||
             !selectedResumeReady ||
             !questionsReady
           }
-          onClick={async () => {
-            try {
-              await api(`/api/submissions/${s.id}/submit`, {
-                method: "POST",
-                body: JSON.stringify({ confirmedByUser: true }),
-              });
-              setExternalSubmissionVerified(false);
-              await reload();
-            } catch {}
-          }}
+          aria-busy={recordingSubmission}
+          onClick={recordExternalSubmission}
         >
-          <CheckCircle2 size={16} /> I submitted this externally
+          <CheckCircle2 size={16} />
+          {recordingSubmission ? "Recording…" : "I submitted this externally"}
         </button>
         <button
           className="secondary"
