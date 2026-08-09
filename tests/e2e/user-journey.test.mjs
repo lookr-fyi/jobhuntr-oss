@@ -2527,6 +2527,16 @@ test(
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
       await assertNamedFormControls(page, "Settings and data");
+      const [backupDownload] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("link", { name: "Download JSON" }).click(),
+      ]);
+      assert.equal(backupDownload.suggestedFilename(), "jobhuntr-export.json");
+      const exportedBackup = JSON.parse(
+        await fs.readFile(await backupDownload.path(), "utf8"),
+      );
+      assert.equal(exportedBackup.profile.nickname, "E2E Builder");
+      assert.ok(exportedBackup.jobs.length > 0);
       await page.getByLabel("Import JobHuntr JSON backup").setInputFiles({
         name: "e2e-backup.json",
         mimeType: "application/json",
@@ -2550,6 +2560,13 @@ test(
         name: "Replace this workspace?",
       });
       await restoreDialog.waitFor();
+      assert.equal(
+        await restoreDialog
+          .getByRole("button", { name: "Cancel" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "workspace restore should focus its safe cancel action",
+      );
       await restoreDialog.getByRole("button", { name: "Cancel" }).click();
       await restoreDialog.waitFor({ state: "hidden" });
       await assertAccessible(page, "Settings and data");
@@ -2788,6 +2805,39 @@ test(
       }
       await assertAccessible(mobile, "Mobile Settings and data");
       await mobileContext.close();
+
+      exportedBackup.profile.nickname = "Restored E2E Builder";
+      await page.getByLabel("Import JobHuntr JSON backup").setInputFiles({
+        name: "jobhuntr-export-restored.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(exportedBackup)),
+      });
+      await page.getByText(/Contains \d+ jobs/).waitFor();
+      await page.getByRole("button", { name: "Review restore" }).click();
+      const finalRestoreDialog = page.getByRole("dialog", {
+        name: "Replace this workspace?",
+      });
+      await finalRestoreDialog.waitFor();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/import") &&
+            response.request().method() === "POST" &&
+            response.ok(),
+        ),
+        finalRestoreDialog
+          .getByRole("button", { name: "Replace workspace" })
+          .click(),
+      ]);
+      await page.getByRole("heading", { name: "Settings & data" }).waitFor();
+      await page.locator('[title="Profile and settings"]').click();
+      await page.getByRole("menuitem", { name: "Profile & usage" }).click();
+      await page.getByRole("heading", { name: "User Center" }).waitFor();
+      assert.equal(
+        await page.getByLabel("Nickname (for job cards)").inputValue(),
+        "Restored E2E Builder",
+        "a backup restored through the real UI must survive the resulting reload",
+      );
     } finally {
       await browser?.close();
       try {
