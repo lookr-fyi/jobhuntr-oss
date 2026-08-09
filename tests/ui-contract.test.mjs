@@ -549,6 +549,11 @@ test("ATS template editing protects meaningful unsaved wizard changes", async ()
     source,
     /templateDialog\.step === 1\s*\? closeTemplateDialog\(\)/,
   );
+  assert.match(source, /const ATS_TEMPLATE_DRAFT_KEY/);
+  assert.match(source, /const readTemplateDialogDraft/);
+  assert.match(source, /sourceUpdatedAt/);
+  assert.match(source, /raw\.length > 350000/);
+  assert.match(source, /clearTemplateDialogDraft\(\)/);
 });
 
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {

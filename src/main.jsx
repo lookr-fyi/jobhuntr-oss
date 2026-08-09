@@ -6531,6 +6531,98 @@ const templateDialogDigest = (dialog) =>
         sections: dialog.sections,
       })
     : "";
+const ATS_TEMPLATE_DRAFT_KEY = "jobhuntr-ats-template-wizard-draft";
+const normalizeTemplateScore = (value) =>
+  value && typeof value === "object"
+    ? {
+        score: Math.max(0, Math.min(100, Number(value.score) || 0)),
+        keywordHits: Array.isArray(value.keywordHits)
+          ? value.keywordHits
+              .filter((item) => typeof item === "string")
+              .slice(0, 100)
+              .map((item) => item.slice(0, 200))
+          : [],
+        suggestions: Array.isArray(value.suggestions)
+          ? value.suggestions
+              .filter((item) => typeof item === "string")
+              .slice(0, 50)
+              .map((item) => item.slice(0, 1000))
+          : [],
+      }
+    : null;
+const readTemplateDialogDraft = () => {
+  try {
+    const raw = sessionStorage.getItem(ATS_TEMPLATE_DRAFT_KEY);
+    if (!raw) return null;
+    if (raw.length > 350000) {
+      sessionStorage.removeItem(ATS_TEMPLATE_DRAFT_KEY);
+      return null;
+    }
+    const value = JSON.parse(raw);
+    const dialog = value?.dialog;
+    if (
+      !dialog ||
+      typeof dialog !== "object" ||
+      !Number.isInteger(dialog.step) ||
+      dialog.step < 1 ||
+      dialog.step > 5 ||
+      typeof dialog.name !== "string" ||
+      typeof dialog.editedResume !== "string"
+    ) {
+      sessionStorage.removeItem(ATS_TEMPLATE_DRAFT_KEY);
+      return null;
+    }
+    const text = (field, limit) =>
+      typeof dialog[field] === "string" ? dialog[field].slice(0, limit) : "";
+    return {
+      baseline:
+        typeof value.baseline === "string"
+          ? value.baseline.slice(0, 350000)
+          : "",
+      sourceUpdatedAt:
+        typeof value.sourceUpdatedAt === "string"
+          ? value.sourceUpdatedAt.slice(0, 100)
+          : "",
+      dialog: {
+        id: typeof dialog.id === "string" ? dialog.id.slice(0, 200) : null,
+        step: dialog.step,
+        completedSteps: Array.isArray(dialog.completedSteps)
+          ? [
+              ...new Set(
+                dialog.completedSteps.filter((step) =>
+                  [1, 2, 3, 4].includes(step),
+                ),
+              ),
+            ]
+          : [],
+        editorView: ["split", "code", "preview"].includes(dialog.editorView)
+          ? dialog.editorView
+          : "split",
+        name: dialog.name.slice(0, 300),
+        description: text("description", 2000),
+        originalResume: text("originalResume", 100000),
+        editedResume: dialog.editedResume.slice(0, 100000),
+        additionalExperience: text("additionalExperience", 2000),
+        testJobId: text("testJobId", 200),
+        jobDescription: text("jobDescription", 5000),
+        uploadedFileName: text("uploadedFileName", 500),
+        extractingFile: false,
+        uploadError: "",
+        scoring: false,
+        scoreResult: normalizeTemplateScore(dialog.scoreResult),
+        initialScoreResult: normalizeTemplateScore(dialog.initialScoreResult),
+        optimizedResume: text("optimizedResume", 102000),
+        sections: text("sections", 2000),
+        newSection: "",
+      },
+    };
+  } catch {
+    sessionStorage.removeItem(ATS_TEMPLATE_DRAFT_KEY);
+    return null;
+  }
+};
+const clearTemplateDialogDraft = () =>
+  sessionStorage.removeItem(ATS_TEMPLATE_DRAFT_KEY);
 function Resume({ state, reload, mode = "resume" }) {
   const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
@@ -6608,8 +6700,30 @@ function Resume({ state, reload, mode = "resume" }) {
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
   const [templateSortOrder, setTemplateSortOrder] = useState("asc");
-  const [templateDialog, setTemplateDialog] = useState(null);
-  const [templateDialogBaseline, setTemplateDialogBaseline] = useState("");
+  const restoredTemplateDraftRef = useRef(null);
+  if (restoredTemplateDraftRef.current === null) {
+    const draft = mode === "resume" ? readTemplateDialogDraft() : null;
+    const source = draft?.dialog.id
+      ? state.templates.find((item) => item.id === draft.dialog.id)
+      : null;
+    const valid = Boolean(
+      draft?.baseline &&
+      (!draft.dialog.id ||
+        (source &&
+          draft.sourceUpdatedAt ===
+            (source.updatedAt || source.createdAt || ""))),
+    );
+    restoredTemplateDraftRef.current = valid
+      ? draft
+      : { dialog: null, baseline: "" };
+    if (draft && !valid) clearTemplateDialogDraft();
+  }
+  const [templateDialog, setTemplateDialog] = useState(
+    restoredTemplateDraftRef.current.dialog,
+  );
+  const [templateDialogBaseline, setTemplateDialogBaseline] = useState(
+    restoredTemplateDraftRef.current.baseline,
+  );
   const [confirmDiscardTemplate, setConfirmDiscardTemplate] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [historyQuery, setHistoryQuery] = useState("");
@@ -6700,12 +6814,43 @@ function Resume({ state, reload, mode = "resume" }) {
     templateDialogBaseline &&
     templateDialogDigest(templateDialog) !== templateDialogBaseline,
   );
+  useEffect(() => {
+    if (
+      mode !== "resume" ||
+      !templateDialog ||
+      !templateDialogBaseline ||
+      !hasUnsavedTemplateChanges
+    )
+      return;
+    try {
+      const source = templateDialog.id
+        ? state.templates.find((item) => item.id === templateDialog.id)
+        : null;
+      sessionStorage.setItem(
+        ATS_TEMPLATE_DRAFT_KEY,
+        JSON.stringify({
+          dialog: templateDialog,
+          baseline: templateDialogBaseline,
+          sourceUpdatedAt: source?.updatedAt || source?.createdAt || "",
+        }),
+      );
+    } catch {
+      // The wizard remains usable if a constrained webview rejects draft storage.
+    }
+  }, [
+    hasUnsavedTemplateChanges,
+    mode,
+    state.templates,
+    templateDialog,
+    templateDialogBaseline,
+  ]);
   const closeTemplateDialog = useCallback(() => {
     if (templateOperationRef.current) return;
     if (hasUnsavedTemplateChanges) {
       setConfirmDiscardTemplate(true);
       return;
     }
+    clearTemplateDialogDraft();
     setTemplateDialog(null);
     setTemplateDialogBaseline("");
   }, [hasUnsavedTemplateChanges]);
@@ -6728,6 +6873,7 @@ function Resume({ state, reload, mode = "resume" }) {
     };
   }, [templateDialogOpen]);
   const openTemplateDialog = (template = null) => {
+    clearTemplateDialogDraft();
     const dialog = {
       id: template?.id || null,
       step: 1,
@@ -6822,6 +6968,7 @@ function Resume({ state, reload, mode = "resume" }) {
         },
       );
       setTemplateId(saved.id);
+      clearTemplateDialogDraft();
       setTemplateDialog(null);
       setTemplateDialogBaseline("");
       await reload();
@@ -8100,6 +8247,7 @@ function Resume({ state, reload, mode = "resume" }) {
         busyLabel="Discarding…"
         onClose={() => setConfirmDiscardTemplate(false)}
         onConfirm={() => {
+          clearTemplateDialogDraft();
           setTemplateDialog(null);
           setTemplateDialogBaseline("");
         }}

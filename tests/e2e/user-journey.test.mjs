@@ -1294,6 +1294,17 @@ test(
         "E2E Leadership",
         "canceling the discard prompt should preserve the ATS wizard draft",
       );
+      await page.evaluate(() => {
+        window.location.hash = "#/overview";
+      });
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await page.locator('button[title="ATS Templates"]').click();
+      await templateDialog.waitFor();
+      assert.equal(
+        await templateDialog.getByLabel("Template name").inputValue(),
+        "E2E Leadership",
+        "the ATS wizard should recover its bounded draft after route navigation",
+      );
       const pdfBuilder = await page.context().newPage();
       await pdfBuilder.setContent(
         "<html><body><h1>Product Engineer</h1><p>React, TypeScript, leadership, and 40% performance gains across customer-facing products.</p></body></html>",
