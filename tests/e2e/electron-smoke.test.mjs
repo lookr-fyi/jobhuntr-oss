@@ -120,6 +120,26 @@ test(
         };
       });
       assert.deepEqual(popupSecurity, security);
+      await popup.evaluate(() => {
+        window.location.href = "https://example.com/blocked-popup-navigation";
+      });
+      for (let attempt = 0; attempt < 20; attempt++) {
+        externalTargets = await electronApp.evaluate(
+          () => globalThis.__jobhuntrExternalTargets || [],
+        );
+        if (externalTargets.length >= 2) break;
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      assert.equal(externalTargets.length, 2);
+      assert.equal(
+        externalTargets[1],
+        "https://example.com/blocked-popup-navigation",
+      );
+      assert.match(
+        popup.url(),
+        /^http:\/\/127\.0\.0\.1:/,
+        "local preview windows must not become unrestricted external browsers",
+      );
       await popup.close();
       await window.locator('button[title="Infinite Hunting"]').click();
       await window.getByRole("heading", { name: "Infinite Hunting" }).waitFor();

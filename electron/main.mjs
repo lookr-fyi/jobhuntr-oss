@@ -106,6 +106,30 @@ const openSafeExternal = (target) => {
     void shell.openExternal(parsed.href);
   } catch {}
 };
+const hardenWebContents = (contents, localOrigin) => {
+  contents.on("will-attach-webview", (event) => event.preventDefault());
+  contents.setWindowOpenHandler(({ url: target }) => {
+    if (isLocalTarget(target, localOrigin))
+      return {
+        action: "allow",
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+            safeDialogs: true,
+          },
+        },
+      };
+    openSafeExternal(target);
+    return { action: "deny" };
+  });
+  contents.on("will-navigate", (event, target) => {
+    if (isLocalTarget(target, localOrigin)) return;
+    event.preventDefault();
+    openSafeExternal(target);
+  });
+};
 const showMainWindow = () => {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   if (mainWindow.isMinimized()) mainWindow.restore();
@@ -242,29 +266,9 @@ const createWindow = async () => {
   });
 
   mainWindow.removeMenu();
-  mainWindow.webContents.on("will-attach-webview", (event) =>
-    event.preventDefault(),
-  );
-  mainWindow.webContents.setWindowOpenHandler(({ url: target }) => {
-    if (isLocalTarget(target, localOrigin))
-      return {
-        action: "allow",
-        overrideBrowserWindowOptions: {
-          webPreferences: {
-            contextIsolation: true,
-            nodeIntegration: false,
-            sandbox: true,
-            safeDialogs: true,
-          },
-        },
-      };
-    openSafeExternal(target);
-    return { action: "deny" };
-  });
-  mainWindow.webContents.on("will-navigate", (event, target) => {
-    if (isLocalTarget(target, localOrigin)) return;
-    event.preventDefault();
-    openSafeExternal(target);
+  hardenWebContents(mainWindow.webContents, localOrigin);
+  mainWindow.webContents.on("did-create-window", (childWindow) => {
+    hardenWebContents(childWindow.webContents, localOrigin);
   });
   mainWindow.on("close", async (event) => {
     saveWindowState(mainWindow);

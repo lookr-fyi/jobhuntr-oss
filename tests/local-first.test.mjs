@@ -57,6 +57,11 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
   assert.match(electronMain, /will-attach-webview/);
   assert.match(
     electronMain,
+    /did-create-window[\s\S]*?hardenWebContents\(childWindow\.webContents, localOrigin\)/,
+    "every local preview window must inherit external-navigation and popup restrictions",
+  );
+  assert.match(
+    electronMain,
     /event\.preventDefault\(\);[\s\S]*?if \(checkingClose\) return;[\s\S]*?checkingClose = true/,
     "every repeated native close must remain cancelled during the asynchronous Infinite Hunt check",
   );
