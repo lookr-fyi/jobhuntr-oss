@@ -314,6 +314,62 @@ test(
         null,
       );
       await assertNamedFormControls(page, "Overview");
+      const overviewGeometry = await page
+        .locator(".v2-overview")
+        .evaluate(() => {
+          const values = (selector) =>
+            getComputedStyle(document.querySelector(selector));
+          const overview = values(".v2-overview");
+          const hero = values(".v2-overview-hero");
+          const heading = values(".v2-overview-hero h1");
+          const momentum = values(".v2-momentum");
+          const momentumCopy = values(".v2-momentum b");
+          const top = values(".v2-overview-top");
+          const kpi = values(".v2-kpi");
+          const chart = values(".v2-overview-card");
+          return {
+            overviewGap: overview.gap,
+            heroGap: hero.gap,
+            heroPadding: hero.padding,
+            heroRadius: hero.borderRadius,
+            headingSize: heading.fontSize,
+            momentumGap: momentum.gap,
+            momentumMarginTop: momentum.marginTop,
+            momentumPadding: momentum.padding,
+            momentumSize: momentumCopy.fontSize,
+            topGap: top.gap,
+            topMarginBottom: top.marginBottom,
+            kpiGap: kpi.gap,
+            kpiPadding: kpi.padding,
+            kpiRadius: kpi.borderRadius,
+            kpiBackground: kpi.backgroundColor,
+            chartRadius: chart.borderRadius,
+            chartBackground: chart.backgroundColor,
+          };
+        });
+      assert.deepEqual(
+        overviewGeometry,
+        {
+          overviewGap: "32px",
+          heroGap: "24px",
+          heroPadding: "32px",
+          heroRadius: "24px",
+          headingSize: "19.25px",
+          momentumGap: "4px",
+          momentumMarginTop: "-16px",
+          momentumPadding: "24px",
+          momentumSize: "12.65px",
+          topGap: "32px",
+          topMarginBottom: "32px",
+          kpiGap: "8px",
+          kpiPadding: "24px",
+          kpiRadius: "20px",
+          kpiBackground: "rgb(248, 250, 252)",
+          chartRadius: "24px",
+          chartBackground: "rgb(248, 250, 252)",
+        },
+        "Overview should retain the authoritative v2 card density and geometry",
+      );
       assert.deepEqual(
         await page
           .getByRole("button", { name: "Start Infinite Hunt" })
@@ -491,9 +547,9 @@ test(
         {
           display: "flex",
           direction: "column",
-          gap: "16px",
+          gap: "24px",
           verticallyStacked: true,
-          overviewGap: "24px",
+          overviewGap: "32px",
         },
         "Overview KPIs should use the authoritative v2 stacked desktop column",
       );
