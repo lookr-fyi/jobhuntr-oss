@@ -1086,32 +1086,33 @@ function Onboarding({ profile, reload }) {
     resumeError: "",
     extractingResume: false,
   });
-  const finish = async () => {
+  const finish = async (overrides = {}) => {
+    const values = { ...form, ...overrides };
     setSaving(true);
     try {
       await api("/api/profile", {
         method: "PUT",
         body: JSON.stringify({
           onboarded: true,
-          name: form.name || "Local Job Hunter",
-          location: form.location,
-          headline: `${form.role} seeking high-impact teams`,
-          targetRoles: [form.role].filter(Boolean),
-          skills: form.skills
+          name: values.name || "Local Job Hunter",
+          location: values.location,
+          headline: `${values.role} seeking high-impact teams`,
+          targetRoles: [values.role].filter(Boolean),
+          skills: values.skills
             .split(",")
             .map((x) => x.trim())
             .filter(Boolean),
           preferences: {
             ...profile.preferences,
-            remote: form.remote,
-            locations: form.preferredLocations
+            remote: values.remote,
+            locations: values.preferredLocations
               .split(",")
               .map((value) => value.trim())
               .filter(Boolean),
-            minSalary: Number(form.minSalary) || 0,
-            weeklyApplicationGoal: Math.max(1, Number(form.weeklyGoal) || 5),
+            minSalary: Number(values.minSalary) || 0,
+            weeklyApplicationGoal: Math.max(1, Number(values.weeklyGoal) || 5),
           },
-          resumeText: form.resumeText || profile.resumeText,
+          resumeText: values.resumeText || profile.resumeText,
         }),
       });
       await reload();
@@ -1183,7 +1184,20 @@ function Onboarding({ profile, reload }) {
               <button onClick={() => setStep(1)}>
                 Set up my workspace <ChevronRight size={17} />
               </button>
-              <button className="text-button" onClick={finish}>
+              <button
+                className="text-button"
+                onClick={() =>
+                  finish({
+                    name: "Demo Job Hunter",
+                    role: "Software Engineer",
+                    location: "United States",
+                    skills: "TypeScript, React, Python, Product delivery",
+                    preferredLocations: "Remote, United States",
+                    resumeText:
+                      "Demo Job Hunter — Software Engineer. Built accessible React and TypeScript products, improved activation by 32%, automated reliable Python workflows, and collaborated with product and design teams to ship measurable customer outcomes.",
+                  })
+                }
+              >
                 Use demo profile
               </button>
             </>
@@ -1417,7 +1431,7 @@ function Onboarding({ profile, reload }) {
                 <button className="secondary" onClick={() => setStep(3)}>
                   Back
                 </button>
-                <button disabled={saving} onClick={finish}>
+                <button disabled={saving} onClick={() => finish()}>
                   {saving ? "Creating workspace…" : "Open my command center"}
                 </button>
               </div>

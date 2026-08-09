@@ -137,6 +137,29 @@ test(
       await recoveryPage
         .getByRole("button", { name: "Use demo profile" })
         .waitFor();
+      await recoveryPage
+        .getByRole("button", { name: "Use demo profile" })
+        .click();
+      await recoveryPage
+        .getByRole("heading", { name: /Welcome back/ })
+        .waitFor();
+      const demoProfile = await recoveryPage.evaluate(async () => {
+        const response = await fetch("/api/state");
+        return (await response.json()).profile;
+      });
+      assert.equal(demoProfile.onboarded, true);
+      assert.match(
+        demoProfile.resumeText,
+        /improved activation by 32%/i,
+        "the demo shortcut must create a complete, workflow-ready synthetic resume",
+      );
+      await recoveryPage.evaluate(async () => {
+        await fetch("/api/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ onboarded: false }),
+        });
+      });
       await recoveryContext.close();
 
       const desktopContext = await browser.newContext({
