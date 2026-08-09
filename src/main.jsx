@@ -1616,6 +1616,7 @@ function Tracker({ state, reload, setTab }) {
   const [editBusy, setEditBusy] = useState(false);
   const [funnelOpen, setFunnelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
   const jobSubmission = state.submissions.find(
@@ -1741,6 +1742,14 @@ function Tracker({ state, reload, setTab }) {
     });
     await reload();
   };
+  const requestStatusChange = async (id, status) => {
+    const target = state.jobs.find((item) => item.id === id);
+    if (status === "applied" && target?.status !== "applied") {
+      setPendingAppliedJobId(id);
+      return;
+    }
+    await patch(id, { status });
+  };
   const selectJob = (id) => {
     setSelected(id);
     setEditForm(null);
@@ -1749,14 +1758,18 @@ function Tracker({ state, reload, setTab }) {
     if (!job || !editForm?.company.trim() || !editForm?.title.trim()) return;
     setEditBusy(true);
     try {
+      const requestedStatus = editForm.status;
       await patch(job.id, {
         ...editForm,
+        status: job.status,
         tags: String(editForm.tags || "")
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean),
       });
       setEditForm(null);
+      if (requestedStatus !== job.status)
+        await requestStatusChange(job.id, requestedStatus);
     } finally {
       setEditBusy(false);
     }
@@ -1805,6 +1818,18 @@ function Tracker({ state, reload, setTab }) {
         }
         onClose={() => setDeleteOpen(false)}
         onConfirm={remove}
+      />
+      <ConfirmDialog
+        open={Boolean(pendingAppliedJobId)}
+        title="Confirm external submission"
+        description="Only mark this job applied after you personally verified the employer's confirmation page or email. Do not confirm a draft, validation error, CAPTCHA, or incomplete upload."
+        confirmLabel="I verified it was submitted"
+        onClose={() => setPendingAppliedJobId("")}
+        onConfirm={async () => {
+          const id = pendingAppliedJobId;
+          setPendingAppliedJobId("");
+          await patch(id, { status: "applied", confirmedByUser: true });
+        }}
       />
       <div className="v2-tracker-header">
         <h2>Job Tracker</h2>
@@ -1929,7 +1954,7 @@ function Tracker({ state, reload, setTab }) {
                 key={stage}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) =>
-                  patch(e.dataTransfer.getData("jobId"), { status: stage })
+                  requestStatusChange(e.dataTransfer.getData("jobId"), stage)
                 }
               >
                 <div className="column-title">
@@ -2097,7 +2122,7 @@ function Tracker({ state, reload, setTab }) {
                 <select
                   aria-label="Job status"
                   value={job.status}
-                  onChange={(e) => patch(job.id, { status: e.target.value })}
+                  onChange={(e) => requestStatusChange(job.id, e.target.value)}
                 >
                   {stages.map((s) => (
                     <option value={s} key={s}>

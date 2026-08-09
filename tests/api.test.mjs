@@ -66,8 +66,18 @@ test("can add and update a tracked job", async () => {
     method: "PATCH",
     body: JSON.stringify({ status: "applied" }),
   });
-  assert.equal(patch.body.status, "applied");
-  assert.equal(patch.body.statusHistory[0].status, "applied");
+  assert.equal(patch.res.status, 409);
+  const confirmedPatch = await req(`/api/jobs/${create.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "applied", confirmedByUser: true }),
+  });
+  assert.equal(confirmedPatch.body.status, "applied");
+  assert.equal(confirmedPatch.body.statusHistory[0].status, "applied");
+  assert.equal(
+    confirmedPatch.body.statusHistory[0].source,
+    "manual-confirmation",
+  );
+  assert.ok(confirmedPatch.body.applicationDatetime);
   const interview = await req(`/api/jobs/${create.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({
@@ -517,6 +527,11 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(submitted.res.status, 200);
   assert.equal(submitted.body.status, "submitted");
+  const regressed = await req(`/api/jobs/${state.jobs[0].id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "saved" }),
+  });
+  assert.equal(regressed.res.status, 409);
   const refreshed = (await req("/api/state")).body;
   assert.equal(
     refreshed.jobs.find((j) => j.id === state.jobs[0].id).status,

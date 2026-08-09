@@ -1095,6 +1095,41 @@ test(
       const editedJobId = trackerState.jobs.find(
         (job) => job.title === "Founding Principal Product Engineer",
       ).id;
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes(`/api/jobs/${editedJobId}`) &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page.getByLabel("Job status").selectOption("interview"),
+      ]);
+      await page.getByLabel("Job status").selectOption("applied");
+      const appliedDialog = page.getByRole("alertdialog", {
+        name: "Confirm external submission",
+      });
+      await appliedDialog.waitFor();
+      await assertAccessible(page, "Manual applied confirmation");
+      await appliedDialog.getByRole("button", { name: "Cancel" }).click();
+      await appliedDialog.waitFor({ state: "hidden" });
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .waitFor();
+      await page.getByLabel("Job status").selectOption("applied");
+      await appliedDialog.waitFor();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes(`/api/jobs/${editedJobId}`) &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        appliedDialog
+          .getByRole("button", { name: "I verified it was submitted" })
+          .click(),
+      ]);
+      await page.getByText("Applied", { exact: true }).first().waitFor();
       await page.goto(`${baseUrl}/#/tracker?job=${editedJobId}&run=manual`);
       await page
         .getByRole("heading", { name: "Founding Principal Product Engineer" })

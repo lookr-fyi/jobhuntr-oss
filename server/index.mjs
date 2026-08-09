@@ -333,11 +333,33 @@ app.patch("/api/jobs/:id", async (req, res) => {
     const item = db.jobs.find((j) => j.id === req.params.id);
     if (!item) return null;
     const previousStatus = item.status;
+    const hasSubmittedApplication = db.submissions.some(
+      (submission) =>
+        submission.jobId === item.id && submission.status === "submitted",
+    );
+    if (
+      changes.status === "applied" &&
+      previousStatus !== "applied" &&
+      req.body.confirmedByUser !== true &&
+      !hasSubmittedApplication
+    )
+      return { blockedApplied: true };
+    if (
+      hasSubmittedApplication &&
+      ["saved", "interested", "submitting"].includes(changes.status)
+    )
+      return { blockedRegression: true };
     Object.assign(item, changes, { updatedAt: timestamp() });
+    if (changes.status === "applied" && previousStatus !== "applied")
+      item.applicationDatetime = timestamp();
     if (changes.status && changes.status !== previousStatus)
       (item.statusHistory ||= []).unshift({
         status: req.body.status,
         at: timestamp(),
+        source:
+          changes.status === "applied"
+            ? "manual-confirmation"
+            : "tracker-update",
       });
     item.fitScore = scoreJob(item, db.profile);
     auditEvent(db, "job", `Updated ${item.title} at ${item.company}.`, {
@@ -346,6 +368,15 @@ app.patch("/api/jobs/:id", async (req, res) => {
     return item;
   });
   if (!job) return res.status(404).json({ error: "Job not found" });
+  if (job.blockedApplied)
+    return res.status(409).json({
+      error: "Explicit confirmation is required before marking a job applied",
+    });
+  if (job.blockedRegression)
+    return res.status(409).json({
+      error:
+        "A submitted application cannot return to a pre-application status",
+    });
   res.json(job);
 });
 app.delete("/api/jobs/:id", async (req, res) => {
@@ -948,6 +979,7 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     if (job) {
       job.status = "applied";
       job.updatedAt = timestamp();
+      job.applicationDatetime = item.submittedAt;
       (job.statusHistory ||= []).unshift({
         status: "applied",
         at: timestamp(),
