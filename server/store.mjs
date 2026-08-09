@@ -180,9 +180,18 @@ const records = (value) => (Array.isArray(value) ? value.filter(isRecord) : []);
 const strings = (value) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
 const boundedText = (value, max) =>
-  String(value ?? "")
+  String(typeof value === "string" || typeof value === "number" ? value : "")
     .trim()
     .slice(0, max);
+const uniqueLegacyId = (value, prefix, index, seenIds) => {
+  const requested = boundedText(value, 200);
+  let id = requested || `${prefix}-${index + 1}`;
+  let suffix = 2;
+  while (seenIds.has(id))
+    id = `${requested || `${prefix}-${index + 1}`}-${suffix++}`;
+  seenIds.add(id);
+  return id;
+};
 const SUBMISSION_CHECKLIST = [
   "Review resume alignment",
   "Review cover letter",
@@ -348,13 +357,70 @@ function migrate(input) {
   db.profile.preferences.locations = strings(db.profile.preferences.locations);
   db.profile.faqAnswers = records(db.profile.faqAnswers);
   db.jobs = records(db.jobs);
-  db.resumes = records(db.resumes);
-  db.coverLetters = records(db.coverLetters);
-  db.templates = Array.isArray(db.templates)
-    ? records(db.templates)
-    : defaultTemplates();
+  const templateIds = new Set();
+  const restoredTemplates = records(db.templates);
+  db.templates = (
+    restoredTemplates.length ? restoredTemplates : defaultTemplates()
+  ).map((template, index) => ({
+    id: uniqueLegacyId(template.id, "legacy-template", index, templateIds),
+    name: boundedText(template.name, 120) || `Resume Template ${index + 1}`,
+    description: boundedText(template.description, 500),
+    originalResume: boundedText(template.originalResume, 200000),
+    editedResume: boundedText(template.editedResume, 200000),
+    additionalExperience: boundedText(template.additionalExperience, 2000),
+    testJobId: boundedText(template.testJobId, 200),
+    jobDescription: boundedText(template.jobDescription, 5000),
+    sections:
+      strings(template.sections)
+        .map((section) => boundedText(section, 100))
+        .filter(Boolean)
+        .slice(0, 20) || [],
+    createdAt: boundedText(template.createdAt, 100),
+    updatedAt: boundedText(template.updatedAt, 100),
+  }));
   for (const template of db.templates)
-    template.sections = strings(template.sections);
+    if (!template.sections.length)
+      template.sections = ["Summary", "Skills", "Experience", "Education"];
+  const fallbackTemplateId = db.templates[0].id;
+  const resumeIds = new Set();
+  db.resumes = records(db.resumes).map((resume, index) => ({
+    id: uniqueLegacyId(resume.id, "legacy-resume", index, resumeIds),
+    name: boundedText(resume.name, 120) || `Resume ${index + 1}`,
+    templateId: templateIds.has(boundedText(resume.templateId, 200))
+      ? boundedText(resume.templateId, 200)
+      : fallbackTemplateId,
+    jobId: boundedText(resume.jobId, 200),
+    content: boundedText(resume.content, 100000),
+    sourceAtsScore: Math.min(
+      100,
+      Math.max(0, Number(resume.sourceAtsScore) || 0),
+    ),
+    generatedBy: boundedText(resume.generatedBy, 100),
+    createdAt: boundedText(resume.createdAt, 100),
+    updatedAt: boundedText(resume.updatedAt, 100),
+  }));
+  const coverLetterIds = new Set();
+  db.coverLetters = records(db.coverLetters).map((letter, index) => ({
+    id: uniqueLegacyId(letter.id, "legacy-cover-letter", index, coverLetterIds),
+    jobId: boundedText(letter.jobId, 200),
+    resumeId: boundedText(letter.resumeId, 200),
+    atsTemplateId: boundedText(letter.atsTemplateId, 100),
+    style: ["professional", "concise", "story-driven"].includes(letter.style)
+      ? letter.style
+      : "professional",
+    templateId: boundedText(letter.templateId, 100) || "classic",
+    templateName:
+      boundedText(letter.templateName, 100) || "Classic Professional",
+    documentName: boundedText(letter.documentName, 300),
+    templateContent: boundedText(letter.templateContent, 20000),
+    jobDescription: boundedText(letter.jobDescription, 5000),
+    opening: boundedText(letter.opening, 1000),
+    emphasis: boundedText(letter.emphasis, 2000),
+    title: boundedText(letter.title, 200) || `Cover Letter ${index + 1}`,
+    body: boundedText(letter.body, 100000),
+    createdAt: boundedText(letter.createdAt, 100),
+    updatedAt: boundedText(letter.updatedAt, 100),
+  }));
   db.submissions = records(db.submissions);
   for (const submission of db.submissions) {
     submission.status = normalizeSubmissionStatus(submission.status);

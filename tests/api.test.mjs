@@ -1996,6 +1996,46 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
         skills: "not-an-array",
         faqAnswers: "not-an-array",
       },
+      templates: [
+        {
+          id: "duplicate-document-id",
+          name: { malformed: true },
+          description: 42,
+          sections: "not-an-array",
+        },
+        {
+          id: "duplicate-document-id",
+          name: "  Legacy Design  ",
+          sections: ["Summary", "", 12, "Experience"],
+        },
+      ],
+      resumes: [
+        {
+          id: "duplicate-resume-id",
+          name: { malformed: true },
+          templateId: "missing-template",
+          content: { shouldNotRender: true },
+        },
+        {
+          id: "duplicate-resume-id",
+          name: "  Imported Resume  ",
+          templateId: "duplicate-document-id",
+          content: "  Preserved resume content  ",
+        },
+      ],
+      coverLetters: [
+        {
+          id: "duplicate-letter-id",
+          title: { malformed: true },
+          body: { shouldNotRender: true },
+          style: "unsupported",
+        },
+        {
+          id: "duplicate-letter-id",
+          title: "  Imported Letter  ",
+          body: "  Preserved letter body  ",
+        },
+      ],
       jobs: [
         {
           ...after.jobs[0],
@@ -2078,6 +2118,29 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   const normalized = (await req("/api/state")).body;
   assert.deepEqual(normalized.profile.skills, []);
   assert.deepEqual(normalized.profile.faqAnswers, []);
+  assert.equal(normalized.templates.length, 2);
+  assert.equal(normalized.templates[0].name, "Resume Template 1");
+  assert.deepEqual(normalized.templates[0].sections, [
+    "Summary",
+    "Skills",
+    "Experience",
+    "Education",
+  ]);
+  assert.equal(normalized.templates[1].name, "Legacy Design");
+  assert.deepEqual(normalized.templates[1].sections, ["Summary", "Experience"]);
+  assert.notEqual(normalized.templates[0].id, normalized.templates[1].id);
+  assert.equal(normalized.resumes[0].name, "Resume 1");
+  assert.equal(normalized.resumes[0].content, "");
+  assert.equal(normalized.resumes[0].templateId, normalized.templates[0].id);
+  assert.equal(normalized.resumes[1].name, "Imported Resume");
+  assert.equal(normalized.resumes[1].content, "Preserved resume content");
+  assert.notEqual(normalized.resumes[0].id, normalized.resumes[1].id);
+  assert.equal(normalized.coverLetters[0].title, "Cover Letter 1");
+  assert.equal(normalized.coverLetters[0].body, "");
+  assert.equal(normalized.coverLetters[0].style, "professional");
+  assert.equal(normalized.coverLetters[1].title, "Imported Letter");
+  assert.equal(normalized.coverLetters[1].body, "Preserved letter body");
+  assert.notEqual(normalized.coverLetters[0].id, normalized.coverLetters[1].id);
   assert.deepEqual(normalized.jobs[0].tags, []);
   assert.deepEqual(normalized.jobs[0].notes, []);
   assert.equal(normalized.jobs[0].contacts.length, 1);

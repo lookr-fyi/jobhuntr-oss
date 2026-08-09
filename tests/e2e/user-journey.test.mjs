@@ -3984,6 +3984,71 @@ test(
         "E2E persisted outreach subject",
       );
 
+      const documentRestorePoint = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const malformedDocumentRestore = await page.request.post(
+        `${baseUrl}/api/import`,
+        {
+          data: {
+            ...documentRestorePoint,
+            templates: [
+              {
+                id: "malformed-browser-template",
+                name: { unsafe: true },
+                description: { unsafe: true },
+                sections: "invalid",
+              },
+            ],
+            resumes: [
+              {
+                id: "malformed-browser-resume",
+                name: { unsafe: true },
+                content: { unsafe: true },
+                templateId: "missing-template",
+              },
+            ],
+            coverLetters: [
+              {
+                id: "malformed-browser-letter",
+                title: { unsafe: true },
+                body: { unsafe: true },
+              },
+            ],
+          },
+        },
+      );
+      assert.equal(malformedDocumentRestore.ok(), true);
+      await page.goto(`${baseUrl}/#/resume`);
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "ATS Resume Templates" })
+        .waitFor();
+      await page
+        .locator(".v2-resume-templates b", { hasText: "Resume Template 1" })
+        .waitFor();
+      await page.getByRole("button", { name: "Show All" }).click();
+      await page
+        .locator(".v2-resume-groups b", { hasText: "Resume 1" })
+        .first()
+        .waitFor();
+      await assertAccessible(page, "Restored Resume Studio");
+      await page.goto(`${baseUrl}/#/cover-letter`);
+      await page
+        .getByRole("heading", { name: "Cover Letters", exact: true })
+        .waitFor();
+      await page
+        .locator(".v2-template-grid footer b", { hasText: "Cover Letter 1" })
+        .waitFor();
+      await assertAccessible(page, "Restored Cover Letters");
+      const restoredDocumentWorkspace = await page.request.post(
+        `${baseUrl}/api/import`,
+        { data: documentRestorePoint },
+      );
+      assert.equal(restoredDocumentWorkspace.ok(), true);
+      await page.goto(`${baseUrl}/#/privacy`);
+      await page.getByRole("heading", { name: "Settings & data" }).waitFor();
+
       const mobileContext = await browser.newContext({
         viewport: { width: 390, height: 844 },
       });
