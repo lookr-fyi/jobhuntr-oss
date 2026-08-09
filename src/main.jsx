@@ -6515,6 +6515,22 @@ const readSavedLetterDraft = () => {
 };
 const clearSavedLetterDraft = () =>
   sessionStorage.removeItem(SAVED_LETTER_DRAFT_KEY);
+const templateDialogDigest = (dialog) =>
+  dialog
+    ? JSON.stringify({
+        id: dialog.id,
+        step: dialog.step,
+        completedSteps: dialog.completedSteps,
+        name: dialog.name,
+        description: dialog.description,
+        originalResume: dialog.originalResume,
+        editedResume: dialog.editedResume,
+        additionalExperience: dialog.additionalExperience,
+        testJobId: dialog.testJobId,
+        jobDescription: dialog.jobDescription,
+        sections: dialog.sections,
+      })
+    : "";
 function Resume({ state, reload, mode = "resume" }) {
   const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
@@ -6593,6 +6609,8 @@ function Resume({ state, reload, mode = "resume" }) {
   const [templateSort, setTemplateSort] = useState("name");
   const [templateSortOrder, setTemplateSortOrder] = useState("asc");
   const [templateDialog, setTemplateDialog] = useState(null);
+  const [templateDialogBaseline, setTemplateDialogBaseline] = useState("");
+  const [confirmDiscardTemplate, setConfirmDiscardTemplate] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [historyQuery, setHistoryQuery] = useState("");
   const [historyTemplate, setHistoryTemplate] = useState("all");
@@ -6677,13 +6695,31 @@ function Resume({ state, reload, mode = "resume" }) {
   const templateDialogBusy = Boolean(
     savingTemplate || templateDialog?.scoring || templateDialog?.extractingFile,
   );
+  const hasUnsavedTemplateChanges = Boolean(
+    templateDialog &&
+    templateDialogBaseline &&
+    templateDialogDigest(templateDialog) !== templateDialogBaseline,
+  );
+  const closeTemplateDialog = useCallback(() => {
+    if (templateOperationRef.current) return;
+    if (hasUnsavedTemplateChanges) {
+      setConfirmDiscardTemplate(true);
+      return;
+    }
+    setTemplateDialog(null);
+    setTemplateDialogBaseline("");
+  }, [hasUnsavedTemplateChanges]);
+  const closeTemplateDialogRef = useRef(closeTemplateDialog);
+  useEffect(() => {
+    closeTemplateDialogRef.current = closeTemplateDialog;
+  }, [closeTemplateDialog]);
   useEffect(() => {
     if (!templateDialogOpen) return undefined;
     const returnFocus = document.activeElement;
     templateDialogCloseRef.current?.focus();
     const closeOnEscape = (event) => {
       if (event.key === "Escape" && !templateOperationRef.current)
-        setTemplateDialog(null);
+        closeTemplateDialogRef.current();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -6691,8 +6727,8 @@ function Resume({ state, reload, mode = "resume" }) {
       returnFocus?.focus?.();
     };
   }, [templateDialogOpen]);
-  const openTemplateDialog = (template = null) =>
-    setTemplateDialog({
+  const openTemplateDialog = (template = null) => {
+    const dialog = {
       id: template?.id || null,
       step: 1,
       completedSteps: template ? [1, 2, 3] : [],
@@ -6719,7 +6755,11 @@ function Resume({ state, reload, mode = "resume" }) {
         template?.sections || ["Summary", "Skills", "Experience", "Education"]
       ).join(", "),
       newSection: "",
-    });
+    };
+    setTemplateDialog(dialog);
+    setTemplateDialogBaseline(templateDialogDigest(dialog));
+    setConfirmDiscardTemplate(false);
+  };
   const loadTemplateResumeFile = async (file) => {
     if (!file || templateOperationRef.current) return;
     templateOperationRef.current = true;
@@ -6783,6 +6823,7 @@ function Resume({ state, reload, mode = "resume" }) {
       );
       setTemplateId(saved.id);
       setTemplateDialog(null);
+      setTemplateDialogBaseline("");
       await reload();
     } catch {
       // Keep the completed template wizard available for retry.
@@ -8052,6 +8093,18 @@ function Resume({ state, reload, mode = "resume" }) {
   return (
     <section className="resume-studio">
       <ConfirmDialog
+        open={confirmDiscardTemplate}
+        title="Discard template changes?"
+        description="Your ATS template wizard has unsaved changes. Discard them and close the editor?"
+        confirmLabel="Discard Changes"
+        busyLabel="Discarding…"
+        onClose={() => setConfirmDiscardTemplate(false)}
+        onConfirm={() => {
+          setTemplateDialog(null);
+          setTemplateDialogBaseline("");
+        }}
+      />
+      <ConfirmDialog
         open={deleteTarget?.type === "template"}
         title="Delete resume template?"
         description={
@@ -8491,7 +8544,7 @@ function Resume({ state, reload, mode = "resume" }) {
           }
           onKeyDown={(event) => {
             if (event.key === "Escape" && !templateOperationRef.current)
-              setTemplateDialog(null);
+              closeTemplateDialog();
             containDialogFocus(event);
           }}
         >
@@ -8500,7 +8553,7 @@ function Resume({ state, reload, mode = "resume" }) {
             tabIndex={-1}
             aria-label="Dismiss template editor"
             onClick={() => {
-              if (!templateOperationRef.current) setTemplateDialog(null);
+              if (!templateOperationRef.current) closeTemplateDialog();
             }}
           />
           <div className="v2-template-modal-content">
@@ -8510,7 +8563,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 className="v2-template-wizard-back"
                 aria-label="Close template editor"
                 disabled={templateDialogBusy}
-                onClick={() => setTemplateDialog(null)}
+                onClick={closeTemplateDialog}
               >
                 <ChevronLeft size={20} />
               </button>
@@ -8926,7 +8979,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 disabled={templateDialogBusy}
                 onClick={() =>
                   templateDialog.step === 1
-                    ? setTemplateDialog(null)
+                    ? closeTemplateDialog()
                     : setTemplateDialog({
                         ...templateDialog,
                         step: templateDialog.step - 1,

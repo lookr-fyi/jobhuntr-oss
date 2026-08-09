@@ -1280,6 +1280,20 @@ test(
       await templateDialog
         .getByRole("heading", { name: "E2E Leadership", exact: true })
         .waitFor();
+      await templateDialog.getByLabel("Close template editor").click();
+      const discardTemplateDialog = page.getByRole("alertdialog", {
+        name: "Discard template changes?",
+      });
+      await discardTemplateDialog.waitFor();
+      await discardTemplateDialog
+        .getByRole("button", { name: "Cancel" })
+        .click();
+      await templateDialog.waitFor();
+      assert.equal(
+        await templateNameInput.inputValue(),
+        "E2E Leadership",
+        "canceling the discard prompt should preserve the ATS wizard draft",
+      );
       const pdfBuilder = await page.context().newPage();
       await pdfBuilder.setContent(
         "<html><body><h1>Product Engineer</h1><p>React, TypeScript, leadership, and 40% performance gains across customer-facing products.</p></body></html>",

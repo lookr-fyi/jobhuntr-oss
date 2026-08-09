@@ -536,6 +536,21 @@ test("saved cover letters retain a safe themed live editing workspace", async ()
   assert.match(source, /clearSavedLetterDraft\(\)/);
 });
 
+test("ATS template editing protects meaningful unsaved wizard changes", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /const templateDialogDigest =/);
+  assert.match(source, /const hasUnsavedTemplateChanges = Boolean/);
+  assert.match(source, /title="Discard template changes\?"/);
+  assert.match(source, /onClick=\{closeTemplateDialog\}/);
+  assert.match(
+    source,
+    /templateDialog\.step === 1\s*\? closeTemplateDialog\(\)/,
+  );
+});
+
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
