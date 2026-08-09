@@ -492,6 +492,15 @@ test("all authoritative cover-letter templates retain distinct visual themes", a
   assert.match(source, /background:\$\{theme\.surface\}/);
   assert.match(source, /font:15px\/1\.7 \$\{theme\.font\}/);
   assert.match(source, /border-left:\$\{theme\.edge\}/);
+  assert.match(
+    source,
+    /className=\{`v2-letter-paper \$\{item\.templateId \|\| "minimal"\}`\}/,
+  );
+  assert.match(source, /"--letter-accent": theme\.accent/);
+  assert.match(source, /item\.templateName \|\|/);
+  assert.match(styles, /border-left: var\(--letter-edge\)/);
+  assert.match(styles, /background: var\(--letter-surface\)/);
+  assert.match(styles, /font-family: var\(--letter-font\)/);
 });
 
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {

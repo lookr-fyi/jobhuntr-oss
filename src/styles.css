@@ -8622,6 +8622,10 @@ main > header.integrated-page-header {
   font-weight: 600;
 }
 .v2-letter-paper {
+  --letter-accent: #333;
+  --letter-surface: #fff;
+  --letter-font: Arial, sans-serif;
+  --letter-edge: 1px solid #e5e7eb;
   box-sizing: border-box;
   width: 100%;
   height: 100%;
@@ -8629,8 +8633,10 @@ main > header.integrated-page-header {
   padding: 36px 30px;
   overflow: hidden;
   border: 0;
-  background: #fff;
+  border-left: var(--letter-edge);
+  background: var(--letter-surface);
   box-shadow: none;
+  font-family: var(--letter-font);
 }
 .v2-letter-paper > b,
 .v2-letter-paper > em,
@@ -8639,6 +8645,9 @@ main > header.integrated-page-header {
 }
 .v2-letter-paper > b {
   margin-bottom: 9px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--letter-accent);
+  color: color-mix(in srgb, var(--letter-accent) 60%, #0f172a);
   font-size: 11px;
 }
 .v2-letter-paper > i {
@@ -8650,13 +8659,14 @@ main > header.integrated-page-header {
 }
 .v2-letter-paper > em {
   margin: 18px 0 12px;
+  color: color-mix(in srgb, var(--letter-accent) 60%, #0f172a);
   font-size: 8px;
   font-style: normal;
   font-weight: 700;
 }
 .v2-letter-paper > span {
   color: #475569;
-  font-family: Georgia, serif;
+  font-family: inherit;
   font-size: 7px;
   line-height: 1.7;
   white-space: pre-wrap;
@@ -8685,6 +8695,21 @@ main > header.integrated-page-header {
 .v2-template-grid > article footer small {
   display: block;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-letter-template-tag {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 7px;
+  padding: 3px 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

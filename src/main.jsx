@@ -7809,7 +7809,21 @@ function Resume({ state, reload, mode = "resume" }) {
                     <span className="v2-letter-status" aria-hidden="true">
                       Ready
                     </span>
-                    <span className="v2-letter-paper" aria-hidden="true">
+                    <span
+                      className={`v2-letter-paper ${item.templateId || "minimal"}`}
+                      aria-hidden="true"
+                      style={(() => {
+                        const theme =
+                          COVER_LETTER_PREVIEW_THEMES[item.templateId] ||
+                          COVER_LETTER_PREVIEW_THEMES.minimal;
+                        return {
+                          "--letter-accent": theme.accent,
+                          "--letter-surface": theme.surface,
+                          "--letter-font": theme.font,
+                          "--letter-edge": theme.edge,
+                        };
+                      })()}
+                    >
                       <b>{state.profile.name}</b>
                       <i />
                       <i />
@@ -7824,6 +7838,11 @@ function Resume({ state, reload, mode = "resume" }) {
                         <Calendar size={13} />{" "}
                         {formatCalendarDate(item.updatedAt || item.createdAt)}
                       </small>
+                      <span className="v2-letter-template-tag">
+                        {item.templateName ||
+                          COVER_LETTER_PREVIEW_THEMES[item.templateId]?.name ||
+                          "Minimal"}
+                      </span>
                     </button>
                     <button
                       className="v2-letter-delete"

@@ -2393,6 +2393,23 @@ test(
         "saved cover letters should render as v2 document preview cards",
       );
       assert.deepEqual(
+        await page.locator(".v2-letter-paper").evaluate((paper) => {
+          const style = getComputedStyle(paper);
+          return [
+            style.backgroundColor,
+            style.borderLeftColor,
+            style.fontFamily,
+          ];
+        }),
+        [
+          "rgb(248, 249, 250)",
+          "rgb(102, 126, 234)",
+          '"Helvetica Neue", Arial, sans-serif',
+        ],
+        "the saved card should preserve the Modern template selected in the wizard",
+      );
+      await page.getByText("Modern", { exact: true }).waitFor();
+      assert.deepEqual(
         await page.locator(".v2-template-grid article").evaluate((card) => {
           const style = (selector) =>
             getComputedStyle(card.querySelector(selector));
