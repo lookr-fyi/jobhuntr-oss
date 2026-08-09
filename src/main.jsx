@@ -592,6 +592,7 @@ function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  busyLabel = "Deleting…",
   confirmDisabled = false,
   onClose,
   onConfirm,
@@ -620,6 +621,8 @@ function ConfirmDialog({
   }, [open]);
   if (!open) return null;
   const confirm = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     try {
       await onConfirm();
@@ -628,6 +631,7 @@ function ConfirmDialog({
       // Keep destructive confirmation open when the shared API surface reports
       // a failure, so the user can retry or cancel without losing context.
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
@@ -663,9 +667,10 @@ function ConfirmDialog({
           <button
             className="danger"
             disabled={busy || confirmDisabled}
+            aria-busy={busy}
             onClick={confirm}
           >
-            {busy ? "Deleting…" : confirmLabel}
+            {busy ? busyLabel : confirmLabel}
           </button>
         </div>
       </div>
@@ -2500,11 +2505,15 @@ function Tracker({ state, reload, setTab }) {
         title="Confirm external submission"
         description="Only mark this job applied after you personally verified the employer's confirmation page or email. Do not confirm a draft, validation error, CAPTCHA, or incomplete upload."
         confirmLabel="I verified it was submitted"
+        busyLabel="Recording…"
         onClose={() => setPendingAppliedJobId("")}
         onConfirm={async () => {
           const id = pendingAppliedJobId;
-          setPendingAppliedJobId("");
-          await patch(id, { status: "applied", confirmedByUser: true });
+          const saved = await patch(id, {
+            status: "applied",
+            confirmedByUser: true,
+          });
+          if (!saved) throw new Error("Could not record external submission");
         }}
       />
       <div className="v2-tracker-header">
@@ -4890,6 +4899,7 @@ function Queue({ state, reload, setTab }) {
         title="Archive filtered queue jobs?"
         description={`${filtered.length} visible application packet${filtered.length === 1 ? "" : "s"} will leave the active queue. Tracked jobs and documents will remain available.`}
         confirmLabel="Archive packets"
+        busyLabel="Archiving…"
         onClose={() => setArchiveOpen(false)}
         onConfirm={async () => {
           await Promise.all(

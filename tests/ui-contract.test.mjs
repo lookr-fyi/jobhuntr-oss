@@ -265,6 +265,38 @@ test("application packet actions are single-flight with truthful progress", asyn
   assert.match(queue, /aria-busy=\{submittingReady\}/);
 });
 
+test("confirmation dialogs reject duplicate actions and report truthful work", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const dialog = source.slice(
+    source.indexOf("function ConfirmDialog"),
+    source.indexOf("function InfiniteHuntStatus"),
+  );
+  const tracker = source.slice(
+    source.indexOf("function Tracker"),
+    source.indexOf("function TrackerApplicationInsights"),
+  );
+
+  assert.match(dialog, /busyLabel = "Deleting…"/);
+  assert.match(dialog, /if \(busyRef\.current\) return/);
+  assert.match(dialog, /busyRef\.current = true/);
+  assert.match(dialog, /finally \{\s*busyRef\.current = false/);
+  assert.match(dialog, /aria-busy=\{busy\}/);
+  assert.match(dialog, /busy \? busyLabel : confirmLabel/);
+  assert.match(tracker, /busyLabel="Recording…"/);
+  assert.match(tracker, /if \(!saved\) throw new Error/);
+  assert.doesNotMatch(
+    tracker,
+    /onConfirm=\{async \(\) => \{\s*const id = pendingAppliedJobId;\s*setPendingAppliedJobId\(""\)/,
+  );
+  assert.match(
+    source,
+    /confirmLabel="Archive packets"\s*busyLabel="Archiving…"/,
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
