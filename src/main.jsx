@@ -12829,22 +12829,25 @@ function Agent({ state, reload, setTab }) {
   const run = async () => {
     if (runningRef.current || stoppingInfiniteRef.current) return;
     runningRef.current = true;
+    const runRevision = huntConfigurationRevisionRef.current;
     setRunning(true);
     try {
       const result = await api("/api/agent-runs/start", {
         method: "POST",
         body: JSON.stringify(payload()),
       });
-      setPreview({
-        matches: result.matches,
-        inspected: result.inspected,
-        alreadyTracked: result.duplicates,
-        options: result.options,
-        added: result.added,
-      });
-      localStorage.removeItem("jobhuntr-new-run-draft");
-      setHuntDraftRestored(false);
-      setHuntDraftTouched(false);
+      if (huntConfigurationRevisionRef.current === runRevision) {
+        setPreview({
+          matches: result.matches,
+          inspected: result.inspected,
+          alreadyTracked: result.duplicates,
+          options: result.options,
+          added: result.added,
+        });
+        localStorage.removeItem("jobhuntr-new-run-draft");
+        setHuntDraftRestored(false);
+        setHuntDraftTouched(false);
+      }
       await reload();
     } catch {
       // Keep the configured run available after the shared error is shown.
@@ -12856,6 +12859,7 @@ function Agent({ state, reload, setTab }) {
   const startInfiniteHunt = async () => {
     if (runningRef.current || stoppingInfiniteRef.current) return;
     runningRef.current = true;
+    const runRevision = huntConfigurationRevisionRef.current;
     setRunning(true);
     try {
       const { run: result } = await api("/api/infinite-hunt/start-run", {
@@ -12865,16 +12869,18 @@ function Agent({ state, reload, setTab }) {
           options: payload(),
         }),
       });
-      setPreview({
-        matches: result.matches,
-        inspected: result.inspected,
-        alreadyTracked: result.duplicates,
-        options: result.options,
-        added: result.added,
-      });
-      localStorage.removeItem("jobhuntr-new-run-draft");
-      setHuntDraftRestored(false);
-      setHuntDraftTouched(false);
+      if (huntConfigurationRevisionRef.current === runRevision) {
+        setPreview({
+          matches: result.matches,
+          inspected: result.inspected,
+          alreadyTracked: result.duplicates,
+          options: result.options,
+          added: result.added,
+        });
+        localStorage.removeItem("jobhuntr-new-run-draft");
+        setHuntDraftRestored(false);
+        setHuntDraftTouched(false);
+      }
       await reload();
     } catch {
       // One local transaction creates both schedule and initial run, so a

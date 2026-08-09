@@ -674,7 +674,9 @@ test(
         .getByLabel("Generate an optimized resume for each job")
         .check();
       await page.getByRole("button", { name: "Move Indeed up" }).click();
-      await page.getByText("Search preferences", { exact: true }).click();
+      await page
+        .locator("details.v2-hunt-filters")
+        .evaluate((details) => (details.open = true));
       const presetRoleBeforeRace = await page
         .getByLabel("Role or keywords")
         .inputValue();
@@ -688,6 +690,9 @@ test(
           exact: true,
         })
         .waitFor();
+      await page
+        .locator("details.v2-hunt-filters")
+        .evaluate((details) => (details.open = true));
       assert.equal(
         await page.getByLabel("Exclude keywords").inputValue(),
         "government-clearance-only",
@@ -705,7 +710,9 @@ test(
         true,
         "the recovered hunt draft should retain resume optimization",
       );
-      await page.getByText("Search preferences", { exact: true }).click();
+      await page
+        .locator("details.v2-hunt-filters")
+        .evaluate((details) => (details.open = true));
       let presetSaveCount = 0;
       await page.route("**/api/hunt-presets", async (route) => {
         presetSaveCount += 1;
@@ -789,6 +796,9 @@ test(
           button.click();
           button.click();
         });
+      await page
+        .getByLabel("Location")
+        .fill("Newer location while scheduled run starts");
       const scheduledInitialRun = await (await scheduledRunResponse).json();
       assert.ok(
         scheduledInitialRun.schedule.generation,
@@ -799,7 +809,11 @@ test(
         "completed",
         "the same atomic response must include the completed initial run",
       );
-      await page.getByText(/eligible matches/).waitFor();
+      assert.equal(
+        await page.getByText(/eligible matches/).count(),
+        0,
+        "a completed scheduled run must not show a preview for an older configuration",
+      );
       assert.equal(
         scheduleStartRequests,
         1,
@@ -819,6 +833,20 @@ test(
         await route.fulfill({ response, json: body });
       });
       await page.reload();
+      await page
+        .getByText("Unsaved Infinite Hunt configuration restored.", {
+          exact: true,
+        })
+        .waitFor();
+      await page
+        .locator("details.v2-hunt-filters")
+        .evaluate((details) => (details.open = true));
+      assert.equal(
+        await page.getByLabel("Location").inputValue(),
+        "Newer location while scheduled run starts",
+        "starting a run must not discard configuration edits made while it was pending",
+      );
+      await page.getByLabel("Location").fill(locationBeforePreviewRace);
       await page
         .getByRole("alert")
         .getByText(

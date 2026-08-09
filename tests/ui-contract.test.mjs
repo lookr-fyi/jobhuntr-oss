@@ -275,7 +275,23 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
     agent.indexOf("const previewMatches"),
   );
   assert.match(oneOff, /runningRef\.current/);
+  assert.match(
+    oneOff,
+    /const runRevision = huntConfigurationRevisionRef\.current/,
+  );
+  assert.match(
+    oneOff,
+    /if \(huntConfigurationRevisionRef\.current === runRevision\) \{[\s\S]*?localStorage\.removeItem\("jobhuntr-new-run-draft"\)/,
+  );
   assert.match(recurring, /runningRef\.current/);
+  assert.match(
+    recurring,
+    /const runRevision = huntConfigurationRevisionRef\.current/,
+  );
+  assert.match(
+    recurring,
+    /if \(huntConfigurationRevisionRef\.current === runRevision\) \{[\s\S]*?localStorage\.removeItem\("jobhuntr-new-run-draft"\)/,
+  );
   assert.match(recurring, /api\("\/api\/infinite-hunt\/start-run"/);
   assert.doesNotMatch(recurring, /api\("\/api\/infinite-hunt\/start"/);
   assert.doesNotMatch(recurring, /schedule\?\.generation/);
