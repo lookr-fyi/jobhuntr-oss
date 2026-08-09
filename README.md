@@ -7,7 +7,7 @@ A self-contained, local-first Electron rebuild of the JobHuntr v2 experience: jo
 ## Electron desktop app
 
 ```bash
-npm run desktop
+npm start
 ```
 
 That single command installs locked dependencies when needed, builds the frontend,
@@ -25,6 +25,8 @@ npm run dist:desktop
 Unsigned development packages are written to `release/`. Release signing and notarization require the platform-owner certificates and remain intentionally separate from local builds.
 
 The browser-based local launcher remains available for contributors and users who prefer it.
+
+`npm run desktop` is retained as an explicit alias for the same desktop launcher.
 
 ## One-line local run
 
@@ -79,9 +81,10 @@ Writes are atomic and serialized. JobHuntr also maintains `./data/jobhuntr.backu
 
 ```bash
 npm run dev          # local API + Vite frontend
-npm run desktop      # install if needed, build, and launch Electron
+npm start            # install if needed, build, and launch Electron
+npm run desktop      # explicit alias for npm start
 npm run build        # build frontend into dist/public
-npm start            # serve API; also serves built frontend if present
+npm run server:start # serve API; also serves built frontend if present
 npm test             # backend API smoke tests
 npm run test:e2e     # real Chrome and Electron user-journey tests
 npm run lint         # static checks for browser, server, scripts, and tests

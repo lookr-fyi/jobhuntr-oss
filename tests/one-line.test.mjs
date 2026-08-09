@@ -85,6 +85,8 @@ test("one-command desktop launcher bootstraps and opens Electron", async () => {
   const pkg = JSON.parse(
     await fs.readFile(path.join(process.cwd(), "package.json"), "utf8"),
   );
+  assert.equal(pkg.scripts.start, "node scripts/one-line-desktop.mjs");
   assert.equal(pkg.scripts.desktop, "node scripts/one-line-desktop.mjs");
+  assert.equal(pkg.scripts["server:start"], "node server/index.mjs");
   assert.match(pkg.scripts["desktop:launch"], /electron electron\/main\.mjs/);
 });
