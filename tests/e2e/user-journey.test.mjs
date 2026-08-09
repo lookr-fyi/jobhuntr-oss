@@ -3651,6 +3651,40 @@ test(
         );
         assert.equal(overflow, false, `${heading} should fit a 390px viewport`);
       }
+      await mobile.setViewportSize({ width: 390, height: 640 });
+      await mobile.locator('button[title="Agent Runs"]').click();
+      await mobile.getByRole("heading", { name: "Agent Runs" }).waitFor();
+      await mobile.getByRole("button", { name: "New Run" }).click();
+      const minimumWindowRunDialog = mobile.getByRole("dialog", {
+        name: "Create New Agent Run",
+      });
+      await minimumWindowRunDialog.waitFor();
+      await minimumWindowRunDialog
+        .locator(".v2-new-run-modal")
+        .evaluate((modal) => {
+          modal.scrollTop = modal.scrollHeight;
+        });
+      const minimumWindowActions = await Promise.all(
+        ["Cancel", "Create"].map((name) =>
+          minimumWindowRunDialog
+            .getByRole("button", { name, exact: true })
+            .boundingBox(),
+        ),
+      );
+      assert.ok(
+        minimumWindowActions.every(
+          (bounds) =>
+            bounds &&
+            bounds.x >= 0 &&
+            bounds.x + bounds.width <= 390 &&
+            bounds.y >= 0 &&
+            bounds.y + bounds.height <= 640,
+        ),
+        "new-run actions should be reachable at Electron's minimum window size",
+      );
+      await minimumWindowRunDialog
+        .getByRole("button", { name: "Cancel", exact: true })
+        .click();
       await mobile.setViewportSize({ width: 768, height: 700 });
       await mobile.locator('button[title="Agent Runs"]').click();
       await mobile.getByRole("heading", { name: "Agent Runs" }).waitFor();
