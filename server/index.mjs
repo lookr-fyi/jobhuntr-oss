@@ -86,7 +86,12 @@ const safeDueDate = (value) =>
 const isSafeHttpUrl = (value) => {
   if (!value) return true;
   try {
-    return ["http:", "https:"].includes(new URL(value).protocol);
+    const url = new URL(value);
+    return (
+      ["http:", "https:"].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+    );
   } catch {
     return false;
   }

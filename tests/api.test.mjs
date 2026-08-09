@@ -537,6 +537,16 @@ test("invalid jobs return a safe 400 response", async () => {
   });
   assert.equal(unsafeUrl.res.status, 400);
   assert.equal(unsafeUrl.body.error, "Invalid request");
+  const credentialUrl = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Credential leak",
+      title: "Unsafe role",
+      url: "https://private-token:secret@example.test/apply",
+    }),
+  });
+  assert.equal(credentialUrl.res.status, 400);
+  assert.equal(credentialUrl.body.error, "Invalid request");
 
   const state = (await req("/api/state")).body;
   const originalStatus = state.jobs[0].status;

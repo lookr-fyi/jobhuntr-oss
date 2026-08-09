@@ -93,6 +93,7 @@ const openSafeExternal = (target) => {
   try {
     const parsed = new URL(target);
     if (!["http:", "https:", "mailto:"].includes(parsed.protocol)) return;
+    if (parsed.username || parsed.password) return;
     void shell.openExternal(parsed.href);
   } catch {}
 };

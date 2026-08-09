@@ -79,6 +79,30 @@ test(
         ),
         "denied",
       );
+      await electronApp.evaluate(({ shell }) => {
+        globalThis.__jobhuntrExternalTargets = [];
+        shell.openExternal = async (target) => {
+          globalThis.__jobhuntrExternalTargets.push(target);
+        };
+      });
+      await window.locator('button[title="Job Board"]').click();
+      await window.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      await window.getByRole("link", { name: /View original post/ }).click();
+      let externalTargets = [];
+      for (
+        let attempt = 0;
+        attempt < 20 && !externalTargets.length;
+        attempt++
+      ) {
+        externalTargets = await electronApp.evaluate(
+          () => globalThis.__jobhuntrExternalTargets || [],
+        );
+        if (!externalTargets.length)
+          await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      assert.equal(externalTargets.length, 1);
+      assert.match(externalTargets[0], /^https?:\/\//);
+      assert.match(window.url(), /^http:\/\/127\.0\.0\.1:/);
       const popupPromise = electronApp.waitForEvent("window");
       await window.evaluate(() => window.open("/api/health", "_blank"));
       const popup = await popupPromise;

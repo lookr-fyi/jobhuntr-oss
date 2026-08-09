@@ -190,7 +190,11 @@ const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
 const safeHttpUrl = (value) => {
   try {
     const url = new URL(String(value || ""));
-    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    return ["http:", "https:"].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+      ? url.href
+      : "";
   } catch {
     return "";
   }
