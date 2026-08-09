@@ -905,6 +905,89 @@ test("submission queue enforces review before local submission", async () => {
   );
 });
 
+test("rapid application review edits cannot overwrite each other", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Parallel Review Co",
+      title: "Reliability Engineer",
+      url: "https://parallel-review.example/apply",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+  });
+  const [firstQuestion, secondQuestion] = packet.body.applicationQuestions;
+  const [firstCheck, secondCheck] = packet.body.checklist;
+
+  const updates = await Promise.all([
+    req(`/api/submissions/${packet.body.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        applicationQuestion: {
+          id: firstQuestion.id,
+          answer: "I have directly relevant reliability experience.",
+          verified: true,
+        },
+      }),
+    }),
+    req(`/api/submissions/${packet.body.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        applicationQuestion: {
+          id: secondQuestion.id,
+          answer: "$160,000 base, depending on total compensation.",
+          verified: true,
+        },
+      }),
+    }),
+    req(`/api/submissions/${packet.body.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        checklistItem: { id: firstCheck.id, done: true },
+      }),
+    }),
+    req(`/api/submissions/${packet.body.id}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        checklistItem: { id: secondCheck.id, done: true },
+      }),
+    }),
+  ]);
+  assert.ok(updates.every(({ res }) => res.status === 200));
+
+  const persisted = (await req("/api/state")).body.submissions.find(
+    (submission) => submission.id === packet.body.id,
+  );
+  assert.equal(
+    persisted.applicationQuestions.find(
+      (question) => question.id === firstQuestion.id,
+    ).answer,
+    "I have directly relevant reliability experience.",
+  );
+  assert.equal(
+    persisted.applicationQuestions.find(
+      (question) => question.id === secondQuestion.id,
+    ).answer,
+    "$160,000 base, depending on total compensation.",
+  );
+  assert.equal(
+    persisted.applicationQuestions
+      .filter((question) =>
+        [firstQuestion.id, secondQuestion.id].includes(question.id),
+      )
+      .every((question) => question.verified),
+    true,
+  );
+  assert.equal(
+    persisted.checklist
+      .filter((item) => [firstCheck.id, secondCheck.id].includes(item.id))
+      .every((item) => item.done),
+    true,
+  );
+});
+
 test("command center reports weekly goals and due-date priorities", async () => {
   const state = (await req("/api/state")).body;
   const job = state.jobs[0];

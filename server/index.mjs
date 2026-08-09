@@ -1066,33 +1066,47 @@ app.patch("/api/submissions/:id", async (req, res) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
     if (item.status === "submitted") return { blockedSubmitted: true };
-    if (Array.isArray(req.body.checklist)) {
+    const checklistUpdates = Array.isArray(req.body.checklist)
+      ? req.body.checklist
+      : req.body.checklistItem && typeof req.body.checklistItem === "object"
+        ? [req.body.checklistItem]
+        : null;
+    if (checklistUpdates) {
       item.checklist = item.checklist.map((existing) => ({
         ...existing,
-        done: Boolean(
-          req.body.checklist.find((candidate) => candidate?.id === existing.id)
-            ?.done,
-        ),
+        done:
+          checklistUpdates.find((candidate) => candidate?.id === existing.id)
+            ?.done ?? existing.done,
       }));
     }
     if (req.body.resumeId !== undefined)
       item.resumeId = safeText(req.body.resumeId, 50);
     if (req.body.coverLetterId !== undefined)
       item.coverLetterId = safeText(req.body.coverLetterId, 50);
-    if (Array.isArray(req.body.applicationQuestions)) {
+    const questionUpdates = Array.isArray(req.body.applicationQuestions)
+      ? req.body.applicationQuestions
+      : req.body.applicationQuestion &&
+          typeof req.body.applicationQuestion === "object"
+        ? [req.body.applicationQuestion]
+        : null;
+    if (questionUpdates) {
       item.applicationQuestions = item.applicationQuestions.map((existing) => {
-        const incoming = req.body.applicationQuestions.find(
+        const incoming = questionUpdates.find(
           (candidate) => safeText(candidate?.id, 80) === existing.id,
         );
         const updated = {
           ...existing,
           required: existing.required !== false,
-          answer: incoming
-            ? safeText(incoming.answer, 10000)
-            : safeText(existing.answer, 10000),
+          answer:
+            incoming && Object.hasOwn(incoming, "answer")
+              ? safeText(incoming.answer, 10000)
+              : safeText(existing.answer, 10000),
         };
         updated.confident = isValidApplicationAnswer(updated);
-        updated.verified = Boolean(incoming?.verified) && updated.confident;
+        updated.verified =
+          incoming && Object.hasOwn(incoming, "verified")
+            ? Boolean(incoming.verified) && updated.confident
+            : Boolean(existing.verified) && updated.confident;
         return updated;
       });
       const verifiedAnswers = item.applicationQuestions.filter(

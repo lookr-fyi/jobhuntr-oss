@@ -4588,28 +4588,20 @@ function SubmissionCard({ submission: s, state, reload }) {
     await reload();
   };
   const updateChecklist = async (id, done) => {
-    const checklist = s.checklist.map((x) =>
-      x.id === id ? { ...x, done } : x,
-    );
     await updatePacket({
-      checklist,
-      status: checklist.every((x) => x.done) ? "ready" : "draft",
+      checklistItem: { id, done },
+      status: "ready",
     });
   };
   const updateQuestion = async (id, answer) => {
-    const applicationQuestions = (s.applicationQuestions || []).map(
-      (question) =>
-        question.id === id
-          ? { ...question, answer, confident: true, verified: false }
-          : question,
-    );
-    await updatePacket({ applicationQuestions });
+    await updatePacket({
+      applicationQuestion: { id, answer, verified: false },
+    });
   };
   const verifyQuestion = async (id, verified) => {
-    const applicationQuestions = (s.applicationQuestions || []).map(
-      (question) => (question.id === id ? { ...question, verified } : question),
-    );
-    await updatePacket({ applicationQuestions });
+    await updatePacket({
+      applicationQuestion: { id, verified },
+    });
   };
   return (
     <div className="packet">
