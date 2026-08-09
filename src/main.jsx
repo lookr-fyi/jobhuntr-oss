@@ -11158,17 +11158,16 @@ function Privacy({ state }) {
     setResult(null);
     if (!file) return;
     try {
-      const data = JSON.parse(await file.text());
-      if (!Array.isArray(data.jobs)) throw new Error("Missing jobs collection");
-      setBackupPreview({
-        jobs: data.jobs.length,
-        resumes: data.resumes?.length || 0,
-        runs: data.agentRuns?.length || 0,
-        letters: data.coverLetters?.length || 0,
-        chats: data.coachConversations?.length || 0,
+      const preview = await api("/api/import/preview", {
+        method: "POST",
+        body: await file.text(),
       });
-    } catch {
-      setResult({ error: "This file is not a valid JobHuntr JSON backup." });
+      setBackupPreview(preview);
+    } catch (error) {
+      setResult({
+        error:
+          error.message || "This file is not a valid JobHuntr JSON backup.",
+      });
     }
   };
   const importCsv = async () => {
@@ -11281,6 +11280,18 @@ function Privacy({ state }) {
               Contains {backupPreview.jobs} jobs, {backupPreview.resumes}{" "}
               resumes, {backupPreview.letters} letters, {backupPreview.runs}{" "}
               runs, and {backupPreview.chats} coach chats.
+              {!backupPreview.profileIncluded && (
+                <small>
+                  This backup has no profile. Your profile will reset to the
+                  first-run defaults.
+                </small>
+              )}
+              {backupPreview.infiniteHuntActive && (
+                <small>
+                  Infinite Hunt was active in this backup and will resume after
+                  restore.
+                </small>
+              )}
             </div>
           )}
           <button

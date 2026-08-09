@@ -1760,6 +1760,9 @@ test(
       });
       await page.getByText(/Contains 1 jobs, 1 resumes/).waitFor();
       await page.getByText(/1 coach chats/).waitFor();
+      await page
+        .getByText(/profile will reset to the first-run defaults/)
+        .waitFor();
       await page.getByRole("button", { name: "Review restore" }).click();
       const restoreDialog = page.getByRole("dialog", {
         name: "Replace this workspace?",

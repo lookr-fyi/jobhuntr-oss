@@ -1234,6 +1234,24 @@ test("deleting a job cascades its private workflow records", async () => {
 
 test("full restore accepts only bounded JobHuntr backup keys", async () => {
   const state = (await req("/api/state")).body;
+  const preview = await req("/api/import/preview", {
+    method: "POST",
+    body: JSON.stringify(state),
+  });
+  assert.equal(preview.res.status, 200);
+  assert.equal(preview.body.jobs, state.jobs.length);
+  assert.equal(preview.body.resumes, state.resumes.length);
+  assert.equal(preview.body.profileIncluded, true);
+  assert.equal(
+    (await req("/api/state")).body.activities.length,
+    state.activities.length,
+    "previewing a backup must not mutate the current workspace",
+  );
+  const invalidPreview = await req("/api/import/preview", {
+    method: "POST",
+    body: JSON.stringify({ jobs: "not-an-array" }),
+  });
+  assert.equal(invalidPreview.res.status, 400);
   const restored = await req("/api/import", {
     method: "POST",
     body: JSON.stringify({

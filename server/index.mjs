@@ -2058,6 +2058,25 @@ const BackupSchema = z.object({
   infiniteHunt: BackupRecordSchema.optional(),
   activities: z.array(BackupRecordSchema).max(10000).optional(),
 });
+const backupPreview = (backup) => ({
+  jobs: backup.jobs.length,
+  resumes: backup.resumes?.length || 0,
+  letters: backup.coverLetters?.length || 0,
+  runs: backup.agentRuns?.length || 0,
+  chats: backup.coachConversations?.length || 0,
+  profileIncluded: Boolean(backup.profile),
+  infiniteHuntActive: backup.infiniteHunt?.enabled === true,
+});
+
+app.post("/api/import/preview", async (req, res) => {
+  const parsed = BackupSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({
+      error: "Invalid or oversized JobHuntr backup",
+      details: parsed.error.issues,
+    });
+  res.json(backupPreview(parsed.data));
+});
 
 app.post("/api/import", async (req, res) => {
   const parsed = BackupSchema.safeParse(req.body);

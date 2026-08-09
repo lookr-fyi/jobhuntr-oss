@@ -2568,6 +2568,12 @@ button:disabled {
   background: #f1f5f9;
   font-size: 12px;
 }
+.v2-backup-preview small {
+  display: block;
+  margin-top: 7px;
+  color: #92400e;
+  font-weight: 600;
+}
 .v2-restore-dialog {
   max-width: 470px;
   text-align: center;
