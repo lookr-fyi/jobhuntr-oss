@@ -1117,6 +1117,21 @@ test(
       await page.getByText(/3\/4 verified/).waitFor();
       await editedVerification.click();
       await page.getByText(/4\/4 verified/).waitFor();
+      const verifiedPacketState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const rapidlyVerifiedQuestion = verifiedPacketState.submissions
+        .flatMap((submission) => submission.applicationQuestions || [])
+        .find(
+          (question) =>
+            question.answer ===
+            "The product mission and customer impact match my experience.",
+        );
+      assert.equal(
+        rapidlyVerifiedQuestion?.verified,
+        true,
+        "typing, blurring, and immediately verifying must persist the final verified state in request order",
+      );
       for (const item of [
         "Review resume alignment",
         "Review cover letter",

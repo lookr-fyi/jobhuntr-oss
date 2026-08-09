@@ -5205,6 +5205,7 @@ function QuestionVerification({ question, onChange }) {
   );
 }
 function SubmissionCard({ submission: s, state, reload }) {
+  const packetUpdateQueue = useRef(Promise.resolve());
   const [externalSubmissionVerified, setExternalSubmissionVerified] =
     useState(false);
   const [draftAnswers, setDraftAnswers] = useState(() =>
@@ -5258,11 +5259,17 @@ function SubmissionCard({ submission: s, state, reload }) {
       : "No resume attached";
   const updatePacket = async (body) => {
     setExternalSubmissionVerified(false);
-    await api(`/api/submissions/${s.id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    });
-    await reload();
+    const update = packetUpdateQueue.current
+      .catch(() => {})
+      .then(async () => {
+        await api(`/api/submissions/${s.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        });
+        await reload();
+      });
+    packetUpdateQueue.current = update;
+    await update;
   };
   const updateChecklist = async (id, done) => {
     await updatePacket({
