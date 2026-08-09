@@ -7681,31 +7681,39 @@ function Resume({ state, reload, mode = "resume" }) {
               </div>
             )}
             {templateDialog.step === 3 && (
-              <div className="v2-template-step v2-template-edit-step">
-                <div>
+              <div className="v2-template-step v2-template-experience-step">
+                <header>
                   <h4>Add Additional Experience</h4>
                   <p>
-                    Add truthful skills, projects, achievements, or experience
-                    not already included. JobHuntr never invents details.
+                    Add experiences, skills, or achievements not already in your
+                    uploaded resume. JobHuntr never invents details, and leaving
+                    this blank keeps your resume unchanged.
                   </p>
-                </div>
-                <textarea
-                  name="ats-template-additional-experience"
-                  aria-label="Additional experience and skills"
-                  maxLength={10000}
-                  value={templateDialog.additionalExperience}
-                  onChange={(event) =>
-                    setTemplateDialog({
-                      ...templateDialog,
-                      additionalExperience: event.target.value,
-                    })
-                  }
-                  placeholder="Freelance projects, certifications, volunteer leadership, awards, publications…"
-                />
-                <small>
-                  {templateDialog.additionalExperience.length.toLocaleString()}
-                  /10,000 characters
-                </small>
+                </header>
+                <label className="v2-template-experience-editor">
+                  <span>
+                    <b>Additional Experience &amp; Skills</b>
+                    <small>
+                      {templateDialog.additionalExperience.length.toLocaleString()}
+                      /2,000 characters
+                    </small>
+                  </span>
+                  <textarea
+                    name="ats-template-additional-experience"
+                    aria-label="Additional experience and skills"
+                    maxLength={2000}
+                    value={templateDialog.additionalExperience}
+                    onChange={(event) =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        additionalExperience: event.target.value,
+                      })
+                    }
+                    placeholder={
+                      "Examples:\n• Freelance projects and consulting work\n• Volunteer experiences and leadership roles\n• Additional certifications or training\n• Side projects and personal initiatives\n• Awards, publications, or speaking engagements\n• Technical skills not mentioned in your resume\n• Languages and proficiency levels"
+                    }
+                  />
+                </label>
               </div>
             )}
             {templateDialog.step === 4 && (

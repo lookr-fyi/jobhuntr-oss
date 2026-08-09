@@ -9875,6 +9875,53 @@ main > header.integrated-page-header {
   border: 0;
   background: #f1f5f9;
 }
+.v2-template-experience-step {
+  min-height: 430px;
+  padding: 28px;
+}
+.v2-template-experience-step > header h4,
+.v2-template-experience-step > header p {
+  margin: 0;
+}
+.v2-template-experience-step > header p {
+  max-width: 720px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.v2-template-experience-editor {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  gap: 8px;
+}
+.v2-template-experience-editor > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #334155;
+  font-size: 13px;
+}
+.v2-template-experience-editor > span small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
+.v2-template-experience-editor textarea {
+  min-height: 300px;
+  flex: 1;
+  padding: 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+}
+.v2-template-experience-editor textarea:focus {
+  border-color: #2563eb;
+}
 .v2-template-dropzone span,
 .v2-template-edit-step small,
 .v2-template-test-summary small {

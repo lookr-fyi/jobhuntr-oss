@@ -1100,9 +1100,19 @@ test(
       );
       await templateDialog.getByRole("button", { name: /Next/ }).click();
       await templateDialog.getByText("Add Additional Experience").waitFor();
-      await templateDialog
-        .getByLabel("Additional experience and skills")
-        .fill("Mentored five engineers and led accessibility delivery.");
+      const additionalExperience = templateDialog.getByLabel(
+        "Additional experience and skills",
+      );
+      assert.equal(
+        await additionalExperience.getAttribute("maxlength"),
+        "2000",
+        "additional experience should retain v2's 2,000-character boundary",
+      );
+      await templateDialog.getByText("0/2,000 characters").waitFor();
+      await additionalExperience.fill(
+        "Mentored five engineers and led accessibility delivery.",
+      );
+      await templateDialog.getByText("55/2,000 characters").waitFor();
       await templateDialog.getByRole("button", { name: /Next/ }).click();
       await templateDialog.getByText("Test your ATS template").waitFor();
       await templateDialog
