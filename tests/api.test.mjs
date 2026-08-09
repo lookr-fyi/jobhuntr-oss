@@ -498,6 +498,50 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
 });
 
 test("agent run history can be permanently deleted without deleting saved jobs", async () => {
+  await mutate((db) => {
+    db.agentRuns.unshift({
+      id: "legacy-run",
+      runName: { malformed: true },
+      status: "unknown",
+      q: "legacy engineer",
+      workflows: ["indeed", "retired-board"],
+      activities: [
+        {
+          title: "Legacy workflow step",
+          description: "Recovered from the old activity field",
+        },
+      ],
+      steps: "not-an-array",
+      actions: ["Saved a role", 42],
+      matches: [
+        {
+          company: "Legacy Co",
+          title: "Engineer",
+          fitScore: 140,
+          reasons: ["Skill match", 42],
+        },
+      ],
+      inspected: "4",
+      found: -2,
+    });
+  });
+  const migratedRun = (await req("/api/state")).body.agentRuns.find(
+    (item) => item.id === "legacy-run",
+  );
+  assert.equal(migratedRun.runName, "legacy engineer");
+  assert.deepEqual(migratedRun.steps, [
+    {
+      name: "Legacy workflow step",
+      status: "completed",
+      detail: "Recovered from the old activity field",
+    },
+  ]);
+  assert.deepEqual(migratedRun.actions, ["Saved a role"]);
+  assert.equal(migratedRun.matches[0].fitScore, 100);
+  assert.deepEqual(migratedRun.matches[0].reasons, ["Skill match"]);
+  assert.equal(migratedRun.inspected, 4);
+  assert.equal(migratedRun.found, 0);
+  assert.equal("activities" in migratedRun, false);
   const run = await req("/api/agent-runs/start", {
     method: "POST",
     body: JSON.stringify({

@@ -343,8 +343,41 @@ function migrate(input) {
   }
   db.agentRuns = records(db.agentRuns);
   for (const run of db.agentRuns) {
-    run.matches = records(run.matches);
-    run.activities = records(run.activities);
+    run.id = String(run.id || nanoid()).slice(0, 200);
+    run.runName = String(
+      (typeof run.runName === "string" && run.runName) ||
+        run.search?.q ||
+        run.q ||
+        "Local hunt",
+    ).slice(0, 200);
+    run.status = ["pending", "running", "completed", "failed"].includes(
+      run.status,
+    )
+      ? run.status
+      : "completed";
+    run.matches = records(run.matches).map((match) => ({
+      company: String(match.company || "Unknown company").slice(0, 300),
+      title: String(match.title || "Untitled role").slice(0, 500),
+      location: String(match.location || "").slice(0, 500),
+      url: String(match.url || "").slice(0, 2000),
+      fitScore: Math.min(100, Math.max(0, Number(match.fitScore) || 0)),
+      reasons: strings(match.reasons).map((reason) => reason.slice(0, 500)),
+    }));
+    run.steps = records(
+      Array.isArray(run.steps) ? run.steps : run.activities,
+    ).map((step) => ({
+      name: String(step.name || step.title || "Workflow step").slice(0, 200),
+      status: ["pending", "running", "completed", "failed"].includes(
+        step.status,
+      )
+        ? step.status
+        : "completed",
+      detail: String(step.detail || step.description || "").slice(0, 2000),
+    }));
+    run.actions = strings(run.actions)
+      .map((action) => action.slice(0, 2000))
+      .slice(0, 500);
+    delete run.activities;
     run.options = normalizeHuntOptions(
       isRecord(run.options) ? run.options : { ...run, ...run.search },
       run.runName || run.search?.q,
@@ -356,6 +389,16 @@ function migrate(input) {
       q: run.options.q,
       location: run.options.location,
     };
+    for (const counter of [
+      "inspected",
+      "found",
+      "added",
+      "duplicates",
+      "queued",
+      "optimizedResumes",
+      "originalResumes",
+    ])
+      run[counter] = Math.max(0, Number(run[counter]) || 0);
   }
   db.infiniteHunt = isRecord(db.infiniteHunt)
     ? db.infiniteHunt
