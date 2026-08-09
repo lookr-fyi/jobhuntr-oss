@@ -1,10 +1,22 @@
-import { app, BrowserWindow, screen, session, shell } from "electron";
+import {
+  app,
+  BrowserWindow,
+  Menu,
+  screen,
+  session,
+  shell,
+  Tray,
+} from "electron";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
 let mainWindow;
 let localUrl;
+let tray;
+let forceQuit = false;
+let checkingClose = false;
+let allowWindowCloseOnce = false;
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const iconPath = path.join(projectRoot, "src", "jobhuntr-logo.png");
@@ -82,6 +94,60 @@ const openSafeExternal = (target) => {
     const parsed = new URL(target);
     if (!["http:", "https:", "mailto:"].includes(parsed.protocol)) return;
     void shell.openExternal(parsed.href);
+  } catch {}
+};
+const showMainWindow = () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+};
+const stopInfiniteHunt = async () => {
+  if (!localUrl) return;
+  await fetch(`${localUrl}/api/infinite-hunt/stop`, { method: "POST" });
+};
+const ensureTray = () => {
+  if (tray) return tray;
+  tray = new Tray(iconPath);
+  tray.setToolTip("JobHuntr — Infinite Hunt is running");
+  tray.setContextMenu(
+    Menu.buildFromTemplate([
+      { label: "Show JobHuntr", click: showMainWindow },
+      {
+        label: "Stop Infinite Hunt",
+        click: async () => {
+          try {
+            await stopInfiniteHunt();
+          } catch (error) {
+            console.warn("Could not stop Infinite Hunt:", error.message);
+          }
+          showMainWindow();
+          tray?.destroy();
+          tray = undefined;
+        },
+      },
+      { type: "separator" },
+      {
+        label: "Quit JobHuntr",
+        click: () => {
+          forceQuit = true;
+          app.quit();
+        },
+      },
+    ]),
+  );
+  tray.on("click", showMainWindow);
+  return tray;
+};
+const syncTrayState = async () => {
+  if (!tray || !localUrl) return;
+  try {
+    const response = await fetch(`${localUrl}/api/state`);
+    const state = response.ok ? await response.json() : null;
+    if (!state?.infiniteHunt?.enabled) {
+      tray.destroy();
+      tray = undefined;
+    }
   } catch {}
 };
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
@@ -179,7 +245,36 @@ const createWindow = async () => {
     event.preventDefault();
     openSafeExternal(target);
   });
-  mainWindow.on("close", () => saveWindowState(mainWindow));
+  mainWindow.on("close", async (event) => {
+    saveWindowState(mainWindow);
+    if (forceQuit || allowWindowCloseOnce) {
+      allowWindowCloseOnce = false;
+      return;
+    }
+    if (checkingClose) return;
+    event.preventDefault();
+    checkingClose = true;
+    try {
+      const response = await fetch(`${localUrl}/api/state`);
+      const state = response.ok ? await response.json() : null;
+      if (state?.infiniteHunt?.enabled) {
+        ensureTray();
+        mainWindow.hide();
+        return;
+      }
+      allowWindowCloseOnce = true;
+      mainWindow.close();
+    } catch (error) {
+      console.warn("Could not verify Infinite Hunt status:", error.message);
+      allowWindowCloseOnce = true;
+      mainWindow.close();
+    } finally {
+      checkingClose = false;
+    }
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = undefined;
+  });
   if (windowState.maximized) mainWindow.maximize();
   mainWindow.once("ready-to-show", () => mainWindow.show());
   await mainWindow.loadURL(url);
@@ -197,10 +292,16 @@ app.whenReady().then(async () => {
   if (process.platform === "darwin") app.dock.setIcon(iconPath);
   try {
     await createWindow();
+    const traySync = setInterval(syncTrayState, 5000);
+    traySync.unref?.();
   } catch (error) {
     console.error(error);
     app.quit();
   }
+});
+
+app.on("before-quit", () => {
+  forceQuit = true;
 });
 
 app.on("activate", () => {

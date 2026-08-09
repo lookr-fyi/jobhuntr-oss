@@ -85,6 +85,33 @@ test(
       });
       assert.deepEqual(popupSecurity, security);
       await popup.close();
+      await window.locator('button[title="Infinite Hunting"]').click();
+      await window.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      await window
+        .getByRole("button", { name: "Start infinite hunt", exact: true })
+        .click();
+      await window
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor();
+      await electronApp.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0].close();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      assert.equal(
+        await electronApp.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].isVisible(),
+        ),
+        false,
+        "closing the window must keep an active Infinite Hunt alive in the tray",
+      );
+      await electronApp.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0].show();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await window.getByRole("button", { name: "Stop Infinite Hunt" }).click();
+      await window
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor({ state: "hidden" });
       await electronApp.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()[0].setBounds({
           x: 80,
