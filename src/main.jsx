@@ -41,6 +41,9 @@ import {
   MapPin,
   ExternalLink,
   Copy,
+  Code,
+  Columns,
+  LayoutTemplate,
   ListPlus,
   MoreHorizontal,
   X,
@@ -415,6 +418,18 @@ const coverLetterPreviewDocument = (content, templateId = "minimal") => {
     header{margin-bottom:34px;color:${accent};font:700 21px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
   </style></head><body><header>Cover Letter</header><pre>${escaped}</pre></body></html>`;
+};
+const resumeEditorPreviewDocument = (content) => {
+  const escaped = String(content || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    *{box-sizing:border-box}body{margin:0;padding:42px 38px;background:#fff;color:#27364a;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
+  </style></head><body><pre>${escaped}</pre></body></html>`;
 };
 
 const api = async (path, options = {}) => {
@@ -6026,6 +6041,7 @@ function Resume({ state, reload, mode = "resume" }) {
       id: template?.id || null,
       step: 1,
       completedSteps: template ? [1, 2, 3, 4] : [],
+      editorView: "split",
       name:
         template?.name ||
         `New ATS Template - ${new Date().toLocaleDateString()}`,
@@ -7591,29 +7607,77 @@ function Resume({ state, reload, mode = "resume" }) {
               </div>
             )}
             {templateDialog.step === 2 && (
-              <div className="v2-template-step v2-template-edit-step">
-                <div>
-                  <h4>Edit your cloned resume</h4>
+              <div className="v2-template-step v2-template-clone-step">
+                <header>
+                  <h4>Edit Your Resume</h4>
                   <p>
-                    Correct conversion issues while preserving your original
-                    content.
+                    Review and edit your resume content while previewing the
+                    final layout.
                   </p>
+                </header>
+                <div
+                  className="v2-template-view-tabs"
+                  aria-label="Resume editor view"
+                >
+                  {[
+                    ["split", "Split", Columns],
+                    ["code", "Code", Code],
+                    ["preview", "Preview", LayoutTemplate],
+                  ].map(([view, label, Icon]) => (
+                    <button
+                      key={view}
+                      type="button"
+                      aria-pressed={templateDialog.editorView === view}
+                      className={
+                        templateDialog.editorView === view ? "active" : ""
+                      }
+                      onClick={() =>
+                        setTemplateDialog({
+                          ...templateDialog,
+                          editorView: view,
+                        })
+                      }
+                    >
+                      <Icon size={16} /> {label}
+                    </button>
+                  ))}
                 </div>
-                <textarea
-                  name="ats-template-cloned-resume"
-                  aria-label="Cloned resume content"
-                  value={templateDialog.editedResume}
-                  onChange={(event) =>
-                    setTemplateDialog({
-                      ...templateDialog,
-                      editedResume: event.target.value,
-                    })
-                  }
-                />
-                <small>
-                  {templateDialog.editedResume.length.toLocaleString()}{" "}
-                  characters
-                </small>
+                <div
+                  className={`v2-template-editor-workspace ${templateDialog.editorView}`}
+                >
+                  {templateDialog.editorView !== "preview" && (
+                    <label className="v2-template-code-editor">
+                      <span>Content</span>
+                      <textarea
+                        name="ats-template-cloned-resume"
+                        aria-label="Cloned resume content"
+                        value={templateDialog.editedResume}
+                        onChange={(event) =>
+                          setTemplateDialog({
+                            ...templateDialog,
+                            editedResume: event.target.value,
+                          })
+                        }
+                      />
+                      <small>
+                        {templateDialog.editedResume.length.toLocaleString()}{" "}
+                        characters
+                      </small>
+                    </label>
+                  )}
+                  {templateDialog.editorView !== "code" && (
+                    <section className="v2-template-live-preview">
+                      <b>Preview</b>
+                      <iframe
+                        title="Resume Preview"
+                        sandbox=""
+                        srcDoc={resumeEditorPreviewDocument(
+                          templateDialog.editedResume,
+                        )}
+                      />
+                    </section>
+                  )}
+                </div>
               </div>
             )}
             {templateDialog.step === 3 && (

@@ -1060,7 +1060,16 @@ test(
       });
       await templateDialog.getByText(/Resume Uploaded Successfully/).waitFor();
       await templateDialog.getByRole("button", { name: /Next/ }).click();
-      await templateDialog.getByText("Edit your cloned resume").waitFor();
+      await templateDialog
+        .getByRole("heading", { name: "Edit Your Resume", exact: true })
+        .waitFor();
+      assert.equal(
+        await templateDialog
+          .locator(".v2-template-clone-step > header")
+          .evaluate((header) => getComputedStyle(header).display),
+        "block",
+        "the v2 editor heading and guidance should stack instead of competing for horizontal space",
+      );
       assert.equal(
         await templateDialog
           .getByRole("button", { name: "Go to template step 1: Upload" })
@@ -1078,6 +1087,17 @@ test(
         .fill(
           "Product engineer who led React delivery and improved performance 40%.",
         );
+      await templateDialog
+        .getByRole("button", { name: "Preview", exact: true })
+        .click();
+      assert.match(
+        await templateDialog
+          .frameLocator('iframe[title="Resume Preview"]')
+          .locator("body")
+          .innerText(),
+        /React delivery.*40%/,
+        "the v2 preview mode should update from real editor input",
+      );
       await templateDialog.getByRole("button", { name: /Next/ }).click();
       await templateDialog.getByText("Add Additional Experience").waitFor();
       await templateDialog
