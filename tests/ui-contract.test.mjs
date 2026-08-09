@@ -352,6 +352,36 @@ test("Resume Studio document writes are single-flight and keep editors retryable
   assert.match(studio, /disabled=\{savingTemplate\}/);
 });
 
+test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const outreach = source.slice(
+    source.indexOf("function OutreachPage"),
+    source.indexOf("function Coach"),
+  );
+
+  for (const action of ["collecting", "connecting"]) {
+    assert.match(
+      outreach,
+      new RegExp(`const ${action}Ref = useRef\\(false\\)`),
+    );
+    assert.match(outreach, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(outreach, new RegExp(`${action}Ref\\.current = false`));
+    assert.match(outreach, new RegExp(`aria-busy=\\{${action}\\}`));
+    assert.match(outreach, new RegExp(`Escape" && !${action}Ref\\.current`));
+    assert.match(outreach, new RegExp(`disabled=\\{${action}\\}`));
+  }
+  assert.match(outreach, /if \(collectingRef\.current\) return false/);
+  assert.match(
+    outreach,
+    /if \(connectingRef\.current \|\| !selectedIds\.size\) return/,
+  );
+  assert.match(outreach, /collecting \? "Collecting…" : "Collect contacts"/);
+  assert.match(outreach, /connecting \? "Recording…" : "Mark as outreached"/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

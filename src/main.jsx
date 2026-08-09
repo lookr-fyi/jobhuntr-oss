@@ -8532,6 +8532,8 @@ function OutreachPage({ state, reload }) {
   const [deleteContact, setDeleteContact] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  const connectingRef = useRef(false);
+  const collectingRef = useRef(false);
   const [collectFeedback, setCollectFeedback] = useState("");
   const collectCloseRef = useRef(null);
   const connectCloseRef = useRef(null);
@@ -8543,7 +8545,8 @@ function OutreachPage({ state, reload }) {
     const returnFocus = document.activeElement;
     collectCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setCollectOpen(false);
+      if (event.key === "Escape" && !collectingRef.current)
+        setCollectOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -8556,7 +8559,8 @@ function OutreachPage({ state, reload }) {
     const returnFocus = document.activeElement;
     connectCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setConnectOpen(false);
+      if (event.key === "Escape" && !connectingRef.current)
+        setConnectOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -8565,6 +8569,8 @@ function OutreachPage({ state, reload }) {
     };
   }, [connectOpen]);
   const generate = async () => {
+    if (collectingRef.current) return false;
+    collectingRef.current = true;
     setCollecting(true);
     setCollectFeedback("");
     try {
@@ -8585,6 +8591,7 @@ function OutreachPage({ state, reload }) {
       // The shared API error surface leaves contact collection retryable.
       return false;
     } finally {
+      collectingRef.current = false;
       setCollecting(false);
     }
   };
@@ -8629,6 +8636,8 @@ function OutreachPage({ state, reload }) {
         : [...values, value],
     );
   const markSelectedOutreached = async () => {
+    if (connectingRef.current || !selectedIds.size) return;
+    connectingRef.current = true;
     setConnecting(true);
     try {
       await Promise.all(
@@ -8646,6 +8655,7 @@ function OutreachPage({ state, reload }) {
     } catch {
       // Keep the selected contacts and confirmation open for a safe retry.
     } finally {
+      connectingRef.current = false;
       setConnecting(false);
     }
   };
@@ -8982,7 +8992,9 @@ function OutreachPage({ state, reload }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Close collect contacts dialog"
-            onClick={() => setCollectOpen(false)}
+            onClick={() => {
+              if (!collectingRef.current) setCollectOpen(false);
+            }}
           />
           <div className="v2-template-modal-content v2-collect-modal">
             <span className="v2-connect-icon">
@@ -9012,17 +9024,19 @@ function OutreachPage({ state, reload }) {
               <button
                 ref={collectCloseRef}
                 className="secondary"
+                disabled={collecting}
                 onClick={() => setCollectOpen(false)}
               >
                 Cancel
               </button>
               <button
                 disabled={!jobId || collecting}
+                aria-busy={collecting}
                 onClick={async () => {
                   if (await generate()) setCollectOpen(false);
                 }}
               >
-                Collect contacts
+                {collecting ? "Collecting…" : "Collect contacts"}
               </button>
             </div>
           </div>
@@ -9040,7 +9054,9 @@ function OutreachPage({ state, reload }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Close connect contacts dialog"
-            onClick={() => setConnectOpen(false)}
+            onClick={() => {
+              if (!connectingRef.current) setConnectOpen(false);
+            }}
           />
           <div className="v2-template-modal-content v2-connect-modal">
             <span className="v2-connect-icon">
@@ -9062,11 +9078,16 @@ function OutreachPage({ state, reload }) {
               <button
                 ref={connectCloseRef}
                 className="secondary"
+                disabled={connecting}
                 onClick={() => setConnectOpen(false)}
               >
                 Cancel
               </button>
-              <button disabled={connecting} onClick={markSelectedOutreached}>
+              <button
+                disabled={connecting}
+                aria-busy={connecting}
+                onClick={markSelectedOutreached}
+              >
                 {connecting ? "Recording…" : "Mark as outreached"}
               </button>
             </div>
