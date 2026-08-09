@@ -7500,13 +7500,13 @@ main > header.integrated-page-header {
   border-bottom: 1px solid #e2e8f0;
 }
 .v2-packet-section summary,
-.v2-packet-section h4 {
+.v2-packet-section h3 {
   color: #1e293b;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
 }
-.v2-packet-section h4 {
+.v2-packet-section h3 {
   margin: 0 0 12px;
   cursor: default;
 }

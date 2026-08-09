@@ -4649,6 +4649,7 @@ function Queue({ state, reload, setTab }) {
             <div className="searchbox">
               <Search size={16} />
               <input
+                name={`queue-${queueTab}-search`}
                 aria-label={`Search ${queueTab} jobs`}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -4725,6 +4726,7 @@ function Queue({ state, reload, setTab }) {
             <div className="searchbox">
               <Search size={16} />
               <input
+                name="submission-queue-search"
                 aria-label="Search submission queue"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -4747,6 +4749,7 @@ function Queue({ state, reload, setTab }) {
                 <Trash2 size={15} /> Archive filtered
               </button>
               <select
+                name="submission-queue-job"
                 aria-label="Tracked role"
                 value={jobId}
                 onChange={(e) => setJobId(e.target.value)}
@@ -5053,6 +5056,7 @@ function Queue({ state, reload, setTab }) {
             <label className="check v2-submit-confirmation">
               <input
                 type="checkbox"
+                name="batch-submission-confirmed"
                 checked={submissionConfirmed}
                 onChange={(event) =>
                   setSubmissionConfirmed(event.target.checked)
@@ -5102,6 +5106,7 @@ function QuestionVerification({ question, onChange }) {
     <label className="check v2-question-verification">
       <input
         type="checkbox"
+        name={`verify-question-${question.id}`}
         aria-label={`Verification checkbox ${question.id}`}
         checked={Boolean(question.verified)}
         disabled={!valid}
@@ -5251,7 +5256,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         </details>
       )}
       <section className="v2-packet-section v2-packet-documents">
-        <h4>Application documents</h4>
+        <h3>Application documents</h3>
         <div>
           <span>
             <FileText size={18} />
@@ -5299,7 +5304,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         <section className="v2-packet-section v2-application-questions">
           <div className="v2-packet-section-heading">
             <div>
-              <h4>Application Questions</h4>
+              <h3>Application Questions</h3>
               <p>
                 Reference answers are remembered in About Me. External forms may
                 phrase or constrain questions differently, so verify every
@@ -5352,6 +5357,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                   <label>
                     {prompt}
                     <select
+                      name={`question-${question.id}`}
                       value={question.answer || ""}
                       onChange={(event) =>
                         updateQuestion(question.id, event.target.value)
@@ -5375,6 +5381,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                 <label>
                   {prompt}
                   <textarea
+                    name={`question-${question.id}`}
                     rows={2}
                     maxLength={10000}
                     value={draftAnswers[question.id] ?? question.answer ?? ""}
@@ -5412,11 +5419,12 @@ function SubmissionCard({ submission: s, state, reload }) {
         </section>
       )}
       <section className="v2-packet-section v2-packet-checklist">
-        <h4>Review checklist</h4>
+        <h3>Review checklist</h3>
         {s.checklist.map((item) => (
           <label className="check" key={item.id}>
             <input
               type="checkbox"
+              name={`checklist-${s.id}-${item.id}`}
               checked={item.done}
               onChange={(e) => updateChecklist(item.id, e.target.checked)}
             />
@@ -5453,6 +5461,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         <label>
           Resume attachment
           <select
+            name={`resume-attachment-${s.id}`}
             value={s.resumeId || ""}
             onChange={(event) => updatePacket({ resumeId: event.target.value })}
           >
@@ -5476,6 +5485,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         <label>
           Cover letter attachment
           <select
+            name={`cover-letter-attachment-${s.id}`}
             value={s.coverLetterId || ""}
             onChange={(event) =>
               updatePacket({ coverLetterId: event.target.value })
@@ -5494,6 +5504,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         <label className="check v2-submit-confirmation">
           <input
             type="checkbox"
+            name={`external-submission-confirmed-${s.id}`}
             checked={externalSubmissionVerified}
             onChange={(event) =>
               setExternalSubmissionVerified(event.target.checked)
