@@ -116,3 +116,16 @@ test("public Git index excludes personal data and private environment files", ()
     false,
   );
 });
+
+test("production startup keeps the v2 renderer separate from cacheable framework code", () => {
+  const viteConfig = read("vite.config.js");
+  assert.match(viteConfig, /name: "react-vendor"/);
+  assert.match(viteConfig, /react\|react-dom\|scheduler/);
+  assert.match(viteConfig, /name: "icons-vendor"/);
+  assert.match(viteConfig, /lucide-react/);
+  assert.match(
+    viteConfig,
+    /rolldownOptions:[\s\S]*?output:[\s\S]*?codeSplitting:[\s\S]*?groups:/,
+    "the production build must not regress to one oversized renderer entry chunk",
+  );
+});

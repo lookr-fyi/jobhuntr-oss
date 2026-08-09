@@ -7,5 +7,24 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": "http://localhost:8787" },
   },
-  build: { outDir: "dist/public", emptyOutDir: true },
+  build: {
+    outDir: "dist/public",
+    emptyOutDir: true,
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "react-vendor",
+              test: /node_modules\/(react|react-dom|scheduler)\//,
+            },
+            {
+              name: "icons-vendor",
+              test: /node_modules\/lucide-react\//,
+            },
+          ],
+        },
+      },
+    },
+  },
 });
