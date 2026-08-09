@@ -556,6 +556,24 @@ test("ATS template editing protects meaningful unsaved wizard changes", async ()
   assert.match(source, /clearTemplateDialogDraft\(\)/);
 });
 
+test("submission recording locks every modal dismiss path while in flight", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const queue = source.slice(
+    source.indexOf("function Queue("),
+    source.indexOf("function ClipboardListIcon"),
+  );
+  assert.match(queue, /const resetSubmitAssist = useCallback/);
+  assert.match(queue, /if \(submittingReadyRef\.current\) return/);
+  assert.match(queue, /requestCloseSubmitAssist\(\)/);
+  assert.match(
+    queue,
+    /disabled=\{submittingReady\}[\s\S]*?onClick=\{requestCloseSubmitAssist\}/,
+  );
+});
+
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

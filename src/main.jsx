@@ -5115,19 +5115,29 @@ function Queue({ state, reload, setTab }) {
       setCreatingPacketFor("");
     }
   };
+  const resetSubmitAssist = useCallback(() => {
+    setSubmitOpen(false);
+    setSubmitBatch([]);
+    setSubmitIndex(0);
+    setSubmissionConfirmed(false);
+  }, []);
+  const requestCloseSubmitAssist = useCallback(() => {
+    if (submittingReadyRef.current) return;
+    resetSubmitAssist();
+  }, [resetSubmitAssist]);
   useEffect(() => {
     if (!submitOpen) return undefined;
     const returnFocus = document.activeElement;
     submitCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setSubmitOpen(false);
+      if (event.key === "Escape") requestCloseSubmitAssist();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       returnFocus?.focus?.();
     };
-  }, [submitOpen]);
+  }, [requestCloseSubmitAssist, submitOpen]);
   useEffect(() => {
     const params = new URLSearchParams();
     if (queueTab !== "apply") params.set("tab", queueTab);
@@ -5152,12 +5162,6 @@ function Queue({ state, reload, setTab }) {
     window.addEventListener("hashchange", followQueueLink);
     return () => window.removeEventListener("hashchange", followQueueLink);
   }, []);
-  const closeSubmitAssist = () => {
-    setSubmitOpen(false);
-    setSubmitBatch([]);
-    setSubmitIndex(0);
-    setSubmissionConfirmed(false);
-  };
   const queueTabs = ["apply", "search", "manual"];
   const handleQueueTabKeyDown = (event, value) => {
     const currentIndex = queueTabs.indexOf(value);
@@ -5196,7 +5200,7 @@ function Queue({ state, reload, setTab }) {
         setSubmitIndex((index) => index + 1);
         setSubmissionConfirmed(false);
       } else {
-        closeSubmitAssist();
+        resetSubmitAssist();
         setSelectedId("");
       }
     } catch {
@@ -5734,7 +5738,8 @@ function Queue({ state, reload, setTab }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Close start submitting dialog"
-            onClick={closeSubmitAssist}
+            disabled={submittingReady}
+            onClick={requestCloseSubmitAssist}
           />
           <div className="v2-template-modal-content v2-submit-ready-modal">
             <span className="v2-connect-icon">
@@ -5799,7 +5804,8 @@ function Queue({ state, reload, setTab }) {
               <button
                 ref={submitCloseRef}
                 className="secondary"
-                onClick={closeSubmitAssist}
+                disabled={submittingReady}
+                onClick={requestCloseSubmitAssist}
               >
                 Cancel
               </button>

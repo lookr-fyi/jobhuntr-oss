@@ -2099,15 +2099,37 @@ test(
           /I personally verified that the external application was submitted/i,
         )
         .check();
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().endsWith("/submit") &&
-            response.request().method() === "POST" &&
-            response.ok(),
-        ),
-        submitDialog.getByRole("button", { name: "Record submitted" }).click(),
-      ]);
+      const delayedSubmission = async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      };
+      await page.route("**/api/submissions/*/submit", delayedSubmission);
+      const batchSubmitResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/submit") &&
+          response.request().method() === "POST" &&
+          response.ok(),
+      );
+      await submitDialog
+        .getByRole("button", { name: "Record submitted" })
+        .click();
+      await submitDialog.getByRole("button", { name: "Recording…" }).waitFor();
+      assert.equal(
+        await submitDialog.getByRole("button", { name: "Cancel" }).isDisabled(),
+        true,
+        "an in-flight submission record must lock every explicit dismiss action",
+      );
+      assert.equal(
+        await submitDialog
+          .getByLabel("Close start submitting dialog")
+          .isDisabled(),
+        true,
+        "the modal backdrop must not dismiss an in-flight submission record",
+      );
+      await page.keyboard.press("Escape");
+      await submitDialog.waitFor();
+      await batchSubmitResponse;
+      await page.unroute("**/api/submissions/*/submit", delayedSubmission);
       assert.equal(recordedSubmissionResponse.ok(), true);
       const recordedSubmission = (
         await (await page.request.get(`${baseUrl}/api/state`)).json()
