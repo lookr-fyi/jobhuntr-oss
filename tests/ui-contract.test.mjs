@@ -466,6 +466,33 @@ test("Outreach draft edits cannot race an in-flight save", async () => {
   );
 });
 
+test("Gig creation and applications are single-flight and retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const gigs = source.slice(
+    source.indexOf("function Gigs"),
+    source.indexOf("function ProfileAudit"),
+  );
+
+  for (const action of ["savingGig", "applyingGig"]) {
+    assert.match(gigs, new RegExp(`const ${action}Ref = useRef\\(false\\)`));
+    assert.match(gigs, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(gigs, new RegExp(`${action}Ref\\.current = false`));
+    assert.match(gigs, new RegExp(`aria-busy=\\{${action}\\}`));
+  }
+  assert.match(gigs, /if \(savingGigRef\.current\) return/);
+  assert.match(gigs, /if \(!item \|\| applyingGigRef\.current\) return/);
+  assert.match(gigs, /Escape" && !applyingGigRef\.current/);
+  assert.match(gigs, /applyingGig \? "Submitting…" : "Submit Application"/);
+  assert.match(gigs, /savingGig \? "Saving…" : "Save gig"/);
+  assert.ok(
+    (gigs.match(/disabled=\{savingGig\}/g) || []).length >= 3,
+    "gig fields and close action must lock while creation is pending",
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

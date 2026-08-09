@@ -10080,6 +10080,10 @@ function Gigs({ state, reload }) {
   const [myView, setMyView] = useState("table");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [actionFeedback, setActionFeedback] = useState("");
+  const [savingGig, setSavingGig] = useState(false);
+  const [applyingGig, setApplyingGig] = useState(false);
+  const savingGigRef = useRef(false);
+  const applyingGigRef = useRef(false);
   const gigCloseRef = useRef(null);
   const campaignCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
@@ -10090,6 +10094,9 @@ function Gigs({ state, reload }) {
       maximumFractionDigits: 0,
     }).format(Number(value || 0));
   const save = async () => {
+    if (savingGigRef.current) return;
+    savingGigRef.current = true;
+    setSavingGig(true);
     try {
       const created = await api("/api/gigs", {
         method: "POST",
@@ -10099,7 +10106,12 @@ function Gigs({ state, reload }) {
       setForm(empty);
       setShowForm(false);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the opportunity form intact so creation can be retried.
+    } finally {
+      savingGigRef.current = false;
+      setSavingGig(false);
+    }
   };
   const patch = async (id, body) => {
     try {
@@ -10158,6 +10170,9 @@ function Gigs({ state, reload }) {
       .includes(gigQuery.toLowerCase()),
   );
   const applyToGig = async (item) => {
+    if (!item || applyingGigRef.current) return;
+    applyingGigRef.current = true;
+    setApplyingGig(true);
     try {
       const created = await api("/api/gigs", {
         method: "POST",
@@ -10175,7 +10190,12 @@ function Gigs({ state, reload }) {
       setCampaignPreview(null);
       setCampaignProposal("");
       await reload();
-    } catch {}
+    } catch {
+      // Keep the campaign and pitch open so submission can be retried.
+    } finally {
+      applyingGigRef.current = false;
+      setApplyingGig(false);
+    }
   };
   const visibleTrackedGigs = state.gigs.filter((item) =>
     `${item.title} ${item.client} ${item.status}`
@@ -10203,7 +10223,8 @@ function Gigs({ state, reload }) {
     const returnFocus = document.activeElement;
     campaignCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setCampaignPreview(null);
+      if (event.key === "Escape" && !applyingGigRef.current)
+        setCampaignPreview(null);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -10310,7 +10331,9 @@ function Gigs({ state, reload }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Close gig application"
-            onClick={() => setCampaignPreview(null)}
+            onClick={() => {
+              if (!applyingGigRef.current) setCampaignPreview(null);
+            }}
           />
           <div className="v2-template-modal-content v2-gig-campaign-modal">
             <div className="v2-gig-campaign-modal-head">
@@ -10338,6 +10361,7 @@ function Gigs({ state, reload }) {
               <textarea
                 name="gig-application-pitch"
                 aria-label="Gig application pitch"
+                disabled={applyingGig}
                 value={campaignProposal}
                 onChange={(event) => setCampaignProposal(event.target.value)}
                 placeholder="Share relevant experience, your approach, and availability…"
@@ -10352,12 +10376,17 @@ function Gigs({ state, reload }) {
               <button
                 ref={campaignCloseRef}
                 className="secondary"
+                disabled={applyingGig}
                 onClick={() => setCampaignPreview(null)}
               >
                 Cancel
               </button>
-              <button onClick={() => applyToGig(campaignPreview)}>
-                Submit Application
+              <button
+                disabled={applyingGig}
+                aria-busy={applyingGig}
+                onClick={() => applyToGig(campaignPreview)}
+              >
+                {applyingGig ? "Submitting…" : "Submit Application"}
               </button>
             </div>
           </div>
@@ -10421,7 +10450,11 @@ function Gigs({ state, reload }) {
         <div className="card add-panel">
           <div className="row">
             <h3>Add freelance opportunity</h3>
-            <button className="text-button" onClick={() => setShowForm(false)}>
+            <button
+              className="text-button"
+              disabled={savingGig}
+              onClick={() => setShowForm(false)}
+            >
               Close
             </button>
           </div>
@@ -10438,6 +10471,7 @@ function Gigs({ state, reload }) {
                 {label}
                 <input
                   name={`new-gig-${key}`}
+                  disabled={savingGig}
                   type={
                     key === "budget"
                       ? "number"
@@ -10455,6 +10489,7 @@ function Gigs({ state, reload }) {
             Description
             <textarea
               name="new-gig-description"
+              disabled={savingGig}
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
@@ -10462,10 +10497,11 @@ function Gigs({ state, reload }) {
             />
           </label>
           <button
-            disabled={!form.client.trim() || !form.title.trim()}
+            disabled={savingGig || !form.client.trim() || !form.title.trim()}
+            aria-busy={savingGig}
             onClick={save}
           >
-            Save gig
+            {savingGig ? "Saving…" : "Save gig"}
           </button>
         </div>
       )}
