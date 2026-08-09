@@ -10914,6 +10914,56 @@ main > header.integrated-page-header {
   min-height: 64px;
   resize: vertical;
 }
+@media (min-width: 681px) {
+  .v2-template-modal {
+    right: 0;
+    left: 64px;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: #fff;
+  }
+  .v2-template-modal > .v2-template-backdrop {
+    display: none;
+  }
+  .v2-template-modal-content {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    max-height: none;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .v2-template-wizard-head {
+    flex: none;
+    padding: 22px 24px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .v2-template-modal-content > .v2-template-progress {
+    flex: none;
+    width: min(620px, calc(100% - 48px));
+    margin: 16px auto;
+  }
+  .v2-template-modal-content > .v2-template-step {
+    box-sizing: border-box;
+    width: min(1040px, calc(100% - 48px));
+    min-height: 0;
+    flex: 1;
+    align-self: center;
+    margin-bottom: 16px;
+    overflow: auto;
+  }
+  .v2-template-modal-actions {
+    flex: none;
+    margin: 0;
+    padding: 16px 24px;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+  }
+}
 @media (max-width: 680px) {
   .v2-template-modal {
     padding: 0;

@@ -984,6 +984,30 @@ test(
       const templateDialog = page.getByRole("dialog", {
         name: "Create New Template",
       });
+      assert.deepEqual(
+        await templateDialog
+          .locator(".v2-template-modal-content")
+          .evaluate((content) => {
+            const bounds = content.getBoundingClientRect();
+            return {
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.width,
+              height: bounds.height,
+              radius: getComputedStyle(content).borderRadius,
+              shadow: getComputedStyle(content).boxShadow,
+            };
+          }),
+        {
+          x: 64,
+          y: 0,
+          width: 1376,
+          height: 1000,
+          radius: "0px",
+          shadow: "none",
+        },
+        "the ATS wizard should replace the route content like v2 instead of floating as a desktop card",
+      );
       await assertNamedFormControls(page, "ATS Resume template wizard");
       assert.equal(
         await templateDialog
