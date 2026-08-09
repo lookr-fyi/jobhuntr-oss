@@ -971,6 +971,7 @@ button:disabled {
 }
 .status-column-content .jobs-list {
   display: flex;
+  flex-direction: column;
   max-height: none;
   overflow: visible;
   gap: 12px;
@@ -1863,11 +1864,14 @@ button:disabled {
   .kanban {
     gap: 12px;
     padding: 16px 0;
+    scroll-snap-type: x mandatory;
   }
   .kanban-column {
     width: 280px;
     min-width: 250px;
     max-width: 280px;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
 }
 @media (max-width: 560px) {
@@ -6760,6 +6764,11 @@ select:focus {
   .kanban {
     padding-right: 16px;
     padding-left: 16px;
+  }
+  .kanban-column {
+    width: calc(100vw - 32px);
+    min-width: calc(100vw - 32px);
+    max-width: none;
   }
   .v2-sidebar {
     top: auto;

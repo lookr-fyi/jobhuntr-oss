@@ -916,3 +916,24 @@ test("mobile overview controls stack instead of crushing the v2 dashboard", asyn
   );
   assert.doesNotMatch(mobileOverview, /\.v2-chart-legend/);
 });
+
+test("Job Tracker cards stack vertically and mobile stages snap at full width", async () => {
+  const styles = await readFile(
+    new URL("../src/styles.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    styles,
+    /\.status-column-content \.jobs-list \{[\s\S]*?display: flex;\s*flex-direction: column;/,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 768px\) \{[\s\S]*?\.kanban \{[\s\S]*?scroll-snap-type: x mandatory;/,
+  );
+  assert.match(
+    styles,
+    /\.kanban-column \{\s*width: calc\(100vw - 32px\);\s*min-width: calc\(100vw - 32px\);\s*max-width: none;/,
+  );
+  assert.match(styles, /scroll-snap-align: start;\s*scroll-snap-stop: always;/);
+});
