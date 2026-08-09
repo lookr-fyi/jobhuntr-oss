@@ -29,4 +29,16 @@ test("document renderer escapes all user-controlled HTML", () => {
   );
   assert.doesNotMatch(letter, /<iframe>/);
   assert.match(letter, /&lt;iframe&gt;/);
+  const modernLetter = renderCoverLetterDocument(
+    {
+      title: "Modern letter",
+      templateId: "modern",
+      body: "Safe content",
+    },
+    { name: "Jane" },
+    { title: "Engineer", company: "Acme" },
+  );
+  assert.match(modernLetter, /background:#f8f9fa/);
+  assert.match(modernLetter, /border-left:5px solid #667eea/);
+  assert.match(modernLetter, /font-family:'Helvetica Neue', Arial, sans-serif/);
 });

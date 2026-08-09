@@ -2361,6 +2361,13 @@ test(
       await assertNamedFormControls(page, "Generated Cover Letter");
       await page.getByTitle("Generated Cover Letter Preview").waitFor();
       await page.getByRole("link", { name: "Preview PDF" }).waitFor();
+      const printableCoverLetter = await (
+        await page.request.get(
+          `${baseUrl}/print/cover-letter/${generatedCoverLetter.id}`,
+        )
+      ).text();
+      assert.match(printableCoverLetter, /background:#f8f9fa/);
+      assert.match(printableCoverLetter, /border-left:5px solid #667eea/);
       await page.getByLabel("Cover letter title").fill("E2E product letter");
       await page
         .getByLabel("Generated cover letter")
