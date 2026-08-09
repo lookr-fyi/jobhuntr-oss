@@ -411,6 +411,14 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
     jobsBefore,
     "a stale scheduler request must not create run data",
   );
+  const staleConditionalStop = await req("/api/infinite-hunt/stop", {
+    method: "POST",
+    body: JSON.stringify({ generation: started.body.generation }),
+  });
+  assert.equal(staleConditionalStop.res.status, 200);
+  assert.equal(staleConditionalStop.body.stopped, false);
+  assert.equal(staleConditionalStop.body.enabled, true);
+  assert.equal(staleConditionalStop.body.generation, restarted.body.generation);
   await mutate((db) => {
     db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
   });

@@ -1956,13 +1956,19 @@ app.post("/api/infinite-hunt/start", async (req, res) => {
   res.status(201).json(schedule);
 });
 
-app.post("/api/infinite-hunt/stop", async (_req, res) => {
+app.post("/api/infinite-hunt/stop", async (req, res) => {
+  const requestedGeneration = safeText(req.body?.generation, 200);
   const schedule = await mutate((db) => {
     db.infiniteHunt ||= {};
+    if (
+      requestedGeneration &&
+      db.infiniteHunt.generation !== requestedGeneration
+    )
+      return { ...db.infiniteHunt, stopped: false };
     db.infiniteHunt.enabled = false;
     db.infiniteHunt.nextRunAt = null;
     auditEvent(db, "agent", "Stopped infinite hunt.");
-    return db.infiniteHunt;
+    return { ...db.infiniteHunt, stopped: true };
   });
   res.json(schedule);
 });

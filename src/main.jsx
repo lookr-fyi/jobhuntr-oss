@@ -10830,8 +10830,9 @@ function Agent({ state, reload, setTab }) {
   };
   const startInfiniteHunt = async () => {
     setRunning(true);
+    let schedule = null;
     try {
-      await api("/api/infinite-hunt/start", {
+      schedule = await api("/api/infinite-hunt/start", {
         method: "POST",
         body: JSON.stringify({
           intervalMinutes: Number(intervalMinutes),
@@ -10840,7 +10841,10 @@ function Agent({ state, reload, setTab }) {
       });
       const result = await api("/api/agent-runs/start", {
         method: "POST",
-        body: JSON.stringify(payload()),
+        body: JSON.stringify({
+          ...payload(),
+          scheduleGeneration: schedule.generation,
+        }),
       });
       setPreview({
         matches: result.matches,
@@ -10852,7 +10856,11 @@ function Agent({ state, reload, setTab }) {
       localStorage.removeItem("jobhuntr-new-run-draft");
       await reload();
     } catch (error) {
-      await api("/api/infinite-hunt/stop", { method: "POST" }).catch(() => {});
+      if (schedule?.generation)
+        await api("/api/infinite-hunt/stop", {
+          method: "POST",
+          body: JSON.stringify({ generation: schedule.generation }),
+        }).catch(() => {});
       throw error;
     } finally {
       setRunning(false);

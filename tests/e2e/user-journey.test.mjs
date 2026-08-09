@@ -640,7 +640,16 @@ test(
       );
       await page.getByText(/eligible matches/).waitFor();
       await page.unroute("**/api/agent-runs/preview");
-      await page.getByRole("button", { name: "Start infinite hunt" }).click();
+      const [scheduledInitialRunRequest] = await Promise.all([
+        page.waitForRequest((request) =>
+          request.url().endsWith("/api/agent-runs/start"),
+        ),
+        page.getByRole("button", { name: "Start infinite hunt" }).click(),
+      ]);
+      assert.ok(
+        scheduledInitialRunRequest.postDataJSON().scheduleGeneration,
+        "the first Infinite Hunt run must be bound to its schedule generation",
+      );
       await page.getByText(/eligible matches/).waitFor();
       await page
         .getByText("Infinite Hunt is active every 60 minutes.")
