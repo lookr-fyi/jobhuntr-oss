@@ -746,7 +746,7 @@ function App() {
     [],
   );
   const load = useCallback(
-    () => stateLoader(() => api("/api/state")),
+    () => stateLoader(() => api("/api/state", { suppressGlobalError: true })),
     [stateLoader],
   );
   useEffect(() => {
