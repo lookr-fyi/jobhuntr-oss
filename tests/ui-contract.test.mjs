@@ -574,6 +574,26 @@ test("submission recording locks every modal dismiss path while in flight", asyn
   );
 });
 
+test("Job Board queueing uses one atomic backend operation", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const board = source.slice(
+    source.indexOf("function Board("),
+    source.indexOf("function Queue("),
+  );
+  assert.match(board, /api\("\/api\/board\/queue"/);
+  assert.doesNotMatch(
+    board.slice(
+      board.indexOf("const queueJob"),
+      board.indexOf("const clearFilters"),
+    ),
+    /api\("\/api\/(?:jobs|submissions)"/,
+  );
+  assert.match(board, /submittedJobIds\.has\(job\.id\)/);
+});
+
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

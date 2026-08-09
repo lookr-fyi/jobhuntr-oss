@@ -211,6 +211,49 @@ test("can add and update a tracked job", async () => {
   assert.equal(removedContact.res.status, 204);
 });
 
+test("Job Board queueing atomically deduplicates jobs and application packets", async () => {
+  const boardJob = {
+    company: "Atomic Board Co",
+    title: "Queue Reliability Engineer",
+    location: "Remote",
+    url: "https://jobs.example.com/atomic-board-queue",
+    source: "Local board",
+    description: "Build resilient application workflows.",
+    status: "interested",
+  };
+  const responses = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      req("/api/board/queue", {
+        method: "POST",
+        body: JSON.stringify(boardJob),
+      }),
+    ),
+  );
+  assert.equal(responses.filter(({ res }) => res.status === 201).length, 1);
+  assert.equal(responses.filter(({ res }) => res.status === 200).length, 3);
+  const state = (await req("/api/state")).body;
+  const jobs = state.jobs.filter((job) => job.url === boardJob.url);
+  assert.equal(jobs.length, 1);
+  assert.equal(
+    state.submissions.filter((submission) => submission.jobId === jobs[0].id)
+      .length,
+    1,
+  );
+
+  const orphanUrl = "https://jobs.example.com/repair-orphaned-board-job";
+  const orphan = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({ ...boardJob, url: orphanUrl }),
+  });
+  const repaired = await req("/api/board/queue", {
+    method: "POST",
+    body: JSON.stringify({ ...boardJob, url: orphanUrl }),
+  });
+  assert.equal(repaired.res.status, 201);
+  assert.equal(repaired.body.job.id, orphan.body.id);
+  assert.equal(repaired.body.submission.jobId, orphan.body.id);
+});
+
 test("v2 personal profile details persist with bounded local input", async () => {
   const updated = await req("/api/profile", {
     method: "PUT",

@@ -1103,6 +1103,59 @@ test(
       );
       await page.getByRole("button", { name: "Clear search" }).click();
       await page.getByText("4 opportunities").waitFor();
+      await page
+        .locator(".v2-board-row")
+        .filter({ hasNotText: "Saved" })
+        .first()
+        .click();
+      await page.getByRole("button", { name: "Queue", exact: true }).waitFor();
+      const stateBeforeBoardQueue = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const atomicQueueResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/board/queue") &&
+          response.request().method() === "POST" &&
+          response.ok(),
+      );
+      await page.getByRole("button", { name: "Queue", exact: true }).click();
+      const queuedBoardPacket = await (await atomicQueueResponse).json();
+      assert.equal(
+        queuedBoardPacket.submission.jobId,
+        queuedBoardPacket.job.id,
+      );
+      const stateAfterBoardQueue = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      assert.equal(
+        stateAfterBoardQueue.jobs.filter(
+          (job) => job.url === queuedBoardPacket.job.url,
+        ).length,
+        1,
+        "the real Job Board Queue action should persist one deduplicated job",
+      );
+      assert.equal(
+        stateAfterBoardQueue.submissions.filter(
+          (submission) => submission.jobId === queuedBoardPacket.job.id,
+        ).length,
+        1,
+        "the same atomic action should persist exactly one application packet",
+      );
+      if (
+        stateBeforeBoardQueue.jobs.some(
+          (job) => job.id === queuedBoardPacket.job.id,
+        )
+      ) {
+        await page.request.post(`${baseUrl}/api/submissions/archive`, {
+          data: { ids: [queuedBoardPacket.submission.id] },
+        });
+      } else {
+        await page.request.delete(
+          `${baseUrl}/api/jobs/${queuedBoardPacket.job.id}`,
+        );
+      }
+      await page.reload();
+      await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
       await page.getByRole("button", { name: "Saved" }).first().waitFor();
       await page
         .getByRole("button", { name: /Frontend Platform Engineer/ })
@@ -2395,6 +2448,17 @@ test(
         ["rgb(5, 150, 105)", "rgb(24, 24, 26)"],
         "cover-letter progress should use v2's green completed state and dark active state",
       );
+      await page.waitForFunction(() => {
+        const buttons = [...document.querySelectorAll("button")];
+        const previous = buttons.find(
+          (candidate) => candidate.textContent.trim() === "Previous",
+        );
+        const jobInfo = buttons.find(
+          (candidate) =>
+            candidate.getAttribute("aria-label") === "Go to Job Info",
+        );
+        return previous && !previous.disabled && jobInfo && !jobInfo.disabled;
+      });
       assert.equal(
         await page.getByRole("button", { name: "Previous" }).isEnabled(),
         true,

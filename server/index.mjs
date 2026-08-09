@@ -1173,6 +1173,82 @@ export const isApplicationQuestionReady = (question) => {
   if (question?.required === false && !answer) return true;
   return isValidApplicationAnswer(question) && question?.verified === true;
 };
+const createSubmissionItem = (db, job, body = {}) => {
+  const item = {
+    id: nanoid(),
+    jobId: job.id,
+    resumeId: safeText(body.resumeId, 50),
+    coverLetterId: safeText(body.coverLetterId, 50),
+    status: "draft",
+    applicationQuestions: applicationQuestionsFor(db),
+    checklist: [
+      { id: nanoid(), text: "Review resume alignment", done: false },
+      { id: nanoid(), text: "Review cover letter", done: false },
+      { id: nanoid(), text: "Confirm application details", done: false },
+    ],
+    createdAt: timestamp(),
+    updatedAt: timestamp(),
+  };
+  db.submissions.unshift(item);
+  if (["saved", "interested"].includes(job.status)) {
+    job.status = "interested";
+    job.updatedAt = timestamp();
+    if (job.statusHistory?.[0]?.status !== "interested")
+      (job.statusHistory ||= []).unshift({
+        status: "interested",
+        at: timestamp(),
+        source: "submission-queue",
+      });
+  }
+  auditEvent(
+    db,
+    "submission",
+    `Created application packet for ${job.company}.`,
+    {
+      jobId: job.id,
+      submissionId: item.id,
+    },
+  );
+  return item;
+};
+app.post("/api/board/queue", async (req, res) => {
+  const parsed = JobSchema.parse(req.body || {});
+  const result = await mutate((db) => {
+    let job = parsed.url
+      ? db.jobs.find((item) => item.url === parsed.url)
+      : null;
+    const existingSubmission = job
+      ? db.submissions.find((item) => item.jobId === job.id)
+      : null;
+    if (existingSubmission)
+      return { job, submission: existingSubmission, deduplicated: true };
+    if (job && !isJobEligibleForSubmission(job))
+      return { blockedJobStatus: true };
+    if (!job) {
+      job = {
+        id: nanoid(),
+        createdAt: timestamp(),
+        updatedAt: timestamp(),
+        notes: [],
+        tasks: [],
+        contacts: [],
+        statusHistory: [{ status: parsed.status, at: timestamp() }],
+        fitScore: scoreJob(parsed, db.profile),
+        ...parsed,
+      };
+      db.jobs.unshift(job);
+      auditEvent(db, "job", `Added ${job.title} at ${job.company}.`, {
+        jobId: job.id,
+      });
+    }
+    return { job, submission: createSubmissionItem(db, job, req.body) };
+  });
+  if (result.blockedJobStatus)
+    return res.status(409).json({
+      error: "Only active opportunities can be added to the submission queue",
+    });
+  res.status(result.deduplicated ? 200 : 201).json(result);
+});
 app.post("/api/submissions", async (req, res) => {
   const submission = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.body.jobId);
@@ -1182,47 +1258,7 @@ app.post("/api/submissions", async (req, res) => {
       (s) => s.jobId === job.id && ["draft", "ready"].includes(s.status),
     );
     if (existing) return existing;
-    const item = {
-      id: nanoid(),
-      jobId: job.id,
-      resumeId: safeText(req.body.resumeId, 50),
-      coverLetterId: safeText(req.body.coverLetterId, 50),
-      status: "draft",
-      applicationQuestions: applicationQuestionsFor(db),
-      checklist: [
-        {
-          id: nanoid(),
-          text: "Review resume alignment",
-          done: false,
-        },
-        {
-          id: nanoid(),
-          text: "Review cover letter",
-          done: false,
-        },
-        { id: nanoid(), text: "Confirm application details", done: false },
-      ],
-      createdAt: timestamp(),
-      updatedAt: timestamp(),
-    };
-    db.submissions.unshift(item);
-    if (["saved", "interested"].includes(job.status)) {
-      job.status = "interested";
-      job.updatedAt = timestamp();
-      if (job.statusHistory?.[0]?.status !== "interested")
-        (job.statusHistory ||= []).unshift({
-          status: "interested",
-          at: timestamp(),
-          source: "submission-queue",
-        });
-    }
-    auditEvent(
-      db,
-      "submission",
-      `Created application packet for ${job.company}.`,
-      { jobId: job.id, submissionId: item.id },
-    );
-    return item;
+    return createSubmissionItem(db, job, req.body);
   });
   if (!submission) return res.status(404).json({ error: "Job not found" });
   if (submission.blockedJobStatus)

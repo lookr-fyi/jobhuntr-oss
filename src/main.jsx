@@ -4330,8 +4330,14 @@ function Board({ state, reload }) {
       })
       .catch(() => {});
   }, []);
+  const submittedJobIds = new Set(
+    state.submissions.map((submission) => submission.jobId),
+  );
   const queuedUrls = new Set([
-    ...state.jobs.map((job) => job.url).filter(Boolean),
+    ...state.jobs
+      .filter((job) => submittedJobIds.has(job.id))
+      .map((job) => job.url)
+      .filter(Boolean),
     ...newlyQueuedUrls,
   ]);
   const visibleResults = useMemo(
@@ -4427,13 +4433,9 @@ function Board({ state, reload }) {
     setQueueing(job.url);
     setNotice("");
     try {
-      const tracked = await api("/api/jobs", {
+      await api("/api/board/queue", {
         method: "POST",
-        body: JSON.stringify({ ...job, status: "saved" }),
-      });
-      await api("/api/submissions", {
-        method: "POST",
-        body: JSON.stringify({ jobId: tracked.id }),
+        body: JSON.stringify({ ...job, status: "interested" }),
       });
       setNewlyQueuedUrls((current) => new Set(current).add(job.url));
       setNotice(`${job.title} was added to your submission queue.`);
