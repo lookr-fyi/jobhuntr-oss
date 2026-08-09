@@ -4449,6 +4449,21 @@ button.v2-board-row.selected {
   }
 }
 @media (max-width: 620px) {
+  .v2-board-header .v2-page-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .v2-board-header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    margin-top: 12px;
+  }
+  .v2-board-header-actions button {
+    justify-content: center;
+    min-width: 0;
+    white-space: nowrap;
+  }
   .v2-board-toolbar,
   .v2-board-filters {
     grid-template-columns: 1fr;
@@ -5155,6 +5170,15 @@ button.v2-workflow-card.selected {
   }
   .coach-toolbar select {
     max-width: none;
+  }
+}
+@media (max-width: 560px) {
+  .coach-toolbar .segmented {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .coach-toolbar .segmented button {
+    min-width: 0;
   }
 }
 .dashboard {

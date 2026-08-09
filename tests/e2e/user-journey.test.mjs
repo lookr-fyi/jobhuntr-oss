@@ -3500,6 +3500,50 @@ test(
         );
         assert.equal(overflow, false, `${heading} should fit a 390px viewport`);
       }
+      await mobile.setViewportSize({ width: 320, height: 568 });
+      await mobile.locator('button[title="Job Board"]').click();
+      await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      const narrowBoardHeader = await mobile.evaluate(() => {
+        const description = document
+          .querySelector(".v2-board-header .v2-page-intro p")
+          .getBoundingClientRect();
+        const actions = [
+          ...document.querySelectorAll(".v2-board-header-actions button"),
+        ].map((button) => button.getBoundingClientRect());
+        return {
+          descriptionBottom: Math.round(description.bottom),
+          actionTop: Math.round(actions[0].top),
+          actionsFit: actions.every(
+            (bounds) => bounds.left >= 0 && bounds.right <= innerWidth,
+          ),
+        };
+      });
+      assert.ok(
+        narrowBoardHeader.actionTop > narrowBoardHeader.descriptionBottom &&
+          narrowBoardHeader.actionsFit,
+        "the narrow Job Board header should stack readable copy above fully visible actions",
+      );
+      await mobile.locator('button[title="AI Career Coach"]').click();
+      await mobile
+        .getByRole("heading", { name: "Hi, I'm your Career Coach!" })
+        .waitFor();
+      assert.equal(
+        await mobile.locator(".coach-toolbar .segmented").evaluate((tabs) => {
+          const buttons = [...tabs.querySelectorAll("button")];
+          return (
+            getComputedStyle(tabs).gridTemplateColumns.split(" ").length ===
+              2 &&
+            buttons.every((button) => {
+              const bounds = button.getBoundingClientRect();
+              return bounds.left >= 0 && bounds.right <= innerWidth;
+            })
+          );
+        }),
+        true,
+        "every Career Coach mode should remain visible at 320px",
+      );
+      await mobile.locator('button[title="Data and privacy"]').click();
+      await mobile.getByRole("heading", { name: "Settings & data" }).waitFor();
       await assertAccessible(mobile, "Mobile Settings and data");
       await mobileContext.close();
 
