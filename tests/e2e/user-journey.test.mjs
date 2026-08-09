@@ -2367,6 +2367,32 @@ test(
       await page
         .getByRole("heading", { name: "LinkedIn Profile Audit" })
         .waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-audit-page").evaluate((root) => {
+          const style = (selector) =>
+            getComputedStyle(root.querySelector(selector));
+          const heading = style(".v2-page-intro h1");
+          const subtitle = style(".v2-page-intro p");
+          const input = style(".v2-audit-url input");
+          const analyze = style(".v2-audit-url button");
+          const context = style(".v2-audit-context-toggle");
+          return {
+            heading: [heading.fontSize, heading.fontWeight],
+            subtitle: [subtitle.fontSize, subtitle.color],
+            input: [input.padding, input.fontSize, input.borderRadius],
+            analyze: [analyze.padding, analyze.fontSize, analyze.fontWeight],
+            context: [context.padding, context.fontSize, context.fontWeight],
+          };
+        }),
+        {
+          heading: ["32px", "700"],
+          subtitle: ["16px", "rgb(75, 85, 99)"],
+          input: ["12px 16px", "16px", "6px"],
+          analyze: ["12px 20px", "16px", "500"],
+          context: ["12px 16px", "16px", "500"],
+        },
+        "LinkedIn Audit should retain the authoritative v2 input and heading geometry",
+      );
       assert.equal(
         await page.getByLabel("About section").count(),
         0,
@@ -2380,9 +2406,7 @@ test(
         .fill(
           "I build customer-facing products and improved conversion by 42% through measurable experiments.",
         );
-      const profileUrlInput = page.getByLabel(
-        "LinkedIn profile URL Optional reference",
-      );
+      const profileUrlInput = page.getByLabel("LinkedIn profile URL");
       await profileUrlInput.fill("https://example.com/not-linkedin");
       await page.getByText(/Enter a valid LinkedIn profile URL/).waitFor();
       await profileUrlInput.fill("https://www.linkedin.com/in/e2e-profile");

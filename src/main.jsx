@@ -9829,26 +9829,24 @@ function ProfileAudit({ state, reload }) {
         </div>
       </div>
       <div className="v2-audit-url">
-        <label>
-          LinkedIn profile URL <span>Optional reference</span>
-          <input
-            name="linkedin-profile-url"
-            value={profileUrl}
-            onChange={(e) => setProfileUrl(e.target.value)}
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !running &&
-                form.headline.trim() &&
-                profileUrlValid
-              )
-                run();
-            }}
-            placeholder="https://www.linkedin.com/in/username"
-            inputMode="url"
-            aria-invalid={!profileUrlValid}
-          />
-        </label>
+        <input
+          name="linkedin-profile-url"
+          aria-label="LinkedIn profile URL"
+          value={profileUrl}
+          onChange={(e) => setProfileUrl(e.target.value)}
+          onKeyDown={(event) => {
+            if (
+              event.key === "Enter" &&
+              !running &&
+              form.headline.trim() &&
+              profileUrlValid
+            )
+              run();
+          }}
+          placeholder="https://www.linkedin.com/in/username"
+          inputMode="url"
+          aria-invalid={!profileUrlValid}
+        />
         <button
           disabled={running || !form.headline.trim() || !profileUrlValid}
           onClick={run}
@@ -9968,7 +9966,9 @@ function ProfileAudit({ state, reload }) {
               <span className="v2-loading-orb">
                 <Search size={22} />
               </span>
-              <h3>Analyzing your profile…</h3>
+              <h3 role="heading" aria-level="2">
+                Analyzing your profile…
+              </h3>
               <p>
                 Reviewing positioning, evidence, target language, and section
                 completeness.
@@ -10040,7 +10040,9 @@ function ProfileAudit({ state, reload }) {
           ) : (
             <div className="card empty-state">
               <BadgeCheck />
-              <h3>Get an inspectable score</h3>
+              <h3 role="heading" aria-level="2">
+                Get an inspectable score
+              </h3>
               <p>
                 No generative AI or hidden rubric. Every section score maps to
                 visible evidence.
@@ -10048,7 +10050,9 @@ function ProfileAudit({ state, reload }) {
             </div>
           )}
           <div className="card">
-            <h3>Audit history · {state.profileAudits.length}</h3>
+            <h3 role="heading" aria-level="2">
+              Audit history · {state.profileAudits.length}
+            </h3>
             {state.profileAudits.length ? (
               state.profileAudits.map((item) => (
                 <div
