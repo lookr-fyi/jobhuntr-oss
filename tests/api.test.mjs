@@ -1129,6 +1129,33 @@ test("editing attached source documents invalidates pending packet reviews", asy
   assert.equal(refreshed.status, "draft");
   assert.equal(refreshed.checklist[0].done, false);
   assert.equal(refreshed.checklist[2].done, false);
+
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ checklist, status: "ready" }),
+  });
+  await req(`/api/jobs/${job.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      title: "Senior Product Engineer",
+      url: "https://review-guard.example/new-application",
+    }),
+  });
+  refreshed = (await req("/api/state")).body.submissions.find(
+    (item) => item.id === packet.body.id,
+  );
+  assert.equal(refreshed.status, "draft");
+  assert.equal(
+    refreshed.checklist.every((item) => item.done === false),
+    true,
+  );
+  assert.equal(
+    refreshed.applicationQuestions.every(
+      (question) => question.verified === false,
+    ),
+    true,
+    "a changed employer form target must require every answer to be verified again",
+  );
 });
 
 test("command center reports weekly goals and due-date priorities", async () => {

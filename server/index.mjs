@@ -96,7 +96,12 @@ const isSafeHttpUrl = (value) => {
     return false;
   }
 };
-const invalidatePendingPacketReviews = (db, predicate, labels) => {
+const invalidatePendingPacketReviews = (
+  db,
+  predicate,
+  labels,
+  { invalidateQuestions = false } = {},
+) => {
   let invalidated = 0;
   for (const submission of db.submissions) {
     if (
@@ -105,11 +110,19 @@ const invalidatePendingPacketReviews = (db, predicate, labels) => {
     )
       continue;
     let changed = false;
-    submission.checklist = submission.checklist.map((entry) => {
+    submission.checklist = (submission.checklist || []).map((entry) => {
       if (!labels.includes(entry.text) || !entry.done) return entry;
       changed = true;
       return { ...entry, done: false };
     });
+    if (invalidateQuestions)
+      submission.applicationQuestions = (
+        submission.applicationQuestions || []
+      ).map((question) => {
+        if (!question.verified) return question;
+        changed = true;
+        return { ...question, verified: false };
+      });
     if (!changed) continue;
     submission.status = "draft";
     submission.updatedAt = timestamp();
@@ -433,7 +446,29 @@ app.patch("/api/jobs/:id", async (req, res) => {
       ["saved", "interested", "submitting"].includes(changes.status)
     )
       return { blockedRegression: true };
+    const applicationFields = [
+      "company",
+      "title",
+      "location",
+      "url",
+      "salary",
+      "description",
+    ];
+    const applicationChanged = applicationFields.some(
+      (field) => changes[field] !== undefined && changes[field] !== item[field],
+    );
     Object.assign(item, changes, { updatedAt: timestamp() });
+    if (applicationChanged)
+      invalidatePendingPacketReviews(
+        db,
+        (submission) => submission.jobId === item.id,
+        [
+          "Review resume alignment",
+          "Review cover letter",
+          "Confirm application details",
+        ],
+        { invalidateQuestions: true },
+      );
     if (changes.status === "applied" && previousStatus !== "applied")
       item.applicationDatetime = timestamp();
     if (changes.status && changes.status !== previousStatus)
