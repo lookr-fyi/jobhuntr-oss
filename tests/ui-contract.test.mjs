@@ -874,13 +874,28 @@ test("User Center saves are single-flight and cannot bless newer edits", async (
   assert.match(settings, /const \[savingProfile, setSavingProfile\]/);
   assert.match(settings, /const formRevision = useRef\(0\)/);
   assert.match(settings, /formRevision\.current \+= 1/);
-  assert.match(settings, /if \(savingProfile\) return/);
+  assert.match(settings, /const savingProfileRef = useRef\(false\)/);
+  assert.match(settings, /savingProfileRef\.current = true/);
+  assert.match(
+    settings,
+    /if \(savingProfileRef\.current \|\| extractingProfileResumeRef\.current\) return/,
+  );
   assert.match(
     settings,
     /if \(formRevision\.current === savingRevision\) setSaved\(true\)/,
   );
-  assert.match(settings, /finally \{\s*setSavingProfile\(false\)/);
+  assert.match(
+    settings,
+    /finally \{\s*savingProfileRef\.current = false;\s*setSavingProfile\(false\)/,
+  );
   assert.match(settings, /aria-busy=\{savingProfile\}/);
+  assert.match(settings, /const extractingProfileResumeRef = useRef\(false\)/);
+  assert.match(settings, /extractingProfileResumeRef\.current = true/);
+  assert.match(settings, /extractingProfileResumeRef\.current = false/);
+  assert.match(
+    settings,
+    /disabled=\{form\.extractingResume \|\| savingProfile\}/,
+  );
 });
 
 test("external submission recording is single-flight and retryable", async () => {

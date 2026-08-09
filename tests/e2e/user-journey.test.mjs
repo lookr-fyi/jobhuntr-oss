@@ -3939,26 +3939,36 @@ test(
       assert.equal(new URL(page.url()).hash, "#/settings?tab=settings");
       await page.getByLabel("Weekly application goal").waitFor();
       await page.getByLabel("ATS template application threshold").fill("85");
-      await page.route(
-        "**/api/profile",
-        async (route) => {
+      let delayedProfileSaveCount = 0;
+      await page.route("**/api/profile", async (route) => {
+        delayedProfileSaveCount += 1;
+        if (delayedProfileSaveCount === 1)
           await new Promise((resolve) => setTimeout(resolve, 250));
-          await route.continue();
-        },
-        { times: 1 },
-      );
+        await route.continue();
+      });
       const delayedSettingsSave = page.waitForResponse(
         (response) =>
           response.url().endsWith("/api/profile") &&
           response.request().method() === "PUT" &&
           response.ok(),
       );
-      await page.getByRole("button", { name: "Save settings" }).click();
+      await page
+        .getByRole("button", { name: "Save settings" })
+        .evaluate((button) => {
+          button.click();
+          button.click();
+        });
       const savingSettings = page.getByRole("button", { name: "Saving…" });
       await savingSettings.waitFor();
       assert.equal(await savingSettings.isDisabled(), true);
       await page.getByLabel("ATS template application threshold").fill("90");
       await delayedSettingsSave;
+      await page.waitForTimeout(100);
+      assert.equal(
+        delayedProfileSaveCount,
+        1,
+        "same-frame User Center clicks must create exactly one profile save",
+      );
       await page.getByRole("button", { name: "Save settings" }).waitFor();
       assert.equal(
         await page.getByText("Changes saved locally.").count(),

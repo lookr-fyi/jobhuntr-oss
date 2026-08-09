@@ -12910,6 +12910,8 @@ function SettingsPage({ state, reload, setTab }) {
   }, []);
   const [saved, setSaved] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const savingProfileRef = useRef(false);
+  const extractingProfileResumeRef = useRef(false);
   const formRevision = useRef(0);
   const [faqDeleteMode, setFaqDeleteMode] = useState(false);
   const [faqDeleteTarget, setFaqDeleteTarget] = useState(null);
@@ -12943,7 +12945,8 @@ function SettingsPage({ state, reload, setTab }) {
     setForm(next);
   };
   const save = async () => {
-    if (savingProfile) return;
+    if (savingProfileRef.current || extractingProfileResumeRef.current) return;
+    savingProfileRef.current = true;
     const savingRevision = formRevision.current;
     setSavingProfile(true);
     setSaved(false);
@@ -12990,7 +12993,40 @@ function SettingsPage({ state, reload, setTab }) {
     } catch {
       // Preserve edits for retry while the shared error surface reports why.
     } finally {
+      savingProfileRef.current = false;
       setSavingProfile(false);
+    }
+  };
+  const loadProfileResume = async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file || extractingProfileResumeRef.current || savingProfileRef.current)
+      return;
+    extractingProfileResumeRef.current = true;
+    markFormDirty();
+    setForm((current) => ({
+      ...current,
+      resumeError: "",
+      extractingResume: true,
+    }));
+    try {
+      const resumeText = await extractResumeFileText(file);
+      setForm((current) => ({
+        ...current,
+        resumeFileName: file.name,
+        resumeText,
+        resumeError: "",
+        extractingResume: false,
+      }));
+    } catch (error) {
+      setForm((current) => ({
+        ...current,
+        resumeError: error.message,
+        extractingResume: false,
+      }));
+    } finally {
+      extractingProfileResumeRef.current = false;
+      input.value = "";
     }
   };
   const profileDisplayName =
@@ -13243,35 +13279,9 @@ function SettingsPage({ state, reload, setTab }) {
                 name="profile-resume-file"
                 aria-label="Replace base resume"
                 type="file"
+                disabled={form.extractingResume || savingProfile}
                 accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  markFormDirty();
-                  setForm((current) => ({
-                    ...current,
-                    resumeError: "",
-                    extractingResume: true,
-                  }));
-                  try {
-                    const resumeText = await extractResumeFileText(file);
-                    setForm((current) => ({
-                      ...current,
-                      resumeFileName: file.name,
-                      resumeText,
-                      resumeError: "",
-                      extractingResume: false,
-                    }));
-                  } catch (error) {
-                    setForm((current) => ({
-                      ...current,
-                      resumeError: error.message,
-                      extractingResume: false,
-                    }));
-                  } finally {
-                    event.target.value = "";
-                  }
-                }}
+                onChange={loadProfileResume}
               />
             </label>
             {form.extractingResume && (
@@ -13289,6 +13299,7 @@ function SettingsPage({ state, reload, setTab }) {
               <textarea
                 name="profile-resume-text"
                 aria-label="Base resume text"
+                disabled={form.extractingResume || savingProfile}
                 value={form.resumeText}
                 onChange={(event) => {
                   editForm({
