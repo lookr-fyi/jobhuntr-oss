@@ -2297,11 +2297,11 @@ function Tracker({ state, reload, setTab }) {
         <div>
           <span>{filtered.length} applications</span>
           {runFilter !== "all" && <span>• Filtered by agent run</span>}
-          <button className="secondary" onClick={() => setFunnelOpen(true)}>
+          <button className="funnel-button" onClick={() => setFunnelOpen(true)}>
             Funnel Analysis
           </button>
           <button
-            className="secondary export-button"
+            className="export-button"
             title="Export applications to CSV"
             disabled={!filtered.length}
             onClick={exportTrackerCsv}
@@ -2314,9 +2314,10 @@ function Tracker({ state, reload, setTab }) {
         {copiedTrackerUrl}
       </span>
       <div className="tracker-filter-panel v2-tracker-filters-always job-tracker-filters">
-        <div className="searchbox filter-group">
+        <div className="filter-group">
           <input
             name="tracker-search"
+            className="search-input"
             aria-label="Search tracked jobs"
             value={query}
             onChange={(e) => {

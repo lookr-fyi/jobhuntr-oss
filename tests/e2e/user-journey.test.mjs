@@ -1433,6 +1433,41 @@ test(
       });
       await page.getByRole("button", { name: "Job Tracker" }).click();
       await page.getByText("Show Columns:", { exact: true }).waitFor();
+      assert.deepEqual(
+        await page.locator(".tracker-page").evaluate((tracker) => {
+          const header = tracker.querySelector(".v2-tracker-header");
+          const heading = header.querySelector("h1");
+          const funnelButton = header.querySelector(".funnel-button");
+          const filters = tracker.querySelector(".tracker-filter-panel");
+          const search = filters.querySelector(".search-input");
+          const style = (element) => getComputedStyle(element);
+          return {
+            headerPadding: style(header).padding,
+            headingFontSize: style(heading).fontSize,
+            headingFontWeight: style(heading).fontWeight,
+            buttonPadding: style(funnelButton).padding,
+            buttonRadius: style(funnelButton).borderRadius,
+            buttonFontSize: style(funnelButton).fontSize,
+            filterPadding: style(filters).padding,
+            searchPadding: style(search).padding,
+            searchRadius: style(search).borderRadius,
+            searchFontSize: style(search).fontSize,
+          };
+        }),
+        {
+          headerPadding: "24px 32px",
+          headingFontSize: "28px",
+          headingFontWeight: "600",
+          buttonPadding: "8px 16px",
+          buttonRadius: "6px",
+          buttonFontSize: "13px",
+          filterPadding: "16px 32px",
+          searchPadding: "8px 12px",
+          searchRadius: "6px",
+          searchFontSize: "14px",
+        },
+        "the tracker shell should retain the authoritative v2 dimensions",
+      );
       assert.equal(
         await page.locator(".tracker-status-filters input:checked").count(),
         9,
