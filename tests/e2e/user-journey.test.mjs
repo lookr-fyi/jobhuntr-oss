@@ -1356,6 +1356,40 @@ test(
         "changing the search should reset v2 column pagination",
       );
       await removedLoadMore.waitFor();
+      const appliedAddJob = appliedColumn.getByRole("button", {
+        name: "Add Job",
+      });
+      await appliedAddJob.click();
+      const addJobDialog = page.getByRole("dialog", { name: "Add New Job" });
+      await addJobDialog.waitFor();
+      assert.equal(
+        await addJobDialog
+          .getByRole("button", { name: "Cancel" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "the v2 Add New Job drawer should focus its safe action",
+      );
+      await page.keyboard.press("Escape");
+      await addJobDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await appliedAddJob.evaluate(
+          (button) => button === document.activeElement,
+        ),
+        true,
+        "closing Add New Job should restore focus to its column action",
+      );
+      await appliedAddJob.click();
+      await addJobDialog
+        .getByLabel("title", { exact: true })
+        .fill("E2E Added Role");
+      await addJobDialog
+        .getByLabel("company", { exact: true })
+        .fill("E2E Added Company");
+      await addJobDialog.getByRole("button", { name: "Save" }).click();
+      await page
+        .getByRole("heading", { name: "E2E Added Role", exact: true })
+        .waitFor();
+      await page.getByRole("button", { name: "Close job details" }).click();
       const firstTrackerColumn = page.locator(".status-column").first();
       assert.equal(
         await firstTrackerColumn.evaluate(

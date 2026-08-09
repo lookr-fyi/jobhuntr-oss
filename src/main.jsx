@@ -1902,6 +1902,7 @@ function Tracker({ state, reload, setTab }) {
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
   const jobDrawerCloseRef = useRef(null);
+  const addJobDrawerCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
   const deleteTarget = state.jobs.find((item) => item.id === deleteJobId);
   const jobDrawerOpen = Boolean(job);
@@ -2068,6 +2069,19 @@ function Tracker({ state, reload, setTab }) {
       returnFocus?.focus?.();
     };
   }, [jobDrawerOpen]);
+  useEffect(() => {
+    if (!showForm) return undefined;
+    const returnFocus = document.activeElement;
+    addJobDrawerCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setShowForm(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [showForm]);
   const patch = async (id, body) => {
     await api(`/api/jobs/${id}`, {
       method: "PATCH",
@@ -2285,46 +2299,6 @@ function Tracker({ state, reload, setTab }) {
           Reset filters
         </button>
       </div>
-      {showForm && (
-        <div className="card add-panel">
-          <div className="row">
-            <h3>Add a tracked role</h3>
-            <button className="text-button" onClick={() => setShowForm(false)}>
-              Close
-            </button>
-          </div>
-          <div className="form-grid">
-            {["company", "title", "location", "url", "salary", "tags"].map(
-              (key) => (
-                <label key={key}>
-                  {key}
-                  <input
-                    value={form[key]}
-                    onChange={(e) =>
-                      setForm({ ...form, [key]: e.target.value })
-                    }
-                  />
-                </label>
-              ),
-            )}
-          </div>
-          <label>
-            Description
-            <textarea
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </label>
-          <button
-            disabled={!form.company.trim() || !form.title.trim()}
-            onClick={save}
-          >
-            Save role
-          </button>
-        </div>
-      )}
       <div className="tracker-workspace">
         <div className="kanban">
           {stages
@@ -2825,6 +2799,92 @@ function Tracker({ state, reload, setTab }) {
           </>
         )}
       </div>
+      {showForm && (
+        <>
+          <button
+            className="job-drawer-backdrop"
+            tabIndex={-1}
+            aria-label="Dismiss new job"
+            onClick={() => setShowForm(false)}
+          />
+          <div
+            className="job-drawer add-job-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-job-drawer-title"
+            onKeyDown={containDialogFocus}
+          >
+            <div className="job-drawer-header">
+              <h2 id="add-job-drawer-title">Add New Job</h2>
+              <div className="job-drawer-header-buttons">
+                <button
+                  disabled={!form.company.trim() || !form.title.trim()}
+                  onClick={save}
+                >
+                  Save
+                </button>
+                <button
+                  ref={addJobDrawerCloseRef}
+                  className="secondary cancel-button"
+                  onClick={() => setShowForm(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+            <div className="job-drawer-content">
+              <div className="job-edit-form info-section">
+                <div className="form-grid">
+                  {[
+                    "title",
+                    "company",
+                    "location",
+                    "salary",
+                    "url",
+                    "tags",
+                  ].map((field) => (
+                    <label key={field}>
+                      {field === "url" ? "Job URL" : field}
+                      <input
+                        required={["title", "company"].includes(field)}
+                        value={form[field]}
+                        onChange={(event) =>
+                          setForm({ ...form, [field]: event.target.value })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+                <label>
+                  Status
+                  <select
+                    aria-label="New job status"
+                    value={form.status}
+                    onChange={(event) =>
+                      setForm({ ...form, status: event.target.value })
+                    }
+                  >
+                    {stages.map((stage) => (
+                      <option value={stage} key={stage}>
+                        {trackerStageLabel(stage)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Description
+                  <textarea
+                    value={form.description}
+                    onChange={(event) =>
+                      setForm({ ...form, description: event.target.value })
+                    }
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       {!filtered.length && (
         <div className="card empty-state">
           <Search />
