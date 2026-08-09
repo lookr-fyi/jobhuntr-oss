@@ -1334,6 +1334,29 @@ test(
       );
       const dragCard = structuredTrackerCard.locator(".kanban-card");
       const dragCardTitle = await dragCard.locator(".job-title").innerText();
+      await page.getByRole("button", { name: "Copy URL" }).click();
+      await page.getByText("Tracker URL copied", { exact: true }).waitFor();
+      const trackerClipboardUrl = await page.evaluate(() =>
+        navigator.clipboard.readText(),
+      );
+      assert.match(trackerClipboardUrl, /#\/tracker\?statuses=/);
+      assert.doesNotMatch(
+        trackerClipboardUrl,
+        /[?&]job=/,
+        "the header action should copy the filtered tracker view, not one job",
+      );
+      await dragCard.click({ button: "right" });
+      await page
+        .getByText(`Link copied for ${dragCardTitle}`, { exact: true })
+        .waitFor();
+      const jobClipboardUrl = await page.evaluate(() =>
+        navigator.clipboard.readText(),
+      );
+      assert.match(
+        jobClipboardUrl,
+        /#\/tracker\?job=[^&]+&statuses=/,
+        "right-clicking a card should copy its stable filtered deep link",
+      );
       const dragCardBox = await dragCard.boundingBox();
       assert.ok(dragCardBox, "a tracker card should be available to drag");
       await page.mouse.move(

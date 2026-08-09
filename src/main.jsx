@@ -1894,6 +1894,7 @@ function Tracker({ state, reload, setTab }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteJobId, setDeleteJobId] = useState("");
   const [draggingJobId, setDraggingJobId] = useState("");
+  const [copiedTrackerUrl, setCopiedTrackerUrl] = useState("");
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
   const jobDrawerCloseRef = useRef(null);
@@ -2082,6 +2083,34 @@ function Tracker({ state, reload, setTab }) {
     setSelected(id);
     setEditForm(null);
   };
+  const getTrackerUrl = (jobId = "") => {
+    const params = new URLSearchParams();
+    if (jobId) params.set("job", jobId);
+    if (runFilter !== "all") params.set("run", runFilter);
+    if (visibleStages.size)
+      params.set("statuses", [...visibleStages].join(","));
+    return `${window.location.origin}${window.location.pathname}#/tracker${params.size ? `?${params}` : ""}`;
+  };
+  const copyTrackerUrl = async (url, feedback) => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const input = document.createElement("textarea");
+      input.value = url;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+    setCopiedTrackerUrl(feedback);
+    window.setTimeout(
+      () =>
+        setCopiedTrackerUrl((current) => (current === feedback ? "" : current)),
+      1800,
+    );
+  };
   const saveEdit = async () => {
     if (!job || !editForm?.company.trim() || !editForm?.title.trim()) return;
     setEditBusy(true);
@@ -2166,15 +2195,24 @@ function Tracker({ state, reload, setTab }) {
       <div className="v2-tracker-header">
         <h2>Job Tracker</h2>
         <div>
-          <span>{filtered.length} tracked jobs</span>
+          <span>{filtered.length} applications</span>
           <button className="secondary" onClick={() => setFunnelOpen(true)}>
             Funnel Analysis
           </button>
-          <a className="button secondary" href="/api/export/jobs.csv">
-            <Download size={15} /> Export CSV
-          </a>
+          <button
+            className="secondary copy-url-button"
+            title="Copy shareable URL"
+            onClick={() =>
+              copyTrackerUrl(getTrackerUrl(), "Tracker URL copied")
+            }
+          >
+            <Copy size={14} /> Copy URL
+          </button>
         </div>
       </div>
+      <span className="v2-tracker-copy-status" role="status" aria-live="polite">
+        {copiedTrackerUrl}
+      </span>
       <div className="tracker-filter-panel v2-tracker-filters-always job-tracker-filters">
         <div className="searchbox filter-group">
           <Search size={16} />
@@ -2327,6 +2365,13 @@ function Tracker({ state, reload, setTab }) {
                                 setDraggingJobId(item.id);
                               }}
                               onDragEnd={() => setDraggingJobId("")}
+                              onContextMenu={(event) => {
+                                event.preventDefault();
+                                copyTrackerUrl(
+                                  getTrackerUrl(item.id),
+                                  `Link copied for ${item.title}`,
+                                );
+                              }}
                               onClick={() => selectJob(item.id)}
                               className={`kanban-card ${item.id === selected ? "selected" : ""}`}
                             >

@@ -683,6 +683,7 @@ button:disabled {
   margin-left: 8px;
 }
 .tracker-page {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -9391,6 +9392,19 @@ main > header.integrated-page-header {
 .v2-tracker-header .button {
   box-sizing: border-box;
   text-decoration: none;
+}
+.v2-tracker-header .copy-url-button {
+  gap: 6px;
+}
+.v2-tracker-copy-status {
+  position: absolute;
+  z-index: 2;
+  top: 43px;
+  right: 0;
+  min-height: 16px;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 700;
 }
 .v2-funnel-modal {
   position: fixed;
