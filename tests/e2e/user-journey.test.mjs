@@ -1565,6 +1565,18 @@ test(
       await page.getByLabel("First name").fill("E2E");
       await page.getByLabel("Last name").fill("Hunter");
       await page.getByLabel("Nickname (for job cards)").fill("E2E Builder");
+      await page.getByLabel("Replace base resume").setInputFiles({
+        name: "updated-profile-resume.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(
+          "E2E profile resume replacement. Product engineer with nine years of React and TypeScript delivery. Increased activation by 42% and led accessible platform launches.",
+        ),
+      });
+      await page.waitForFunction(() =>
+        document
+          .querySelector('[aria-label="Base resume text"]')
+          ?.value.includes("E2E profile resume replacement"),
+      );
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -1580,6 +1592,10 @@ test(
       assert.equal(
         await page.getByLabel("Nickname (for job cards)").inputValue(),
         "E2E Builder",
+      );
+      assert.match(
+        await page.getByLabel("Base resume text").inputValue(),
+        /E2E profile resume replacement/,
       );
       await page.getByRole("tab", { name: "Coaches" }).click();
       await page.getByRole("heading", { name: "Coaching activity" }).waitFor();

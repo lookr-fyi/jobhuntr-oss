@@ -10406,6 +10406,9 @@ function SettingsPage({ state, reload, setTab }) {
     resumeText: p.resumeText || "",
     additionalInfo: p.additionalInfo || "",
     faqAnswers: p.faqAnswers || [],
+    resumeFileName: "",
+    resumeError: "",
+    extractingResume: false,
   });
   const save = async () => {
     setSaved(false);
@@ -10619,6 +10622,92 @@ function SettingsPage({ state, reload, setTab }) {
                 </label>
               ))}
             </div>
+          </div>
+          <div className="v2-user-details-section v2-profile-resume-section">
+            <div className="v2-profile-resume-heading">
+              <div>
+                <h4>Base resume</h4>
+                <p>
+                  Used for ATS analysis, application packets, and truthful
+                  career guidance.
+                </p>
+              </div>
+              <span
+                className={`pill ${isUsableResumeText(form.resumeText) ? "completed" : "failed"}`}
+              >
+                {isUsableResumeText(form.resumeText)
+                  ? "Ready"
+                  : "Resume required"}
+              </span>
+            </div>
+            <label className="v2-template-dropzone v2-profile-resume-dropzone">
+              <Upload size={24} />
+              <b>{form.resumeFileName || "Replace resume from a file"}</b>
+              <span>PDF, HTML, or TXT · processed only on this device</span>
+              <input
+                aria-label="Replace base resume"
+                type="file"
+                accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
+                onChange={async (event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  setSaved(false);
+                  setForm((current) => ({
+                    ...current,
+                    resumeFileName: file.name,
+                    resumeError: "",
+                    extractingResume: true,
+                  }));
+                  try {
+                    const resumeText = await extractResumeFileText(file);
+                    setForm((current) => ({
+                      ...current,
+                      resumeText,
+                      resumeError: "",
+                      extractingResume: false,
+                    }));
+                  } catch (error) {
+                    setForm((current) => ({
+                      ...current,
+                      resumeError: error.message,
+                      extractingResume: false,
+                    }));
+                  } finally {
+                    event.target.value = "";
+                  }
+                }}
+              />
+            </label>
+            {form.extractingResume && (
+              <div className="v2-template-upload-progress" role="status">
+                <RefreshCcw size={17} /> Extracting resume text locally…
+              </div>
+            )}
+            {form.resumeError && (
+              <div className="v2-submit-safety-note" role="alert">
+                {form.resumeError}
+              </div>
+            )}
+            <label>
+              Resume text
+              <textarea
+                aria-label="Base resume text"
+                value={form.resumeText}
+                onChange={(event) => {
+                  setSaved(false);
+                  setForm({
+                    ...form,
+                    resumeText: event.target.value,
+                    resumeError: "",
+                  });
+                }}
+                placeholder="Paste your complete resume here…"
+              />
+            </label>
+            <small>
+              {form.resumeText.trim().length.toLocaleString()} characters · Save
+              profile to keep changes
+            </small>
           </div>
           <button onClick={save}>
             <Save size={16} /> Save profile

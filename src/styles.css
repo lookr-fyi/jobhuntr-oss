@@ -8591,6 +8591,32 @@ main > header.integrated-page-header {
   min-height: 92px;
   padding: 14px;
 }
+.v2-profile-resume-section {
+  display: grid;
+  gap: 12px;
+}
+.v2-profile-resume-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.v2-profile-resume-heading h4,
+.v2-profile-resume-heading p {
+  margin: 0;
+}
+.v2-profile-resume-heading p {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+.v2-profile-resume-dropzone {
+  min-height: 86px;
+  padding: 14px;
+}
+.v2-profile-resume-section textarea {
+  min-height: 180px;
+}
 @keyframes v2-template-spin {
   to {
     transform: rotate(360deg);
