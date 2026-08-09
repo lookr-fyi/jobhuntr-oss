@@ -415,6 +415,35 @@ test("Career Coach generation actions are single-flight and retryable", async ()
   );
 });
 
+test("Career Coach evidence saves are single-flight and preserve retry context", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const practice = source.slice(
+    source.indexOf("function PracticeSession"),
+    source.indexOf("function StoryVault"),
+  );
+  const stories = source.slice(
+    source.indexOf("function StoryVault"),
+    source.indexOf("function OutreachEditor"),
+  );
+
+  assert.match(practice, /const savingPracticeRef = useRef\(false\)/);
+  assert.match(practice, /if \(savingPracticeRef\.current\) return/);
+  assert.match(practice, /savingPracticeRef\.current = true/);
+  assert.match(practice, /savingPracticeRef\.current = false/);
+  assert.match(practice, /aria-busy=\{savingPractice\}/);
+  assert.match(practice, /savingPractice \? "Saving…" : "Save progress"/);
+
+  assert.match(stories, /const savingStoryRef = useRef\(false\)/);
+  assert.match(stories, /if \(savingStoryRef\.current\) return/);
+  assert.match(stories, /savingStoryRef\.current = true/);
+  assert.match(stories, /savingStoryRef\.current = false/);
+  assert.match(stories, /aria-busy=\{savingStory\}/);
+  assert.match(stories, /savingStory\s*\? "Saving…"/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

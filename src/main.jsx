@@ -9690,11 +9690,16 @@ function Coach({ state, reload }) {
   );
 }
 function PracticeSession({ session, setSession, state, reload }) {
+  const [savingPractice, setSavingPractice] = useState(false);
+  const savingPracticeRef = useRef(false);
   const job = state.jobs.find((x) => x.id === session.jobId);
   const stories = (session.matchedStoryIds || [])
     .map((id) => state.careerStories.find((x) => x.id === id))
     .filter(Boolean);
   const save = async (status = session.status) => {
+    if (savingPracticeRef.current) return;
+    savingPracticeRef.current = true;
+    setSavingPractice(true);
     try {
       const updated = await api(`/api/coach/sessions/${session.id}`, {
         method: "PATCH",
@@ -9707,7 +9712,12 @@ function PracticeSession({ session, setSession, state, reload }) {
       });
       setSession(updated);
       await reload();
-    } catch {}
+    } catch {
+      // Keep answers and notes in the editor so saving can be retried.
+    } finally {
+      savingPracticeRef.current = false;
+      setSavingPractice(false);
+    }
   };
   return (
     <div className="practice">
@@ -9780,10 +9790,18 @@ function PracticeSession({ session, setSession, state, reload }) {
         placeholder="Questions to ask, interviewer names, follow-up notes…"
       />
       <div className="inline">
-        <button onClick={() => save("in-progress")}>
-          <Save size={16} /> Save progress
+        <button
+          disabled={savingPractice}
+          aria-busy={savingPractice}
+          onClick={() => save("in-progress")}
+        >
+          <Save size={16} /> {savingPractice ? "Saving…" : "Save progress"}
         </button>
-        <button className="success" onClick={() => save("completed")}>
+        <button
+          className="success"
+          disabled={savingPractice}
+          onClick={() => save("completed")}
+        >
           <CheckCircle2 size={16} /> Mark prepared
         </button>
       </div>
@@ -9802,11 +9820,16 @@ function StoryVault({ stories, reload }) {
   const [form, setForm] = useState(empty);
   const [selected, setSelected] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [savingStory, setSavingStory] = useState(false);
+  const savingStoryRef = useRef(false);
   const edit = (story) => {
     setSelected(story.id);
     setForm({ ...story, skills: (story.skills || []).join(", ") });
   };
   const save = async () => {
+    if (savingStoryRef.current) return;
+    savingStoryRef.current = true;
+    setSavingStory(true);
     const body = {
       ...form,
       skills: form.skills
@@ -9828,7 +9851,12 @@ function StoryVault({ stories, reload }) {
       setSelected(null);
       setForm(empty);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the STAR evidence in the form so saving can be retried.
+    } finally {
+      savingStoryRef.current = false;
+      setSavingStory(false);
+    }
   };
   return (
     <div className="story-layout">
@@ -9855,6 +9883,7 @@ function StoryVault({ stories, reload }) {
           {selected && (
             <button
               className="text-button"
+              disabled={savingStory}
               onClick={() => {
                 setSelected(null);
                 setForm(empty);
@@ -9896,8 +9925,13 @@ function StoryVault({ stories, reload }) {
             onChange={(e) => setForm({ ...form, skills: e.target.value })}
           />
         </label>
-        <button disabled={!form.title.trim()} onClick={save}>
-          <Save size={16} /> {selected ? "Save changes" : "Save story"}
+        <button
+          disabled={savingStory || !form.title.trim()}
+          aria-busy={savingStory}
+          onClick={save}
+        >
+          <Save size={16} />{" "}
+          {savingStory ? "Saving…" : selected ? "Save changes" : "Save story"}
         </button>
       </div>
       <div className="card">
@@ -9905,7 +9939,7 @@ function StoryVault({ stories, reload }) {
         {stories.length ? (
           stories.map((story) => (
             <div className="story-card" key={story.id}>
-              <button onClick={() => edit(story)}>
+              <button disabled={savingStory} onClick={() => edit(story)}>
                 <b>{story.title}</b>
                 <span>{(story.skills || []).join(" · ")}</span>
                 <p>
@@ -9914,6 +9948,7 @@ function StoryVault({ stories, reload }) {
               </button>
               <button
                 className="danger"
+                disabled={savingStory}
                 aria-label={`Delete STAR story ${story.title}`}
                 onClick={() => setDeleteTarget(story)}
               >
