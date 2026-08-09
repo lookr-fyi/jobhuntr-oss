@@ -1280,8 +1280,24 @@ test(
       await page.getByText("Show Columns:", { exact: true }).waitFor();
       assert.equal(
         await page.locator(".tracker-status-filters input:checked").count(),
-        10,
+        9,
         "obsolete saved statuses should recover to every current v2 tracker column",
+      );
+      const queuedColumn = page
+        .locator(".kanban-column")
+        .filter({ has: page.getByText("Queued", { exact: true }) });
+      const appliedColumn = page
+        .locator(".kanban-column")
+        .filter({ has: page.getByText("Applied", { exact: true }) });
+      assert.equal(
+        await queuedColumn.getByRole("button", { name: "Add Job" }).count(),
+        0,
+        "v2 automated queue columns must not accept manual job creation",
+      );
+      assert.equal(
+        await appliedColumn.getByRole("button", { name: "Add Job" }).count(),
+        1,
+        "v2 manual lifecycle columns should retain Add Job",
       );
       assert.equal(
         await page.getByLabel("Filter by agent run").inputValue(),

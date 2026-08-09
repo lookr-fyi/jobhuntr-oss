@@ -226,7 +226,6 @@ function PlatformMark({ id, fallback }) {
   );
 }
 const TRACKER_STAGES = [
-  "saved",
   "interested",
   "submitting",
   "applied",
@@ -237,6 +236,15 @@ const TRACKER_STAGES = [
   "skipped",
   "removed",
 ];
+const MANUAL_TRACKER_STAGES = new Set([
+  "applied",
+  "interview",
+  "offer",
+  "rejected",
+  "failed",
+  "skipped",
+  "removed",
+]);
 const TRACKER_STAGE_LABELS = {
   saved: "Started",
   interested: "Queued",
@@ -2286,15 +2294,17 @@ function Tracker({ state, reload, setTab }) {
                       )}
                     </button>
                   ))}
-                <button
-                  className="v2-tracker-add-job"
-                  onClick={() => {
-                    setForm((current) => ({ ...current, status: stage }));
-                    setShowForm(true);
-                  }}
-                >
-                  <Plus size={14} /> Add Job
-                </button>
+                {MANUAL_TRACKER_STAGES.has(stage) && (
+                  <button
+                    className="v2-tracker-add-job"
+                    onClick={() => {
+                      setForm((current) => ({ ...current, status: stage }));
+                      setShowForm(true);
+                    }}
+                  >
+                    <Plus size={14} /> Add Job
+                  </button>
+                )}
               </div>
             ))}
         </div>
