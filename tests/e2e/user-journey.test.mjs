@@ -1925,10 +1925,26 @@ test(
         ["Profile and settings", "User Center"],
         ["Data and privacy", "Settings & data"],
       ]) {
-        await mobile
-          .locator(`button[title="${navigation}"]`)
-          .evaluate((button) => button.click());
+        await mobile.locator(`button[title="${navigation}"]`).click();
         await mobile.getByRole("heading", { name: heading }).first().waitFor();
+        if (navigation === "Infinite Hunting") {
+          const actionBounds = await mobile
+            .locator(".v2-hunt-actions > button, .v2-hunt-actions select")
+            .evaluateAll((controls) =>
+              controls.map((control) => {
+                const box = control.getBoundingClientRect();
+                return { left: box.left, right: box.right, width: box.width };
+              }),
+            );
+          assert.equal(actionBounds.length, 4);
+          assert.ok(
+            actionBounds.every(
+              ({ left, right, width }) =>
+                left >= 0 && right <= 390 && width >= 100,
+            ),
+            "every Infinite Hunt action must remain fully visible and usable on a 390px window",
+          );
+        }
         const activeNavigationIsVisible = await mobile
           .locator(`button[title="${navigation}"]`)
           .evaluate((button) => {

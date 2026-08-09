@@ -4245,6 +4245,21 @@ button.v2-workflow-card.selected {
   .v2-loop-row > button:last-child {
     grid-column: 3;
   }
+  .v2-hunt-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: end;
+  }
+  .v2-hunt-actions > button,
+  .v2-hunt-actions .v2-hunt-interval,
+  .v2-hunt-actions .v2-hunt-interval select {
+    width: 100%;
+    min-width: 0;
+  }
+  .v2-hunt-actions > button {
+    min-height: 44px;
+    justify-content: center;
+  }
   .v2-session-content {
     padding: 22px;
   }
