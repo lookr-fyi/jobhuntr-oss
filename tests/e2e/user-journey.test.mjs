@@ -1969,7 +1969,27 @@ test(
       const whyAnswer = queueQuestions.getByLabel(
         /Why are you interested in this role/,
       );
+      const queueDeepLink = page.url();
+      await page.route("**/api/submissions/*", (route) => route.abort());
       await whyAnswer.fill("The product mission matches my experience.");
+      await page.goto(`${baseUrl}/#/tracker`);
+      await page.goto(queueDeepLink);
+      await page
+        .getByText("Unsaved application answers restored for review.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await whyAnswer.inputValue(),
+        "The product mission matches my experience.",
+        "an Easy Apply answer should recover when blur persistence is interrupted",
+      );
+      await page.unroute("**/api/submissions/*");
+      const interruptedAnswerErrorDismiss = page.getByRole("button", {
+        name: "Dismiss error",
+      });
+      if (await interruptedAnswerErrorDismiss.count())
+        await interruptedAnswerErrorDismiss.click();
       const immediateVerification = queueQuestions
         .locator(".v2-question-card")
         .filter({ hasText: "Why are you interested in this role?" })

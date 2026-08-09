@@ -6073,6 +6073,35 @@ function SubmissionCard({ submission: s, state, reload }) {
   const [externalSubmissionVerified, setExternalSubmissionVerified] =
     useState(false);
   const [recordingSubmission, setRecordingSubmission] = useState(false);
+  const answerDraftKey = `jobhuntr-application-answer-draft:${s.id}`;
+  const [initialAnswerDraft] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(answerDraftKey) || "null");
+      if (
+        !saved ||
+        saved.packetId !== s.id ||
+        typeof saved.answers !== "object"
+      )
+        return {};
+      const validIds = new Set(
+        (s.applicationQuestions || [])
+          .filter(
+            (question) =>
+              !["dropdown", "multiple_choice"].includes(question.questionType),
+          )
+          .map((question) => question.id),
+      );
+      return Object.fromEntries(
+        Object.entries(saved.answers)
+          .filter(([id]) => validIds.has(id))
+          .slice(0, 100)
+          .map(([id, answer]) => [id, String(answer || "").slice(0, 10_000)]),
+      );
+    } catch {
+      localStorage.removeItem(answerDraftKey);
+      return {};
+    }
+  });
   const [draftAnswers, setDraftAnswers] = useState(() =>
     Object.fromEntries(
       (s.applicationQuestions || [])
@@ -6080,9 +6109,33 @@ function SubmissionCard({ submission: s, state, reload }) {
           (question) =>
             !["dropdown", "multiple_choice"].includes(question.questionType),
         )
-        .map((question) => [question.id, question.answer || ""]),
+        .map((question) => [
+          question.id,
+          initialAnswerDraft[question.id] ?? question.answer ?? "",
+        ]),
     ),
   );
+  const [dirtyAnswerIds, setDirtyAnswerIds] = useState(
+    () => new Set(Object.keys(initialAnswerDraft)),
+  );
+  const [answerDraftRestored, setAnswerDraftRestored] = useState(
+    Boolean(Object.keys(initialAnswerDraft).length),
+  );
+  useEffect(() => {
+    if (!dirtyAnswerIds.size) {
+      localStorage.removeItem(answerDraftKey);
+      return;
+    }
+    localStorage.setItem(
+      answerDraftKey,
+      JSON.stringify({
+        packetId: s.id,
+        answers: Object.fromEntries(
+          [...dirtyAnswerIds].map((id) => [id, draftAnswers[id] || ""]),
+        ),
+      }),
+    );
+  }, [answerDraftKey, dirtyAnswerIds, draftAnswers, s.id]);
   const job = state.jobs.find((j) => j.id === s.jobId);
   const attachedResume = state.resumes.find((item) => item.id === s.resumeId);
   const attachedLetter = state.coverLetters.find(
@@ -6132,9 +6185,10 @@ function SubmissionCard({ submission: s, state, reload }) {
           body: JSON.stringify(body),
         });
         await reload();
+        return true;
       });
     packetUpdateQueue.current = update.catch(() => {});
-    await update.catch(() => {});
+    return (await update.catch(() => false)) === true;
   };
   const updateChecklist = async (id, done) => {
     await updatePacket({
@@ -6143,9 +6197,15 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateQuestion = async (id, answer) => {
-    await updatePacket({
+    const saved = await updatePacket({
       applicationQuestion: { id, answer, verified: false },
     });
+    if (saved)
+      setDirtyAnswerIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
   };
   const verifyQuestion = async (id, verified) => {
     const question = (s.applicationQuestions || []).find(
@@ -6154,7 +6214,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     const isTextQuestion = !["dropdown", "multiple_choice"].includes(
       question?.questionType,
     );
-    await updatePacket({
+    const saved = await updatePacket({
       applicationQuestion: {
         id,
         answer: isTextQuestion
@@ -6163,6 +6223,12 @@ function SubmissionCard({ submission: s, state, reload }) {
         verified,
       },
     });
+    if (saved)
+      setDirtyAnswerIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
   };
   const recordExternalSubmission = async () => {
     if (
@@ -6285,6 +6351,11 @@ function SubmissionCard({ submission: s, state, reload }) {
       </section>
       {!!s.applicationQuestions?.length && (
         <section className="v2-packet-section v2-application-questions">
+          {answerDraftRestored && (
+            <p className="v2-draft-restored" role="status">
+              Unsaved application answers restored for review.
+            </p>
+          )}
           <div className="v2-packet-section-heading">
             <div>
               <h3>Application Questions</h3>
@@ -6369,12 +6440,16 @@ function SubmissionCard({ submission: s, state, reload }) {
                     maxLength={10000}
                     value={draftAnswers[question.id] ?? question.answer ?? ""}
                     placeholder="Enter your answer…"
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setDraftAnswers((answers) => ({
                         ...answers,
                         [question.id]: event.target.value,
-                      }))
-                    }
+                      }));
+                      setDirtyAnswerIds((current) =>
+                        new Set(current).add(question.id),
+                      );
+                      setAnswerDraftRestored(false);
+                    }}
                     onBlur={(event) => {
                       if (event.target.value !== (question.answer || ""))
                         updateQuestion(question.id, event.target.value);

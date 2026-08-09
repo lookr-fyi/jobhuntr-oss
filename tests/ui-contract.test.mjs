@@ -1405,6 +1405,29 @@ test("external submission recording is single-flight and retryable", async () =>
   );
 });
 
+test("Easy Apply text answers recover until a packet write succeeds", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const card = source.slice(
+    source.indexOf("function SubmissionCard"),
+    source.indexOf("function Resume"),
+  );
+
+  assert.match(card, /jobhuntr-application-answer-draft:/);
+  assert.match(card, /localStorage\.getItem\(answerDraftKey\)/);
+  assert.match(card, /String\(answer \|\| ""\)\.slice\(0, 10_000\)/);
+  assert.match(card, /const \[dirtyAnswerIds, setDirtyAnswerIds\]/);
+  assert.match(card, /if \(!dirtyAnswerIds\.size\)/);
+  assert.match(
+    card,
+    /return \(await update\.catch\(\(\) => false\)\) === true/,
+  );
+  assert.match(card, /next\.delete\(id\)/);
+  assert.match(card, /Unsaved application answers restored for review\./);
+});
+
 test("FAQ deletion persists before mutating the form and cannot bless newer edits", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
