@@ -917,6 +917,14 @@ test("Gig application pitches cannot be silently dismissed", async () => {
     (gigs.match(/onClick=\{requestCloseCampaign\}/g) || []).length >= 2,
     "the backdrop and Cancel action must share protected dismissal behavior",
   );
+  assert.match(gigs, /jobhuntr-gig-application-pitch-draft/);
+  assert.match(gigs, /localStorage\.getItem\(gigPitchDraftKey\)/);
+  assert.match(gigs, /String\(saved\.proposal\)\.slice\(0, 10_000\)/);
+  assert.match(gigs, /Unsaved gig application pitch restored\./);
+  assert.match(
+    gigs,
+    /localStorage\.setItem\([\s\S]*?gigPitchDraftKey,[\s\S]*?proposal: campaignProposal/,
+  );
 });
 
 test("new gig drafts recover after navigating away", async () => {

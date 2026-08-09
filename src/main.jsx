@@ -11074,6 +11074,32 @@ function OutreachEditor({ draft, setDraft, onSaved, reload }) {
     </div>
   );
 }
+const LOCAL_GIG_CAMPAIGNS = [
+  {
+    client: "Career Tools Lab",
+    title: "Review an AI resume workflow",
+    budget: 175,
+    description:
+      "Test a career product workflow and deliver concise, evidence-based usability feedback.",
+    skills: ["Product testing", "Writing"],
+  },
+  {
+    client: "Launch Partners",
+    title: "Create a technical product teardown",
+    budget: 300,
+    description:
+      "Document a software onboarding journey and recommend the three highest-impact improvements.",
+    skills: ["Research", "Product strategy"],
+  },
+  {
+    client: "Developer Community",
+    title: "Build a small React prototype",
+    budget: 500,
+    description:
+      "Turn a focused product brief into a polished responsive prototype with clear handoff notes.",
+    skills: ["React", "TypeScript"],
+  },
+];
 function Gigs({ state, reload }) {
   const stages = [
     "lead",
@@ -11123,8 +11149,34 @@ function Gigs({ state, reload }) {
   const [gigDraftRestored, setGigDraftRestored] = useState(
     Boolean(initialGigDraft),
   );
-  const [campaignPreview, setCampaignPreview] = useState(null);
-  const [campaignProposal, setCampaignProposal] = useState("");
+  const gigPitchDraftKey = "jobhuntr-gig-application-pitch-draft";
+  const [initialPitchDraft] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(gigPitchDraftKey) || "null",
+      );
+      const campaign = LOCAL_GIG_CAMPAIGNS.find(
+        (item) => item.title === saved?.title,
+      );
+      if (!campaign || !String(saved?.proposal || "").trim()) return null;
+      return {
+        campaign,
+        proposal: String(saved.proposal).slice(0, 10_000),
+      };
+    } catch {
+      localStorage.removeItem(gigPitchDraftKey);
+      return null;
+    }
+  });
+  const [campaignPreview, setCampaignPreview] = useState(
+    initialPitchDraft?.campaign || null,
+  );
+  const [campaignProposal, setCampaignProposal] = useState(
+    initialPitchDraft?.proposal || "",
+  );
+  const [campaignDraftRestored, setCampaignDraftRestored] = useState(
+    Boolean(initialPitchDraft),
+  );
   const [discardCampaignOpen, setDiscardCampaignOpen] = useState(false);
   const [gigQuery, setGigQuery] = useState("");
   const [myGigQuery, setMyGigQuery] = useState("");
@@ -11165,10 +11217,25 @@ function Gigs({ state, reload }) {
     }
     localStorage.setItem(gigDraftKey, JSON.stringify(form));
   }, [form]);
+  useEffect(() => {
+    if (!campaignPreview || !campaignProposal.trim()) {
+      localStorage.removeItem(gigPitchDraftKey);
+      return;
+    }
+    localStorage.setItem(
+      gigPitchDraftKey,
+      JSON.stringify({
+        title: campaignPreview.title,
+        proposal: campaignProposal,
+      }),
+    );
+  }, [campaignPreview, campaignProposal]);
   const finishClosingCampaign = useCallback(() => {
     setCampaignPreview(null);
     setCampaignProposal("");
+    setCampaignDraftRestored(false);
     setDiscardCampaignOpen(false);
+    localStorage.removeItem("jobhuntr-gig-application-pitch-draft");
   }, []);
   const requestCloseCampaign = useCallback(() => {
     if (applyingGigRef.current || discardCampaignOpen) return;
@@ -11255,32 +11322,7 @@ function Gigs({ state, reload }) {
       completed: "Payment Sent",
       lost: "Closed",
     })[status] || status;
-  const availableGigs = [
-    {
-      client: "Career Tools Lab",
-      title: "Review an AI resume workflow",
-      budget: 175,
-      description:
-        "Test a career product workflow and deliver concise, evidence-based usability feedback.",
-      skills: ["Product testing", "Writing"],
-    },
-    {
-      client: "Launch Partners",
-      title: "Create a technical product teardown",
-      budget: 300,
-      description:
-        "Document a software onboarding journey and recommend the three highest-impact improvements.",
-      skills: ["Research", "Product strategy"],
-    },
-    {
-      client: "Developer Community",
-      title: "Build a small React prototype",
-      budget: 500,
-      description:
-        "Turn a focused product brief into a polished responsive prototype with clear handoff notes.",
-      skills: ["React", "TypeScript"],
-    },
-  ].filter((item) =>
+  const availableGigs = LOCAL_GIG_CAMPAIGNS.filter((item) =>
     `${item.title} ${item.client} ${item.description}`
       .toLowerCase()
       .includes(gigQuery.toLowerCase()),
@@ -11305,6 +11347,8 @@ function Gigs({ state, reload }) {
       setSelected(created.id);
       setCampaignPreview(null);
       setCampaignProposal("");
+      setCampaignDraftRestored(false);
+      localStorage.removeItem(gigPitchDraftKey);
       await reload();
     } catch {
       // Keep the campaign and pitch open so submission can be retried.
@@ -11436,6 +11480,7 @@ function Gigs({ state, reload }) {
                 <button
                   onClick={() => {
                     setCampaignProposal("");
+                    setCampaignDraftRestored(false);
                     setCampaignPreview(item);
                   }}
                 >
@@ -11493,10 +11538,18 @@ function Gigs({ state, reload }) {
                 aria-label="Gig application pitch"
                 disabled={applyingGig}
                 value={campaignProposal}
-                onChange={(event) => setCampaignProposal(event.target.value)}
+                onChange={(event) => {
+                  setCampaignProposal(event.target.value);
+                  setCampaignDraftRestored(false);
+                }}
                 placeholder="Share relevant experience, your approach, and availability…"
               />
             </label>
+            {campaignDraftRestored && (
+              <p className="v2-draft-restored" role="status">
+                Unsaved gig application pitch restored.
+              </p>
+            )}
             <div className="v2-gig-application-notice">
               <ShieldCheck size={18} />
               Your application and pitch are stored only in this local

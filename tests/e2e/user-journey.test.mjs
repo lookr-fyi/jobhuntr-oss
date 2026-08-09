@@ -4065,6 +4065,17 @@ test(
         .fill(
           "I test complex React workflows and provide evidence-based feedback.",
         );
+      await page.goto(`${baseUrl}/#/tracker`);
+      await page.goto(`${baseUrl}/#/gigs`);
+      await campaignDialog.waitFor();
+      await page
+        .getByText("Unsaved gig application pitch restored.", { exact: true })
+        .waitFor();
+      assert.equal(
+        await campaignDialog.getByLabel("Gig application pitch").inputValue(),
+        "I test complex React workflows and provide evidence-based feedback.",
+        "a gig application pitch should recover after route navigation",
+      );
       await page.keyboard.press("Escape");
       const discardPitchDialog = page.getByRole("alertdialog", {
         name: "Discard application pitch?",
