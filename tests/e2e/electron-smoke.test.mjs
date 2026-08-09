@@ -9,15 +9,15 @@ test(
   "the packaged desktop entry launches the real JobHuntr Electron experience",
   { timeout: 30_000 },
   async () => {
-    const dataDir = await fs.mkdtemp(
+    const userDataDir = await fs.mkdtemp(
       path.join(os.tmpdir(), "jobhuntr-electron-"),
     );
     let electronApp;
-    const windowStatePath = path.join(dataDir, "window-state.json");
     const environment = {
       ...process.env,
-      JOBHUNTR_DATA_DIR: dataDir,
-      JOBHUNTR_WINDOW_STATE_PATH: windowStatePath,
+      JOBHUNTR_DATA_DIR: "",
+      JOBHUNTR_USER_DATA_DIR: userDataDir,
+      JOBHUNTR_WINDOW_STATE_PATH: "",
     };
     try {
       electronApp = await electron.launch({
@@ -44,6 +44,7 @@ test(
       await window.getByRole("heading", { name: /Welcome back/ }).waitFor();
       await window.getByText("Welcome back, Electron").waitFor();
       assert.equal(await window.title(), "JobHuntr");
+      await fs.access(path.join(userDataDir, "data", "jobhuntr.json"));
       const security = await electronApp.evaluate(({ BrowserWindow }) => {
         const preferences =
           BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();
@@ -100,7 +101,7 @@ test(
       });
     } finally {
       await electronApp?.close();
-      await fs.rm(dataDir, { recursive: true, force: true });
+      await fs.rm(userDataDir, { recursive: true, force: true });
     }
   },
 );

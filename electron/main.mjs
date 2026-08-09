@@ -8,6 +8,12 @@ let localUrl;
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const iconPath = path.join(projectRoot, "src", "jobhuntr-logo.png");
+app.setName("JobHuntr");
+app.setPath(
+  "userData",
+  process.env.JOBHUNTR_USER_DATA_DIR ||
+    path.join(app.getPath("appData"), "JobHuntr"),
+);
 const windowStatePath = () =>
   process.env.JOBHUNTR_WINDOW_STATE_PATH ||
   path.join(app.getPath("userData"), "window-state.json");
@@ -175,7 +181,6 @@ const createWindow = async () => {
 };
 
 app.whenReady().then(async () => {
-  app.setName("JobHuntr");
   if (process.platform === "darwin") app.dock.setIcon(iconPath);
   try {
     await createWindow();
