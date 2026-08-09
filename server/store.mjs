@@ -344,6 +344,18 @@ const normalizeSubmissionStatus = (value) => {
   if (["removed", "failed", "skipped"].includes(status)) return "archived";
   return "draft";
 };
+const GIG_STATUSES = new Set([
+  "lead",
+  "proposal",
+  "negotiation",
+  "won",
+  "in-progress",
+  "waiting-approval",
+  "completed",
+  "lost",
+]);
+const boundedMoney = (value) =>
+  Math.min(100000000, Math.max(0, Number(value) || 0));
 
 function migrate(input) {
   const db = isRecord(input) ? input : {};
@@ -593,13 +605,40 @@ function migrate(input) {
       validStoryIds.has(id),
     );
   db.profileAudits = records(db.profileAudits);
-  db.gigs = records(db.gigs);
-  for (const gig of db.gigs) {
-    gig.status ||= "lead";
-    gig.statusHistory = records(gig.statusHistory);
-    if (!gig.statusHistory.length)
-      gig.statusHistory = [{ status: gig.status, at: gig.createdAt || now() }];
-  }
+  const gigIds = new Set();
+  db.gigs = records(db.gigs)
+    .slice(0, 5000)
+    .map((gig, index) => {
+      const status = GIG_STATUSES.has(gig.status) ? gig.status : "lead";
+      const createdAt = boundedText(gig.createdAt, 100);
+      const statusHistory = records(gig.statusHistory)
+        .filter((event) => GIG_STATUSES.has(event.status))
+        .map((event) => ({
+          status: event.status,
+          at: boundedText(event.at, 100) || createdAt || now(),
+        }))
+        .slice(0, 500);
+      if (!statusHistory.some((event) => event.status === status))
+        statusHistory.unshift({ status, at: createdAt || now() });
+      return {
+        id: uniqueLegacyId(gig.id, "legacy-gig", index, gigIds),
+        client: boundedText(gig.client, 200) || `Gig client ${index + 1}`,
+        title: boundedText(gig.title, 300) || `Gig opportunity ${index + 1}`,
+        source: boundedText(gig.source, 200) || "Manual",
+        url: boundedText(gig.url, 2000),
+        budget: boundedMoney(gig.budget),
+        earned: boundedMoney(gig.earned),
+        dueDate: /^\d{4}-\d{2}-\d{2}$/.test(boundedText(gig.dueDate, 10))
+          ? boundedText(gig.dueDate, 10)
+          : "",
+        description: boundedText(gig.description, 50000),
+        proposal: boundedText(gig.proposal, 100000),
+        status,
+        statusHistory,
+        createdAt,
+        updatedAt: boundedText(gig.updatedAt, 100),
+      };
+    });
   db.agentRuns = records(db.agentRuns);
   for (const run of db.agentRuns) {
     run.id = String(run.id || nanoid()).slice(0, 200);

@@ -2126,7 +2126,39 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           applicationQuestions: [],
         },
       ],
-      gigs: [{ id: "legacy-gig", title: "Legacy", statusHistory: "bad" }],
+      gigs: [
+        {
+          id: "duplicate-gig-id",
+          client: { malformed: true },
+          title: { malformed: true },
+          source: { malformed: true },
+          url: { malformed: true },
+          budget: -500,
+          earned: 999999999,
+          dueDate: "tomorrow",
+          description: { malformed: true },
+          proposal: { malformed: true },
+          status: "paying",
+          statusHistory: [{ status: "invalid", at: { malformed: true } }],
+        },
+        {
+          id: "duplicate-gig-id",
+          client: "  Restored Client  ",
+          title: "  Restored Gig  ",
+          source: "  Partner Board  ",
+          url: "  https://gigs.example/restored  ",
+          budget: "2500",
+          earned: "500",
+          dueDate: "2030-03-15",
+          description: "  Restored description  ",
+          proposal: "  Restored proposal  ",
+          status: "in-progress",
+          statusHistory: [
+            { status: "proposal", at: "2029-01-01T00:00:00.000Z" },
+            { status: "invalid", at: "2029-01-02T00:00:00.000Z" },
+          ],
+        },
+      ],
       coachConversations: [
         { id: "empty-legacy-chat", messages: "bad" },
         {
@@ -2289,7 +2321,35 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   });
   assert.equal(unsafeSubmit.res.status, 409);
   assert.match(unsafeSubmit.body.error, /checklist/i);
-  assert.equal(normalized.gigs[0].statusHistory.length, 1);
+  assert.equal(normalized.gigs[0].client, "Gig client 1");
+  assert.equal(normalized.gigs[0].title, "Gig opportunity 1");
+  assert.equal(normalized.gigs[0].source, "Manual");
+  assert.equal(normalized.gigs[0].url, "");
+  assert.equal(normalized.gigs[0].budget, 0);
+  assert.equal(normalized.gigs[0].earned, 100000000);
+  assert.equal(normalized.gigs[0].dueDate, "");
+  assert.equal(normalized.gigs[0].description, "");
+  assert.equal(normalized.gigs[0].proposal, "");
+  assert.equal(normalized.gigs[0].status, "lead");
+  assert.deepEqual(
+    normalized.gigs[0].statusHistory.map((event) => event.status),
+    ["lead"],
+  );
+  assert.equal(normalized.gigs[1].client, "Restored Client");
+  assert.equal(normalized.gigs[1].title, "Restored Gig");
+  assert.equal(normalized.gigs[1].source, "Partner Board");
+  assert.equal(normalized.gigs[1].url, "https://gigs.example/restored");
+  assert.equal(normalized.gigs[1].budget, 2500);
+  assert.equal(normalized.gigs[1].earned, 500);
+  assert.equal(normalized.gigs[1].dueDate, "2030-03-15");
+  assert.equal(normalized.gigs[1].description, "Restored description");
+  assert.equal(normalized.gigs[1].proposal, "Restored proposal");
+  assert.equal(normalized.gigs[1].status, "in-progress");
+  assert.deepEqual(
+    normalized.gigs[1].statusHistory.map((event) => event.status),
+    ["in-progress", "proposal"],
+  );
+  assert.notEqual(normalized.gigs[0].id, normalized.gigs[1].id);
   assert.equal(normalized.coachConversations.length, 2);
   assert.equal(
     normalized.coachConversations[0].title,

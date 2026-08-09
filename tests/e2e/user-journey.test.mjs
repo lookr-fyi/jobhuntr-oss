@@ -4093,6 +4093,36 @@ test(
                 category: "recruiter",
               },
             ],
+            gigs: [
+              {
+                id: "duplicate-browser-gig",
+                client: { unsafe: true },
+                title: { unsafe: true },
+                source: { unsafe: true },
+                budget: -200,
+                earned: 999999999,
+                dueDate: "tomorrow",
+                description: { unsafe: true },
+                proposal: { unsafe: true },
+                status: "paying",
+                statusHistory: [{ status: "unknown", at: { unsafe: true } }],
+              },
+              {
+                id: "duplicate-browser-gig",
+                client: "Restored Client",
+                title: "Restored Gig",
+                source: "Partner Board",
+                budget: "2500",
+                earned: "500",
+                dueDate: "2030-03-15",
+                description: "Restored gig description",
+                proposal: "Restored gig proposal",
+                status: "in-progress",
+                statusHistory: [
+                  { status: "proposal", at: "2029-01-01T00:00:00.000Z" },
+                ],
+              },
+            ],
           },
         },
       );
@@ -4168,6 +4198,42 @@ test(
         "Restored outreach body",
       );
       await assertAccessible(page, "Restored Outreach");
+      await page.goto(`${baseUrl}/#/gigs`);
+      await page.getByRole("heading", { name: "Gigs", exact: true }).waitFor();
+      await page.getByText("Gig opportunity 1", { exact: true }).waitFor();
+      await page.getByText("Restored Gig", { exact: true }).waitFor();
+      assert.equal(
+        await page.getByText("Invalid Date", { exact: true }).count(),
+        0,
+      );
+      await page
+        .locator(".v2-gig-applications")
+        .getByRole("button", { name: /Restored Gig/ })
+        .click();
+      const restoredGigDialog = page.getByRole("dialog", {
+        name: "Restored Gig",
+      });
+      await restoredGigDialog.waitFor();
+      assert.equal(
+        await restoredGigDialog.getByLabel("Potential earning").inputValue(),
+        "2500",
+      );
+      assert.equal(
+        await restoredGigDialog.getByLabel("Actual earning").inputValue(),
+        "500",
+      );
+      assert.equal(
+        await restoredGigDialog.getByLabel("Deadline").inputValue(),
+        "2030-03-15",
+      );
+      assert.equal(
+        await restoredGigDialog
+          .getByLabel("Proposal / delivery notes")
+          .inputValue(),
+        "Restored gig proposal",
+      );
+      await assertAccessible(page, "Restored Gigs");
+      await page.keyboard.press("Escape");
       const restoredDocumentWorkspace = await page.request.post(
         `${baseUrl}/api/import`,
         { data: documentRestorePoint },
