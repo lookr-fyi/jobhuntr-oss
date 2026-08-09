@@ -10988,7 +10988,9 @@ main > header.integrated-page-header {
     align-items: flex-start;
   }
 }
-@media (min-width: 761px) {
+/* Keep v2's expanding navigation, but use it as an overlay on compact desktop
+   windows so hovering the rail cannot crush complex workspaces mid-task. */
+@media (min-width: 961px) {
   .app.sidebar-open main {
     margin-left: 280px;
   }

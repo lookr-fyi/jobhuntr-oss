@@ -175,3 +175,19 @@ test("ATS template scoring is single-flight and retryable", async () => {
   assert.match(source, /templateDialog\.scoring \|\|/);
   assert.match(source, /"Scoring…"/);
 });
+
+test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
+  const styles = await readFile(
+    new URL("../src/styles.css", import.meta.url),
+    "utf8",
+  );
+
+  assert.doesNotMatch(
+    styles,
+    /@media \(min-width: 761px\) \{\s*\.app\.sidebar-open main/,
+  );
+  assert.match(
+    styles,
+    /@media \(min-width: 961px\) \{\s*\.app\.sidebar-open main \{\s*margin-left: 280px/,
+  );
+});
