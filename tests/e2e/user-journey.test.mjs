@@ -212,6 +212,22 @@ test(
         "14",
         "sidebar icons should use the compact v2 navigation scale",
       );
+      for (const [tooltip, iconClass] of [
+        ["Submission Queue", "lucide-clipboard-list"],
+        ["ATS Templates", "lucide-zap"],
+        ["Job Tracker", "lucide-trello"],
+        ["Gigs", "lucide-dollar-sign"],
+        ["AI Career Coach", "lucide-message-circle"],
+      ]) {
+        assert.ok(
+          (
+            await page
+              .locator(`.v2-nav button[title="${tooltip}"] svg`)
+              .getAttribute("class")
+          )?.includes(iconClass),
+          `${tooltip} should use the authoritative v2 sidebar icon`,
+        );
+      }
       await page.locator(".v2-sidebar").hover({ position: { x: 30, y: 100 } });
       await page.waitForTimeout(200);
       const expandedNavigationBox = await page

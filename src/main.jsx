@@ -22,7 +22,10 @@ import {
   CircleDollarSign,
   Infinity as InfinityIcon,
   List,
-  Columns3,
+  ClipboardList,
+  DollarSign,
+  MessageCircle,
+  Zap,
   Users,
   User,
   ChevronLeft,
@@ -39,6 +42,7 @@ import {
   ListPlus,
   MoreHorizontal,
   X,
+  createLucideIcon,
 } from "lucide-react";
 import "./styles.css";
 import { parseCsv } from "./csv.js";
@@ -53,6 +57,14 @@ import startupLogo from "./platform-logos/WorkAtAStartup.png";
 import zipRecruiterLogo from "./platform-logos/Ziprecruiter.png";
 import companyLogo from "./platform-logos/internet.png";
 import linkedInLogo from "./platform-logos/linkedin.png";
+
+// Trello was the tracker glyph in the authoritative v2 sidebar. Newer Lucide
+// builds omit that brand glyph, so preserve its original two-column geometry
+// locally rather than substituting a visually different icon.
+const Trello = createLucideIcon("Trello", [
+  ["rect", { width: "7", height: "18", x: "3", y: "3", rx: "1", key: "0" }],
+  ["rect", { width: "7", height: "9", x: "14", y: "3", rx: "1", key: "1" }],
+]);
 
 const PLATFORM_LOGOS = {
   company: companyLogo,
@@ -695,16 +707,16 @@ function App() {
   const tabs = [
     ["overview", LayoutDashboard, "Overview", "primary"],
     ["agent", InfinityIcon, "Infinite Hunting", "automation"],
-    ["queue", ListChecks, "Submission Queue", "automation"],
+    ["queue", ClipboardList, "Submission Queue", "automation"],
     ["board", Briefcase, "Job Board", "automation"],
     ["runs", List, "All Runs", "automation", "Agent Runs"],
-    ["resume", Sparkles, "ATS Resume", "documents", "ATS Templates"],
+    ["resume", Zap, "ATS Resume", "documents", "ATS Templates"],
     ["cover-letter", FileText, "Cover Letter", "documents"],
-    ["tracker", Columns3, "Job Tracker", "career"],
+    ["tracker", Trello, "Job Tracker", "career"],
     ["outreach", Users, "Outreach", "career"],
     ["audit", Search, "LinkedIn Audit", "career"],
-    ["gigs", CircleDollarSign, "Gigs", "career"],
-    ["coach", MessageSquare, "AI Coach", "career", "AI Career Coach"],
+    ["gigs", DollarSign, "Gigs", "career"],
+    ["coach", MessageCircle, "AI Coach", "career", "AI Career Coach"],
   ];
   if (!state && err)
     return (
