@@ -10072,27 +10072,84 @@ main > header.integrated-page-header {
   display: block;
 }
 .v2-template-result {
-  grid-template-columns: 180px 1fr;
+  display: flex;
+  min-height: 620px;
+  flex-direction: column;
+  gap: 16px;
 }
-.v2-template-result > div:first-child {
-  grid-column: 1 / -1;
+.v2-template-result > header p {
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 12px;
 }
-.v2-template-score {
-  display: grid;
-  place-items: center;
-  align-content: center;
-  min-height: 170px;
-  border: 10px solid #dbeafe;
-  border-radius: 999px;
+.v2-template-score-comparison {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 14px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
   background: #fff;
 }
-.v2-template-score strong {
-  color: #2563eb;
-  font-size: 46px;
+.v2-template-score-comparison > div {
+  display: grid;
+  min-width: 112px;
+  place-items: center;
 }
-.v2-template-score span {
+.v2-template-score-comparison strong {
+  color: #475569;
+  font-size: 30px;
+}
+.v2-template-score-comparison .optimized strong {
+  color: #2563eb;
+}
+.v2-template-score-comparison span {
   color: #64748b;
   font-size: 11px;
+}
+.v2-template-score-comparison > i {
+  color: #94a3b8;
+  font-size: 22px;
+  font-style: normal;
+}
+.v2-template-score-comparison > b {
+  padding: 5px 8px;
+  color: #166534;
+  border-radius: 999px;
+  background: #dcfce7;
+  font-size: 10px;
+}
+.v2-template-resume-comparison {
+  display: grid;
+  min-height: 330px;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f1f5f9;
+}
+.v2-template-resume-comparison section {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.v2-template-resume-comparison section + section {
+  border-left: 1px solid #e2e8f0;
+}
+.v2-template-resume-comparison section > b {
+  padding: 9px 12px;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 11px;
+}
+.v2-template-resume-comparison iframe {
+  width: 100%;
+  min-height: 290px;
+  flex: 1;
+  border: 0;
+  background: #fff;
 }
 .v2-template-result-grid {
   display: grid;
@@ -10888,11 +10945,18 @@ main > header.integrated-page-header {
     border-bottom: 1px solid #e2e8f0;
   }
   .v2-template-result {
+    min-height: 820px;
+  }
+  .v2-template-score-comparison {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .v2-template-resume-comparison {
     grid-template-columns: 1fr;
   }
-  .v2-template-score {
-    width: 170px;
-    margin: auto;
+  .v2-template-resume-comparison section + section {
+    border-top: 1px solid #e2e8f0;
+    border-left: 0;
   }
   .v2-template-modal-actions {
     position: fixed;

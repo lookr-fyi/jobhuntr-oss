@@ -1132,7 +1132,23 @@ test(
         .getByRole("button", { name: "Next", exact: true })
         .click();
       await templateDialog.getByText("ATS Optimization Complete").waitFor();
-      await templateDialog.getByText("ATS match score").waitFor();
+      await templateDialog.getByText("Original ATS score").waitFor();
+      await templateDialog.getByText("ATS-ready score").waitFor();
+      const comparisonScores = await templateDialog
+        .locator(".v2-template-score-comparison strong")
+        .allTextContents();
+      assert.ok(
+        Number(comparisonScores[1]) >= Number(comparisonScores[0]),
+        "truthful user-provided experience must never lower the displayed ATS-ready score",
+      );
+      assert.match(
+        await templateDialog
+          .frameLocator('iframe[title="ATS-Ready Resume Preview"]')
+          .locator("body")
+          .innerText(),
+        /Additional Experience & Skills.*Mentored five engineers/s,
+        "the ATS-ready comparison must include only the user's supplied additional experience",
+      );
       await templateDialog
         .getByRole("button", { name: "Go to template step 3: Enrich Exp" })
         .click();

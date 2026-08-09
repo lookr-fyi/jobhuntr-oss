@@ -6040,7 +6040,7 @@ function Resume({ state, reload, mode = "resume" }) {
     setTemplateDialog({
       id: template?.id || null,
       step: 1,
-      completedSteps: template ? [1, 2, 3, 4] : [],
+      completedSteps: template ? [1, 2, 3] : [],
       editorView: "split",
       name:
         template?.name ||
@@ -6136,30 +6136,41 @@ function Resume({ state, reload, mode = "resume" }) {
       });
       return;
     }
-    const scoreResult = await api("/api/resume/score", {
-      method: "POST",
-      body: JSON.stringify({
-        resumeText: [
-          templateDialog.editedResume,
-          templateDialog.additionalExperience,
-        ]
-          .filter(Boolean)
-          .join("\n\n"),
-        jobId: templateDialog.testJobId,
-        job: {
-          title:
-            state.jobs.find((job) => job.id === templateDialog.testJobId)
-              ?.title || "Target role",
-          description: templateDialog.jobDescription,
-          tags: [],
-        },
-      }),
-    });
+    const testJob = {
+      title:
+        state.jobs.find((job) => job.id === templateDialog.testJobId)?.title ||
+        "Target role",
+      description: templateDialog.jobDescription,
+      tags: [],
+    };
+    const score = (resumeText) =>
+      api("/api/resume/score", {
+        method: "POST",
+        body: JSON.stringify({
+          resumeText,
+          jobId: templateDialog.testJobId,
+          job: testJob,
+        }),
+      });
+    const optimizedResume = [
+      templateDialog.editedResume,
+      templateDialog.additionalExperience
+        ? `Additional Experience & Skills\n${templateDialog.additionalExperience}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    const [initialScoreResult, scoreResult] = await Promise.all([
+      score(templateDialog.originalResume),
+      score(optimizedResume),
+    ]);
     setTemplateDialog({
       ...templateDialog,
       completedSteps: [
         ...new Set([...(templateDialog.completedSteps || []), 4]),
       ],
+      initialScoreResult,
+      optimizedResume,
       scoreResult,
       step: 5,
     });
@@ -7810,15 +7821,55 @@ function Resume({ state, reload, mode = "resume" }) {
             )}
             {templateDialog.step === 5 && (
               <div className="v2-template-step v2-template-result">
-                <div>
+                <header>
                   <h4>ATS Optimization Complete</h4>
                   <p>
-                    Your reusable template is ready for job-specific resumes.
+                    Review the original and ATS-ready versions before completing
+                    your reusable template.
                   </p>
+                </header>
+                <div className="v2-template-score-comparison">
+                  <div>
+                    <strong>
+                      {templateDialog.initialScoreResult?.score ?? 0}
+                    </strong>
+                    <span>Original ATS score</span>
+                  </div>
+                  <i aria-hidden="true">→</i>
+                  <div className="optimized">
+                    <strong>{templateDialog.scoreResult?.score ?? 0}</strong>
+                    <span>ATS-ready score</span>
+                  </div>
+                  <b>
+                    {Math.max(
+                      0,
+                      (templateDialog.scoreResult?.score ?? 0) -
+                        (templateDialog.initialScoreResult?.score ?? 0),
+                    )}
+                    -point improvement
+                  </b>
                 </div>
-                <div className="v2-template-score">
-                  <strong>{templateDialog.scoreResult?.score ?? 0}</strong>
-                  <span>ATS match score</span>
+                <div className="v2-template-resume-comparison">
+                  <section>
+                    <b>Original Resume</b>
+                    <iframe
+                      title="Original Resume Preview"
+                      sandbox=""
+                      srcDoc={resumeEditorPreviewDocument(
+                        templateDialog.originalResume,
+                      )}
+                    />
+                  </section>
+                  <section>
+                    <b>ATS-Ready Resume</b>
+                    <iframe
+                      title="ATS-Ready Resume Preview"
+                      sandbox=""
+                      srcDoc={resumeEditorPreviewDocument(
+                        templateDialog.optimizedResume,
+                      )}
+                    />
+                  </section>
                 </div>
                 <div className="v2-template-result-grid">
                   <div>
