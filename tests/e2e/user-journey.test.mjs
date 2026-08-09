@@ -1884,6 +1884,17 @@ test(
       const mobile = await mobileContext.newPage();
       await mobile.goto(baseUrl);
       await mobile.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await mobile.setViewportSize({ width: 1024, height: 844 });
+      await mobile
+        .locator(".v2-sidebar")
+        .hover({ position: { x: 30, y: 100 } });
+      await mobile.locator(".v2-sidebar.expanded").waitFor();
+      await mobile.setViewportSize({ width: 390, height: 844 });
+      await mobile.locator(".v2-sidebar.collapsed").waitFor();
+      assert.ok(
+        (await mobile.locator(".v2-nav button").count()) >= 12,
+        "resizing an expanded desktop sidebar must preserve every mobile navigation destination",
+      );
       const navigationBox = await mobile.locator(".v2-sidebar").boundingBox();
       assert.ok(navigationBox, "mobile navigation should be rendered");
       assert.ok(

@@ -651,6 +651,17 @@ function App() {
     };
   }, [userMenuOpen]);
   useEffect(() => {
+    const mobileNavigation = window.matchMedia("(max-width: 760px)");
+    const collapseDesktopNavigation = (event) => {
+      if (!event.matches) return;
+      setSidebarHovered(false);
+      setUserMenuOpen(false);
+    };
+    mobileNavigation.addEventListener("change", collapseDesktopNavigation);
+    return () =>
+      mobileNavigation.removeEventListener("change", collapseDesktopNavigation);
+  }, []);
+  useEffect(() => {
     localStorage.setItem("jobhuntr-active-route", tab);
     const nextHash = `#/${tab}`;
     const currentRoute = window.location.hash
