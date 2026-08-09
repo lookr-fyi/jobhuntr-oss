@@ -323,6 +323,20 @@ test("invalid jobs return a safe 400 response", async () => {
   });
   assert.equal(unsafeUrl.res.status, 400);
   assert.equal(unsafeUrl.body.error, "Invalid request");
+
+  const state = (await req("/api/state")).body;
+  const originalStatus = state.jobs[0].status;
+  const invalidStatus = await req(`/api/jobs/${state.jobs[0].id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "definitely-not-a-stage" }),
+  });
+  assert.equal(invalidStatus.res.status, 400);
+  assert.equal(
+    (await req("/api/state")).body.jobs.find(
+      (job) => job.id === state.jobs[0].id,
+    ).status,
+    originalStatus,
+  );
 });
 
 test("submission queue enforces review before local submission", async () => {

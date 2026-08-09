@@ -56,6 +56,18 @@ const isSafeHttpUrl = (value) => {
     return false;
   }
 };
+const JobStatusSchema = z.enum([
+  "saved",
+  "interested",
+  "submitting",
+  "applied",
+  "interview",
+  "offer",
+  "rejected",
+  "failed",
+  "skipped",
+  "removed",
+]);
 
 const ProfileSchema = z.object({
   onboarded: z.boolean().optional(),
@@ -105,7 +117,7 @@ const JobSchema = z.object({
   salary: z.string().max(300).optional().default(""),
   description: z.string().max(100000).optional().default(""),
   tags: z.array(z.string().max(200)).max(100).optional().default([]),
-  status: z.string().max(50).optional().default("saved"),
+  status: JobStatusSchema.optional().default("saved"),
 });
 const JobPatchSchema = z.object({
   company: z.string().trim().min(1).max(300).optional(),
@@ -121,7 +133,7 @@ const JobPatchSchema = z.object({
   salary: z.string().max(300).optional(),
   description: z.string().max(100000).optional(),
   tags: z.array(z.string().max(200)).max(100).optional(),
-  status: z.string().max(50).optional(),
+  status: JobStatusSchema.optional(),
   interviewRounds: z
     .array(
       z.object({
