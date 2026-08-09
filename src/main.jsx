@@ -46,6 +46,7 @@ import {
   LayoutTemplate,
   ListPlus,
   MoreHorizontal,
+  Pencil,
   X,
   createLucideIcon,
 } from "lucide-react";
@@ -5897,6 +5898,9 @@ const normalizeCoverLetterWizard = (value) => {
     step: value.step,
     templateId: value.templateId.slice(0, 200),
     templateName: value.templateName.slice(0, 300),
+    documentName:
+      text("documentName", 300) ||
+      `Cover Letter Template - ${new Date().toLocaleDateString()}`,
     templateContent: value.templateContent.slice(0, 100000),
     resumeId: text("resumeId", 200),
     atsTemplateId: text("atsTemplateId", 200),
@@ -5937,6 +5941,8 @@ function Resume({ state, reload, mode = "resume" }) {
       return null;
     }
   });
+  const [editingLetterName, setEditingLetterName] = useState(false);
+  const [letterNameDraft, setLetterNameDraft] = useState("");
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
@@ -6194,6 +6200,7 @@ function Resume({ state, reload, mode = "resume" }) {
       step: 1,
       templateId: COVER_LETTER_TEMPLATES[0].id,
       templateName: COVER_LETTER_TEMPLATES[0].name,
+      documentName: `Cover Letter Template - ${new Date().toLocaleDateString()}`,
       templateContent: COVER_LETTER_TEMPLATES[0].content,
       resumeId:
         state.resumes.find((item) => isUsableResumeText(item.content))?.id ||
@@ -6279,8 +6286,44 @@ function Resume({ state, reload, mode = "resume" }) {
             >
               ←
             </button>
-            <div>
-              <h2>Cover Letter Template</h2>
+            <div className="v2-cover-wizard-title">
+              {editingLetterName ? (
+                <div className="v2-cover-name-editor">
+                  <input
+                    autoFocus
+                    aria-label="Cover letter template name"
+                    maxLength={300}
+                    value={letterNameDraft}
+                    onChange={(event) => setLetterNameDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") event.currentTarget.blur();
+                      if (event.key === "Escape") {
+                        setLetterNameDraft(letterWizard.documentName);
+                        setEditingLetterName(false);
+                      }
+                    }}
+                    onBlur={() => {
+                      const documentName = letterNameDraft.trim();
+                      if (documentName)
+                        setLetterWizard({ ...letterWizard, documentName });
+                      setEditingLetterName(false);
+                    }}
+                  />
+                  <Check size={18} aria-hidden="true" />
+                </div>
+              ) : (
+                <button
+                  className="v2-cover-name-button"
+                  aria-label="Edit cover letter template name"
+                  onClick={() => {
+                    setLetterNameDraft(letterWizard.documentName);
+                    setEditingLetterName(true);
+                  }}
+                >
+                  <h2>{letterWizard.documentName}</h2>
+                  <Pencil size={16} aria-hidden="true" />
+                </button>
+              )}
               <p>Build a reusable, job-specific letter in five guided steps.</p>
             </div>
           </div>

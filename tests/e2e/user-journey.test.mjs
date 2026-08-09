@@ -1863,6 +1863,40 @@ test(
       );
       await page.getByRole("button", { name: "Create Cover Letter" }).click();
       await page.getByRole("heading", { name: "Choose a Template" }).waitFor();
+      await page
+        .getByRole("button", { name: "Edit cover letter template name" })
+        .click();
+      await page
+        .getByLabel("Cover letter template name")
+        .fill("E2E Product Cover Letter");
+      await page.getByLabel("Cover letter template name").press("Enter");
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "E2E Product Cover Letter" })
+        .waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-cover-wizard").evaluate((wizard) => {
+          const bounds = wizard.getBoundingClientRect();
+          const progress = wizard
+            .querySelector(".v2-wizard-progress")
+            .getBoundingClientRect();
+          const footer = wizard
+            .querySelector(".v2-cover-step-actions")
+            .getBoundingClientRect();
+          return {
+            bounds: [bounds.x, bounds.y, bounds.width, bounds.height],
+            progressInFooter:
+              progress.top >= footer.top && progress.bottom <= footer.bottom,
+            footerVisible: footer.bottom <= innerHeight,
+          };
+        }),
+        {
+          bounds: [64, 0, 1376, 1000],
+          progressInFooter: true,
+          footerVisible: true,
+        },
+        "the cover-letter wizard should use v2's full route and always-visible navigation footer",
+      );
       await assertAccessible(page, "Cover Letter wizard");
       await page.getByRole("button", { name: "Select Modern" }).click();
       await page.getByRole("button", { name: "Continue" }).click();

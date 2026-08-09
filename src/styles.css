@@ -8637,8 +8637,58 @@ main > header.integrated-page-header {
   padding: 0;
 }
 .v2-cover-wizard-head h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+}
+.v2-cover-wizard-title {
+  min-width: 0;
+}
+.v2-cover-name-button {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 3px;
-  font-size: 24px;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+.v2-cover-name-button:hover {
+  color: #2563eb;
+  background: transparent;
+}
+.v2-cover-name-button h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-cover-name-button svg {
+  flex: none;
+  color: #64748b;
+}
+.v2-cover-name-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.v2-cover-name-editor input {
+  width: min(540px, calc(100vw - 190px));
+  min-width: 300px;
+  padding: 4px 8px;
+  border: 2px solid #2563eb;
+  border-radius: 6px;
+  color: #0f172a;
+  background: #fff;
+  font: inherit;
+  font-size: 32px;
+  font-weight: 800;
+}
+.v2-cover-name-editor svg {
+  color: #16a34a;
 }
 .v2-cover-wizard-head p {
   margin: 0;
@@ -9157,6 +9207,56 @@ main > header.integrated-page-header {
   justify-content: space-between;
   margin-top: 32px;
 }
+@media (min-width: 1100px) {
+  .v2-cover-wizard {
+    position: fixed;
+    inset: 0 0 0 64px;
+    /* The route owns the workspace while open; keep global hunt controls from
+       covering its persistent Previous/Continue footer. */
+    z-index: 110;
+    display: flex;
+    height: auto;
+    min-height: 0;
+    flex-direction: column;
+    margin: 0;
+    padding-bottom: 72px;
+    overflow: hidden;
+  }
+  .v2-cover-wizard-head {
+    flex: none;
+  }
+  .v2-cover-wizard > .v2-wizard-progress {
+    position: absolute;
+    z-index: 3;
+    bottom: 8px;
+    left: 50%;
+    width: 680px;
+    margin: 0;
+    padding: 0;
+    transform: translateX(-50%);
+  }
+  .v2-cover-step {
+    width: min(1040px, calc(100% - 48px));
+    max-width: none;
+    min-height: 0;
+    flex: 1;
+    margin: 20px auto 0;
+    overflow: auto;
+  }
+  .v2-cover-step-actions {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    min-height: 72px;
+    align-items: center;
+    margin: 0;
+    padding: 14px 24px;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+  }
+}
 @media (max-width: 900px) {
   .v2-cover-layout {
     grid-template-columns: 1fr;
@@ -9181,6 +9281,11 @@ main > header.integrated-page-header {
   }
 }
 @media (max-width: 600px) {
+  .v2-cover-name-editor input {
+    width: calc(100vw - 150px);
+    min-width: 0;
+    font-size: 18px;
+  }
   .v2-template-grid {
     grid-template-columns: 1fr;
   }
