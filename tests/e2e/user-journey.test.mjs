@@ -2848,6 +2848,34 @@ test(
       assert.equal(new URL(page.url()).hash, "#/settings");
       await page.reload();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
+      assert.deepEqual(
+        await page.evaluate(() => {
+          const styles = (selector) =>
+            window.getComputedStyle(document.querySelector(selector));
+          return {
+            page: [
+              styles(".v2-settings-page").maxWidth,
+              styles(".v2-settings-page").padding,
+            ],
+            tabs: [
+              styles(".v2-user-tabs button").fontSize,
+              styles(".v2-user-tabs button").fontWeight,
+            ],
+            avatar: [
+              styles(".v2-user-avatar-large").width,
+              styles(".v2-user-avatar-large").backgroundColor,
+            ],
+            identity: styles(".v2-user-identity").textAlign,
+          };
+        }),
+        {
+          page: ["1200px", "24px"],
+          tabs: ["14px", "600"],
+          avatar: ["80px", "rgb(248, 250, 252)"],
+          identity: "center",
+        },
+        "User Center should retain the authoritative v2 profile proportions",
+      );
       await assertNamedFormControls(page, "User Center profile");
       await page.getByLabel("First name").fill("E2E");
       await page.getByLabel("Last name").fill("Hunter");
