@@ -1984,34 +1984,93 @@ button:disabled {
   padding: 8px 24px 48px;
 }
 .v2-gigs-intro {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+}
+section.gigs-page {
+  box-sizing: border-box;
+  max-width: 1200px;
+  padding: 20px;
+}
+section.gigs-page .v2-gigs-intro h2 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+section.gigs-page .v2-gigs-intro p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.5;
 }
 .v2-available-gigs {
   margin-bottom: 34px;
 }
 .v2-gig-search {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+}
+.v2-gig-search,
+.v2-my-gig-search {
+  gap: 8px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9999px;
+  background: #fff;
+}
+.v2-gig-search input,
+.v2-my-gig-search input {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 16px;
 }
 .v2-gig-campaigns {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 16px;
 }
 .v2-gig-campaigns article {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
   padding: 20px;
 }
-.v2-gig-campaigns article > .row > strong {
-  color: #15803d;
+.v2-gig-campaign-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.v2-gig-campaign-head > div {
+  min-width: 0;
+}
+.v2-gig-campaign-head > strong {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #d1fae5;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 600;
 }
 .v2-gig-campaigns h3 {
-  margin: 16px 0 4px;
-  font-size: 17px;
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.v2-gig-campaign-head small {
+  color: #6b7280;
+  font-size: 15px;
 }
 .v2-gig-campaigns p {
-  min-height: 60px;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.55;
+  min-height: 48px;
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.5;
 }
 .v2-gig-campaigns .chips {
   min-height: 38px;
@@ -2021,6 +2080,13 @@ button:disabled {
   background: #f1f5f9;
   color: #475569;
   font-size: 11px;
+}
+.v2-gig-campaigns article > button {
+  align-self: flex-end;
+  margin-left: auto;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
 }
 .v2-gig-partner {
   display: grid;
@@ -2039,6 +2105,10 @@ button:disabled {
 }
 .v2-gigs-section-title h3 {
   margin: 0 0 4px;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.25;
 }
 .v2-gigs-section-title p {
   margin: 0;
@@ -2047,6 +2117,16 @@ button:disabled {
 }
 .v2-gig-view-toggle {
   flex: 0 0 auto;
+}
+.v2-gigs-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.v2-gigs-section-actions > button {
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
 }
 .v2-gig-view-toggle button {
   padding: 7px 13px;

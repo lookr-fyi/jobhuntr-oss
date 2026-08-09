@@ -9176,9 +9176,6 @@ function Gigs({ state, reload }) {
             fast earnings, typically completed within a few days.
           </p>
         </div>
-        <button onClick={() => setShowForm(!showForm)}>
-          <Plus size={16} /> Add gig
-        </button>
       </div>
       <div className="v2-available-gigs">
         <div className="v2-gigs-section-title">
@@ -9202,12 +9199,13 @@ function Gigs({ state, reload }) {
         <div className="v2-gig-campaigns">
           {availableGigs.map((item) => (
             <article className="card" key={item.title}>
-              <div className="row">
-                <span className="v2-gig-partner">{item.client[0]}</span>
-                <strong>{money(item.budget)}</strong>
+              <div className="v2-gig-campaign-head">
+                <div>
+                  <h3>{item.title}</h3>
+                  <small>by {item.client}</small>
+                </div>
+                <strong>{money(item.budget)}+ Cash</strong>
               </div>
-              <h3>{item.title}</h3>
-              <small>by {item.client}</small>
               <p>{item.description}</p>
               <div className="chips">
                 {item.skills.map((skill) => (
@@ -9299,19 +9297,24 @@ function Gigs({ state, reload }) {
             locally.
           </p>
         </div>
-        <div className="segmented v2-gig-view-toggle">
-          <button
-            className={myView === "table" ? "active" : ""}
-            onClick={() => setMyView("table")}
-          >
-            List
+        <div className="v2-gigs-section-actions">
+          <button className="secondary" onClick={() => setShowForm(!showForm)}>
+            <Plus size={16} /> Add gig
           </button>
-          <button
-            className={myView === "board" ? "active" : ""}
-            onClick={() => setMyView("board")}
-          >
-            Board
-          </button>
+          <div className="segmented v2-gig-view-toggle">
+            <button
+              className={myView === "table" ? "active" : ""}
+              onClick={() => setMyView("table")}
+            >
+              List
+            </button>
+            <button
+              className={myView === "board" ? "active" : ""}
+              onClick={() => setMyView("board")}
+            >
+              Board
+            </button>
+          </div>
         </div>
       </div>
       <div className="gig-metrics">

@@ -2679,6 +2679,51 @@ test(
         .waitFor({ state: "hidden" });
 
       await page.getByRole("button", { name: "Gigs" }).click();
+      await page.getByRole("heading", { name: "Gigs", exact: true }).waitFor();
+      assert.deepEqual(
+        await page.locator("section.gigs-page").evaluate((root) => {
+          const style = (selector) =>
+            getComputedStyle(root.querySelector(selector));
+          const heading = style(".v2-gigs-intro h2");
+          const subtitle = style(".v2-gigs-intro p");
+          const sectionHeading = style(".v2-gigs-section-title h3");
+          const search = style(".v2-gig-search");
+          const searchInput = style(".v2-gig-search input");
+          const card = style(".v2-gig-campaigns article");
+          const campaignTitle = style(".v2-gig-campaign-head h3");
+          const earning = style(".v2-gig-campaign-head > strong");
+          const apply = style(".v2-gig-campaigns article > button");
+          return {
+            root: [
+              getComputedStyle(root).maxWidth,
+              getComputedStyle(root).padding,
+            ],
+            heading: [heading.fontSize, heading.fontWeight],
+            subtitle: [subtitle.fontSize, subtitle.color],
+            sectionHeading: [
+              sectionHeading.fontSize,
+              sectionHeading.fontWeight,
+            ],
+            search: [search.padding, search.borderRadius, searchInput.fontSize],
+            card: [card.padding, card.borderRadius],
+            campaignTitle: [campaignTitle.fontSize, campaignTitle.fontWeight],
+            earning: [earning.padding, earning.fontSize],
+            apply: [apply.padding, apply.fontSize, apply.fontWeight],
+          };
+        }),
+        {
+          root: ["1200px", "20px"],
+          heading: ["26px", "600"],
+          subtitle: ["16px", "rgb(75, 85, 99)"],
+          sectionHeading: ["22px", "500"],
+          search: ["12px 16px", "9999px", "16px"],
+          card: ["20px", "12px"],
+          campaignTitle: ["20px", "500"],
+          earning: ["4px 8px", "15px"],
+          apply: ["12px 20px", "16px", "500"],
+        },
+        "Gigs should retain the authoritative v2 page, search, and campaign geometry",
+      );
       await assertNamedFormControls(page, "Gigs");
       assert.equal(
         await page.getByText("Invalid Date", { exact: true }).count(),
