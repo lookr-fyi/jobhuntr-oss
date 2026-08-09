@@ -2446,6 +2446,11 @@ test(
       );
       await page.getByTitle("Saved Cover Letter Preview").waitFor();
       assert.equal(
+        await page.getByRole("button", { name: "Save Changes" }).isDisabled(),
+        true,
+        "a freshly opened saved letter should not offer a redundant save",
+      );
+      assert.equal(
         await page
           .getByTitle("Saved Cover Letter Preview")
           .evaluate((frame) => frame.getAttribute("sandbox")),
@@ -2471,6 +2476,17 @@ test(
         /font:15px\/1\.7 'Helvetica Neue', Arial, sans-serif/,
         "the saved editor should retain its Modern template during live editing",
       );
+      assert.equal(
+        await page.getByRole("button", { name: "Save Changes" }).isEnabled(),
+        true,
+        "editing the saved letter should expose its dirty state",
+      );
+      await page.getByRole("button", { name: "Back to Cover Letters" }).click();
+      await page
+        .getByRole("alertdialog", { name: "Discard unsaved changes?" })
+        .waitFor();
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await page.getByTitle("Saved Cover Letter Preview").waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -2480,7 +2496,16 @@ test(
         ),
         page.getByRole("button", { name: "Save Changes" }).click(),
       ]);
+      assert.equal(
+        await page.getByRole("button", { name: "Save Changes" }).isDisabled(),
+        true,
+        "a successful save should establish the new clean baseline",
+      );
+      await page
+        .getByLabel("Cover letter content")
+        .fill("This draft should be discarded rather than persisted.");
       await page.getByRole("button", { name: "Back to Cover Letters" }).click();
+      await page.getByRole("button", { name: "Discard Changes" }).click();
       await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
 
       await Promise.all(

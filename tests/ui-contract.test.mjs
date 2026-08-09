@@ -523,6 +523,13 @@ test("saved cover letters retain a safe themed live editing workspace", async ()
     styles,
     /@media \(max-width: 900px\)[\s\S]*?\.v2-letter-editor-split/,
   );
+  assert.match(source, /const \[savedLetterSnapshot, setSavedLetterSnapshot\]/);
+  assert.match(source, /const hasUnsavedLetterChanges = Boolean/);
+  assert.match(source, /title="Discard unsaved changes\?"/);
+  assert.match(
+    source,
+    /disabled=\{savingLetter \|\| !hasUnsavedLetterChanges\}/,
+  );
 });
 
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {

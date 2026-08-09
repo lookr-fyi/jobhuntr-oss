@@ -6503,6 +6503,8 @@ function Resume({ state, reload, mode = "resume" }) {
   const [letter, setLetter] = useState(
     mode === "cover-letter" ? null : state.coverLetters[0] || null,
   );
+  const [savedLetterSnapshot, setSavedLetterSnapshot] = useState(null);
+  const [confirmDiscardLetter, setConfirmDiscardLetter] = useState(false);
   const [letterWizard, setLetterWizard] = useState(() => {
     if (mode !== "cover-letter") return null;
     try {
@@ -6952,6 +6954,7 @@ function Resume({ state, reload, mode = "resume" }) {
         body: JSON.stringify({ title: letter.title, body: letter.body }),
       });
       setLetter(saved);
+      setSavedLetterSnapshot({ title: saved.title, body: saved.body });
       await reload();
     } catch {
       // Keep unsaved edits in place so the user can retry.
@@ -6959,6 +6962,26 @@ function Resume({ state, reload, mode = "resume" }) {
       savingLetterRef.current = false;
       setSavingLetter(false);
     }
+  };
+  const editSavedLetter = (item) => {
+    setLetter(item);
+    setSavedLetterSnapshot({ title: item.title, body: item.body });
+    setConfirmDiscardLetter(false);
+  };
+  const hasUnsavedLetterChanges = Boolean(
+    letter &&
+    savedLetterSnapshot &&
+    (letter.title !== savedLetterSnapshot.title ||
+      letter.body !== savedLetterSnapshot.body),
+  );
+  const closeSavedLetter = () => {
+    if (savingLetterRef.current) return;
+    if (hasUnsavedLetterChanges) {
+      setConfirmDiscardLetter(true);
+      return;
+    }
+    setLetter(null);
+    setSavedLetterSnapshot(null);
   };
   if (mode === "cover-letter") {
     if (letterWizard) {
@@ -7734,6 +7757,18 @@ function Resume({ state, reload, mode = "resume" }) {
     return (
       <section className="v2-document-page">
         <ConfirmDialog
+          open={confirmDiscardLetter}
+          title="Discard unsaved changes?"
+          description="Your latest cover letter edits have not been saved. Discard them and return to Cover Letters?"
+          confirmLabel="Discard Changes"
+          busyLabel="Discarding…"
+          onClose={() => setConfirmDiscardLetter(false)}
+          onConfirm={() => {
+            setLetter(null);
+            setSavedLetterSnapshot(null);
+          }}
+        />
+        <ConfirmDialog
           open={deleteTarget?.type === "letter"}
           title="Delete cover letter?"
           description={
@@ -7768,7 +7803,8 @@ function Resume({ state, reload, mode = "resume" }) {
               <>
                 <button
                   className="secondary v2-cover-back-to-list"
-                  onClick={() => setLetter(null)}
+                  disabled={savingLetter}
+                  onClick={closeSavedLetter}
                 >
                   <ChevronLeft size={16} /> Back to Cover Letters
                 </button>
@@ -7804,7 +7840,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <button
                     className="v2-letter-card-preview"
                     aria-label={`Edit ${item.title}`}
-                    onClick={() => setLetter(item)}
+                    onClick={() => editSavedLetter(item)}
                   >
                     <span className="v2-letter-status" aria-hidden="true">
                       Ready
@@ -7832,7 +7868,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     </span>
                   </button>
                   <footer>
-                    <button onClick={() => setLetter(item)}>
+                    <button onClick={() => editSavedLetter(item)}>
                       <b>{item.title}</b>
                       <small>
                         <Calendar size={13} />{" "}
@@ -7890,7 +7926,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     <Download size={15} /> Preview PDF
                   </a>
                   <button
-                    disabled={savingLetter}
+                    disabled={savingLetter || !hasUnsavedLetterChanges}
                     aria-busy={savingLetter}
                     onClick={saveLetter}
                   >
