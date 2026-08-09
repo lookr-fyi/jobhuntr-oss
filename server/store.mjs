@@ -120,6 +120,7 @@ export function emptyDb() {
     agentRuns: [],
     infiniteHunt: {
       enabled: false,
+      generation: null,
       intervalMinutes: 60,
       options: null,
       startedAt: null,
@@ -301,6 +302,9 @@ function migrate(input) {
     ? db.infiniteHunt
     : emptyDb().infiniteHunt;
   db.infiniteHunt.enabled = Boolean(db.infiniteHunt.enabled);
+  db.infiniteHunt.generation = String(
+    db.infiniteHunt.generation || db.infiniteHunt.startedAt || "",
+  ).slice(0, 200);
   db.infiniteHunt.intervalMinutes = Math.min(
     1440,
     Math.max(1, Number(db.infiniteHunt.intervalMinutes) || 60),

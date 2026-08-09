@@ -394,6 +394,55 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
   await mutate((db) => {
     db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
   });
+  let releaseDelayedRun;
+  let observeDelayedRun;
+  const delayedRunObserved = new Promise(
+    (resolve) => (observeDelayedRun = resolve),
+  );
+  const delayedRunReleased = new Promise(
+    (resolve) => (releaseDelayedRun = resolve),
+  );
+  const delayedServer = http.createServer(async (_request, response) => {
+    observeDelayedRun();
+    await delayedRunReleased;
+    response.writeHead(503, { "Content-Type": "application/json" });
+    response.end(JSON.stringify({ error: "Delayed old generation failed" }));
+  });
+  await new Promise((resolve) => delayedServer.listen(0, "127.0.0.1", resolve));
+  const delayedRun = runScheduledHunt(
+    `http://127.0.0.1:${delayedServer.address().port}`,
+  );
+  await delayedRunObserved;
+  const restartedDuringRun = await req("/api/infinite-hunt/start", {
+    method: "POST",
+    body: JSON.stringify({
+      intervalMinutes: 45,
+      options: {
+        q: "new schedule generation",
+        minFit: 70,
+        workflows: ["indeed"],
+      },
+    }),
+  });
+  releaseDelayedRun();
+  await delayedRun;
+  await new Promise((resolve, reject) =>
+    delayedServer.close((error) => (error ? reject(error) : resolve())),
+  );
+  const afterDelayedOldRun = (await req("/api/state")).body.infiniteHunt;
+  assert.equal(
+    afterDelayedOldRun.generation,
+    restartedDuringRun.body.generation,
+  );
+  assert.equal(afterDelayedOldRun.options.q, "new schedule generation");
+  assert.equal(
+    afterDelayedOldRun.lastError,
+    "",
+    "an old in-flight failure must not overwrite a restarted schedule",
+  );
+  await mutate((db) => {
+    db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
+  });
   await runScheduledHunt("http://127.0.0.1:1");
   const afterFailedScheduledRun = (await req("/api/state")).body;
   assert.equal(afterFailedScheduledRun.infiniteHunt.enabled, true);

@@ -1936,6 +1936,7 @@ app.post("/api/infinite-hunt/start", async (req, res) => {
     const startedAt = timestamp();
     db.infiniteHunt = {
       enabled: true,
+      generation: nanoid(),
       intervalMinutes: parsed.data.intervalMinutes,
       options,
       startedAt,
@@ -2405,6 +2406,7 @@ export const claimScheduledHunt = async (observedSchedule) => {
     const claim = {
       options: structuredClone(live.options),
       dueAt: live.nextRunAt,
+      generation: live.generation,
     };
     live.nextRunAt = new Date(
       Date.now() + live.intervalMinutes * 60_000,
@@ -2418,6 +2420,7 @@ export const runScheduledHunt = async (
 ) => {
   if (schedulerBusy) return;
   schedulerBusy = true;
+  let claim = null;
   try {
     const db = await readDb();
     const schedule = db.infiniteHunt;
@@ -2428,7 +2431,7 @@ export const runScheduledHunt = async (
       Date.parse(schedule.nextRunAt) > Date.now()
     )
       return;
-    const claim = await claimScheduledHunt(schedule);
+    claim = await claimScheduledHunt(schedule);
     if (!claim) return;
     const response = await fetch(`${baseUrl}/api/agent-runs/start`, {
       method: "POST",
@@ -2440,13 +2443,21 @@ export const runScheduledHunt = async (
       throw new Error(detail.error || `Hunt failed with ${response.status}`);
     }
     await mutate((current) => {
-      if (!current.infiniteHunt) return;
+      if (
+        !current.infiniteHunt?.enabled ||
+        current.infiniteHunt.generation !== claim.generation
+      )
+        return;
       current.infiniteHunt.lastRunAt = timestamp();
       current.infiniteHunt.lastError = "";
     });
   } catch (error) {
     await mutate((db) => {
-      if (!db.infiniteHunt) return;
+      if (
+        !db.infiniteHunt?.enabled ||
+        (claim && db.infiniteHunt.generation !== claim.generation)
+      )
+        return;
       db.infiniteHunt.lastError = safeText(error.message, 500);
       auditEvent(db, "agent", "Infinite hunt run failed safely.");
     }).catch(() => {});
