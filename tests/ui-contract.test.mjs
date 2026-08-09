@@ -415,6 +415,16 @@ test("Outreach collection and recording cannot duplicate or dismiss in-flight wo
   );
   assert.match(outreach, /collecting \? "Collecting…" : "Collect contacts"/);
   assert.match(outreach, /connecting \? "Recording…" : "Mark as outreached"/);
+  const bulkRecord = outreach.slice(
+    outreach.indexOf("const markSelectedOutreached = async"),
+    outreach.indexOf(
+      "return (",
+      outreach.indexOf("const markSelectedOutreached = async"),
+    ),
+  );
+  assert.match(bulkRecord, /api\("\/api\/outreach\/bulk-status"/);
+  assert.match(bulkRecord, /ids: \[\.\.\.selectedIds\], status: "sent"/);
+  assert.doesNotMatch(bulkRecord, /Promise\.all/);
 });
 
 test("Career Coach generation actions are single-flight and retryable", async () => {

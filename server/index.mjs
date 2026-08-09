@@ -1846,6 +1846,36 @@ app.delete("/api/profile-audits/:id", async (req, res) => {
   });
   res.status(removed ? 204 : 404).end();
 });
+app.post("/api/outreach/bulk-status", async (req, res) => {
+  const parsed = z
+    .object({
+      ids: z.array(z.string().min(1).max(80)).min(1).max(500),
+      status: z.enum(["draft", "sent", "replied", "archived"]),
+    })
+    .parse(req.body);
+  const ids = [...new Set(parsed.ids)];
+  const result = await mutate((db) => {
+    const drafts = ids.map((id) =>
+      db.outreachDrafts.find((draft) => draft.id === id),
+    );
+    if (drafts.some((draft) => !draft)) return { missing: true };
+    const updatedAt = timestamp();
+    for (const draft of drafts) {
+      draft.status = parsed.status;
+      draft.updatedAt = updatedAt;
+    }
+    auditEvent(
+      db,
+      "outreach",
+      `Marked ${drafts.length} outreach contact${drafts.length === 1 ? "" : "s"} as ${parsed.status}.`,
+    );
+    return { count: drafts.length, status: parsed.status };
+  });
+  if (result.missing)
+    return res.status(404).json({ error: "Outreach draft not found" });
+  res.json(result);
+});
+
 app.patch("/api/outreach/:id", async (req, res) => {
   const draft = await mutate((db) => {
     const item = db.outreachDrafts.find((x) => x.id === req.params.id);

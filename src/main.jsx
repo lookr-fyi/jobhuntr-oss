@@ -8788,14 +8788,10 @@ function OutreachPage({ state, reload }) {
     connectingRef.current = true;
     setConnecting(true);
     try {
-      await Promise.all(
-        [...selectedIds].map((id) =>
-          api(`/api/outreach/${id}`, {
-            method: "PATCH",
-            body: JSON.stringify({ status: "sent" }),
-          }),
-        ),
-      );
+      await api("/api/outreach/bulk-status", {
+        method: "POST",
+        body: JSON.stringify({ ids: [...selectedIds], status: "sent" }),
+      });
       setSelectedIds(new Set());
       setConnectOpen(false);
       setDraft(null);

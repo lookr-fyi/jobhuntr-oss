@@ -1735,6 +1735,53 @@ test("outreach drafts persist edits and manual delivery status", async () => {
   );
 });
 
+test("bulk outreach recording is atomic when any contact is invalid", async () => {
+  const ids = [];
+  for (const suffix of ["one", "two"]) {
+    const job = await req("/api/jobs", {
+      method: "POST",
+      body: JSON.stringify({
+        company: "Atomic Outreach Co",
+        title: `Engineer ${suffix}`,
+        url: `https://atomic-outreach.example/jobs/${suffix}`,
+      }),
+    });
+    const created = await req("/api/outreach/draft", {
+      method: "POST",
+      body: JSON.stringify({ jobId: job.body.id }),
+    });
+    ids.push(created.body.id);
+  }
+  assert.equal(new Set(ids).size, 2);
+
+  const rejected = await req("/api/outreach/bulk-status", {
+    method: "POST",
+    body: JSON.stringify({ ids: [...ids, "missing-contact"], status: "sent" }),
+  });
+  assert.equal(rejected.res.status, 404);
+  let workspace = (await req("/api/state")).body;
+  assert.deepEqual(
+    ids.map(
+      (id) => workspace.outreachDrafts.find((draft) => draft.id === id).status,
+    ),
+    ["draft", "draft"],
+  );
+
+  const recorded = await req("/api/outreach/bulk-status", {
+    method: "POST",
+    body: JSON.stringify({ ids, status: "sent" }),
+  });
+  assert.equal(recorded.res.status, 200);
+  assert.equal(recorded.body.count, 2);
+  workspace = (await req("/api/state")).body;
+  assert.deepEqual(
+    ids.map(
+      (id) => workspace.outreachDrafts.find((draft) => draft.id === id).status,
+    ),
+    ["sent", "sent"],
+  );
+});
+
 test("professional profile audits stay local, persist history, and validate limits", async () => {
   const created = await req("/api/profile-audits", {
     method: "POST",
