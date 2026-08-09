@@ -3822,20 +3822,45 @@ function TrackerApplicationInsights({ job, submission, profile }) {
   );
 }
 function InterviewRounds({ job, reload }) {
-  const [editingId, setEditingId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [number, setNumber] = useState("");
-  const [notes, setNotes] = useState("");
+  const draftKey = `jobhuntr-interview-round-draft:${job.id}`;
+  const [initialDraft] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(draftKey) || "null");
+      if (!saved || saved.jobId !== job.id) return null;
+      return {
+        editingId: typeof saved.editingId === "string" ? saved.editingId : null,
+        number: String(saved.number || "").slice(0, 3),
+        notes: String(saved.notes || "").slice(0, 10_000),
+      };
+    } catch {
+      localStorage.removeItem(draftKey);
+      return null;
+    }
+  });
+  const [editingId, setEditingId] = useState(initialDraft?.editingId || null);
+  const [showForm, setShowForm] = useState(Boolean(initialDraft));
+  const [number, setNumber] = useState(initialDraft?.number || "");
+  const [notes, setNotes] = useState(initialDraft?.notes || "");
+  const [draftRestored, setDraftRestored] = useState(Boolean(initialDraft));
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [deleteId, setDeleteId] = useState(null);
   const rounds = job.interviewRounds || [];
   const reset = () => {
+    localStorage.removeItem(draftKey);
     setEditingId(null);
     setShowForm(false);
     setNumber("");
     setNotes("");
+    setDraftRestored(false);
   };
+  useEffect(() => {
+    if (!showForm) return;
+    localStorage.setItem(
+      draftKey,
+      JSON.stringify({ jobId: job.id, editingId, number, notes }),
+    );
+  }, [draftKey, editingId, job.id, notes, number, showForm]);
   const persist = async (next) => {
     if (busyRef.current) return false;
     busyRef.current = true;
@@ -3908,6 +3933,11 @@ function InterviewRounds({ job, reload }) {
           <strong>
             {editingId ? "Edit Interview Round" : "Add New Interview Round"}
           </strong>
+          {draftRestored && (
+            <p className="v2-draft-restored" role="status">
+              Unsaved interview round draft restored.
+            </p>
+          )}
           <label>
             Round number
             <input
@@ -3915,7 +3945,10 @@ function InterviewRounds({ job, reload }) {
               type="number"
               min="1"
               value={number}
-              onChange={(event) => setNumber(event.target.value)}
+              onChange={(event) => {
+                setNumber(event.target.value);
+                setDraftRestored(false);
+              }}
               placeholder="e.g., 1, 2, 3"
             />
           </label>
@@ -3924,7 +3957,10 @@ function InterviewRounds({ job, reload }) {
             <textarea
               name="interview-round-notes"
               value={notes}
-              onChange={(event) => setNotes(event.target.value)}
+              onChange={(event) => {
+                setNotes(event.target.value);
+                setDraftRestored(false);
+              }}
               placeholder="Add details about this interview round…"
             />
           </label>

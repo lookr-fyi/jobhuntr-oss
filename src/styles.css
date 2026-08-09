@@ -1692,6 +1692,15 @@ button:disabled {
 .interview-round-form textarea {
   min-height: 86px;
 }
+.v2-draft-restored {
+  margin: 0;
+  padding: 8px 10px;
+  color: #1e3a5f;
+  border-radius: 7px;
+  background: #dbeafe;
+  font-size: 12px;
+  font-weight: 600;
+}
 .interview-round-list {
   display: grid;
   gap: 8px;

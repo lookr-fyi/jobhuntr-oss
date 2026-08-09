@@ -972,6 +972,24 @@ test("Interview round persistence is single-flight and retryable", async () => {
   );
 });
 
+test("Interview round drafts recover after the Job Tracker drawer closes", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const rounds = source.slice(
+    source.indexOf("function InterviewRounds"),
+    source.indexOf("function Actions"),
+  );
+
+  assert.match(rounds, /jobhuntr-interview-round-draft:/);
+  assert.match(rounds, /localStorage\.getItem\(draftKey\)/);
+  assert.match(rounds, /localStorage\.setItem\(/);
+  assert.match(rounds, /localStorage\.removeItem\(draftKey\)/);
+  assert.match(rounds, /Unsaved interview round draft restored\./);
+  assert.match(rounds, /String\(saved\.notes \|\| ""\)\.slice\(0, 10_000\)/);
+});
+
 test("Job Board refresh and queue actions are single-flight", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

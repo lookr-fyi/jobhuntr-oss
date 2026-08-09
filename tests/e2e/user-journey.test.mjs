@@ -3219,6 +3219,24 @@ test(
       await page.getByRole("button", { name: "Add Round" }).click();
       const roundForm = page.locator(".interview-round-form");
       await assertNamedFormControls(roundForm, "Interview round form");
+      await roundForm.getByLabel("Round number").fill("9");
+      await roundForm
+        .getByLabel("Notes")
+        .fill("Unsaved panel interview preparation notes");
+      await page.getByRole("button", { name: "Close job details" }).click();
+      await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
+      await page
+        .getByText("Unsaved interview round draft restored.", { exact: true })
+        .waitFor();
+      assert.equal(
+        await roundForm.getByLabel("Round number").inputValue(),
+        "9",
+      );
+      assert.equal(
+        await roundForm.getByLabel("Notes").inputValue(),
+        "Unsaved panel interview preparation notes",
+        "closing and reopening a tracked role should recover its round draft",
+      );
       await roundForm.getByLabel("Round number").fill("1");
       await roundForm
         .getByLabel("Notes")
