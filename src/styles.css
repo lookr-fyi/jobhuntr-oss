@@ -2687,6 +2687,18 @@ section.gigs-page .v2-gigs-intro p {
   font-size: 16px;
   font-weight: 500;
 }
+.v2-coach-input .v2-draft-restored {
+  position: absolute;
+  bottom: 18px;
+  left: 16px;
+  max-width: calc(100% - 190px);
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  color: #475569;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .v2-coach-disclaimer {
   padding-bottom: 16px;
   text-align: center;

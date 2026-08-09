@@ -734,6 +734,28 @@ test("Career Coach generation actions are single-flight and retryable", async ()
   );
 });
 
+test("Career Coach recovers bounded unsent composer drafts", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const coach = source.slice(
+    source.indexOf("function Coach"),
+    source.indexOf("function PracticeSession"),
+  );
+
+  assert.match(coach, /jobhuntr-coach-composer-draft/);
+  assert.match(coach, /localStorage\.getItem\(coachComposerDraftKey\)/);
+  assert.match(coach, /String\(saved\?\.content \|\| ""\)\.slice\(0, 10_000\)/);
+  assert.match(coach, /localStorage\.setItem\(/);
+  assert.match(coach, /localStorage\.removeItem\(coachComposerDraftKey\)/);
+  assert.match(coach, /Unsent coaching prompt restored\./);
+  assert.doesNotMatch(
+    coach,
+    /const newConversation = \(\) => \{\s*setChatInput\(""\)/,
+  );
+});
+
 test("Career Coach evidence saves are single-flight and preserve retry context", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

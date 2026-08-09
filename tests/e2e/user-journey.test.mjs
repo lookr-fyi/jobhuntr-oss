@@ -3762,6 +3762,21 @@ test(
         "Career Coach should preserve the v2 desktop content and composer proportions",
       );
       await assertNamedFormControls(page, "Career Coach chat");
+      const coachComposer = page.getByLabel("Message Career Coach");
+      await coachComposer.fill(
+        "Help me frame an unsent question about my next interview.",
+      );
+      await page.goto(`${baseUrl}/#/tracker`);
+      await page.goto(`${baseUrl}/#/coach`);
+      await page
+        .getByText("Unsent coaching prompt restored.", { exact: true })
+        .waitFor();
+      assert.equal(
+        await coachComposer.inputValue(),
+        "Help me frame an unsent question about my next interview.",
+        "the Career Coach should recover an unsent prompt after navigation",
+      );
+      await coachComposer.fill("");
       assert.equal(
         await page.getByText("Invalid Date", { exact: true }).count(),
         0,

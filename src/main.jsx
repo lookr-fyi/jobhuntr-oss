@@ -10029,7 +10029,23 @@ const practiceSessionDigest = (session) =>
     : "";
 function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
-  const [chatInput, setChatInput] = useState("");
+  const coachComposerDraftKey = "jobhuntr-coach-composer-draft";
+  const [initialCoachComposer] = useState(() => {
+    try {
+      const saved = JSON.parse(
+        localStorage.getItem(coachComposerDraftKey) || "null",
+      );
+      const content = String(saved?.content || "").slice(0, 10_000);
+      return content.trim() ? content : "";
+    } catch {
+      localStorage.removeItem(coachComposerDraftKey);
+      return "";
+    }
+  });
+  const [chatInput, setChatInput] = useState(initialCoachComposer);
+  const [coachComposerRestored, setCoachComposerRestored] = useState(
+    Boolean(initialCoachComposer),
+  );
   const [coachResponding, setCoachResponding] = useState(false);
   const [preparingSession, setPreparingSession] = useState(false);
   const [generatingOutreach, setGeneratingOutreach] = useState(false);
@@ -10091,6 +10107,16 @@ function Coach({ state, reload }) {
     conversations.find(({ id }) => id === activeConversationId) ||
     (activeConversationId ? conversations[0] || null : null);
   const messages = activeConversation?.messages || [];
+  useEffect(() => {
+    if (!chatInput.trim()) {
+      localStorage.removeItem(coachComposerDraftKey);
+      return;
+    }
+    localStorage.setItem(
+      coachComposerDraftKey,
+      JSON.stringify({ content: chatInput }),
+    );
+  }, [chatInput]);
   const hasUnsavedPractice = Boolean(
     session && practiceSessionDigest(session) !== practiceBaseline,
   );
@@ -10169,12 +10195,10 @@ function Coach({ state, reload }) {
     });
   }, [conversations, reload, state.coachConversations?.length]);
   const newConversation = () => {
-    setChatInput("");
     selectConversationState(conversations, null);
   };
   const openConversation = (id) => {
     const conversation = conversations.find((item) => item.id === id);
-    setChatInput("");
     if (
       conversation?.jobId &&
       state.jobs.some((job) => job.id === conversation.jobId)
@@ -10308,6 +10332,7 @@ function Coach({ state, reload }) {
         : [updated, ...conversations];
       selectConversationState(nextConversations, id);
       setChatInput("");
+      setCoachComposerRestored(false);
       await reload();
     } catch {
       // Keep the unsent prompt in the composer for a safe retry.
@@ -10529,7 +10554,10 @@ function Coach({ state, reload }) {
                 name="career-coach-message"
                 aria-label="Message Career Coach"
                 value={chatInput}
-                onChange={(event) => setChatInput(event.target.value)}
+                onChange={(event) => {
+                  setChatInput(event.target.value);
+                  setCoachComposerRestored(false);
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();
@@ -10546,6 +10574,11 @@ function Coach({ state, reload }) {
                 {coachResponding ? "Thinking locally…" : "Get Started"}{" "}
                 <ChevronRight size={17} />
               </button>
+              {coachComposerRestored && (
+                <small className="v2-draft-restored" role="status">
+                  Unsent coaching prompt restored.
+                </small>
+              )}
             </div>
             <small className="v2-coach-disclaimer">
               Suggestions are generated locally from your saved profile and
