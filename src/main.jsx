@@ -9255,6 +9255,15 @@ function Resume({ state, reload, mode = "resume" }) {
     </section>
   );
 }
+const outreachDraftDigest = (draft) =>
+  draft
+    ? JSON.stringify({
+        id: draft.id,
+        subject: draft.subject || "",
+        body: draft.body || "",
+        status: draft.status || "draft",
+      })
+    : "";
 function OutreachPage({ state, reload }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const [selectedId, setSelectedId] = useState(
@@ -9286,8 +9295,15 @@ function OutreachPage({ state, reload }) {
   const [collectFeedback, setCollectFeedback] = useState("");
   const collectCloseRef = useRef(null);
   const connectCloseRef = useRef(null);
-  const [draft, setDraft] = useState(
-    state.outreachDrafts.find((item) => item.id === selectedId) || null,
+  const initialDraft =
+    state.outreachDrafts.find((item) => item.id === selectedId) || null;
+  const [draft, setDraft] = useState(initialDraft);
+  const [draftBaseline, setDraftBaseline] = useState(() =>
+    outreachDraftDigest(initialDraft),
+  );
+  const [pendingContactId, setPendingContactId] = useState("");
+  const hasUnsavedOutreachDraft = Boolean(
+    draft && draftBaseline && outreachDraftDigest(draft) !== draftBaseline,
   );
   useEffect(() => {
     if (!collectOpen) return undefined;
@@ -9329,6 +9345,7 @@ function OutreachPage({ state, reload }) {
       });
       setSelectedId(created.id);
       setDraft(created);
+      setDraftBaseline(outreachDraftDigest(created));
       setCollectFeedback(
         created.collectedCount
           ? `${created.collectedCount} contact${created.collectedCount === 1 ? "" : "s"} collected.`
@@ -9368,6 +9385,21 @@ function OutreachPage({ state, reload }) {
     );
   const selected =
     draft || visible.find((item) => item.id === selectedId) || visible[0];
+  const finishSelectingContact = (id) => {
+    const next = state.outreachDrafts.find((item) => item.id === id) || null;
+    setSelectedId(id);
+    setDraft(next);
+    setDraftBaseline(outreachDraftDigest(next));
+    setPendingContactId("");
+  };
+  const requestSelectContact = (id) => {
+    if (!id || id === selected?.id) return;
+    if (hasUnsavedOutreachDraft) {
+      setPendingContactId(id);
+      return;
+    }
+    finishSelectingContact(id);
+  };
   const allVisibleSelected =
     visible.length > 0 && visible.every((item) => selectedIds.has(item.id));
   const toggleSelected = (id) => {
@@ -9406,6 +9438,15 @@ function OutreachPage({ state, reload }) {
   };
   return (
     <section className="v2-outreach-page">
+      <ConfirmDialog
+        open={Boolean(pendingContactId)}
+        title="Discard outreach changes?"
+        description="Your latest subject or message edits have not been saved. Discard them and open another contact?"
+        confirmLabel="Discard Changes"
+        busyLabel="Discarding…"
+        onClose={() => setPendingContactId("")}
+        onConfirm={() => finishSelectingContact(pendingContactId)}
+      />
       <ConfirmDialog
         open={Boolean(deleteContact)}
         title="Delete outreach contact?"
@@ -9609,10 +9650,7 @@ function OutreachPage({ state, reload }) {
                   />
                   <button
                     className={selected?.id === item.id ? "selected" : ""}
-                    onClick={() => {
-                      setSelectedId(item.id);
-                      setDraft(item);
-                    }}
+                    onClick={() => requestSelectContact(item.id)}
                   >
                     <span className="v2-contact-avatar">
                       {(job?.company || "C")[0]}
@@ -9701,6 +9739,9 @@ function OutreachPage({ state, reload }) {
                 <OutreachEditor
                   draft={selected}
                   setDraft={setDraft}
+                  onSaved={(updated) =>
+                    setDraftBaseline(outreachDraftDigest(updated))
+                  }
                   reload={reload}
                 />
               ) : (
@@ -10717,7 +10758,7 @@ function StoryVault({ stories, reload }) {
     </div>
   );
 }
-function OutreachEditor({ draft, setDraft, reload }) {
+function OutreachEditor({ draft, setDraft, onSaved, reload }) {
   const [savingDraft, setSavingDraft] = useState(false);
   const savingDraftRef = useRef(false);
   const save = async (status = draft.status || "draft") => {
@@ -10734,6 +10775,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
         }),
       });
       setDraft(updated);
+      onSaved(updated);
       await reload();
     } catch {
       // Preserve the edited message and status so saving can be retried.

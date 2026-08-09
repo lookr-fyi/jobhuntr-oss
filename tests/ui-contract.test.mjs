@@ -785,6 +785,27 @@ test("Outreach draft edits cannot race an in-flight save", async () => {
   );
 });
 
+test("Outreach contact navigation protects unsaved message edits", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const outreach = source.slice(
+    source.indexOf("function OutreachPage"),
+    source.indexOf("function Coach"),
+  );
+
+  assert.match(outreach, /const \[draftBaseline, setDraftBaseline\]/);
+  assert.match(outreach, /const hasUnsavedOutreachDraft = Boolean/);
+  assert.match(outreach, /title="Discard outreach changes\?"/);
+  assert.match(
+    outreach,
+    /onClick=\{\(\) => requestSelectContact\(item\.id\)\}/,
+  );
+  assert.match(outreach, /onSaved=\{\(updated\) =>/);
+  assert.match(outreach, /setDraftBaseline\(outreachDraftDigest\(updated\)\)/);
+});
+
 test("Gig creation and applications are single-flight and retryable", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

@@ -4864,10 +4864,34 @@ test(
           .inputValue(),
         "",
       );
+      await page.getByLabel("Subject").fill("Unsaved outreach subject");
       await page
         .getByRole("button", { name: /Restored Contact/ })
         .first()
         .click();
+      const discardOutreachDialog = page.getByRole("alertdialog", {
+        name: "Discard outreach changes?",
+      });
+      await discardOutreachDialog.waitFor();
+      await assertAccessible(page, "Discard outreach changes confirmation");
+      await discardOutreachDialog
+        .getByRole("button", { name: "Cancel" })
+        .click();
+      await discardOutreachDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await page.getByLabel("Subject").inputValue(),
+        "Unsaved outreach subject",
+        "canceling contact navigation should preserve the unsaved message",
+      );
+      await page
+        .getByRole("button", { name: /Restored Contact/ })
+        .first()
+        .click();
+      await discardOutreachDialog.waitFor();
+      await discardOutreachDialog
+        .getByRole("button", { name: "Discard Changes" })
+        .click();
+      await discardOutreachDialog.waitFor({ state: "hidden" });
       assert.equal(
         await page.getByLabel("Subject").inputValue(),
         "Restored outreach subject",
