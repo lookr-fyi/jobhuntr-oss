@@ -710,6 +710,8 @@ function App() {
   const navigationRef = useRef(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
+  const userMenuTriggerRef = useRef(null);
+  const userMenuFirstItemRef = useRef(null);
   const [err, setErr] = useState("");
   const load = () =>
     api("/api/state")
@@ -737,12 +739,15 @@ function App() {
   }, [err]);
   useEffect(() => {
     if (!userMenuOpen) return undefined;
+    requestAnimationFrame(() => userMenuFirstItemRef.current?.focus());
     const close = (event) => {
-      if (
-        event.key === "Escape" ||
-        !userMenuRef.current?.contains(event.target)
-      )
+      if (event.key === "Escape") {
+        event.preventDefault();
         setUserMenuOpen(false);
+        userMenuTriggerRef.current?.focus();
+      } else if (!userMenuRef.current?.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
     };
     window.addEventListener("keydown", close);
     window.addEventListener("mousedown", close);
@@ -751,6 +756,22 @@ function App() {
       window.removeEventListener("mousedown", close);
     };
   }, [userMenuOpen]);
+  const handleUserMenuKeyDown = (event) => {
+    const items = [
+      ...(userMenuRef.current?.querySelectorAll('[role="menuitem"]') || []),
+    ];
+    const currentIndex = items.indexOf(document.activeElement);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowDown")
+      nextIndex = (currentIndex + 1 + items.length) % items.length;
+    else if (event.key === "ArrowUp")
+      nextIndex = (currentIndex - 1 + items.length) % items.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = items.length - 1;
+    else return;
+    event.preventDefault();
+    items[nextIndex]?.focus();
+  };
   useEffect(() => {
     const mobileNavigation = window.matchMedia("(max-width: 760px)");
     const collapseDesktopNavigation = (event) => {
@@ -912,6 +933,7 @@ function App() {
               className="v2-user-menu"
               role="menu"
               aria-label="Local workspace menu"
+              onKeyDown={handleUserMenuKeyDown}
             >
               <div className="v2-user-menu-identity">
                 <span className="v2-avatar">
@@ -925,6 +947,7 @@ function App() {
                 </span>
               </div>
               <button
+                ref={userMenuFirstItemRef}
                 role="menuitem"
                 onClick={() => {
                   setTab("settings");
@@ -950,6 +973,7 @@ function App() {
             </div>
           )}
           <button
+            ref={userMenuTriggerRef}
             onClick={() => {
               if (window.matchMedia("(max-width: 760px)").matches)
                 setTab("settings");

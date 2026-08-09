@@ -2970,6 +2970,45 @@ test(
         name: "Local workspace menu",
       });
       await workspaceMenu.waitFor();
+      const profileMenuItem = workspaceMenu.getByRole("menuitem", {
+        name: "Profile & usage",
+      });
+      const dataMenuItem = workspaceMenu.getByRole("menuitem", {
+        name: "Settings & data",
+      });
+      await page.waitForFunction(
+        () =>
+          document.activeElement?.getAttribute("role") === "menuitem" &&
+          document.activeElement?.textContent?.includes("Profile & usage"),
+      );
+      assert.equal(
+        await profileMenuItem.evaluate(
+          (menuitem) => menuitem === document.activeElement,
+        ),
+        true,
+        "opening the workspace menu should move focus into it",
+      );
+      await page.keyboard.press("ArrowDown");
+      assert.equal(
+        await dataMenuItem.evaluate(
+          (menuitem) => menuitem === document.activeElement,
+        ),
+        true,
+        "workspace menu arrows should move between actions",
+      );
+      await page.keyboard.press("Escape");
+      await workspaceMenu.waitFor({ state: "hidden" });
+      const workspaceMenuTrigger = page.locator(
+        '[title="Profile and settings"]',
+      );
+      assert.equal(
+        await workspaceMenuTrigger.evaluate(
+          (trigger) => trigger === document.activeElement,
+        ),
+        true,
+        "closing the workspace menu should restore focus to its trigger",
+      );
+      await workspaceMenuTrigger.click();
       await workspaceMenu
         .getByRole("menuitem", { name: "Profile & usage" })
         .click();
