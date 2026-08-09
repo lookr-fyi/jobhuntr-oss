@@ -1429,6 +1429,34 @@ test(
       await deleteCoachDialog.waitFor();
       await assertAccessible(page, "Delete coaching conversation confirmation");
       await deleteCoachDialog.getByRole("button", { name: "Cancel" }).click();
+      await page.getByRole("button", { name: "STAR story vault" }).click();
+      await page.getByLabel("Story title").fill("Recovered a critical launch");
+      await page.getByLabel("Situation").fill("A launch was at risk.");
+      await page.getByLabel("Task").fill("Restore delivery confidence.");
+      await page
+        .getByLabel("Action")
+        .fill("Prioritized failures and coordinated the fix.");
+      await page.getByLabel("Result").fill("Shipped on time with no rollback.");
+      await page
+        .getByLabel("Skills, comma-separated")
+        .fill("Incident response, Leadership");
+      await page.getByRole("button", { name: "Save story" }).click();
+      await page.getByText("Recovered a critical launch").waitFor();
+      await page
+        .getByRole("button", {
+          name: "Delete STAR story Recovered a critical launch",
+        })
+        .click();
+      const deleteStoryDialog = page.getByRole("alertdialog", {
+        name: "Delete STAR story?",
+      });
+      await deleteStoryDialog.waitFor();
+      await assertAccessible(page, "Delete STAR story confirmation");
+      await deleteStoryDialog.getByRole("button", { name: "Delete" }).click();
+      await deleteStoryDialog.waitFor({ state: "hidden" });
+      await page
+        .getByText("Recovered a critical launch")
+        .waitFor({ state: "hidden" });
 
       await page.getByRole("button", { name: "Gigs" }).click();
       await page.getByRole("button", { name: "Apply Now" }).first().click();

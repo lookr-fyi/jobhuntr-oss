@@ -7635,6 +7635,7 @@ function StoryVault({ stories, reload }) {
   };
   const [form, setForm] = useState(empty);
   const [selected, setSelected] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const edit = (story) => {
     setSelected(story.id);
     setForm({ ...story, skills: (story.skills || []).join(", ") });
@@ -7663,6 +7664,23 @@ function StoryVault({ stories, reload }) {
   };
   return (
     <div className="story-layout">
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete STAR story?"
+        description={`“${deleteTarget?.title || "This story"}” will be permanently removed from your evidence library and detached from interview practice sessions.`}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          await api(`/api/career-stories/${deleteTarget.id}`, {
+            method: "DELETE",
+          });
+          if (selected === deleteTarget.id) {
+            setSelected(null);
+            setForm(empty);
+          }
+          setDeleteTarget(null);
+          await reload();
+        }}
+      />
       <div className="card">
         <div className="row">
           <h3>{selected ? "Edit STAR story" : "Add STAR story"}</h3>
@@ -7725,12 +7743,8 @@ function StoryVault({ stories, reload }) {
               </button>
               <button
                 className="danger"
-                onClick={async () => {
-                  await api(`/api/career-stories/${story.id}`, {
-                    method: "DELETE",
-                  });
-                  reload();
-                }}
+                aria-label={`Delete STAR story ${story.title}`}
+                onClick={() => setDeleteTarget(story)}
               >
                 Delete
               </button>

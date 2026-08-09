@@ -786,6 +786,11 @@ test("Career Coach conversations persist in portable local storage", async () =>
 });
 
 test("career stories ground coach sessions and practice answers persist", async () => {
+  const invalidStory = await req("/api/career-stories", {
+    method: "POST",
+    body: JSON.stringify({ title: "   " }),
+  });
+  assert.equal(invalidStory.res.status, 400);
   const story = await req("/api/career-stories", {
     method: "POST",
     body: JSON.stringify({
@@ -832,6 +837,11 @@ test("career stories ground coach sessions and practice answers persist", async 
     body: JSON.stringify({ result: "Reduced incidents 40%" }),
   });
   assert.match(edited.body.result, /40%/);
+  const invalidEdit = await req(`/api/career-stories/${story.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title: "" }),
+  });
+  assert.equal(invalidEdit.res.status, 400);
   await req(`/api/career-stories/${story.body.id}`, { method: "DELETE" });
 });
 

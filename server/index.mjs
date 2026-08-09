@@ -1303,10 +1303,12 @@ app.get("/api/career-stories", async (_req, res) => {
   res.json(db.careerStories);
 });
 app.post("/api/career-stories", async (req, res) => {
+  const title = safeText(req.body.title, 160);
+  if (!title) return res.status(400).json({ error: "Story title is required" });
   const story = await mutate((db) => {
     const item = {
       id: nanoid(),
-      title: safeText(req.body.title, 160) || "Untitled STAR story",
+      title,
       situation: safeText(req.body.situation, 10000),
       task: safeText(req.body.task, 10000),
       action: safeText(req.body.action, 20000),
@@ -1327,6 +1329,8 @@ app.post("/api/career-stories", async (req, res) => {
   res.status(201).json(story);
 });
 app.patch("/api/career-stories/:id", async (req, res) => {
+  if (req.body.title !== undefined && !safeText(req.body.title, 160))
+    return res.status(400).json({ error: "Story title is required" });
   const story = await mutate((db) => {
     const item = db.careerStories.find((x) => x.id === req.params.id);
     if (!item) return null;
@@ -1339,6 +1343,7 @@ app.patch("/api/career-stories/:id", async (req, res) => {
         .filter(Boolean)
         .slice(0, 30);
     item.updatedAt = timestamp();
+    auditEvent(db, "career-story", `Updated STAR story “${item.title}”.`);
     return item;
   });
   if (!story) return res.status(404).json({ error: "Career story not found" });
@@ -1352,6 +1357,8 @@ app.delete("/api/career-stories/:id", async (req, res) => {
       session.matchedStoryIds = (session.matchedStoryIds || []).filter(
         (id) => id !== req.params.id,
       );
+    if (before !== db.careerStories.length)
+      auditEvent(db, "career-story", "Deleted a STAR story.");
     return before !== db.careerStories.length;
   });
   res.status(removed ? 204 : 404).end();
