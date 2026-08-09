@@ -4907,6 +4907,36 @@ test(
         true,
         "tablet Agent Runs should preserve a visible action column without clipping the table",
       );
+      await mobile.setViewportSize({ width: 800, height: 640 });
+      const compactDesktopLayout = await mobile.evaluate(async () => {
+        const sidebar = document.querySelector(".v2-sidebar");
+        const main = document.querySelector("main");
+        sidebar.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+        await new Promise((resolve) => setTimeout(resolve, 220));
+        const mainBounds = main.getBoundingClientRect();
+        const pageBounds = document
+          .querySelector(".v2-runs-page")
+          .getBoundingClientRect();
+        sidebar.dispatchEvent(
+          new MouseEvent("mouseout", { bubbles: true, relatedTarget: main }),
+        );
+        return {
+          sidebarExpanded: sidebar.classList.contains("expanded"),
+          mainLeft: Math.round(mainBounds.left),
+          mainRight: Math.round(mainBounds.right),
+          pageRight: Math.round(pageBounds.right),
+        };
+      });
+      assert.deepEqual(
+        compactDesktopLayout,
+        {
+          sidebarExpanded: true,
+          mainLeft: 64,
+          mainRight: 800,
+          pageRight: 768,
+        },
+        "an expanded v2 rail should overlay rather than crush an 800px Electron workspace",
+      );
       await mobile.setViewportSize({ width: 320, height: 568 });
       await mobile.locator('button[title="Job Board"]').click();
       await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
