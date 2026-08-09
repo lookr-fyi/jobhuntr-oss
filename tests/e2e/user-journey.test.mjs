@@ -2808,7 +2808,17 @@ test(
           const create = style(".v2-document-actions button");
           const empty = style(".v2-document-empty");
           const emptyHeading = style(".v2-document-empty h2");
+          const pageStyle = getComputedStyle(root);
+          const rootStyle = getComputedStyle(root.parentElement);
+          const head = style(".v2-document-page-head");
+          const grid = style(".v2-template-grid");
           return {
+            page: [
+              rootStyle.padding,
+              pageStyle.padding,
+              pageStyle.maxWidth,
+              head.marginBottom,
+            ],
             heading: [heading.fontSize, heading.fontWeight],
             subtitle: [subtitle.fontSize, subtitle.color],
             create: [
@@ -2824,14 +2834,17 @@ test(
               empty.backgroundColor,
             ],
             emptyHeading: [emptyHeading.fontSize, emptyHeading.fontWeight],
+            gridGap: grid.gap,
           };
         }),
         {
-          heading: ["26px", "600"],
-          subtitle: ["15px", "rgb(100, 116, 139)"],
-          create: ["12px 20px", "16px", "500", "6px"],
+          page: ["0px", "20px", "none", "20px"],
+          heading: ["17.875px", "600"],
+          subtitle: ["10.3125px", "rgb(100, 116, 139)"],
+          create: ["12px 20px", "11px", "500", "6px"],
           empty: ["20px", "2px", "8px", "rgb(255, 255, 255)"],
-          emptyHeading: ["26px", "600"],
+          emptyHeading: ["17.875px", "600"],
+          gridGap: "20px",
         },
         "cover letter library should retain the authoritative v2 header and empty-state geometry",
       );
@@ -3129,8 +3142,8 @@ test(
         {
           cardRadius: "8px",
           preview: ["210 / 297", "0px"],
-          badge: ["8px", "8px", "4px 8px", "14px"],
-          footer: ["12px", "16px", "14px"],
+          badge: ["8px", "8px", "4px 8px", "9.625px"],
+          footer: ["12px", "11px", "9.625px"],
         },
         "saved cover letter cards should retain the authoritative v2 A4 proportions and metadata scale",
       );

@@ -6213,6 +6213,9 @@ main:has(> .v2-runs-page) {
 main:has(> .resume-studio) {
   padding: 0;
 }
+main:has(> .v2-document-page) {
+  padding: 0;
+}
 main > header {
   max-width: 1440px;
   margin: 0 auto 24px;
@@ -8682,26 +8685,31 @@ main > header.integrated-page-header {
   }
 }
 .v2-document-page {
-  max-width: 1440px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
   margin: 0 auto;
+  padding: 20px;
+  background: #f9fafb;
 }
 .v2-document-page-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .v2-document-page-head h2 {
   margin: 0 0 5px;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1.25;
 }
 .v2-document-page-head p {
   margin: 0;
   color: var(--v2-secondary);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.5;
 }
 .v2-document-actions {
@@ -8713,7 +8721,7 @@ main > header.integrated-page-header {
   gap: 8px;
   padding: 12px 20px;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-document-actions select {
@@ -8783,7 +8791,7 @@ main > header.integrated-page-header {
   border-radius: 4px;
   background: #d1fae5;
   color: #065f46;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 .v2-letter-paper {
@@ -8879,13 +8887,13 @@ main > header.integrated-page-header {
   white-space: nowrap;
 }
 .v2-template-grid > article footer b {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
 }
 .v2-template-grid > article footer small {
   margin-top: 4px;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .v2-template-grid > article footer small svg {
   display: inline;
@@ -8917,20 +8925,20 @@ main > header.integrated-page-header {
 .v2-document-empty h2 {
   margin: 0 0 8px;
   color: #4b5563;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1.25;
 }
 .v2-document-empty p {
   margin: 0 0 16px;
   color: #6b7280;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
 }
 .v2-document-empty button {
   margin: 0 auto;
   padding: 12px 20px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-letter-workspace {
