@@ -1893,12 +1893,27 @@ test("resume templates can be created, edited, and safely removed", async () => 
       editedResume: "Edited resume content",
       additionalExperience: "Mentored five engineers.",
       testJobId: "test-job",
+      jobDescription:
+        "Frontend engineer role requiring React and accessible delivery.",
     }),
   });
   assert.equal(created.res.status, 201);
   assert.equal(created.body.name, "Technical Leadership");
   assert.equal(created.body.editedResume, "Edited resume content");
   assert.equal(created.body.additionalExperience, "Mentored five engineers.");
+  assert.match(created.body.jobDescription, /accessible delivery/);
+  const oversizedExperience = await req("/api/templates", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Invalid oversized experience",
+      additionalExperience: "x".repeat(2001),
+    }),
+  });
+  assert.equal(
+    oversizedExperience.res.status,
+    400,
+    "the API must enforce v2's additional-experience boundary",
+  );
   const updated = await req(`/api/templates/${created.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({ name: "Engineering Leadership" }),

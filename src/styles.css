@@ -9922,6 +9922,82 @@ main > header.integrated-page-header {
 .v2-template-experience-editor textarea:focus {
   border-color: #2563eb;
 }
+.v2-template-job-step {
+  min-height: 480px;
+  padding: 28px;
+}
+.v2-template-job-step > header h4,
+.v2-template-job-step > header p {
+  margin: 0;
+}
+.v2-template-job-step > header p {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 13px;
+}
+.v2-template-tracked-job {
+  display: grid;
+  gap: 6px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+}
+.v2-template-job-description {
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  gap: 7px;
+}
+.v2-template-job-description > span,
+.v2-template-job-description > small {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.v2-template-job-description > span {
+  color: #334155;
+  font-size: 13px;
+}
+.v2-template-job-description > span a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.v2-template-job-description > span a:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+.v2-template-job-description > small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 400;
+}
+.v2-template-job-description > small em {
+  flex: none;
+  font-style: normal;
+}
+.v2-template-job-description textarea {
+  min-height: 280px;
+  flex: 1;
+  padding: 16px;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+}
+.v2-template-job-description textarea:focus {
+  border-color: #2563eb;
+}
 .v2-template-dropzone span,
 .v2-template-edit-step small,
 .v2-template-test-summary small {

@@ -1114,10 +1114,20 @@ test(
       );
       await templateDialog.getByText("55/2,000 characters").waitFor();
       await templateDialog.getByRole("button", { name: /Next/ }).click();
-      await templateDialog.getByText("Test your ATS template").waitFor();
+      await templateDialog
+        .getByRole("heading", { name: "Job Information" })
+        .waitFor();
       await templateDialog
         .getByLabel("ATS template test job")
         .selectOption({ index: 1 });
+      const testJobDescription = templateDialog.getByLabel(
+        "ATS template job description",
+      );
+      assert.equal(await testJobDescription.getAttribute("maxlength"), "5000");
+      await testJobDescription.fill(
+        "Frontend engineer role requiring React, accessibility, and reliable product delivery.",
+      );
+      await templateDialog.getByText("85/5,000 characters").waitFor();
       await templateDialog
         .getByRole("button", { name: "Next", exact: true })
         .click();
@@ -1136,6 +1146,7 @@ test(
       await templateDialog
         .getByRole("button", { name: "Go to template step 4: Test" })
         .click();
+      assert.match(await testJobDescription.inputValue(), /accessibility/);
       await templateDialog
         .getByRole("button", { name: "Next", exact: true })
         .click();

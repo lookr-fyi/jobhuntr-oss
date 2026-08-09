@@ -6054,6 +6054,8 @@ function Resume({ state, reload, mode = "resume" }) {
         "",
       additionalExperience: template?.additionalExperience || "",
       testJobId: template?.testJobId || state.jobs[0]?.id || "",
+      jobDescription:
+        template?.jobDescription || state.jobs[0]?.description || "",
       uploadedFileName: template?.originalResume ? "Saved resume" : "",
       extractingFile: false,
       uploadError: "",
@@ -6101,6 +6103,7 @@ function Resume({ state, reload, mode = "resume" }) {
       editedResume: templateDialog.editedResume,
       additionalExperience: templateDialog.additionalExperience,
       testJobId: templateDialog.testJobId,
+      jobDescription: templateDialog.jobDescription,
       sections: templateDialog.sections
         .split(",")
         .map((section) => section.trim())
@@ -6143,6 +6146,13 @@ function Resume({ state, reload, mode = "resume" }) {
           .filter(Boolean)
           .join("\n\n"),
         jobId: templateDialog.testJobId,
+        job: {
+          title:
+            state.jobs.find((job) => job.id === templateDialog.testJobId)
+              ?.title || "Target role",
+          description: templateDialog.jobDescription,
+          tags: [],
+        },
       }),
     });
     setTemplateDialog({
@@ -7717,34 +7727,75 @@ function Resume({ state, reload, mode = "resume" }) {
               </div>
             )}
             {templateDialog.step === 4 && (
-              <div className="v2-template-step">
-                <div>
-                  <h4>Test your ATS template</h4>
+              <div className="v2-template-step v2-template-job-step">
+                <header>
+                  <h4>Job Information</h4>
                   <p>
-                    Select a tracked role to verify alignment before completing
-                    the template.
+                    Provide job details to test how well your resume matches a
+                    specific position.
                   </p>
-                </div>
-                <label>
-                  Test job
+                </header>
+                <label className="v2-template-tracked-job">
+                  Use a tracked job
                   <select
                     name="ats-template-test-job"
                     aria-label="ATS template test job"
                     value={templateDialog.testJobId}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const selectedJob = state.jobs.find(
+                        (job) => job.id === event.target.value,
+                      );
                       setTemplateDialog({
                         ...templateDialog,
                         testJobId: event.target.value,
-                      })
-                    }
+                        jobDescription:
+                          selectedJob?.description ||
+                          templateDialog.jobDescription,
+                      });
+                    }}
                   >
-                    <option value="">Choose a tracked job</option>
+                    <option value="">Choose a tracked job (optional)</option>
                     {state.jobs.map((job) => (
                       <option key={job.id} value={job.id}>
                         {job.title} · {job.company}
                       </option>
                     ))}
                   </select>
+                </label>
+                <label className="v2-template-job-description">
+                  <span>
+                    <b>Job Description</b>
+                    <a
+                      href="https://www.linkedin.com/jobs/search"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <ExternalLink size={12} /> Find Jobs
+                    </a>
+                  </span>
+                  <small>
+                    Paste the full description so the test uses the exact
+                    requirements.
+                    <em>
+                      {templateDialog.jobDescription.length.toLocaleString()}
+                      /5,000 characters
+                    </em>
+                  </small>
+                  <textarea
+                    name="ats-template-job-description"
+                    aria-label="ATS template job description"
+                    maxLength={5000}
+                    value={templateDialog.jobDescription}
+                    onChange={(event) =>
+                      setTemplateDialog({
+                        ...templateDialog,
+                        jobDescription: event.target.value,
+                      })
+                    }
+                    placeholder={
+                      "Paste the complete job description here, including:\n• Job title and company\n• Required qualifications and skills\n• Job responsibilities and duties\n• Preferred experience and education\n• Any specific requirements or keywords"
+                    }
+                  />
                 </label>
                 <div className="v2-template-test-summary">
                   <ShieldCheck size={24} />
@@ -7817,7 +7868,8 @@ function Resume({ state, reload, mode = "resume" }) {
                         templateDialog.extractingFile)) ||
                     (templateDialog.step === 2 &&
                       !templateDialog.editedResume.trim()) ||
-                    (templateDialog.step === 4 && !templateDialog.testJobId)
+                    (templateDialog.step === 4 &&
+                      !templateDialog.jobDescription.trim())
                   }
                   onClick={advanceTemplateWizard}
                 >
