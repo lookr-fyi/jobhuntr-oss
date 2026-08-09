@@ -806,6 +806,46 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(submitted.res.status, 200);
   assert.equal(submitted.body.status, "submitted");
+  const submittedAt = submitted.body.submittedAt;
+  const submittedHistoryLength = (await req("/api/state")).body.jobs
+    .find((job) => job.id === state.jobs[0].id)
+    .statusHistory.filter((entry) => entry.status === "applied").length;
+  const tamperedSubmittedPacket = await req(
+    `/api/submissions/${packet.body.id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        status: "archived",
+        resumeId: "",
+        applicationQuestions: [],
+      }),
+    },
+  );
+  assert.equal(tamperedSubmittedPacket.res.status, 409);
+  assert.match(tamperedSubmittedPacket.body.error, /immutable/i);
+  const repeatedConfirmation = await req(
+    `/api/submissions/${packet.body.id}/submit`,
+    {
+      method: "POST",
+      body: JSON.stringify({ confirmedByUser: true }),
+    },
+  );
+  assert.equal(repeatedConfirmation.res.status, 200);
+  assert.equal(repeatedConfirmation.body.submittedAt, submittedAt);
+  const preservedSubmissionState = (await req("/api/state")).body;
+  assert.equal(
+    preservedSubmissionState.submissions.find(
+      (submission) => submission.id === packet.body.id,
+    ).resumeId,
+    "profile-resume",
+  );
+  assert.equal(
+    preservedSubmissionState.jobs
+      .find((job) => job.id === state.jobs[0].id)
+      .statusHistory.filter((entry) => entry.status === "applied").length,
+    submittedHistoryLength,
+    "repeated confirmation must not duplicate application history",
+  );
   const regressed = await req(`/api/jobs/${state.jobs[0].id}`, {
     method: "PATCH",
     body: JSON.stringify({ status: "saved" }),

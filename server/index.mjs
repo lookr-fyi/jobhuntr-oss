@@ -1016,6 +1016,7 @@ app.patch("/api/submissions/:id", async (req, res) => {
   const submission = await mutate((db) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
+    if (item.status === "submitted") return { blockedSubmitted: true };
     if (Array.isArray(req.body.checklist)) {
       item.checklist = item.checklist.map((existing) => ({
         ...existing,
@@ -1088,6 +1089,11 @@ app.patch("/api/submissions/:id", async (req, res) => {
   });
   if (!submission)
     return res.status(404).json({ error: "Submission not found" });
+  if (submission.blockedSubmitted)
+    return res.status(409).json({
+      error:
+        "A submitted application packet is immutable to preserve its verified history",
+    });
   res.json(submission);
 });
 app.post("/api/submissions/:id/submit", async (req, res) => {
@@ -1099,6 +1105,7 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
   const submission = await mutate((db) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
+    if (item.status === "submitted") return item;
     if (
       !Array.isArray(item.checklist) ||
       item.checklist.length < 3 ||
