@@ -23,3 +23,24 @@ test("every rendered form control has a stable name for browser identification",
     "inputs, selects, and textareas must remain identifiable to Chrome, autofill, and E2E tooling",
   );
 });
+
+test("persisted timestamps cannot bypass safe date formatters", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const unsafeDateFormatting = [
+    ...source.matchAll(
+      /new Date\((?!\s*\))[^;]*?\)\.toLocale(?:DateString|String)\(/g,
+    ),
+  ].map((match) => ({
+    line: source.slice(0, match.index).split("\n").length,
+    expression: match[0].replace(/\s+/g, " ").slice(0, 180),
+  }));
+
+  assert.deepEqual(
+    unsafeDateFormatting,
+    [],
+    "persisted dates must use formatCalendarDate or formatDateTime so corrupt records cannot render Invalid Date",
+  );
+});
