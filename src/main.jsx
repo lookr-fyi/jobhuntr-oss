@@ -769,6 +769,8 @@ function App() {
       .replace(/^#\/?/, "")
       .split("?")[0];
     if (currentRoute !== tab) window.history.pushState({ tab }, "", nextHash);
+    window.scrollTo(0, 0);
+    document.querySelector("main")?.scrollTo?.(0, 0);
     if (window.matchMedia("(max-width: 760px)").matches) {
       window.requestAnimationFrame(() => {
         navigationRef.current

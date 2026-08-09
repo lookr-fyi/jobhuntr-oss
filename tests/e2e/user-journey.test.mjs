@@ -507,6 +507,23 @@ test(
         "Infinite Hunting should retain the authoritative v2 heading dimensions",
       );
       assert.equal(
+        await page.evaluate(() => {
+          window.scrollTo(0, document.documentElement.scrollHeight);
+          return window.scrollY > 0;
+        }),
+        true,
+        "the Infinite Hunting fixture must be tall enough to exercise route scroll restoration",
+      );
+      await page.locator('button[title="Job Board"]').click();
+      await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
+      assert.equal(
+        await page.evaluate(() => window.scrollY),
+        0,
+        "sidebar navigation must open every destination at its top edge",
+      );
+      await page.locator('button[title="Infinite Hunting"]').click();
+      await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      assert.equal(
         await page.locator(".v2-loop-row").count(),
         2,
         "obsolete and duplicate saved workflows should recover without crashing Infinite Hunt",
