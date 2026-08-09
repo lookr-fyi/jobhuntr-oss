@@ -3874,6 +3874,34 @@ test(
       assert.equal(new URL(page.url()).hash, "#/settings?tab=settings");
       await page.getByLabel("Weekly application goal").waitFor();
       await page.getByLabel("ATS template application threshold").fill("85");
+      await page.route(
+        "**/api/profile",
+        async (route) => {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          await route.continue();
+        },
+        { times: 1 },
+      );
+      const delayedSettingsSave = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/profile") &&
+          response.request().method() === "PUT" &&
+          response.ok(),
+      );
+      await page.getByRole("button", { name: "Save settings" }).click();
+      const savingSettings = page.getByRole("button", { name: "Saving…" });
+      await savingSettings.waitFor();
+      assert.equal(await savingSettings.isDisabled(), true);
+      await page.getByLabel("ATS template application threshold").fill("90");
+      await delayedSettingsSave;
+      await page.getByRole("button", { name: "Save settings" }).waitFor();
+      assert.equal(
+        await page.getByText("Changes saved locally.").count(),
+        0,
+        "an older save must not mark newer User Center edits as persisted",
+      );
+      await page.unroute("**/api/profile");
+      await page.getByLabel("ATS template application threshold").fill("85");
       await Promise.all([
         page.waitForResponse(
           (response) =>

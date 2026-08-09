@@ -12366,6 +12366,8 @@ function SettingsPage({ state, reload, setTab }) {
     );
   }, []);
   const [saved, setSaved] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const formRevision = useRef(0);
   const [faqDeleteMode, setFaqDeleteMode] = useState(false);
   const [faqDeleteTarget, setFaqDeleteTarget] = useState(null);
   const [form, setForm] = useState({
@@ -12389,11 +12391,18 @@ function SettingsPage({ state, reload, setTab }) {
     resumeError: "",
     extractingResume: false,
   });
-  const editForm = (next) => {
+  const markFormDirty = () => {
+    formRevision.current += 1;
     setSaved(false);
+  };
+  const editForm = (next) => {
+    markFormDirty();
     setForm(next);
   };
   const save = async () => {
+    if (savingProfile) return;
+    const savingRevision = formRevision.current;
+    setSavingProfile(true);
     setSaved(false);
     const fullName = `${form.firstName || ""} ${form.lastName || ""}`.trim();
     try {
@@ -12434,8 +12443,12 @@ function SettingsPage({ state, reload, setTab }) {
         }),
       });
       await reload();
-      setSaved(true);
-    } catch {}
+      if (formRevision.current === savingRevision) setSaved(true);
+    } catch {
+      // Preserve edits for retry while the shared error surface reports why.
+    } finally {
+      setSavingProfile(false);
+    }
   };
   const profileDisplayName =
     `${form.firstName || ""} ${form.lastName || ""}`.trim() ||
@@ -12675,7 +12688,7 @@ function SettingsPage({ state, reload, setTab }) {
                 onChange={async (event) => {
                   const file = event.target.files?.[0];
                   if (!file) return;
-                  setSaved(false);
+                  markFormDirty();
                   setForm((current) => ({
                     ...current,
                     resumeError: "",
@@ -12719,8 +12732,7 @@ function SettingsPage({ state, reload, setTab }) {
                 aria-label="Base resume text"
                 value={form.resumeText}
                 onChange={(event) => {
-                  setSaved(false);
-                  setForm({
+                  editForm({
                     ...form,
                     resumeText: event.target.value,
                     resumeError: "",
@@ -12741,10 +12753,13 @@ function SettingsPage({ state, reload, setTab }) {
             )}
           </div>
           <button
-            disabled={form.extractingResume || resumeRegressionBlocked}
+            disabled={
+              savingProfile || form.extractingResume || resumeRegressionBlocked
+            }
+            aria-busy={savingProfile}
             onClick={save}
           >
-            <Save size={16} /> Save profile
+            <Save size={16} /> {savingProfile ? "Saving…" : "Save profile"}
           </button>
           <div className="v2-usage-section">
             <div>
@@ -12897,8 +12912,12 @@ function SettingsPage({ state, reload, setTab }) {
               </span>
               <span>Stored only on this device</span>
             </div>
-            <button onClick={save}>
-              <Save size={16} /> Save About Me
+            <button
+              disabled={savingProfile}
+              aria-busy={savingProfile}
+              onClick={save}
+            >
+              <Save size={16} /> {savingProfile ? "Saving…" : "Save About Me"}
             </button>
           </div>
           <div className="card v2-faq-panel">
@@ -12968,8 +12987,13 @@ function SettingsPage({ state, reload, setTab }) {
                     )}
                   </div>
                 ))}
-                <button onClick={save}>
-                  <Save size={16} /> Save FAQ answers
+                <button
+                  disabled={savingProfile}
+                  aria-busy={savingProfile}
+                  onClick={save}
+                >
+                  <Save size={16} />
+                  {savingProfile ? "Saving…" : "Save FAQ answers"}
                 </button>
               </div>
             ) : (
@@ -13093,8 +13117,12 @@ function SettingsPage({ state, reload, setTab }) {
               Used for local fit scores and hunt defaults. Nothing is sent over
               the network.
             </p>
-            <button onClick={save}>
-              <Save size={16} /> Save settings
+            <button
+              disabled={savingProfile}
+              aria-busy={savingProfile}
+              onClick={save}
+            >
+              <Save size={16} /> {savingProfile ? "Saving…" : "Save settings"}
             </button>
           </div>
           <div className="card v2-settings-card v2-local-account">

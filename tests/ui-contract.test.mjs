@@ -204,7 +204,7 @@ test("editing a saved User Center form clears its saved confirmation", async () 
 
   assert.match(
     settings,
-    /const editForm = \(next\) => \{\s*setSaved\(false\);\s*setForm\(next\);/,
+    /const markFormDirty = \(\) => \{[\s\S]*?setSaved\(false\);[\s\S]*?const editForm = \(next\) => \{\s*markFormDirty\(\);\s*setForm\(next\);/,
   );
   assert.match(
     settings,
@@ -224,4 +224,26 @@ test("editing a saved User Center form clears its saved confirmation", async () 
       `${control} must invalidate the saved notice when edited`,
     );
   }
+});
+
+test("User Center saves are single-flight and cannot bless newer edits", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const settings = source.slice(
+    source.indexOf("function SettingsPage"),
+    source.indexOf("function Privacy"),
+  );
+
+  assert.match(settings, /const \[savingProfile, setSavingProfile\]/);
+  assert.match(settings, /const formRevision = useRef\(0\)/);
+  assert.match(settings, /formRevision\.current \+= 1/);
+  assert.match(settings, /if \(savingProfile\) return/);
+  assert.match(
+    settings,
+    /if \(formRevision\.current === savingRevision\) setSaved\(true\)/,
+  );
+  assert.match(settings, /finally \{\s*setSavingProfile\(false\)/);
+  assert.match(settings, /aria-busy=\{savingProfile\}/);
 });
