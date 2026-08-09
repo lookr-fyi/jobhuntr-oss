@@ -1673,9 +1673,8 @@ function Overview({ state, setTab, reload }) {
     setRefreshing(false);
   };
   const exitJobHuntr = async () => {
-    if (state.infiniteHunt?.enabled) {
-      await api("/api/infinite-hunt/stop", { method: "POST" });
-    }
+    if (state.infiniteHunt?.enabled)
+      await api("/api/infinite-hunt/stop", { method: "POST" }).catch(() => {});
     window.close();
     window.setTimeout(() => {
       window.location.href = "about:blank";
@@ -6213,18 +6212,20 @@ function Resume({ state, reload, mode = "resume" }) {
         .map((section) => section.trim())
         .filter(Boolean),
     };
-    const saved = await api(
-      templateDialog.id
-        ? `/api/templates/${templateDialog.id}`
-        : "/api/templates",
-      {
-        method: templateDialog.id ? "PATCH" : "POST",
-        body: JSON.stringify(payload),
-      },
-    );
-    setTemplateId(saved.id);
-    setTemplateDialog(null);
-    await reload();
+    try {
+      const saved = await api(
+        templateDialog.id
+          ? `/api/templates/${templateDialog.id}`
+          : "/api/templates",
+        {
+          method: templateDialog.id ? "PATCH" : "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+      setTemplateId(saved.id);
+      setTemplateDialog(null);
+      await reload();
+    } catch {}
   };
   const advanceTemplateWizard = async () => {
     if (templateDialog.step !== 4) {
@@ -6282,16 +6283,18 @@ function Resume({ state, reload, mode = "resume" }) {
   const saveResume = async () => {
     const content = resumeRef.current?.value ?? resume;
     setResume(content);
-    await api("/api/profile", {
-      method: "PUT",
-      body: JSON.stringify({ resumeText: content }),
-    });
-    const saved = await api("/api/resumes", {
-      method: "POST",
-      body: JSON.stringify({ name, templateId, jobId, content }),
-    });
-    setPreview(saved);
-    await reload();
+    try {
+      await api("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify({ resumeText: content }),
+      });
+      const saved = await api("/api/resumes", {
+        method: "POST",
+        body: JSON.stringify({ name, templateId, jobId, content }),
+      });
+      setPreview(saved);
+      await reload();
+    } catch {}
   };
   const openLetterWizard = () =>
     setLetterWizard({
@@ -6321,37 +6324,43 @@ function Resume({ state, reload, mode = "resume" }) {
               },
         }
       : { jobId, resumeId: "profile-resume" };
-    const created = await api("/api/cover-letters", {
-      method: "POST",
-      body: JSON.stringify(options),
-    });
-    setLetter(created);
-    setLetterWizard(
-      keepWizard ? { ...wizard, step: 5, result: created } : null,
-    );
-    await reload();
+    try {
+      const created = await api("/api/cover-letters", {
+        method: "POST",
+        body: JSON.stringify(options),
+      });
+      setLetter(created);
+      setLetterWizard(
+        keepWizard ? { ...wizard, step: 5, result: created } : null,
+      );
+      await reload();
+    } catch {}
   };
   const finishLetterWizard = async () => {
     if (!letterWizard?.result) return;
-    await api(`/api/cover-letters/${letterWizard.result.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        title: letterWizard.result.title,
-        body: letterWizard.result.body,
-      }),
-    });
-    setLetter(null);
-    setLetterWizard(null);
-    await reload();
+    try {
+      await api(`/api/cover-letters/${letterWizard.result.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          title: letterWizard.result.title,
+          body: letterWizard.result.body,
+        }),
+      });
+      setLetter(null);
+      setLetterWizard(null);
+      await reload();
+    } catch {}
   };
   const saveLetter = async () => {
     if (!letter) return;
-    const saved = await api(`/api/cover-letters/${letter.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({ title: letter.title, body: letter.body }),
-    });
-    setLetter(saved);
-    await reload();
+    try {
+      const saved = await api(`/api/cover-letters/${letter.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ title: letter.title, body: letter.body }),
+      });
+      setLetter(saved);
+      await reload();
+    } catch {}
   };
   if (mode === "cover-letter") {
     if (letterWizard) {
@@ -8866,15 +8875,19 @@ function Coach({ state, reload }) {
     setActiveConversationId(id);
   };
   const deleteConversation = async (id) => {
-    await api(`/api/coach/conversations/${id}`, { method: "DELETE" });
-    const next = conversations.filter((conversation) => conversation.id !== id);
-    const nextActive =
-      id === activeConversation?.id
-        ? next[0]?.id || null
-        : activeConversationId;
-    selectConversationState(next, nextActive);
-    setDeleteConversationTarget(null);
-    await reload();
+    try {
+      await api(`/api/coach/conversations/${id}`, { method: "DELETE" });
+      const next = conversations.filter(
+        (conversation) => conversation.id !== id,
+      );
+      const nextActive =
+        id === activeConversation?.id
+          ? next[0]?.id || null
+          : activeConversationId;
+      selectConversationState(next, nextActive);
+      setDeleteConversationTarget(null);
+      await reload();
+    } catch {}
   };
   useEffect(() => {
     if (view !== "chat") return;
@@ -9319,17 +9332,19 @@ function PracticeSession({ session, setSession, state, reload }) {
     .map((id) => state.careerStories.find((x) => x.id === id))
     .filter(Boolean);
   const save = async (status = session.status) => {
-    const updated = await api(`/api/coach/sessions/${session.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        answers: session.answers,
-        notes: session.notes,
-        researchDone: session.researchDone,
-        status,
-      }),
-    });
-    setSession(updated);
-    await reload();
+    try {
+      const updated = await api(`/api/coach/sessions/${session.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          answers: session.answers,
+          notes: session.notes,
+          researchDone: session.researchDone,
+          status,
+        }),
+      });
+      setSession(updated);
+      await reload();
+    } catch {}
   };
   return (
     <div className="practice">
@@ -9436,19 +9451,21 @@ function StoryVault({ stories, reload }) {
         .map((x) => x.trim())
         .filter(Boolean),
     };
-    if (selected)
-      await api(`/api/career-stories/${selected}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
-      });
-    else
-      await api("/api/career-stories", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-    setSelected(null);
-    setForm(empty);
-    await reload();
+    try {
+      if (selected)
+        await api(`/api/career-stories/${selected}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        });
+      else
+        await api("/api/career-stories", {
+          method: "POST",
+          body: JSON.stringify(body),
+        });
+      setSelected(null);
+      setForm(empty);
+      await reload();
+    } catch {}
   };
   return (
     <div className="story-layout">
@@ -9557,16 +9574,18 @@ function StoryVault({ stories, reload }) {
 }
 function OutreachEditor({ draft, setDraft, reload }) {
   const save = async (status = draft.status || "draft") => {
-    const updated = await api(`/api/outreach/${draft.id}`, {
-      method: "PATCH",
-      body: JSON.stringify({
-        subject: draft.subject,
-        body: draft.body,
-        status,
-      }),
-    });
-    setDraft(updated);
-    await reload();
+    try {
+      const updated = await api(`/api/outreach/${draft.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          subject: draft.subject,
+          body: draft.body,
+          status,
+        }),
+      });
+      setDraft(updated);
+      await reload();
+    } catch {}
   };
   return (
     <div>
@@ -9656,25 +9675,31 @@ function Gigs({ state, reload }) {
       maximumFractionDigits: 0,
     }).format(Number(value || 0));
   const save = async () => {
-    const created = await api("/api/gigs", {
-      method: "POST",
-      body: JSON.stringify(form),
-    });
-    setSelected(created.id);
-    setForm(empty);
-    setShowForm(false);
-    await reload();
+    try {
+      const created = await api("/api/gigs", {
+        method: "POST",
+        body: JSON.stringify(form),
+      });
+      setSelected(created.id);
+      setForm(empty);
+      setShowForm(false);
+      await reload();
+    } catch {}
   };
   const patch = async (id, body) => {
-    await api(`/api/gigs/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    });
-    await reload();
+    try {
+      await api(`/api/gigs/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await reload();
+      return true;
+    } catch {
+      return false;
+    }
   };
   const advanceGig = async (id, status, message) => {
-    await patch(id, { status });
-    setActionFeedback(message);
+    if (await patch(id, { status })) setActionFeedback(message);
   };
   const gigStatusLabel = (status) =>
     ({
@@ -9718,22 +9743,24 @@ function Gigs({ state, reload }) {
       .includes(gigQuery.toLowerCase()),
   );
   const applyToGig = async (item) => {
-    const created = await api("/api/gigs", {
-      method: "POST",
-      body: JSON.stringify({
-        ...empty,
-        client: item.client,
-        title: item.title,
-        budget: item.budget,
-        description: item.description,
-        proposal: campaignProposal,
-        source: "JobHuntr Gigs",
-      }),
-    });
-    setSelected(created.id);
-    setCampaignPreview(null);
-    setCampaignProposal("");
-    await reload();
+    try {
+      const created = await api("/api/gigs", {
+        method: "POST",
+        body: JSON.stringify({
+          ...empty,
+          client: item.client,
+          title: item.title,
+          budget: item.budget,
+          description: item.description,
+          proposal: campaignProposal,
+          source: "JobHuntr Gigs",
+        }),
+      });
+      setSelected(created.id);
+      setCampaignPreview(null);
+      setCampaignProposal("");
+      await reload();
+    } catch {}
   };
   const visibleTrackedGigs = state.gigs.filter((item) =>
     `${item.title} ${item.client} ${item.status}`
@@ -9741,9 +9768,11 @@ function Gigs({ state, reload }) {
       .includes(myGigQuery.toLowerCase()),
   );
   const deleteGig = async () => {
-    await api(`/api/gigs/${deleteTarget.id}`, { method: "DELETE" });
-    setSelected(null);
-    await reload();
+    try {
+      await api(`/api/gigs/${deleteTarget.id}`, { method: "DELETE" });
+      setSelected(null);
+      await reload();
+    } catch {}
   };
   useEffect(() => {
     if (!gig || myView !== "table") return undefined;
@@ -12212,44 +12241,46 @@ function SettingsPage({ state, reload, setTab }) {
   const save = async () => {
     setSaved(false);
     const fullName = `${form.firstName || ""} ${form.lastName || ""}`.trim();
-    await api("/api/profile", {
-      method: "PUT",
-      body: JSON.stringify({
-        onboarded: true,
-        name: fullName || form.name,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        nickname: form.nickname,
-        headline: form.headline,
-        location: form.location,
-        skills: form.skills
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
-        targetRoles: form.targetRoles
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
-        preferences: {
-          remote: form.remote,
-          minSalary: Number(form.minSalary) || 0,
-          weeklyApplicationGoal: Math.max(
-            1,
-            Number(form.weeklyApplicationGoal) || 5,
-          ),
-          locations: form.locations
+    try {
+      await api("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          onboarded: true,
+          name: fullName || form.name,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          nickname: form.nickname,
+          headline: form.headline,
+          location: form.location,
+          skills: form.skills
             .split(",")
             .map((x) => x.trim())
             .filter(Boolean),
-          atsThreshold: Number(form.atsThreshold) || 80,
-        },
-        resumeText: form.resumeText,
-        additionalInfo: form.additionalInfo,
-        faqAnswers: form.faqAnswers,
-      }),
-    });
-    await reload();
-    setSaved(true);
+          targetRoles: form.targetRoles
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean),
+          preferences: {
+            remote: form.remote,
+            minSalary: Number(form.minSalary) || 0,
+            weeklyApplicationGoal: Math.max(
+              1,
+              Number(form.weeklyApplicationGoal) || 5,
+            ),
+            locations: form.locations
+              .split(",")
+              .map((x) => x.trim())
+              .filter(Boolean),
+            atsThreshold: Number(form.atsThreshold) || 80,
+          },
+          resumeText: form.resumeText,
+          additionalInfo: form.additionalInfo,
+          faqAnswers: form.faqAnswers,
+        }),
+      });
+      await reload();
+      setSaved(true);
+    } catch {}
   };
   const profileDisplayName =
     `${form.firstName || ""} ${form.lastName || ""}`.trim() ||
@@ -13020,11 +13051,13 @@ function Privacy({ state }) {
       });
       return;
     }
-    const response = await api("/api/import/jobs", {
-      method: "POST",
-      body: JSON.stringify({ jobs }),
-    });
-    setResult(response);
+    try {
+      const response = await api("/api/import/jobs", {
+        method: "POST",
+        body: JSON.stringify({ jobs }),
+      });
+      setResult(response);
+    } catch {}
   };
   return (
     <section className="v2-data-page">

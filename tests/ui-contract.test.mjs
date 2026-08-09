@@ -66,3 +66,29 @@ test("every JobHuntr CSS custom property is defined", async () => {
     "undefined CSS variables silently make v2 controls transparent or drop their styling",
   );
 });
+
+test("user-triggered API actions contain rejected requests", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const uncontained = [];
+  for (const match of source.matchAll(
+    /const\s+(\w+)\s*=\s*async\s*\([^)]*\)\s*=>\s*\{/g,
+  )) {
+    const end = source.indexOf("\n  };", match.index + match[0].length);
+    if (end < 0) continue;
+    const body = source.slice(match.index + match[0].length, end);
+    if (body.includes("await api(") && !body.includes("catch"))
+      uncontained.push({
+        action: match[1],
+        line: source.slice(0, match.index).split("\n").length,
+      });
+  }
+
+  assert.deepEqual(
+    uncontained,
+    [],
+    "async UI actions must preserve their form state and let the shared error surface handle failed API requests",
+  );
+});
