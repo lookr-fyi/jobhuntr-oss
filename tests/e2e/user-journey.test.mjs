@@ -156,6 +156,16 @@ test(
       await recoveryPage
         .getByRole("heading", { name: /Welcome back/ })
         .waitFor();
+      await recoveryPage.locator('button[title="Submission Queue"]').click();
+      await recoveryPage
+        .getByRole("heading", { name: "Your queue is clear" })
+        .waitFor();
+      await assertAccessible(recoveryPage, "Empty Submission Queue");
+      await recoveryPage.locator('button[title="Agent Runs"]').click();
+      await recoveryPage
+        .getByRole("heading", { name: "No runs yet" })
+        .waitFor();
+      await assertAccessible(recoveryPage, "Empty Agent Runs");
       const demoProfile = await recoveryPage.evaluate(async () => {
         const response = await fetch("/api/state");
         return (await response.json()).profile;
