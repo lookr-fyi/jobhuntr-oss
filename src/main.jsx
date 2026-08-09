@@ -742,7 +742,9 @@ function InfiniteHuntStatus({ runs, onOpen }) {
   );
 }
 function GettingStarted({ state, onNavigate }) {
-  const [expanded, setExpanded] = useState(true);
+  // The authoritative v2 sidebar keeps guidance compact until the user asks
+  // for it, leaving the primary navigation and user controls unobstructed.
+  const [expanded, setExpanded] = useState(false);
   const items = [
     {
       label: "Start Infinite Hunt",
@@ -790,6 +792,7 @@ function GettingStarted({ state, onNavigate }) {
       <button
         className="v2-getting-started-head"
         aria-expanded={expanded}
+        aria-controls="getting-started-checklist"
         onClick={() => setExpanded((open) => !open)}
       >
         <span>
@@ -805,7 +808,7 @@ function GettingStarted({ state, onNavigate }) {
         <i style={{ width: `${(complete / items.length) * 100}%` }} />
       </div>
       {expanded && (
-        <div className="v2-guidance-list">
+        <div className="v2-guidance-list" id="getting-started-checklist">
           {items.map((item) => (
             <button
               className={item.complete ? "complete" : ""}

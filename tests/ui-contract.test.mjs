@@ -128,3 +128,18 @@ test("dense v2 controls keep usable touch targets on compact screens", async () 
   assert.match(styles, /\.v2-run-delete,[\s\S]*?min-width: 36px/);
   assert.match(styles, /\.v2-coach-delete[\s\S]*?min-height: 36px/);
 });
+
+test("v2 getting-started guidance does not obscure the expanded sidebar", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const guidance = source.slice(
+    source.indexOf("function GettingStarted"),
+    source.indexOf("function App()"),
+  );
+
+  assert.match(guidance, /useState\(false\)/);
+  assert.match(guidance, /aria-controls="getting-started-checklist"/);
+  assert.match(guidance, /id="getting-started-checklist"/);
+});
