@@ -1407,6 +1407,24 @@ test(
       const jobDetailsDialog = page.locator(".job-drawer");
       await jobDetailsDialog.waitFor();
       await page.waitForTimeout(350);
+      await jobDetailsDialog
+        .getByRole("heading", { name: "Job Details", exact: true })
+        .waitFor();
+      for (const sectionName of [
+        "Position",
+        "Status",
+        "Timeline",
+        "Description",
+        "Status History",
+      ]) {
+        assert.equal(
+          await jobDetailsDialog
+            .getByRole("heading", { name: sectionName, exact: true })
+            .count(),
+          1,
+          `v2 job details should expose the ${sectionName} section`,
+        );
+      }
       const drawerLayout = await jobDetailsDialog.evaluate((element) => ({
         position: getComputedStyle(element).position,
         width: getComputedStyle(element).width,
@@ -1644,13 +1662,16 @@ test(
         .click();
       await page.getByRole("button", { name: "Edit job" }).click();
       const jobEditForm = page.locator(".job-edit-form");
+      await page
+        .getByRole("heading", { name: "Edit Job", exact: true })
+        .waitFor();
       await jobEditForm
         .getByLabel("title", { exact: true })
         .fill("Founding Principal Product Engineer");
       await jobEditForm
         .getByLabel("salary", { exact: true })
         .fill("$175k-$225k");
-      await jobEditForm.getByRole("button", { name: "Save job" }).click();
+      await page.getByRole("button", { name: "Save", exact: true }).click();
       await page
         .getByRole("heading", { name: "Founding Principal Product Engineer" })
         .waitFor();
