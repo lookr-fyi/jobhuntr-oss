@@ -246,6 +246,21 @@ test(
             expandedNavigationBox.x + expandedNavigationBox.width,
         "expanded navigation labels should not clip outside the sidebar",
       );
+      const navigationStyle = await page
+        .locator('.v2-nav button[title="Overview"]')
+        .evaluate((button) => {
+          const style = getComputedStyle(button);
+          return {
+            fontSize: style.fontSize,
+            paddingLeft: style.paddingLeft,
+            paddingRight: style.paddingRight,
+          };
+        });
+      assert.deepEqual(
+        navigationStyle,
+        { fontSize: "11px", paddingLeft: "16px", paddingRight: "16px" },
+        "expanded navigation should preserve the compact v2 typography and spacing",
+      );
       for (const [tooltip, label] of [
         ["Agent Runs", "All Runs"],
         ["ATS Templates", "ATS Resume"],

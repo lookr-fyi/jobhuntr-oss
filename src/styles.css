@@ -4994,7 +4994,7 @@ summary:focus-visible {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 14px;
+  padding: 16px;
 }
 .v2-nav-slot {
   width: 100%;
@@ -5023,7 +5023,7 @@ summary:focus-visible {
   background: transparent;
   box-shadow: none;
   color: #475569;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 400;
   white-space: nowrap;
   transition: width 0.15s;
@@ -5031,7 +5031,7 @@ summary:focus-visible {
 .v2-sidebar.expanded .v2-nav button,
 .v2-sidebar.expanded .v2-user button {
   width: 100%;
-  padding: 8px 12px;
+  padding: 8px 16px;
   justify-content: flex-start;
 }
 .v2-sidebar .v2-nav button:hover,
