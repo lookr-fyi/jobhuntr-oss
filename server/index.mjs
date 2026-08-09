@@ -253,18 +253,13 @@ app.get("/api/summary", async (_req, res) => {
 });
 app.put("/api/profile", async (req, res) => {
   const profile = ProfileSchema.parse(req.body || {});
-  if (profile.resumeText !== undefined) {
-    const current = await readDb();
+  const result = await mutate((db) => {
     if (
-      isUsableResumeText(current.profile.resumeText) &&
+      profile.resumeText !== undefined &&
+      isUsableResumeText(db.profile.resumeText) &&
       !isUsableResumeText(profile.resumeText)
     )
-      return res.status(409).json({
-        error:
-          "A valid base resume cannot be replaced with empty or placeholder content",
-      });
-  }
-  const db = await mutate((db) => {
+      return { resumeRegressionBlocked: true };
     db.profile = {
       ...db.profile,
       ...profile,
@@ -274,8 +269,14 @@ app.put("/api/profile", async (req, res) => {
       },
     };
     auditEvent(db, "profile", "Updated local profile.");
+    return { profile: db.profile };
   });
-  res.json(db.profile);
+  if (result.resumeRegressionBlocked)
+    return res.status(409).json({
+      error:
+        "A valid base resume cannot be replaced with empty or placeholder content",
+    });
+  res.json(result.profile);
 });
 
 app.get("/api/jobs", async (_req, res) => {

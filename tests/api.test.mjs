@@ -189,6 +189,42 @@ test("v2 personal profile details persist with bounded local input", async () =>
   assert.equal(invalid.res.status, 400);
 });
 
+test("concurrent profile saves cannot race a valid resume back to a placeholder", async () => {
+  await mutate((db) => {
+    db.profile.resumeText = "Paste your resume here.";
+  });
+  const completeResume =
+    "Senior product engineer with eight years of experience shipping accessible React and TypeScript products. Increased conversion by 42%, mentored six engineers, and led reliable cross-functional launches.";
+  const requests = [
+    req("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ resumeText: completeResume }),
+    }),
+    ...Array.from({ length: 12 }, (_, index) =>
+      req("/api/profile", {
+        method: "PUT",
+        body: JSON.stringify({
+          headline: `Concurrent stale editor ${index}`,
+          resumeText: "Paste your resume here.",
+        }),
+      }),
+    ),
+  ];
+  const results = await Promise.all(requests);
+  assert.ok(
+    results.slice(1).some(({ res }) => res.status === 409),
+    "stale profile editors should be rejected after the valid resume commits",
+  );
+  assert.equal(
+    (await req("/api/state")).body.profile.resumeText,
+    completeResume,
+    "serialized profile validation must preserve the valid resume",
+  );
+  await mutate((db) => {
+    db.profile.resumeText = "Paste your resume here.";
+  });
+});
+
 test("agent run saves matches and logs actions", async () => {
   const blocked = await req("/api/agent-runs/start", {
     method: "POST",
