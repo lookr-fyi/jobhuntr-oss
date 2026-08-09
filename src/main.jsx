@@ -259,6 +259,16 @@ const TRACKER_STAGE_LABELS = {
   removed: "Removed",
 };
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
+const emptyTrackedRole = (status = "interested") => ({
+  company: "",
+  title: "",
+  location: "Remote",
+  url: "",
+  salary: "",
+  description: "",
+  tags: "",
+  status: TRACKER_STAGES.includes(status) ? status : "interested",
+});
 const safeHttpUrl = (value) => {
   try {
     const url = new URL(String(value || ""));
@@ -1845,16 +1855,7 @@ function Tracker({ state, reload, setTab }) {
   const trackerParams = new URLSearchParams(
     window.location.hash.split("?")[1] || "",
   );
-  const [form, setForm] = useState({
-    company: "",
-    title: "",
-    location: "Remote",
-    url: "",
-    salary: "",
-    description: "",
-    tags: "",
-    status: "saved",
-  });
+  const [form, setForm] = useState(() => emptyTrackedRole());
   const [selected, setSelected] = useState(trackerParams.get("job") || null);
   const [query, setQuery] = useState("");
   const [columnPagination, setColumnPagination] = useState({
@@ -2075,7 +2076,10 @@ function Tracker({ state, reload, setTab }) {
     const returnFocus = document.activeElement;
     addJobDrawerCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setShowForm(false);
+      if (event.key === "Escape") {
+        setShowForm(false);
+        setForm((current) => emptyTrackedRole(current.status));
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -2162,16 +2166,7 @@ function Tracker({ state, reload, setTab }) {
           .filter(Boolean),
       }),
     });
-    setForm({
-      company: "",
-      title: "",
-      location: "Remote",
-      url: "",
-      salary: "",
-      description: "",
-      tags: "",
-      status: "saved",
-    });
+    setForm(emptyTrackedRole());
     setSelected(created.id);
     setShowForm(false);
     await reload();
@@ -2810,7 +2805,10 @@ function Tracker({ state, reload, setTab }) {
             className="job-drawer-backdrop"
             tabIndex={-1}
             aria-label="Dismiss new job"
-            onClick={() => setShowForm(false)}
+            onClick={() => {
+              setShowForm(false);
+              setForm((current) => emptyTrackedRole(current.status));
+            }}
           />
           <div
             className="job-drawer add-job-drawer"
@@ -2831,7 +2829,10 @@ function Tracker({ state, reload, setTab }) {
                 <button
                   ref={addJobDrawerCloseRef}
                   className="secondary cancel-button"
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setForm((current) => emptyTrackedRole(current.status));
+                  }}
                 >
                   Cancel
                 </button>

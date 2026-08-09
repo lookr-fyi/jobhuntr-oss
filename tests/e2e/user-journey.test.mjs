@@ -1369,6 +1369,9 @@ test(
         true,
         "the v2 Add New Job drawer should focus its safe action",
       );
+      await addJobDialog
+        .getByLabel("title", { exact: true })
+        .fill("Abandoned draft title");
       await page.keyboard.press("Escape");
       await addJobDialog.waitFor({ state: "hidden" });
       assert.equal(
@@ -1379,6 +1382,20 @@ test(
         "closing Add New Job should restore focus to its column action",
       );
       await appliedAddJob.click();
+      assert.equal(
+        await addJobDialog.getByLabel("title", { exact: true }).inputValue(),
+        "",
+        "reopening Add New Job should not restore an abandoned draft",
+      );
+      assert.equal(
+        await addJobDialog.getByLabel("location", { exact: true }).inputValue(),
+        "Remote",
+      );
+      assert.equal(
+        await addJobDialog.getByLabel("New job status").inputValue(),
+        "applied",
+        "clearing a draft should preserve the column it was opened from",
+      );
       await addJobDialog
         .getByLabel("title", { exact: true })
         .fill("E2E Added Role");
