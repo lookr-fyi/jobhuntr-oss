@@ -306,6 +306,7 @@ app.on("before-quit", () => {
 
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) void createWindow();
+  else showMainWindow();
 });
 
 app.on("window-all-closed", () => {

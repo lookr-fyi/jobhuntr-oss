@@ -104,10 +104,17 @@ test(
         false,
         "closing the window must keep an active Infinite Hunt alive in the tray",
       );
-      await electronApp.evaluate(({ BrowserWindow }) => {
-        BrowserWindow.getAllWindows()[0].show();
+      await electronApp.evaluate(({ app }) => {
+        app.emit("activate");
       });
       await new Promise((resolve) => setTimeout(resolve, 250));
+      assert.equal(
+        await electronApp.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].isVisible(),
+        ),
+        true,
+        "activating JobHuntr must reopen a window hidden by Infinite Hunt",
+      );
       await window.getByRole("button", { name: "Stop Infinite Hunt" }).click();
       await window
         .getByText("Infinite Hunt is active every 60 minutes.")
