@@ -52,13 +52,22 @@ test(
           contextIsolation: preferences.contextIsolation,
           nodeIntegration: preferences.nodeIntegration,
           sandbox: preferences.sandbox,
+          safeDialogs: preferences.safeDialogs,
         };
       });
       assert.deepEqual(security, {
         contextIsolation: true,
         nodeIntegration: false,
         sandbox: true,
+        safeDialogs: true,
       });
+      assert.equal(
+        await window.evaluate(
+          async () =>
+            (await navigator.permissions.query({ name: "geolocation" })).state,
+        ),
+        "denied",
+      );
       const popupPromise = electronApp.waitForEvent("window");
       await window.evaluate(() => window.open("/api/health", "_blank"));
       const popup = await popupPromise;
@@ -71,6 +80,7 @@ test(
           contextIsolation: preferences.contextIsolation,
           nodeIntegration: preferences.nodeIntegration,
           sandbox: preferences.sandbox,
+          safeDialogs: preferences.safeDialogs,
         };
       });
       assert.deepEqual(popupSecurity, security);

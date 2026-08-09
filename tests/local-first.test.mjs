@@ -37,6 +37,22 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
     read("server/index.mjs"),
     /process\.env\.HOST \|\| "127\.0\.0\.1"/,
   );
+  assert.equal(
+    Object.values(pkg.dependencies).every((version) =>
+      /^\d+\.\d+\.\d+$/.test(version),
+    ),
+    true,
+    "runtime dependencies must use reproducible exact versions",
+  );
+  const electronMain = read("electron/main.mjs");
+  assert.match(electronMain, /contextIsolation: true/);
+  assert.match(electronMain, /nodeIntegration: false/);
+  assert.match(electronMain, /sandbox: true/);
+  assert.match(electronMain, /safeDialogs: true/);
+  assert.match(electronMain, /clipboard-sanitized-write/);
+  assert.match(electronMain, /setPermissionCheckHandler/);
+  assert.match(electronMain, /setPermissionRequestHandler/);
+  assert.match(electronMain, /will-attach-webview/);
 });
 
 test("public Git index excludes personal data and private environment files", () => {

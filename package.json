@@ -74,12 +74,12 @@
     }
   },
   "dependencies": {
-    "express": "latest",
-    "lucide-react": "latest",
-    "nanoid": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "zod": "latest"
+    "express": "5.2.1",
+    "lucide-react": "1.30.0",
+    "nanoid": "6.0.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

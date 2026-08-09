@@ -1,4 +1,4 @@
-import { app, BrowserWindow, screen, shell } from "electron";
+import { app, BrowserWindow, screen, session, shell } from "electron";
 import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
@@ -150,10 +150,14 @@ const createWindow = async () => {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      safeDialogs: true,
     },
   });
 
   mainWindow.removeMenu();
+  mainWindow.webContents.on("will-attach-webview", (event) =>
+    event.preventDefault(),
+  );
   mainWindow.webContents.setWindowOpenHandler(({ url: target }) => {
     if (isLocalTarget(target, localOrigin))
       return {
@@ -163,6 +167,7 @@ const createWindow = async () => {
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: true,
+            safeDialogs: true,
           },
         },
       };
@@ -181,6 +186,14 @@ const createWindow = async () => {
 };
 
 app.whenReady().then(async () => {
+  const allowedPermissions = new Set(["clipboard-sanitized-write"]);
+  session.defaultSession.setPermissionCheckHandler((_webContents, permission) =>
+    allowedPermissions.has(permission),
+  );
+  session.defaultSession.setPermissionRequestHandler(
+    (_webContents, permission, callback) =>
+      callback(allowedPermissions.has(permission)),
+  );
   if (process.platform === "darwin") app.dock.setIcon(iconPath);
   try {
     await createWindow();
