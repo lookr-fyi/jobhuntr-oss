@@ -1019,6 +1019,118 @@ test("rapid application review edits cannot overwrite each other", async () => {
   );
 });
 
+test("editing attached source documents invalidates pending packet reviews", async () => {
+  const state = (await req("/api/state")).body;
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Review Guard",
+      title: "Product Engineer",
+    }),
+  });
+  const resume = await req("/api/resumes", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Review guard resume",
+      content:
+        "Product engineer with eight years of experience shipping reliable TypeScript products. Increased activation by 38% and led accessible cross-functional delivery.",
+    }),
+  });
+  const letter = await req("/api/cover-letters", {
+    method: "POST",
+    body: JSON.stringify({
+      jobId: job.body.id,
+      resumeId: resume.body.id,
+      templateContent:
+        "Dear {{company}}, {{opening}} {{evidence}} {{closing}} Best, {{name}}",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({
+      jobId: job.body.id,
+      resumeId: resume.body.id,
+      coverLetterId: letter.body.id,
+    }),
+  });
+  const questions = packet.body.applicationQuestions.map((question) => ({
+    ...question,
+    answer:
+      question.questionType === "dropdown"
+        ? question.options[0]
+        : question.questionType === "multiple_choice"
+          ? question.options[1]
+          : "I verified this accurate response against the current form.",
+    verified: true,
+  }));
+  const checklist = packet.body.checklist.map((item) => ({
+    ...item,
+    done: true,
+  }));
+  const ready = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      checklist,
+      applicationQuestions: questions,
+      status: "ready",
+    }),
+  });
+  assert.equal(ready.body.status, "ready");
+
+  await req(`/api/resumes/${resume.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      content: `${resume.body.content}\nImproved release reliability by 27%.`,
+    }),
+  });
+  let refreshed = (await req("/api/state")).body.submissions.find(
+    (item) => item.id === packet.body.id,
+  );
+  assert.equal(refreshed.status, "draft");
+  assert.equal(refreshed.checklist[0].done, false);
+  assert.equal(refreshed.checklist[1].done, true);
+  assert.equal(refreshed.checklist[2].done, false);
+
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ checklist, status: "ready" }),
+  });
+  await req(`/api/cover-letters/${letter.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      body: `${letter.body.body}\nThank you for your time.`,
+    }),
+  });
+  refreshed = (await req("/api/state")).body.submissions.find(
+    (item) => item.id === packet.body.id,
+  );
+  assert.equal(refreshed.status, "draft");
+  assert.equal(refreshed.checklist[0].done, true);
+  assert.equal(refreshed.checklist[1].done, false);
+  assert.equal(refreshed.checklist[2].done, false);
+
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      resumeId: "profile-resume",
+      checklist,
+      status: "ready",
+    }),
+  });
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      resumeText: `${state.profile.resumeText}\nDelivered another verified customer outcome of 31%.`,
+    }),
+  });
+  refreshed = (await req("/api/state")).body.submissions.find(
+    (item) => item.id === packet.body.id,
+  );
+  assert.equal(refreshed.status, "draft");
+  assert.equal(refreshed.checklist[0].done, false);
+  assert.equal(refreshed.checklist[2].done, false);
+});
+
 test("command center reports weekly goals and due-date priorities", async () => {
   const state = (await req("/api/state")).body;
   const job = state.jobs[0];

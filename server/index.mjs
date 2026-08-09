@@ -96,6 +96,27 @@ const isSafeHttpUrl = (value) => {
     return false;
   }
 };
+const invalidatePendingPacketReviews = (db, predicate, labels) => {
+  let invalidated = 0;
+  for (const submission of db.submissions) {
+    if (
+      !["draft", "ready"].includes(submission.status) ||
+      !predicate(submission)
+    )
+      continue;
+    let changed = false;
+    submission.checklist = submission.checklist.map((entry) => {
+      if (!labels.includes(entry.text) || !entry.done) return entry;
+      changed = true;
+      return { ...entry, done: false };
+    });
+    if (!changed) continue;
+    submission.status = "draft";
+    submission.updatedAt = timestamp();
+    invalidated += 1;
+  }
+  return invalidated;
+};
 const JobStatusSchema = z.enum([
   "saved",
   "interested",
@@ -271,6 +292,18 @@ app.put("/api/profile", async (req, res) => {
       !isUsableResumeText(profile.resumeText)
     )
       return { resumeRegressionBlocked: true };
+    const resumeFields = [
+      "resumeText",
+      "name",
+      "firstName",
+      "lastName",
+      "headline",
+      "location",
+    ];
+    const resumeChanged = resumeFields.some(
+      (field) =>
+        profile[field] !== undefined && profile[field] !== db.profile[field],
+    );
     db.profile = {
       ...db.profile,
       ...profile,
@@ -279,6 +312,12 @@ app.put("/api/profile", async (req, res) => {
         ...(profile.preferences || {}),
       },
     };
+    if (resumeChanged)
+      invalidatePendingPacketReviews(
+        db,
+        (submission) => submission.resumeId === "profile-resume",
+        ["Review resume alignment", "Confirm application details"],
+      );
     auditEvent(db, "profile", "Updated local profile.");
     return { profile: db.profile };
   });
@@ -635,12 +674,24 @@ app.patch("/api/resumes/:id", async (req, res) => {
   const resume = await mutate((db) => {
     const item = db.resumes.find((r) => r.id === req.params.id);
     if (!item) return null;
+    const changed = ["name", "templateId", "jobId", "content"].some(
+      (field) =>
+        req.body[field] !== undefined &&
+        safeText(req.body[field], field === "content" ? 100000 : 120) !==
+          item[field],
+    );
     if (req.body.name !== undefined) item.name = safeText(req.body.name, 120);
     if (req.body.templateId !== undefined)
       item.templateId = safeText(req.body.templateId, 50);
     if (req.body.jobId !== undefined) item.jobId = safeText(req.body.jobId, 50);
     if (req.body.content !== undefined)
       item.content = safeText(req.body.content, 100000);
+    if (changed)
+      invalidatePendingPacketReviews(
+        db,
+        (submission) => submission.resumeId === item.id,
+        ["Review resume alignment", "Confirm application details"],
+      );
     item.updatedAt = timestamp();
     auditEvent(db, "resume", `Updated resume “${item.name}”.`);
     return item;
@@ -922,10 +973,21 @@ app.patch("/api/cover-letters/:id", async (req, res) => {
   const letter = await mutate((db) => {
     const item = db.coverLetters.find((x) => x.id === req.params.id);
     if (!item) return null;
+    const changed =
+      (req.body.title !== undefined &&
+        safeText(req.body.title, 200) !== item.title) ||
+      (req.body.body !== undefined &&
+        safeText(req.body.body, 100000) !== item.body);
     if (req.body.title !== undefined)
       item.title = safeText(req.body.title, 200);
     if (req.body.body !== undefined)
       item.body = safeText(req.body.body, 100000);
+    if (changed)
+      invalidatePendingPacketReviews(
+        db,
+        (submission) => submission.coverLetterId === item.id,
+        ["Review cover letter", "Confirm application details"],
+      );
     item.updatedAt = timestamp();
     auditEvent(db, "cover-letter", `Updated cover letter “${item.title}”.`);
     return item;
