@@ -3992,6 +3992,39 @@ test(
         {
           data: {
             ...documentRestorePoint,
+            profile: {
+              ...documentRestorePoint.profile,
+              onboarded: true,
+              name: { unsafe: true },
+              firstName: { unsafe: true },
+              lastName: { unsafe: true },
+              nickname: { unsafe: true },
+              headline: { unsafe: true },
+              location: { unsafe: true },
+              targetRoles: ["Restored Product Engineer", { unsafe: true }],
+              skills: ["Restored React", { unsafe: true }],
+              resumeText: { unsafe: true },
+              additionalInfo: { unsafe: true },
+              preferences: {
+                remote: "yes",
+                locations: ["Restored Remote", { unsafe: true }],
+                minSalary: -1,
+                weeklyApplicationGoal: 999,
+                atsThreshold: -5,
+              },
+              faqAnswers: [
+                {
+                  id: "duplicate-browser-faq",
+                  question: { unsafe: true },
+                  answer: { unsafe: true },
+                },
+                {
+                  id: "duplicate-browser-faq",
+                  question: "Restored FAQ question",
+                  answer: "Restored FAQ answer",
+                },
+              ],
+            },
             jobs: documentRestorePoint.jobs.map((job, index) =>
               index === 0
                 ? {
@@ -4316,6 +4349,19 @@ test(
         0,
       );
       await assertAccessible(page, "Restored Job Tracker");
+      await page.goto(`${baseUrl}/#/settings?tab=about-me`);
+      await page.getByRole("heading", { name: "User Center" }).waitFor();
+      await page.getByRole("tab", { name: "About Me" }).waitFor();
+      const restoredFaq = page.getByLabel("Restored FAQ question", {
+        exact: true,
+      });
+      await restoredFaq.waitFor();
+      assert.equal(await restoredFaq.inputValue(), "Restored FAQ answer");
+      assert.equal(
+        await page.getByText("[object Object]", { exact: true }).count(),
+        0,
+      );
+      await assertAccessible(page, "Restored About Me");
       const restoredDocumentWorkspace = await page.request.post(
         `${baseUrl}/api/import`,
         { data: documentRestorePoint },

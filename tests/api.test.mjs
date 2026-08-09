@@ -1993,8 +1993,41 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
       ...after,
       profile: {
         ...after.profile,
-        skills: "not-an-array",
-        faqAnswers: "not-an-array",
+        onboarded: "yes",
+        name: { malformed: true },
+        firstName: { malformed: true },
+        lastName: { malformed: true },
+        nickname: { malformed: true },
+        headline: { malformed: true },
+        location: { malformed: true },
+        targetRoles: ["  Product Engineer  ", 42, "Product Engineer", ""],
+        skills: ["  React  ", 42, "React", ""],
+        resumeText: { malformed: true },
+        additionalInfo: { malformed: true },
+        preferences: {
+          remote: "yes",
+          locations: ["  Remote  ", 42, "Remote", ""],
+          minSalary: -10,
+          weeklyApplicationGoal: 999,
+          atsThreshold: -5,
+        },
+        faqAnswers: [
+          {
+            id: "duplicate-faq-id",
+            question: { malformed: true },
+            answer: { malformed: true },
+          },
+          {
+            id: "duplicate-faq-id",
+            question: "  Valid restored question?  ",
+            answer: "  Valid restored answer  ",
+          },
+          {
+            id: "duplicate-faq-id",
+            question: "Second restored question?",
+            answer: "Second restored answer",
+          },
+        ],
       },
       templates: [
         {
@@ -2290,8 +2323,42 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   });
   assert.equal(malformedNested.res.status, 200);
   const normalized = (await req("/api/state")).body;
-  assert.deepEqual(normalized.profile.skills, []);
-  assert.deepEqual(normalized.profile.faqAnswers, []);
+  assert.equal(normalized.profile.onboarded, false);
+  assert.equal(normalized.profile.name, "Local Job Hunter");
+  assert.equal(normalized.profile.firstName, "");
+  assert.equal(
+    normalized.profile.headline,
+    "Full-stack builder looking for high-impact teams",
+  );
+  assert.equal(normalized.profile.location, "United States");
+  assert.deepEqual(normalized.profile.targetRoles, ["Product Engineer"]);
+  assert.deepEqual(normalized.profile.skills, ["React"]);
+  assert.equal(normalized.profile.resumeText, "");
+  assert.equal(normalized.profile.additionalInfo, "");
+  assert.deepEqual(normalized.profile.preferences.locations, ["Remote"]);
+  assert.equal(normalized.profile.preferences.remote, true);
+  assert.equal(normalized.profile.preferences.minSalary, 0);
+  assert.equal(normalized.profile.preferences.weeklyApplicationGoal, 100);
+  assert.equal(normalized.profile.preferences.atsThreshold, 0);
+  assert.deepEqual(
+    normalized.profile.faqAnswers.map(({ id, question, answer }) => ({
+      id,
+      question,
+      answer,
+    })),
+    [
+      {
+        id: "duplicate-faq-id",
+        question: "Valid restored question?",
+        answer: "Valid restored answer",
+      },
+      {
+        id: "duplicate-faq-id-2",
+        question: "Second restored question?",
+        answer: "Second restored answer",
+      },
+    ],
+  );
   assert.equal(normalized.templates.length, 2);
   assert.equal(normalized.templates[0].name, "Resume Template 1");
   assert.deepEqual(normalized.templates[0].sections, [

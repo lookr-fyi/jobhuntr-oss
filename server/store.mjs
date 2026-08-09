@@ -373,15 +373,84 @@ const safeStoredHttpUrl = (value, max = 2000) => {
 
 function migrate(input) {
   const db = isRecord(input) ? input : {};
+  const defaultProfile = emptyDb().profile;
   db.meta = isRecord(db.meta) ? db.meta : {};
-  db.profile = isRecord(db.profile) ? db.profile : emptyDb().profile;
-  db.profile.preferences = isRecord(db.profile.preferences)
-    ? db.profile.preferences
+  const restoredProfile = isRecord(db.profile) ? db.profile : {};
+  const restoredPreferences = isRecord(restoredProfile.preferences)
+    ? restoredProfile.preferences
     : {};
-  db.profile.targetRoles = strings(db.profile.targetRoles);
-  db.profile.skills = strings(db.profile.skills);
-  db.profile.preferences.locations = strings(db.profile.preferences.locations);
-  db.profile.faqAnswers = records(db.profile.faqAnswers);
+  const normalizeProfileList = (value, maxItems, maxLength) =>
+    [
+      ...new Set(
+        strings(value)
+          .map((item) => boundedText(item, maxLength))
+          .filter(Boolean),
+      ),
+    ].slice(0, maxItems);
+  const faqIds = new Set();
+  const faqAnswers = records(restoredProfile.faqAnswers)
+    .map((faq) => ({
+      ...faq,
+      question: boundedText(faq.question, 1000),
+      answer: boundedText(faq.answer, 30000),
+    }))
+    .filter((faq) => faq.question)
+    .map((faq, index) => ({
+      id: uniqueLegacyId(faq.id, "faq", index, faqIds),
+      question: faq.question,
+      answer: faq.answer,
+    }))
+    .slice(0, 100);
+  const numericPreference = (value, fallback, min, max, integer = false) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    const bounded = Math.min(max, Math.max(min, parsed));
+    return integer ? Math.round(bounded) : bounded;
+  };
+  db.profile = {
+    ...restoredProfile,
+    onboarded: restoredProfile.onboarded === true,
+    name: boundedText(restoredProfile.name, 200) || defaultProfile.name,
+    firstName: boundedText(restoredProfile.firstName, 100),
+    lastName: boundedText(restoredProfile.lastName, 100),
+    nickname: boundedText(restoredProfile.nickname, 100),
+    headline:
+      boundedText(restoredProfile.headline, 1000) || defaultProfile.headline,
+    location:
+      boundedText(restoredProfile.location, 300) || defaultProfile.location,
+    targetRoles: normalizeProfileList(restoredProfile.targetRoles, 100, 200),
+    skills: normalizeProfileList(restoredProfile.skills, 200, 200),
+    resumeText: boundedText(restoredProfile.resumeText, 200000),
+    additionalInfo: boundedText(restoredProfile.additionalInfo, 100000),
+    faqAnswers,
+    preferences: {
+      ...restoredPreferences,
+      remote:
+        typeof restoredPreferences.remote === "boolean"
+          ? restoredPreferences.remote
+          : defaultProfile.preferences.remote,
+      locations: normalizeProfileList(restoredPreferences.locations, 100, 300),
+      minSalary: numericPreference(
+        restoredPreferences.minSalary,
+        defaultProfile.preferences.minSalary,
+        0,
+        100000000,
+      ),
+      weeklyApplicationGoal: numericPreference(
+        restoredPreferences.weeklyApplicationGoal,
+        defaultProfile.preferences.weeklyApplicationGoal,
+        1,
+        100,
+        true,
+      ),
+      atsThreshold: numericPreference(
+        restoredPreferences.atsThreshold,
+        80,
+        0,
+        100,
+      ),
+    },
+  };
   db.jobs = records(db.jobs);
   const templateIds = new Set();
   const restoredTemplates = records(db.templates);
