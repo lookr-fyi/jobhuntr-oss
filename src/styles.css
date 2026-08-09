@@ -8781,6 +8781,10 @@ main > header.integrated-page-header {
   justify-items: center;
   gap: 18px;
 }
+.v2-cover-template-step-head {
+  margin-bottom: 32px;
+  text-align: center;
+}
 .v2-cover-carousel-stage {
   display: flex;
   align-items: center;
@@ -9384,6 +9388,14 @@ main > header.integrated-page-header {
     width: 600px;
     height: 780px;
     box-sizing: border-box;
+  }
+  .v2-cover-carousel-stage {
+    gap: 32px;
+  }
+  .v2-cover-carousel-arrow {
+    width: 64px;
+    height: 64px;
+    min-width: 64px;
   }
 }
 @media (max-width: 1099px) {

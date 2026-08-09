@@ -1912,6 +1912,19 @@ test(
         [600, 780],
         "the primary cover-letter preview should retain v2's 600×780 document geometry",
       );
+      assert.deepEqual(
+        await page.locator(".v2-cover-step").evaluate((step) => {
+          const heading = getComputedStyle(
+            step.querySelector(".v2-cover-template-step-head"),
+          );
+          const arrow = getComputedStyle(
+            step.querySelector(".v2-cover-carousel-arrow"),
+          );
+          return [heading.textAlign, arrow.width, arrow.height];
+        }),
+        ["center", "64px", "64px"],
+        "template selection should retain v2's centered heading and 64px carousel controls",
+      );
       assert.equal(
         await page
           .getByRole("button", { name: "Open Infinite Hunting status" })

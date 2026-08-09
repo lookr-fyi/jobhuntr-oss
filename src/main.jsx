@@ -6384,7 +6384,7 @@ function Resume({ state, reload, mode = "resume" }) {
           <div className="card v2-cover-step">
             {letterWizard.step === 1 && (
               <>
-                <div className="v2-cover-step-head">
+                <div className="v2-cover-step-head v2-cover-template-step-head">
                   <h3>Choose a Template</h3>
                   <p>Select a professional template for your cover letter</p>
                 </div>
@@ -6418,7 +6418,7 @@ function Resume({ state, reload, mode = "resume" }) {
                           aria-label="Previous cover letter template"
                           onClick={() => selectTemplate(selectedIndex - 1)}
                         >
-                          <ChevronLeft size={30} />
+                          <ChevronLeft size={32} />
                         </button>
                         <div
                           className={`v2-cover-template-sheet ${selectedTemplate.id}`}
@@ -6437,7 +6437,7 @@ function Resume({ state, reload, mode = "resume" }) {
                           aria-label="Next cover letter template"
                           onClick={() => selectTemplate(selectedIndex + 1)}
                         >
-                          <ChevronRight size={30} />
+                          <ChevronRight size={32} />
                         </button>
                       </div>
                       <div
