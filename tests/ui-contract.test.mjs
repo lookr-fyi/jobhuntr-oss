@@ -384,7 +384,8 @@ test("Job Tracker saves cannot duplicate or dismiss in-flight work", async () =>
   }
   assert.match(tracker, /editBusyRef\.current[\s\S]*?return/);
   assert.match(tracker, /addBusyRef\.current\)\s*return/);
-  assert.match(tracker, /Escape" && !editBusyRef\.current/);
+  assert.match(tracker, /if \(editBusyRef\.current\) return/);
+  assert.match(tracker, /requestCloseJobDrawerRef\.current\(\)/);
   assert.match(tracker, /Escape" && !addBusyRef\.current/);
   assert.match(tracker, /addBusy \? "Saving…" : "Save"/);
   assert.match(tracker, /disabled=\{addBusy\}/);
@@ -394,6 +395,28 @@ test("Job Tracker saves cannot duplicate or dismiss in-flight work", async () =>
   assert.match(tracker, /movingJobIdsRef\.current\.delete\(id\)/);
   assert.match(tracker, /draggable=\{!movingJobIds\.has\(item\.id\)\}/);
   assert.match(tracker, /disabled=\{movingJobIds\.has\(job\.id\)\}/);
+});
+
+test("Job Tracker protects unsaved edits from every dismissal path", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const tracker = source.slice(
+    source.indexOf("function Tracker"),
+    source.indexOf("function TrackerApplicationInsights"),
+  );
+
+  assert.match(tracker, /const \[editFormBaseline, setEditFormBaseline\]/);
+  assert.match(tracker, /const hasUnsavedTrackerEdit = Boolean/);
+  assert.match(tracker, /title="Discard job changes\?"/);
+  assert.match(tracker, /onClick=\{requestCancelTrackerEdit\}/);
+  assert.match(tracker, /onClick=\{requestCloseJobDrawer\}/);
+  assert.match(tracker, /requestCloseJobDrawerRef\.current\(\)/);
+  assert.match(
+    tracker,
+    /finishClosingTrackerEdit\(discardTrackerEdit === "drawer"\)/,
+  );
 });
 
 test("Agent Runs bulk deletion uses one atomic retryable request", async () => {

@@ -3363,6 +3363,33 @@ test(
       await assertNamedFormControls(jobEditForm, "Edit Job drawer");
       await jobEditForm
         .getByLabel("title", { exact: true })
+        .fill("Unsaved Principal Product Engineer");
+      await page.getByRole("button", { name: "Cancel", exact: true }).click();
+      const discardJobChangesDialog = page.getByRole("alertdialog", {
+        name: "Discard job changes?",
+      });
+      await discardJobChangesDialog.waitFor();
+      await assertAccessible(page, "Discard Job Tracker edit confirmation");
+      await discardJobChangesDialog
+        .getByRole("button", { name: "Cancel" })
+        .click();
+      await discardJobChangesDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await jobEditForm.getByLabel("title", { exact: true }).inputValue(),
+        "Unsaved Principal Product Engineer",
+        "canceling discard should preserve the unsaved edit",
+      );
+      await page.getByLabel("Dismiss job details").click({ force: true });
+      await discardJobChangesDialog.waitFor();
+      await discardJobChangesDialog
+        .getByRole("button", { name: "Cancel" })
+        .click();
+      await discardJobChangesDialog.waitFor({ state: "hidden" });
+      await page
+        .getByRole("heading", { name: "Edit Job", exact: true })
+        .waitFor();
+      await jobEditForm
+        .getByLabel("title", { exact: true })
         .fill("Founding Principal Product Engineer");
       await jobEditForm
         .getByLabel("salary", { exact: true })

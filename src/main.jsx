@@ -2290,6 +2290,8 @@ function Tracker({ state, reload, setTab }) {
   });
   const [showForm, setShowForm] = useState(false);
   const [editForm, setEditForm] = useState(null);
+  const [editFormBaseline, setEditFormBaseline] = useState("");
+  const [discardTrackerEdit, setDiscardTrackerEdit] = useState("");
   const [editBusy, setEditBusy] = useState(false);
   const [addBusy, setAddBusy] = useState(false);
   const editBusyRef = useRef(false);
@@ -2308,6 +2310,38 @@ function Tracker({ state, reload, setTab }) {
   const addJobDrawerCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
   const deleteTarget = state.jobs.find((item) => item.id === deleteJobId);
+  const trackerEditDigest = (value) => (value ? JSON.stringify(value) : "");
+  const hasUnsavedTrackerEdit = Boolean(
+    editForm &&
+    editFormBaseline &&
+    trackerEditDigest(editForm) !== editFormBaseline,
+  );
+  const finishClosingTrackerEdit = useCallback((closeDrawer = false) => {
+    setEditForm(null);
+    setEditFormBaseline("");
+    setDiscardTrackerEdit("");
+    if (closeDrawer) setSelected(null);
+  }, []);
+  const requestCancelTrackerEdit = useCallback(() => {
+    if (editBusyRef.current) return;
+    if (hasUnsavedTrackerEdit) {
+      setDiscardTrackerEdit("edit");
+      return;
+    }
+    finishClosingTrackerEdit(false);
+  }, [finishClosingTrackerEdit, hasUnsavedTrackerEdit]);
+  const requestCloseJobDrawer = useCallback(() => {
+    if (editBusyRef.current) return;
+    if (hasUnsavedTrackerEdit) {
+      setDiscardTrackerEdit("drawer");
+      return;
+    }
+    finishClosingTrackerEdit(true);
+  }, [finishClosingTrackerEdit, hasUnsavedTrackerEdit]);
+  const requestCloseJobDrawerRef = useRef(requestCloseJobDrawer);
+  useEffect(() => {
+    requestCloseJobDrawerRef.current = requestCloseJobDrawer;
+  }, [requestCloseJobDrawer]);
   const jobDrawerOpen = Boolean(job);
   const jobSubmission = state.submissions
     .filter((item) => item.jobId === selected)
@@ -2461,10 +2495,7 @@ function Tracker({ state, reload, setTab }) {
     const returnFocus = document.activeElement;
     jobDrawerCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !editBusyRef.current) {
-        setSelected(null);
-        setEditForm(null);
-      }
+      if (event.key === "Escape") requestCloseJobDrawerRef.current();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -2534,6 +2565,23 @@ function Tracker({ state, reload, setTab }) {
   const selectJob = (id) => {
     setSelected(id);
     setEditForm(null);
+    setEditFormBaseline("");
+    setDiscardTrackerEdit("");
+  };
+  const openTrackerEdit = (target) => {
+    const next = {
+      company: target.company || "",
+      title: target.title || "",
+      location: target.location || "",
+      salary: target.salary || "",
+      url: target.url || "",
+      description: target.description || "",
+      status: target.status,
+      tags: (target.tags || []).join(", "),
+    };
+    setEditForm(next);
+    setEditFormBaseline(trackerEditDigest(next));
+    setDiscardTrackerEdit("");
   };
   const getTrackerUrl = (jobId = "") => {
     const params = new URLSearchParams();
@@ -2630,6 +2678,7 @@ function Tracker({ state, reload, setTab }) {
       });
       if (!saved) return;
       setEditForm(null);
+      setEditFormBaseline("");
       if (requestedStatus !== job.status)
         await requestStatusChange(job.id, requestedStatus);
     } finally {
@@ -2668,7 +2717,12 @@ function Tracker({ state, reload, setTab }) {
     if (!deleteTarget) return;
     try {
       await api(`/api/jobs/${deleteTarget.id}`, { method: "DELETE" });
-      if (selected === deleteTarget.id) setSelected(null);
+      if (selected === deleteTarget.id) {
+        setSelected(null);
+        setEditForm(null);
+        setEditFormBaseline("");
+        setDiscardTrackerEdit("");
+      }
       setDeleteJobId("");
       await reload();
     } catch (error) {
@@ -2677,6 +2731,17 @@ function Tracker({ state, reload, setTab }) {
   };
   return (
     <section className="tracker-page">
+      <ConfirmDialog
+        open={Boolean(discardTrackerEdit)}
+        title="Discard job changes?"
+        description="Your latest edits to this tracked role have not been saved. Discard them?"
+        confirmLabel="Discard Changes"
+        busyLabel="Discarding…"
+        onClose={() => setDiscardTrackerEdit("")}
+        onConfirm={() =>
+          finishClosingTrackerEdit(discardTrackerEdit === "drawer")
+        }
+      />
       <ConfirmDialog
         open={deleteOpen}
         title="Delete tracked job?"
@@ -3023,11 +3088,7 @@ function Tracker({ state, reload, setTab }) {
               className="job-drawer-backdrop"
               tabIndex={-1}
               aria-label="Dismiss job details"
-              onClick={() => {
-                if (editBusyRef.current) return;
-                setSelected(null);
-                setEditForm(null);
-              }}
+              onClick={requestCloseJobDrawer}
             />
             <div
               className="job-drawer"
@@ -3056,7 +3117,7 @@ function Tracker({ state, reload, setTab }) {
                       <button
                         className="secondary cancel-button"
                         disabled={editBusy}
-                        onClick={() => setEditForm(null)}
+                        onClick={requestCancelTrackerEdit}
                       >
                         Cancel
                       </button>
@@ -3067,18 +3128,7 @@ function Tracker({ state, reload, setTab }) {
                         <button
                           className="secondary small edit-button"
                           aria-label="Edit job"
-                          onClick={() =>
-                            setEditForm({
-                              company: job.company || "",
-                              title: job.title || "",
-                              location: job.location || "",
-                              salary: job.salary || "",
-                              url: job.url || "",
-                              description: job.description || "",
-                              status: job.status,
-                              tags: (job.tags || []).join(", "),
-                            })
-                          }
+                          onClick={() => openTrackerEdit(job)}
                         >
                           Edit
                         </button>
@@ -3087,10 +3137,7 @@ function Tracker({ state, reload, setTab }) {
                         ref={jobDrawerCloseRef}
                         className="drawer-close close-button"
                         aria-label="Close job details"
-                        onClick={() => {
-                          setSelected(null);
-                          setEditForm(null);
-                        }}
+                        onClick={requestCloseJobDrawer}
                       >
                         ×
                       </button>
