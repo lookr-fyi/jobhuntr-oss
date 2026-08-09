@@ -803,7 +803,7 @@ test("Gig creation and applications are single-flight and retryable", async () =
   }
   assert.match(gigs, /if \(savingGigRef\.current\) return/);
   assert.match(gigs, /if \(!item \|\| applyingGigRef\.current\) return/);
-  assert.match(gigs, /Escape" && !applyingGigRef\.current/);
+  assert.match(gigs, /requestCloseCampaignRef\.current\(\)/);
   assert.match(gigs, /applyingGig \? "Submitting…" : "Submit Application"/);
   assert.match(gigs, /savingGig \? "Saving…" : "Save gig"/);
   assert.ok(
@@ -819,6 +819,27 @@ test("Gig creation and applications are single-flight and retryable", async () =
   assert.match(gigs, /gigMutationQueuesRef\.current\.set\(id, operation\)/);
   assert.match(gigs, /gigMutationQueuesRef\.current\.get\(id\) !== operation/);
   assert.match(gigs, /draggable=\{!patchingGigIds\.has\(item\.id\)\}/);
+});
+
+test("Gig application pitches cannot be silently dismissed", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const gigs = source.slice(
+    source.indexOf("function Gigs"),
+    source.indexOf("function ProfileAudit"),
+  );
+
+  assert.match(gigs, /const \[discardCampaignOpen, setDiscardCampaignOpen\]/);
+  assert.match(gigs, /if \(campaignProposal\.trim\(\)\)/);
+  assert.match(gigs, /title="Discard application pitch\?"/);
+  assert.match(gigs, /onConfirm=\{finishClosingCampaign\}/);
+  assert.match(gigs, /requestCloseCampaignRef\.current\(\)/);
+  assert.ok(
+    (gigs.match(/onClick=\{requestCloseCampaign\}/g) || []).length >= 2,
+    "the backdrop and Cancel action must share protected dismissal behavior",
+  );
 });
 
 test("LinkedIn audits cannot duplicate or publish stale results", async () => {

@@ -3949,6 +3949,22 @@ test(
         .fill(
           "I test complex React workflows and provide evidence-based feedback.",
         );
+      await page.keyboard.press("Escape");
+      const discardPitchDialog = page.getByRole("alertdialog", {
+        name: "Discard application pitch?",
+      });
+      await discardPitchDialog.waitFor();
+      await assertAccessible(
+        page,
+        "Discard gig application pitch confirmation",
+      );
+      await discardPitchDialog.getByRole("button", { name: "Cancel" }).click();
+      await discardPitchDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await campaignDialog.getByLabel("Gig application pitch").inputValue(),
+        "I test complex React workflows and provide evidence-based feedback.",
+        "canceling discard should preserve the gig application pitch",
+      );
       await assertAccessible(page, "Gig application review");
       const [gigCreateResponse] = await Promise.all([
         page.waitForResponse(

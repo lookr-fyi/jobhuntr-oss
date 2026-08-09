@@ -10822,6 +10822,7 @@ function Gigs({ state, reload }) {
   const [showForm, setShowForm] = useState(false);
   const [campaignPreview, setCampaignPreview] = useState(null);
   const [campaignProposal, setCampaignProposal] = useState("");
+  const [discardCampaignOpen, setDiscardCampaignOpen] = useState(false);
   const [gigQuery, setGigQuery] = useState("");
   const [myGigQuery, setMyGigQuery] = useState("");
   const [myView, setMyView] = useState("table");
@@ -10845,6 +10846,23 @@ function Gigs({ state, reload }) {
     if (gigDetailsBusyRef.current) return;
     setSelected(null);
   }, []);
+  const finishClosingCampaign = useCallback(() => {
+    setCampaignPreview(null);
+    setCampaignProposal("");
+    setDiscardCampaignOpen(false);
+  }, []);
+  const requestCloseCampaign = useCallback(() => {
+    if (applyingGigRef.current || discardCampaignOpen) return;
+    if (campaignProposal.trim()) {
+      setDiscardCampaignOpen(true);
+      return;
+    }
+    finishClosingCampaign();
+  }, [campaignProposal, discardCampaignOpen, finishClosingCampaign]);
+  const requestCloseCampaignRef = useRef(requestCloseCampaign);
+  useEffect(() => {
+    requestCloseCampaignRef.current = requestCloseCampaign;
+  }, [requestCloseCampaign]);
   const money = (value) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -11008,8 +11026,7 @@ function Gigs({ state, reload }) {
     const returnFocus = document.activeElement;
     campaignCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !applyingGigRef.current)
-        setCampaignPreview(null);
+      if (event.key === "Escape") requestCloseCampaignRef.current();
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -11019,6 +11036,15 @@ function Gigs({ state, reload }) {
   }, [campaignPreview]);
   return (
     <section className="gigs-page">
+      <ConfirmDialog
+        open={discardCampaignOpen}
+        title="Discard application pitch?"
+        description="Your pitch for this gig has not been submitted. Discard it?"
+        confirmLabel="Discard Pitch"
+        busyLabel="Discarding…"
+        onClose={() => setDiscardCampaignOpen(false)}
+        onConfirm={finishClosingCampaign}
+      />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete gig application?"
@@ -11116,9 +11142,7 @@ function Gigs({ state, reload }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Close gig application"
-            onClick={() => {
-              if (!applyingGigRef.current) setCampaignPreview(null);
-            }}
+            onClick={requestCloseCampaign}
           />
           <div className="v2-template-modal-content v2-gig-campaign-modal">
             <div className="v2-gig-campaign-modal-head">
@@ -11162,7 +11186,7 @@ function Gigs({ state, reload }) {
                 ref={campaignCloseRef}
                 className="secondary"
                 disabled={applyingGig}
-                onClick={() => setCampaignPreview(null)}
+                onClick={requestCloseCampaign}
               >
                 Cancel
               </button>
