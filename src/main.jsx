@@ -520,6 +520,9 @@ function ConfirmDialog({
     try {
       await onConfirm();
       onClose();
+    } catch {
+      // Keep destructive confirmation open when the shared API surface reports
+      // a failure, so the user can retry or cancel without losing context.
     } finally {
       setBusy(false);
     }
@@ -2204,11 +2207,16 @@ function Tracker({ state, reload, setTab }) {
     };
   }, [showForm]);
   const patch = async (id, body) => {
-    await api(`/api/jobs/${id}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    });
-    await reload();
+    try {
+      await api(`/api/jobs/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await reload();
+      return true;
+    } catch {
+      return false;
+    }
   };
   const requestStatusChange = async (id, status) => {
     const target = state.jobs.find((item) => item.id === id);
@@ -2311,7 +2319,7 @@ function Tracker({ state, reload, setTab }) {
     setEditBusy(true);
     try {
       const requestedStatus = editForm.status;
-      await patch(job.id, {
+      const saved = await patch(job.id, {
         ...editForm,
         status: job.status,
         tags: String(editForm.tags || "")
@@ -2319,6 +2327,7 @@ function Tracker({ state, reload, setTab }) {
           .map((tag) => tag.trim())
           .filter(Boolean),
       });
+      if (!saved) return;
       setEditForm(null);
       if (requestedStatus !== job.status)
         await requestStatusChange(job.id, requestedStatus);
@@ -2328,27 +2337,31 @@ function Tracker({ state, reload, setTab }) {
   };
   const save = async () => {
     if (!form.company.trim() || !form.title.trim()) return;
-    const created = await api("/api/jobs", {
-      method: "POST",
-      body: JSON.stringify({
-        ...form,
-        tags: form.tags
-          .split(",")
-          .map((x) => x.trim())
-          .filter(Boolean),
-      }),
-    });
-    setForm(emptyTrackedRole());
-    setSelected(created.id);
-    setShowForm(false);
-    await reload();
+    try {
+      const created = await api("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({
+          ...form,
+          tags: form.tags
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean),
+        }),
+      });
+      setForm(emptyTrackedRole());
+      setSelected(created.id);
+      setShowForm(false);
+      await reload();
+    } catch {}
   };
   const remove = async () => {
     if (!deleteTarget) return;
-    await api(`/api/jobs/${deleteTarget.id}`, { method: "DELETE" });
-    if (selected === deleteTarget.id) setSelected(null);
-    setDeleteJobId("");
-    await reload();
+    try {
+      await api(`/api/jobs/${deleteTarget.id}`, { method: "DELETE" });
+      if (selected === deleteTarget.id) setSelected(null);
+      setDeleteJobId("");
+      await reload();
+    } catch {}
   };
   return (
     <section className="tracker-page">
@@ -3863,18 +3876,22 @@ function Board({ state, reload }) {
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const leaderboardCloseRef = useRef(null);
   const search = async () => {
-    const jobs = await api("/api/board/search", {
-      method: "POST",
-      body: JSON.stringify({ q: "", location: "" }),
-    });
-    setResults(jobs);
-    setSelectedUrl("");
+    try {
+      const jobs = await api("/api/board/search", {
+        method: "POST",
+        body: JSON.stringify({ q: "", location: "" }),
+      });
+      setResults(jobs);
+      setSelectedUrl("");
+    } catch {}
   };
   useEffect(() => {
     api("/api/board/search", {
       method: "POST",
       body: JSON.stringify({ q: "" }),
-    }).then(setResults);
+    })
+      .then(setResults)
+      .catch(() => {});
   }, []);
   const queuedUrls = new Set([
     ...state.jobs.map((job) => job.url).filter(Boolean),
@@ -4599,34 +4616,38 @@ function Queue({ state, reload, setTab }) {
   };
   const create = async () => {
     if (!selectedQueueJobId) return;
-    const created = await api("/api/submissions", {
-      method: "POST",
-      body: JSON.stringify({
-        jobId: selectedQueueJobId,
-        resumeId: recommendedResume(selectedQueueJobId),
-        coverLetterId:
-          state.coverLetters.find((x) => x.jobId === selectedQueueJobId)?.id ||
-          "",
-      }),
-    });
-    setSelectedId(created.id);
-    await reload();
+    try {
+      const created = await api("/api/submissions", {
+        method: "POST",
+        body: JSON.stringify({
+          jobId: selectedQueueJobId,
+          resumeId: recommendedResume(selectedQueueJobId),
+          coverLetterId:
+            state.coverLetters.find((x) => x.jobId === selectedQueueJobId)
+              ?.id || "",
+        }),
+      });
+      setSelectedId(created.id);
+      await reload();
+    } catch {}
   };
   const prepareJob = async (targetJobId) => {
-    const created = await api("/api/submissions", {
-      method: "POST",
-      body: JSON.stringify({
-        jobId: targetJobId,
-        resumeId: recommendedResume(targetJobId),
-        coverLetterId:
-          state.coverLetters.find((item) => item.jobId === targetJobId)?.id ||
-          "",
-      }),
-    });
-    setSelectedId(created.id);
-    setJobId(targetJobId);
-    setQueueTab("apply");
-    await reload();
+    try {
+      const created = await api("/api/submissions", {
+        method: "POST",
+        body: JSON.stringify({
+          jobId: targetJobId,
+          resumeId: recommendedResume(targetJobId),
+          coverLetterId:
+            state.coverLetters.find((item) => item.jobId === targetJobId)?.id ||
+            "",
+        }),
+      });
+      setSelectedId(created.id);
+      setJobId(targetJobId);
+      setQueueTab("apply");
+      await reload();
+    } catch {}
   };
   useEffect(() => {
     if (!submitOpen) return undefined;
