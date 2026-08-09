@@ -3252,7 +3252,7 @@ section.gigs-page .v2-gigs-intro p {
   font-size: 13px;
 }
 .v2-file-drop small {
-  color: #64748b;
+  color: #475569;
 }
 .v2-file-drop input {
   position: absolute;
@@ -5735,6 +5735,8 @@ button.v2-workflow-card.selected {
 *,
 *::before,
 *::after {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 html,

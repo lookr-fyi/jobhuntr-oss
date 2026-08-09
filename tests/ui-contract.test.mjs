@@ -76,7 +76,7 @@ test("the app shell retains the authoritative v2 global density and sizing reset
 
   assert.match(
     v2Shell,
-    /\*,\s*\*::before,\s*\*::after\s*\{\s*box-sizing: border-box/,
+    /\*,\s*\*::before,\s*\*::after\s*\{\s*margin: 0;\s*padding: 0;\s*box-sizing: border-box/,
   );
   assert.match(v2Shell, /html,\s*body\s*\{[\s\S]*?font-size: 11px/);
   assert.match(v2Shell, /#root\s*\{[\s\S]*?height: 100%/);

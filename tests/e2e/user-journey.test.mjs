@@ -192,6 +192,14 @@ test(
         document.body.append(probe);
         const probeWidth = probe.getBoundingClientRect().width;
         probe.remove();
+        const resetProbe = document.createElement("h4");
+        document.body.append(resetProbe);
+        const resetProbeStyle = getComputedStyle(resetProbe);
+        const resetGeometry = {
+          margin: resetProbeStyle.margin,
+          padding: resetProbeStyle.padding,
+        };
+        resetProbe.remove();
         return {
           bodyFontSize: bodyStyle.fontSize,
           bodyFontWeight: bodyStyle.fontWeight,
@@ -199,6 +207,7 @@ test(
           appHeight: appStyle.height,
           appOverflow: appStyle.overflow,
           probeWidth,
+          resetGeometry,
         };
       });
       assert.deepEqual(
@@ -210,6 +219,7 @@ test(
           appHeight: "1000px",
           appOverflow: "hidden",
           probeWidth: 100,
+          resetGeometry: { margin: "0px", padding: "0px" },
         },
         "the rendered shell should retain the authoritative v2 density and border-box geometry",
       );
