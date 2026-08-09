@@ -3468,15 +3468,36 @@ button.v2-audit-toggle:hover {
     grid-template-columns: 1fr;
   }
 }
-.v2-outreach-page .v2-page-intro > .inline select {
-  min-width: 230px;
+.v2-outreach-page > .v2-page-intro {
+  margin: -8px -24px 0;
+  padding: 24px 32px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+}
+.v2-outreach-page > .v2-page-intro h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.v2-outreach-page > .v2-page-intro > .inline {
+  gap: 16px;
+}
+.v2-outreach-page > .v2-page-intro button {
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
 }
 .v2-outreach-summary-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin: 20px 0 16px;
+  margin: 16px 0;
 }
 .v2-outreach-stats {
   display: flex;
@@ -3571,6 +3592,22 @@ button.v2-audit-toggle:hover {
 }
 .v2-outreach-filters > button {
   margin-left: auto;
+}
+.v2-collect-modal {
+  max-width: 520px;
+}
+.v2-collect-modal > label {
+  display: grid;
+  gap: 7px;
+  margin-top: 20px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+.v2-collect-modal select {
+  width: 100%;
+  margin: 0;
 }
 .v2-outreach-layout {
   display: grid;
@@ -3684,8 +3721,10 @@ button.v2-audit-toggle:hover {
   margin-bottom: 18px;
   border-bottom: 1px solid #e2e8f0;
 }
-.v2-contact-profile h3 {
+.v2-contact-profile h3,
+.v2-contact-profile h2 {
   margin: 0 0 4px;
+  font-size: 18px;
 }
 .v2-contact-profile p {
   margin: 0;
@@ -3724,9 +3763,11 @@ button.v2-audit-toggle:hover {
 .v2-message-hidden svg {
   color: #2563eb;
 }
-.v2-message-hidden h3 {
+.v2-message-hidden h3,
+.v2-message-hidden h2 {
   margin: 12px 0 4px;
   color: #334155;
+  font-size: 18px;
 }
 .v2-message-hidden p {
   max-width: 300px;
@@ -3747,8 +3788,13 @@ button.v2-audit-toggle:hover {
   border-radius: 50%;
   background: #dbeafe;
 }
-.v2-connect-modal h3 {
+.v2-connect-modal h3,
+.v2-connect-modal h2 {
   margin: 0 0 8px;
+  font-size: 20px;
+}
+.v2-outreach-page .empty-state h2 {
+  font-size: 18px;
 }
 .v2-connect-modal > p {
   color: #64748b;
@@ -3778,6 +3824,16 @@ button.v2-audit-toggle:hover {
   }
 }
 @media (max-width: 700px) {
+  .v2-outreach-page > .v2-page-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 16px;
+  }
+  .v2-outreach-page > .v2-page-intro > .inline {
+    width: 100%;
+    flex-wrap: wrap;
+  }
   .v2-outreach-summary-row {
     align-items: stretch;
     flex-direction: column;
@@ -9562,7 +9618,8 @@ main > header.integrated-page-header {
   align-items: center;
   gap: 12px;
 }
-.v2-template-modal-content h3 {
+.v2-template-modal-content h3,
+.v2-template-modal-content h2 {
   margin: 0 0 6px;
   font-size: 22px;
 }

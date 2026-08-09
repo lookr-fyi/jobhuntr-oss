@@ -2409,7 +2409,50 @@ test(
       await assertAccessible(page, "LinkedIn Audit");
 
       await page.locator('button[title="Outreach"]').click();
+      await page
+        .getByRole("heading", { name: "Outreach", exact: true })
+        .waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-outreach-page").evaluate((root) => {
+          const style = (selector) =>
+            getComputedStyle(root.querySelector(selector));
+          const header = style(":scope > .v2-page-intro");
+          const heading = style(":scope > .v2-page-intro h1");
+          const collect = style(":scope > .v2-page-intro button.secondary");
+          const connect = style(
+            ":scope > .v2-page-intro button:not(.secondary)",
+          );
+          return {
+            header: [header.padding, header.borderBottomWidth],
+            heading: [heading.fontSize, heading.fontWeight],
+            collect: [collect.padding, collect.fontSize, collect.fontWeight],
+            connect: [connect.padding, connect.fontSize, connect.fontWeight],
+          };
+        }),
+        {
+          header: ["24px 32px", "1px"],
+          heading: ["28px", "600"],
+          collect: ["12px 20px", "16px", "500"],
+          connect: ["12px 20px", "16px", "500"],
+        },
+        "Outreach should retain the authoritative v2 header and action geometry",
+      );
       await page.getByRole("button", { name: "Collect contacts" }).click();
+      let collectDialog = page.getByRole("dialog", {
+        name: "Collect contacts",
+      });
+      await collectDialog.waitFor();
+      assert.equal(
+        await collectDialog
+          .getByRole("button", { name: "Cancel" })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "collect contacts should move keyboard focus into its modal",
+      );
+      await assertNamedFormControls(page, "Collect contacts dialog");
+      await collectDialog
+        .getByRole("button", { name: "Collect contacts", exact: true })
+        .click();
       assert.equal(
         await page.getByLabel("Show Connection Messages").isChecked(),
         false,
@@ -2434,6 +2477,10 @@ test(
         .waitFor();
       await page.getByText("E2E persisted outreach subject").first().waitFor();
       await page.getByRole("button", { name: "Collect contacts" }).click();
+      collectDialog = page.getByRole("dialog", { name: "Collect contacts" });
+      await collectDialog
+        .getByRole("button", { name: "Collect contacts", exact: true })
+        .click();
       await page
         .getByText("All contacts for this role are already collected.")
         .waitFor();

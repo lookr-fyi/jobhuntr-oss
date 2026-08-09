@@ -7619,15 +7619,30 @@ function OutreachPage({ state, reload }) {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [showMessages, setShowMessages] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [collectOpen, setCollectOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [deleteContact, setDeleteContact] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [collectFeedback, setCollectFeedback] = useState("");
+  const collectCloseRef = useRef(null);
   const connectCloseRef = useRef(null);
   const [draft, setDraft] = useState(
     state.outreachDrafts.find((item) => item.id === selectedId) || null,
   );
+  useEffect(() => {
+    if (!collectOpen) return undefined;
+    const returnFocus = document.activeElement;
+    collectCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setCollectOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [collectOpen]);
   useEffect(() => {
     if (!connectOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -7741,27 +7756,13 @@ function OutreachPage({ state, reload }) {
         }}
       />
       <div className="v2-page-intro">
-        <div>
-          <h2>Outreach</h2>
-          <p>
-            Build relationships with recruiters, hiring managers, and peers
-            connected to your saved roles.
-          </p>
-        </div>
+        <h1>Outreach</h1>
         <div className="inline">
-          <select
-            name="outreach-role"
-            aria-label="Role for outreach"
-            value={jobId}
-            onChange={(e) => setJobId(e.target.value)}
+          <button
+            className="secondary"
+            disabled={!state.jobs.length || collecting}
+            onClick={() => setCollectOpen(true)}
           >
-            {state.jobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.company} — {job.title}
-              </option>
-            ))}
-          </select>
-          <button disabled={!jobId || collecting} onClick={generate}>
             <Users size={16} />{" "}
             {collecting ? "Collecting…" : "Collect contacts"}
           </button>
@@ -7971,7 +7972,7 @@ function OutreachPage({ state, reload }) {
           ) : (
             <div className="empty-state">
               <Users />
-              <h3>No contacts collected yet</h3>
+              <h2>No contacts collected yet</h2>
               <p>
                 Choose a tracked role and collect a private, editable outreach
                 draft.
@@ -7990,7 +7991,7 @@ function OutreachPage({ state, reload }) {
                   }
                 </span>
                 <div>
-                  <h3>{selected.recipient || "Hiring team"}</h3>
+                  <h2>{selected.recipient || "Hiring team"}</h2>
                   <p>
                     {
                       state.jobs.find((job) => job.id === selected.jobId)
@@ -8036,7 +8037,7 @@ function OutreachPage({ state, reload }) {
               ) : (
                 <div className="v2-message-hidden">
                   <ShieldCheck size={22} />
-                  <h3>Connection message hidden</h3>
+                  <h2>Connection message hidden</h2>
                   <p>
                     Turn on Show Connection Messages to review and edit this
                     private draft.
@@ -8047,7 +8048,7 @@ function OutreachPage({ state, reload }) {
           ) : (
             <div className="empty-state">
               <MessageSquare />
-              <h3>Select a contact</h3>
+              <h2>Select a contact</h2>
               <p>
                 Contact details and your personalized message will appear here.
               </p>
@@ -8055,6 +8056,65 @@ function OutreachPage({ state, reload }) {
           )}
         </div>
       </div>
+      {collectOpen && (
+        <div
+          className="v2-template-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="collect-contacts-title"
+          onKeyDown={containDialogFocus}
+        >
+          <button
+            className="v2-template-backdrop"
+            tabIndex={-1}
+            aria-label="Close collect contacts dialog"
+            onClick={() => setCollectOpen(false)}
+          />
+          <div className="v2-template-modal-content v2-collect-modal">
+            <span className="v2-connect-icon">
+              <Users size={22} />
+            </span>
+            <h2 id="collect-contacts-title">Collect contacts</h2>
+            <p>
+              Choose a tracked role. JobHuntr creates a private, editable local
+              contact draft without scraping or sending anything.
+            </p>
+            <label>
+              Role for outreach
+              <select
+                name="outreach-role"
+                aria-label="Role for outreach"
+                value={jobId}
+                onChange={(e) => setJobId(e.target.value)}
+              >
+                {state.jobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.company} — {job.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="v2-template-modal-actions">
+              <button
+                ref={collectCloseRef}
+                className="secondary"
+                onClick={() => setCollectOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                disabled={!jobId || collecting}
+                onClick={async () => {
+                  await generate();
+                  setCollectOpen(false);
+                }}
+              >
+                Collect contacts
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {connectOpen && (
         <div
           className="v2-template-modal"
@@ -8073,10 +8133,10 @@ function OutreachPage({ state, reload }) {
             <span className="v2-connect-icon">
               <MessageSquare size={22} />
             </span>
-            <h3 id="connect-title">
+            <h2 id="connect-title">
               Connect to {selectedIds.size} contact
               {selectedIds.size === 1 ? "" : "s"}
-            </h3>
+            </h2>
             <p>
               Review the personalized messages before recording outreach.
               JobHuntr will not send anything automatically.
