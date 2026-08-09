@@ -181,6 +181,16 @@ test(
       const initialMotivation = await page
         .locator(".v2-momentum b")
         .innerText();
+      assert.ok(
+        initialMotivation.length > 30,
+        "the complete momentum reminder should render on first paint",
+      );
+      await page.waitForTimeout(100);
+      assert.equal(
+        await page.locator(".v2-momentum b").innerText(),
+        initialMotivation,
+        "the dashboard reminder should not expose a partially typed UI state",
+      );
       const navigationIconBounds = await page
         .locator(".v2-nav button > svg")
         .evaluateAll((icons) =>
@@ -1877,8 +1887,20 @@ test(
       );
       await assertAccessible(mobile, "Mobile Overview");
       await mobile
-        .locator('button[title="Job Board"]')
-        .evaluate((button) => button.click());
+        .getByRole("button", { name: "Submission Queue", exact: true })
+        .click();
+      await mobile
+        .getByRole("heading", { name: "Submission Queue" })
+        .first()
+        .waitFor();
+      assert.match(
+        mobile.url(),
+        /#\/queue/,
+        "the first real click in the bottom navigation must not be swallowed by desktop hover expansion",
+      );
+      await mobile
+        .getByRole("button", { name: "Job Board", exact: true })
+        .click();
       await mobile.getByRole("heading", { name: "Today's Picks" }).waitFor();
       await assertAccessible(mobile, "Mobile Job Board");
       const hasPageOverflow = await mobile.evaluate(

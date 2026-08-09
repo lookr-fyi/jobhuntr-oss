@@ -737,9 +737,18 @@ function App() {
         className={
           sidebarHovered ? "v2-sidebar expanded" : "v2-sidebar collapsed"
         }
-        onMouseEnter={() => setSidebarHovered(true)}
-        onMouseLeave={() => setSidebarHovered(false)}
-        onFocusCapture={() => setSidebarHovered(true)}
+        onMouseEnter={() => {
+          if (!window.matchMedia("(max-width: 760px)").matches)
+            setSidebarHovered(true);
+        }}
+        onMouseLeave={() => {
+          if (!window.matchMedia("(max-width: 760px)").matches)
+            setSidebarHovered(false);
+        }}
+        onFocusCapture={() => {
+          if (!window.matchMedia("(max-width: 760px)").matches)
+            setSidebarHovered(true);
+        }}
         onBlurCapture={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget))
             setSidebarHovered(false);
@@ -1341,37 +1350,12 @@ function Overview({ state, setTab, reload }) {
   const [motivationIndex, setMotivationIndex] = useState(
     () => new Date().getDate() % OVERVIEW_MOTIVATION.length,
   );
-  const [typedMotivation, setTypedMotivation] = useState("");
   const [chartVisibility, setChartVisibility] = useState({
     evaluated: true,
     queued: true,
   });
   const [chartHover, setChartHover] = useState(null);
   const farewellCloseRef = useRef(null);
-  useEffect(() => {
-    const message = OVERVIEW_MOTIVATION[motivationIndex];
-    const reducedMotion = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    let typingTimer;
-    const startTimer = window.setTimeout(() => {
-      if (reducedMotion) {
-        setTypedMotivation(message);
-        return;
-      }
-      setTypedMotivation("");
-      let index = 0;
-      typingTimer = window.setInterval(() => {
-        index += 1;
-        setTypedMotivation(message.slice(0, index));
-        if (index >= message.length) window.clearInterval(typingTimer);
-      }, 24);
-    }, 0);
-    return () => {
-      window.clearTimeout(startTimer);
-      window.clearInterval(typingTimer);
-    };
-  }, [motivationIndex]);
   useEffect(() => {
     if (!farewellOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -1527,7 +1511,7 @@ function Overview({ state, setTab, reload }) {
       </div>
       <div className="v2-momentum" aria-live="polite">
         <span>MOMENTUM REMINDER</span>
-        <b>{typedMotivation || "\u00a0"}</b>
+        <b>{OVERVIEW_MOTIVATION[motivationIndex]}</b>
       </div>
       <div className="v2-overview-top">
         <div className="v2-kpi-grid">
