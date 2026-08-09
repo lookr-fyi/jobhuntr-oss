@@ -4579,13 +4579,23 @@ button.v2-board-row.selected small {
   }
 }
 .v2-hunt-page {
+  box-sizing: border-box;
   width: 100%;
-  max-width: 960px;
+  max-width: none;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 24px;
   margin: 0 auto;
-  padding: 32px 24px 48px;
+  padding: 32px 0 48px;
 }
 .v2-hunt-intro {
-  margin-bottom: 24px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 960px;
+  margin-bottom: 0;
+  padding: 0 24px;
 }
 .v2-hunt-intro > button {
   flex: none;
@@ -4593,13 +4603,13 @@ button.v2-board-row.selected small {
 }
 .v2-page-intro.v2-hunt-intro h2 {
   margin-bottom: 8px;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1.25;
 }
 .v2-queue-banner {
   max-width: 840px;
-  margin: 0 auto 20px;
+  margin: 0 auto;
   min-height: 48px;
   padding: 8px 16px;
   display: flex;
@@ -4908,7 +4918,7 @@ button.v2-workflow-card.selected {
 }
 .v2-hunt-results {
   max-width: 840px;
-  margin: 24px auto 0;
+  margin: 0 auto;
 }
 .v2-session-modal {
   position: fixed;
@@ -6221,6 +6231,9 @@ main:has(> .resume-studio) {
   padding: 0;
 }
 main:has(> .v2-document-page) {
+  padding: 0;
+}
+main:has(> .v2-hunt-page) {
   padding: 0;
 }
 main > header {
