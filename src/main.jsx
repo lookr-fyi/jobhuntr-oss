@@ -4402,6 +4402,7 @@ function Queue({ state, reload, setTab }) {
             <div className="v2-queue-detail">
               {selected ? (
                 <SubmissionCard
+                  key={selected.id}
                   submission={selected}
                   state={state}
                   reload={reload}
@@ -4542,6 +4543,14 @@ function QuestionVerification({ question, onChange }) {
 function SubmissionCard({ submission: s, state, reload }) {
   const [externalSubmissionVerified, setExternalSubmissionVerified] =
     useState(false);
+  const [draftAnswers, setDraftAnswers] = useState(() =>
+    Object.fromEntries(
+      (s.applicationQuestions || []).map((question) => [
+        question.id,
+        question.answer || "",
+      ]),
+    ),
+  );
   const job = state.jobs.find((j) => j.id === s.jobId);
   const attachedResume = state.resumes.find((item) => item.id === s.resumeId);
   const attachedLetter = state.coverLetters.find(
@@ -4579,13 +4588,21 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateQuestion = async (id, answer) => {
+    setDraftAnswers((answers) => ({ ...answers, [id]: answer }));
     await updatePacket({
       applicationQuestion: { id, answer, verified: false },
     });
   };
   const verifyQuestion = async (id, verified) => {
+    const question = (s.applicationQuestions || []).find(
+      (candidate) => candidate.id === id,
+    );
     await updatePacket({
-      applicationQuestion: { id, verified },
+      applicationQuestion: {
+        id,
+        answer: draftAnswers[id] ?? question?.answer ?? "",
+        verified,
+      },
     });
   };
   return (
@@ -4762,8 +4779,15 @@ function SubmissionCard({ submission: s, state, reload }) {
                   {prompt}
                   <textarea
                     rows={2}
-                    defaultValue={question.answer || ""}
+                    maxLength={10000}
+                    value={draftAnswers[question.id] ?? question.answer ?? ""}
                     placeholder="Enter your answer…"
+                    onChange={(event) =>
+                      setDraftAnswers((answers) => ({
+                        ...answers,
+                        [question.id]: event.target.value,
+                      }))
+                    }
                     onBlur={(event) => {
                       if (event.target.value !== (question.answer || ""))
                         updateQuestion(question.id, event.target.value);
@@ -4771,7 +4795,10 @@ function SubmissionCard({ submission: s, state, reload }) {
                   />
                 </label>
                 <QuestionVerification
-                  question={question}
+                  question={{
+                    ...question,
+                    answer: draftAnswers[question.id] ?? question.answer ?? "",
+                  }}
                   onChange={verifyQuestion}
                 />
               </div>

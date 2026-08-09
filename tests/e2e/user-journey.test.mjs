@@ -862,15 +862,22 @@ test(
         /Why are you interested in this role/,
       );
       await whyAnswer.fill("The product mission matches my experience.");
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().includes("/api/submissions/") &&
-            response.request().method() === "PATCH" &&
-            response.ok(),
-        ),
-        whyAnswer.press("Tab"),
-      ]);
+      const immediateVerification = queueQuestions
+        .locator(".v2-question-card")
+        .filter({ hasText: "Why are you interested in this role?" })
+        .getByRole("checkbox");
+      await immediateVerification.click();
+      await page.waitForFunction(
+        () =>
+          document.querySelector(
+            ".v2-application-questions .v2-question-card input[type=checkbox]",
+          )?.checked === true,
+      );
+      assert.equal(
+        await immediateVerification.isChecked(),
+        true,
+        "a user must be able to type and verify an answer with one click, without waiting for a reload",
+      );
       const salaryAnswer = queueQuestions.getByLabel(
         /What are your salary expectations/,
       );
@@ -917,6 +924,7 @@ test(
           .locator(".v2-question-card")
           .filter({ hasText: question })
           .getByRole("checkbox");
+        if (await verification.isChecked()) continue;
         await Promise.all([
           page.waitForResponse(
             (response) =>
