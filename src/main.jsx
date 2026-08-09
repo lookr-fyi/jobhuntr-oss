@@ -1605,10 +1605,15 @@ function Overview({ state, setTab, reload }) {
     1,
     Math.floor((now.getTime() - chartStart.getTime()) / 86400000) + 1,
   );
-  const chartData = Array.from({ length: chartDays }, (_, index) => {
+  const chartPointCount = Math.min(chartDays, 366);
+  const chartData = Array.from({ length: chartPointCount }, (_, index) => {
+    const dayOffset =
+      chartPointCount === 1
+        ? 0
+        : Math.round((index / (chartPointCount - 1)) * (chartDays - 1));
     const date = new Date(chartStart);
     date.setHours(23, 59, 59, 999);
-    date.setDate(date.getDate() + index);
+    date.setDate(date.getDate() + dayOffset);
     const through = date.getTime();
     const available = state.jobs.filter(
       (job) => new Date(job.createdAt || job.updatedAt).getTime() <= through,

@@ -453,6 +453,21 @@ test(
         .getByRole("status")
         .filter({ hasText: /Jobs queued/ })
         .waitFor();
+      await page.route("**/api/state", async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        body.meta = { ...body.meta, createdAt: "0001-01-01T00:00:00.000Z" };
+        await route.fulfill({ response, json: body });
+      });
+      await page.reload();
+      await page.getByRole("heading", { name: "Pipeline over time" }).waitFor();
+      assert.ok(
+        (await page.locator(".v2-chart .line.evaluated").getAttribute("d"))
+          .split(/[ML]/)
+          .filter(Boolean).length <= 366,
+        "an extreme legacy workspace date must not create an unbounded chart",
+      );
+      await page.unroute("**/api/state");
       const [recordedSubmissionResponse] = await Promise.all([
         page.waitForResponse(
           (response) => response.url().endsWith("/api/state") && response.ok(),
