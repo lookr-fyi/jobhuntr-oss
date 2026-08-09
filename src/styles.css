@@ -7618,13 +7618,10 @@ select:focus {
 }
 @media (max-width: 700px) {
   .v2-farewell-button {
-    right: auto;
-    bottom: 76px;
-    left: 16px;
-    max-width: calc(100vw - 96px);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    position: static;
+    width: calc(100% - 32px);
+    margin: 24px 16px 92px;
+    justify-content: center;
   }
   .v2-hunt-float {
     right: 14px;
@@ -7642,13 +7639,25 @@ select:focus {
     flex-direction: column;
   }
   .v2-hero-actions {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .v2-hero-actions button {
+    width: 100%;
+    justify-content: center;
   }
   .v2-kpi-grid {
     grid-template-columns: 1fr;
   }
-  .v2-chart-legend {
-    display: none;
+  .v2-chart-card .v2-card-head {
+    flex-direction: column;
+  }
+  .v2-chart-toggles {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 8px;
   }
 }
 main > header.integrated-page-header {

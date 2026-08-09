@@ -880,3 +880,39 @@ test("FAQ deletion persists before mutating the form and cannot bless newer edit
     /if \(formRevision\.current === deletionRevision\) setSaved\(true\)/,
   );
 });
+
+test("mobile overview controls stack instead of crushing the v2 dashboard", async () => {
+  const styles = await readFile(
+    new URL("../src/styles.css", import.meta.url),
+    "utf8",
+  );
+  const mobileOverview = styles.slice(
+    styles.lastIndexOf(
+      "@media (max-width: 700px)",
+      styles.indexOf("main > header.integrated-page-header"),
+    ),
+    styles.indexOf("main > header.integrated-page-header"),
+  );
+
+  assert.match(
+    mobileOverview,
+    /\.v2-hero-actions \{[\s\S]*?grid-template-columns: 1fr;[\s\S]*?width: 100%;/,
+  );
+  assert.match(
+    mobileOverview,
+    /\.v2-hero-actions button \{[\s\S]*?width: 100%;[\s\S]*?justify-content: center;/,
+  );
+  assert.match(
+    mobileOverview,
+    /\.v2-chart-card \.v2-card-head \{\s*flex-direction: column;/,
+  );
+  assert.match(
+    mobileOverview,
+    /\.v2-chart-toggles \{[\s\S]*?grid-template-columns: 1fr;[\s\S]*?width: 100%;/,
+  );
+  assert.match(
+    mobileOverview,
+    /\.v2-farewell-button \{[\s\S]*?position: static;[\s\S]*?margin: 24px 16px 92px;/,
+  );
+  assert.doesNotMatch(mobileOverview, /\.v2-chart-legend/);
+});
