@@ -6928,6 +6928,67 @@ select:focus {
   border-radius: 8px;
   background: #fee2e2;
 }
+
+.v2-renderer-error {
+  min-height: 100vh;
+  margin: 0;
+  padding: 32px;
+  display: grid;
+  place-items: center;
+  background: #f8fafc;
+}
+.v2-renderer-error > section {
+  width: min(560px, 100%);
+  padding: 36px;
+  border: 1px solid var(--v2-border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.14);
+}
+.v2-renderer-error-icon {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+.v2-renderer-error h1 {
+  margin: 5px 0 10px;
+  color: var(--v2-text);
+  font-size: clamp(26px, 4vw, 34px);
+}
+.v2-renderer-error section > p:not(.eyebrow) {
+  max-width: 480px;
+  color: var(--v2-secondary);
+  line-height: 1.6;
+}
+.v2-renderer-error .inline {
+  margin: 26px 0 18px;
+  flex-wrap: wrap;
+}
+.v2-renderer-error small {
+  display: block;
+  color: var(--v2-muted);
+  line-height: 1.5;
+}
+@media (max-width: 560px) {
+  .v2-renderer-error {
+    padding: 16px;
+  }
+  .v2-renderer-error > section {
+    padding: 26px 22px;
+  }
+  .v2-renderer-error .inline,
+  .v2-renderer-error .inline button {
+    width: 100%;
+  }
+  .v2-renderer-error .inline button {
+    justify-content: center;
+  }
+}
 .v2-error-toast strong {
   color: #991b1b;
   font-size: 13px;

@@ -105,3 +105,15 @@ test("modal dialogs receive focus and return it to their trigger", async () => {
   assert.match(source, /returnFocus\.focus\(\)/);
   assert.match(source, /function App\(\) \{\s+useDialogFocusManagement\(\);/);
 });
+
+test("an uncaught renderer failure has a local recovery screen", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /class ErrorBoundary extends Component/);
+  assert.match(source, /static getDerivedStateFromError\(error\)/);
+  assert.match(source, /Your local workspace was not cleared or uploaded/);
+  assert.match(source, /<ErrorBoundary>\s*<App \/>\s*<\/ErrorBoundary>/);
+});

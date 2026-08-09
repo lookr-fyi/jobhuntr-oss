@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Component,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
@@ -531,6 +538,55 @@ const useDialogFocusManagement = () => {
     };
   }, []);
 };
+
+class ErrorBoundary extends Component {
+  state = { error: null };
+
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+
+  componentDidCatch(error, details) {
+    console.error("JobHuntr renderer error", error, details);
+  }
+
+  render() {
+    if (!this.state.error) return this.props.children;
+    return (
+      <main className="v2-renderer-error" role="main">
+        <section role="alert" aria-labelledby="renderer-error-title">
+          <span className="v2-renderer-error-icon">
+            <ShieldAlert size={26} aria-hidden="true" />
+          </span>
+          <p className="eyebrow">LOCAL WORKSPACE</p>
+          <h1 id="renderer-error-title">JobHuntr hit an unexpected problem</h1>
+          <p>
+            Your local workspace was not cleared or uploaded. Reload the app to
+            recover the current screen.
+          </p>
+          <div className="inline">
+            <button onClick={() => window.location.reload()}>
+              <RefreshCcw size={16} aria-hidden="true" /> Reload JobHuntr
+            </button>
+            <button
+              className="secondary"
+              onClick={() => {
+                window.location.hash = "#/overview";
+                window.location.reload();
+              }}
+            >
+              Return to Overview
+            </button>
+          </div>
+          <small>
+            If the problem repeats, keep the local JobHuntr data directory so
+            its recovery backup remains available.
+          </small>
+        </section>
+      </main>
+    );
+  }
+}
 function ConfirmDialog({
   open,
   title,
@@ -13338,4 +13394,8 @@ function Privacy({ state }) {
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>,
+);
