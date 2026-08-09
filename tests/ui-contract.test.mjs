@@ -158,3 +158,20 @@ test("refresh, bulk outreach, and legacy migration failures stay contained", asy
   }
   assert.match(source, /void migrate\(\)\.catch/);
 });
+
+test("ATS template scoring is single-flight and retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const start = source.indexOf("const advanceTemplateWizard = async");
+  const end = source.indexOf("\n  const saveResume", start);
+  const scoringFlow = source.slice(start, end);
+
+  assert.match(scoringFlow, /scoring: true/);
+  assert.match(scoringFlow, /try \{/);
+  assert.match(scoringFlow, /catch \{/);
+  assert.match(scoringFlow, /scoring: false/);
+  assert.match(source, /templateDialog\.scoring \|\|/);
+  assert.match(source, /"Scoring…"/);
+});

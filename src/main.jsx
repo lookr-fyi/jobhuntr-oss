@@ -6393,20 +6393,25 @@ function Resume({ state, reload, mode = "resume" }) {
     ]
       .filter(Boolean)
       .join("\n\n");
-    const [initialScoreResult, scoreResult] = await Promise.all([
-      score(templateDialog.originalResume),
-      score(optimizedResume),
-    ]);
-    setTemplateDialog({
-      ...templateDialog,
-      completedSteps: [
-        ...new Set([...(templateDialog.completedSteps || []), 4]),
-      ],
-      initialScoreResult,
-      optimizedResume,
-      scoreResult,
-      step: 5,
-    });
+    setTemplateDialog((current) => ({ ...current, scoring: true }));
+    try {
+      const [initialScoreResult, scoreResult] = await Promise.all([
+        score(templateDialog.originalResume),
+        score(optimizedResume),
+      ]);
+      setTemplateDialog((current) => ({
+        ...current,
+        completedSteps: [...new Set([...(current.completedSteps || []), 4])],
+        initialScoreResult,
+        optimizedResume,
+        scoreResult,
+        scoring: false,
+        step: 5,
+      }));
+    } catch {
+      // Keep the completed job details in step 4 so scoring can be retried.
+      setTemplateDialog((current) => ({ ...current, scoring: false }));
+    }
   };
   const saveResume = async () => {
     const content = resumeRef.current?.value ?? resume;
@@ -8305,6 +8310,7 @@ function Resume({ state, reload, mode = "resume" }) {
               {templateDialog.step < 5 ? (
                 <button
                   disabled={
+                    templateDialog.scoring ||
                     (templateDialog.step === 1 &&
                       (!templateDialog.name.trim() ||
                         !templateDialog.originalResume.trim() ||
@@ -8316,7 +8322,13 @@ function Resume({ state, reload, mode = "resume" }) {
                   }
                   onClick={advanceTemplateWizard}
                 >
-                  Next <ChevronRight size={16} />
+                  {templateDialog.scoring ? (
+                    "Scoring…"
+                  ) : (
+                    <>
+                      Next <ChevronRight size={16} />
+                    </>
+                  )}
                 </button>
               ) : (
                 <button
