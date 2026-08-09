@@ -1969,6 +1969,43 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           status: "applied",
           checklist: [],
         },
+        {
+          id: "unsafe-legacy-draft",
+          jobId: after.jobs[0].id,
+          status: "ready",
+          checklist: [
+            {
+              id: "duplicate-check-id",
+              text: "Review resume alignment",
+              done: true,
+            },
+            {
+              id: "duplicate-check-id",
+              text: "Unexpected legacy step",
+              done: true,
+            },
+          ],
+          applicationQuestions: [
+            {
+              id: "duplicate-question-id",
+              question: "When can you start?",
+              questionType: "dropdown",
+              options: "not-an-array",
+              answer: "Tomorrow",
+              required: true,
+              confident: true,
+              verified: true,
+            },
+            {
+              id: "duplicate-question-id",
+              question: "Optional note",
+              questionType: "legacy-widget",
+              answer: "  Keep this answer  ",
+              required: false,
+              verified: true,
+            },
+          ],
+        },
       ],
       gigs: [{ id: "legacy-gig", title: "Legacy", statusHistory: "bad" }],
       coachConversations: [{ id: "legacy-chat", messages: "bad" }],
@@ -1985,6 +2022,39 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(normalized.jobs[0].statusHistory.length, 1);
   assert.equal(normalized.jobs[0].statusHistory[0].status, "interview");
   assert.equal(normalized.submissions[0].status, "submitted");
+  assert.equal(normalized.submissions[0].checklist.length, 3);
+  assert.equal(
+    normalized.submissions[0].checklist.every((item) => item.done === false),
+    true,
+  );
+  const unsafeDraft = normalized.submissions[1];
+  assert.equal(unsafeDraft.status, "draft");
+  assert.deepEqual(
+    unsafeDraft.checklist.map(({ text, done }) => ({ text, done })),
+    [
+      { text: "Review resume alignment", done: true },
+      { text: "Review cover letter", done: false },
+      { text: "Confirm application details", done: false },
+    ],
+  );
+  assert.equal(new Set(unsafeDraft.checklist.map((item) => item.id)).size, 3);
+  assert.equal(unsafeDraft.applicationQuestions[0].questionType, "dropdown");
+  assert.deepEqual(unsafeDraft.applicationQuestions[0].options, []);
+  assert.equal(unsafeDraft.applicationQuestions[0].confident, false);
+  assert.equal(unsafeDraft.applicationQuestions[0].verified, false);
+  assert.equal(unsafeDraft.applicationQuestions[1].questionType, "text_input");
+  assert.equal(unsafeDraft.applicationQuestions[1].answer, "Keep this answer");
+  assert.equal(unsafeDraft.applicationQuestions[1].verified, true);
+  assert.notEqual(
+    unsafeDraft.applicationQuestions[0].id,
+    unsafeDraft.applicationQuestions[1].id,
+  );
+  const unsafeSubmit = await req(`/api/submissions/${unsafeDraft.id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedByUser: true }),
+  });
+  assert.equal(unsafeSubmit.res.status, 409);
+  assert.match(unsafeSubmit.body.error, /checklist/i);
   assert.equal(normalized.gigs[0].statusHistory.length, 1);
   assert.deepEqual(normalized.coachConversations[0].messages, []);
   assert.equal(normalized.meta.version, 11);

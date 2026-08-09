@@ -179,6 +179,78 @@ const isRecord = (value) =>
 const records = (value) => (Array.isArray(value) ? value.filter(isRecord) : []);
 const strings = (value) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+const boundedText = (value, max) =>
+  String(value ?? "")
+    .trim()
+    .slice(0, max);
+const SUBMISSION_CHECKLIST = [
+  "Review resume alignment",
+  "Review cover letter",
+  "Confirm application details",
+];
+const APPLICATION_QUESTION_TYPES = new Set([
+  "text_input",
+  "dropdown",
+  "multiple_choice",
+]);
+const normalizeApplicationQuestions = (value) => {
+  const seenIds = new Set();
+  return records(value)
+    .slice(0, 100)
+    .map((question, index) => {
+      let id = boundedText(question.id, 80) || nanoid();
+      if (seenIds.has(id)) id = nanoid();
+      seenIds.add(id);
+      const questionType = APPLICATION_QUESTION_TYPES.has(question.questionType)
+        ? question.questionType
+        : "text_input";
+      const options = [
+        ...new Set(
+          strings(question.options)
+            .map((option) => boundedText(option, 500))
+            .filter(Boolean),
+        ),
+      ].slice(0, 100);
+      const answer = boundedText(question.answer, 10000);
+      const required = question.required !== false;
+      const validAnswer =
+        (!answer && !required) ||
+        (Boolean(answer) &&
+          (!["dropdown", "multiple_choice"].includes(questionType) ||
+            options.includes(answer)));
+      return {
+        id,
+        question:
+          boundedText(question.question, 1000) ||
+          `Application question ${index + 1}`,
+        answer,
+        questionType,
+        options,
+        required,
+        confident: validAnswer,
+        verified: Boolean(question.verified) && validAnswer,
+      };
+    });
+};
+const normalizeSubmissionChecklist = (value) => {
+  const entries = records(value);
+  const seenIds = new Set();
+  return SUBMISSION_CHECKLIST.map((text) => {
+    const existing = entries.find(
+      (entry) => boundedText(entry.text, 200) === text,
+    );
+    let id = boundedText(existing?.id, 80) || nanoid();
+    if (seenIds.has(id)) id = nanoid();
+    seenIds.add(id);
+    return { id, text, done: existing?.done === true };
+  });
+};
+const isNormalizedApplicationQuestionReady = (question) =>
+  (!question.answer && question.required === false) ||
+  (Boolean(question.answer) &&
+    (!["dropdown", "multiple_choice"].includes(question.questionType) ||
+      question.options.includes(question.answer)) &&
+    question.verified === true);
 const HUNT_WORKFLOWS = new Set([
   "linkedin",
   "indeed",
@@ -280,7 +352,7 @@ function migrate(input) {
   db.submissions = records(db.submissions);
   for (const submission of db.submissions) {
     submission.status = normalizeSubmissionStatus(submission.status);
-    submission.checklist = records(submission.checklist);
+    submission.checklist = normalizeSubmissionChecklist(submission.checklist);
     if (!Array.isArray(submission.applicationQuestions)) {
       submission.applicationQuestions = [
         "Why are you interested in this role?",
@@ -299,12 +371,18 @@ function migrate(input) {
         questionType: "text_input",
         confident: false,
       }));
-    } else
-      submission.applicationQuestions = records(
-        submission.applicationQuestions,
-      );
-    for (const question of submission.applicationQuestions)
-      question.verified = Boolean(question.verified);
+    }
+    submission.applicationQuestions = normalizeApplicationQuestions(
+      submission.applicationQuestions,
+    );
+    if (["draft", "ready"].includes(submission.status))
+      submission.status =
+        submission.checklist.every((entry) => entry.done) &&
+        submission.applicationQuestions.every(
+          isNormalizedApplicationQuestionReady,
+        )
+          ? "ready"
+          : "draft";
   }
   db.coachConversations = records(db.coachConversations);
   for (const conversation of db.coachConversations)
