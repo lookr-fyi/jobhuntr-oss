@@ -385,6 +385,12 @@ test("Job Tracker saves cannot duplicate or dismiss in-flight work", async () =>
   assert.match(tracker, /Escape" && !addBusyRef\.current/);
   assert.match(tracker, /addBusy \? "Saving…" : "Save"/);
   assert.match(tracker, /disabled=\{addBusy\}/);
+  assert.match(tracker, /const movingJobIdsRef = useRef\(new Set\(\)\)/);
+  assert.match(tracker, /movingJobIdsRef\.current\.has\(id\)/);
+  assert.match(tracker, /movingJobIdsRef\.current\.add\(id\)/);
+  assert.match(tracker, /movingJobIdsRef\.current\.delete\(id\)/);
+  assert.match(tracker, /draggable=\{!movingJobIds\.has\(item\.id\)\}/);
+  assert.match(tracker, /disabled=\{movingJobIds\.has\(job\.id\)\}/);
 });
 
 test("Resume Studio document writes are single-flight and keep editors retryable", async () => {

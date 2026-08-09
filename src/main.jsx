@@ -2187,6 +2187,8 @@ function Tracker({ state, reload, setTab }) {
   const [deleteJobId, setDeleteJobId] = useState("");
   const [draggingJobId, setDraggingJobId] = useState("");
   const [dragOverStage, setDragOverStage] = useState("");
+  const [movingJobIds, setMovingJobIds] = useState(() => new Set());
+  const movingJobIdsRef = useRef(new Set());
   const [copiedTrackerUrl, setCopiedTrackerUrl] = useState("");
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
@@ -2388,11 +2390,34 @@ function Tracker({ state, reload, setTab }) {
   };
   const requestStatusChange = async (id, status) => {
     const target = state.jobs.find((item) => item.id === id);
+    if (!target || target.status === status || movingJobIdsRef.current.has(id))
+      return false;
     if (status === "applied" && target?.status !== "applied") {
       setPendingAppliedJobId(id);
-      return;
+      return false;
     }
-    await patch(id, { status });
+    movingJobIdsRef.current.add(id);
+    setMovingJobIds(new Set(movingJobIdsRef.current));
+    try {
+      return await patch(id, { status });
+    } finally {
+      movingJobIdsRef.current.delete(id);
+      setMovingJobIds(new Set(movingJobIdsRef.current));
+    }
+  };
+  const confirmAppliedStatus = async (id) => {
+    if (movingJobIdsRef.current.has(id)) return false;
+    movingJobIdsRef.current.add(id);
+    setMovingJobIds(new Set(movingJobIdsRef.current));
+    try {
+      return await patch(id, {
+        status: "applied",
+        confirmedByUser: true,
+      });
+    } finally {
+      movingJobIdsRef.current.delete(id);
+      setMovingJobIds(new Set(movingJobIdsRef.current));
+    }
   };
   const selectJob = (id) => {
     setSelected(id);
@@ -2563,10 +2588,7 @@ function Tracker({ state, reload, setTab }) {
         onClose={() => setPendingAppliedJobId("")}
         onConfirm={async () => {
           const id = pendingAppliedJobId;
-          const saved = await patch(id, {
-            status: "applied",
-            confirmedByUser: true,
-          });
+          const saved = await confirmAppliedStatus(id);
           if (!saved) throw new Error("Could not record external submission");
         }}
       />
@@ -2738,7 +2760,9 @@ function Tracker({ state, reload, setTab }) {
                         return (
                           <article className="job-card" key={item.id}>
                             <button
-                              draggable
+                              draggable={!movingJobIds.has(item.id)}
+                              disabled={movingJobIds.has(item.id)}
+                              aria-busy={movingJobIds.has(item.id)}
                               onDragStart={(e) => {
                                 e.dataTransfer.setData("jobId", item.id);
                                 e.dataTransfer.effectAllowed = "move";
@@ -3055,6 +3079,8 @@ function Tracker({ state, reload, setTab }) {
                         name="job-status"
                         className="status-select"
                         aria-label="Job status"
+                        disabled={movingJobIds.has(job.id)}
+                        aria-busy={movingJobIds.has(job.id)}
                         value={job.status}
                         onChange={(e) =>
                           requestStatusChange(job.id, e.target.value)

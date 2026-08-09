@@ -2930,7 +2930,32 @@ test(
       await funnelDialog.waitFor({ state: "hidden" });
       await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
       await page.getByLabel("Job status").waitFor();
-      await page.getByLabel("Job status").selectOption("interview");
+      let trackerStatusPatchCount = 0;
+      await page.route(`**/api/jobs/${insightsJobId}`, async (route) => {
+        trackerStatusPatchCount += 1;
+        if (trackerStatusPatchCount === 1)
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      });
+      const statusResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith(`/api/jobs/${insightsJobId}`) &&
+          response.request().method() === "PATCH" &&
+          response.ok(),
+      );
+      await page.getByLabel("Job status").evaluate((select) => {
+        select.value = "interview";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      await statusResponse;
+      await page.waitForTimeout(100);
+      assert.equal(
+        trackerStatusPatchCount,
+        1,
+        "same-frame tracker status changes must issue one PATCH per job",
+      );
+      await page.unroute(`**/api/jobs/${insightsJobId}`);
       await page.getByRole("button", { name: "Add Round" }).click();
       const roundForm = page.locator(".interview-round-form");
       await assertNamedFormControls(roundForm, "Interview round form");
