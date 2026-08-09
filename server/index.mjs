@@ -707,11 +707,21 @@ app.delete("/api/templates/:id", async (req, res) => {
 app.post("/api/resumes", async (req, res) => {
   const db = await readDb();
   const content = safeText(req.body.content || db.profile.resumeText, 100000);
+  const updateProfile = req.body.updateProfile === true;
   if (!isUsableResumeText(content))
     return res.status(400).json({
       error: "Replace the placeholder with a real resume before saving",
     });
   const resume = await mutate((db) => {
+    if (updateProfile && db.profile.resumeText !== content) {
+      db.profile.resumeText = content;
+      invalidatePendingPacketReviews(
+        db,
+        (submission) => submission.resumeId === "profile-resume",
+        ["Review resume alignment", "Confirm application details"],
+      );
+      auditEvent(db, "profile", "Updated base resume from Resume Studio.");
+    }
     const item = {
       id: nanoid(),
       name: safeText(req.body.name, 120) || `Resume ${db.resumes.length + 1}`,

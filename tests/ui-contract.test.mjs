@@ -205,6 +205,13 @@ test("Resume Studio save and scoring actions are single-flight and retryable", a
   assert.match(resumeStudio, /aria-busy=\{scoringResume\}/);
   assert.match(resumeStudio, /"Saving…" : "Save version"/);
   assert.match(resumeStudio, /"Analyzing…" : "Analyze ATS fit"/);
+  const saveVersion = resumeStudio.slice(
+    resumeStudio.indexOf("const saveResume = async"),
+    resumeStudio.indexOf("const scoreResume = async"),
+  );
+  assert.match(saveVersion, /api\("\/api\/resumes"/);
+  assert.match(saveVersion, /updateProfile: true/);
+  assert.doesNotMatch(saveVersion, /api\("\/api\/profile"/);
 });
 
 test("Infinite Hunt actions reject same-frame duplicate starts", async () => {

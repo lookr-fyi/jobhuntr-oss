@@ -668,11 +668,14 @@ test("resume versions and ATS details are persisted locally", async () => {
       jobId: state.jobs[0].id,
       content:
         "Senior product engineer who improved conversion by 25% using React and TypeScript. Led cross-functional delivery and reliable product experimentation.",
+      updateProfile: true,
     }),
   });
   assert.equal(created.res.status, 201);
   assert.equal(created.body.templateId, "impact");
   assert.equal(created.body.jobId, state.jobs[0].id);
+  const savedState = (await req("/api/state")).body;
+  assert.equal(savedState.profile.resumeText, created.body.content);
   const score = await req("/api/resume/score", {
     method: "POST",
     body: JSON.stringify({

@@ -6668,13 +6668,15 @@ function Resume({ state, reload, mode = "resume" }) {
     const content = resumeRef.current?.value ?? resume;
     setResume(content);
     try {
-      await api("/api/profile", {
-        method: "PUT",
-        body: JSON.stringify({ resumeText: content }),
-      });
       const saved = await api("/api/resumes", {
         method: "POST",
-        body: JSON.stringify({ name, templateId, jobId, content }),
+        body: JSON.stringify({
+          name,
+          templateId,
+          jobId,
+          content,
+          updateProfile: true,
+        }),
       });
       setPreview(saved);
       await reload();
