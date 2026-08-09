@@ -1105,7 +1105,23 @@ test(
         })
         .waitFor();
 
+      await page.evaluate(() =>
+        sessionStorage.setItem(
+          "jobhuntr-cover-letter-wizard",
+          JSON.stringify({ step: 5, result: "removed-v1-format" }),
+        ),
+      );
       await page.getByRole("button", { name: "Cover Letter" }).click();
+      await page
+        .getByRole("heading", { name: "Cover Letters", exact: true })
+        .waitFor();
+      assert.equal(
+        await page.evaluate(() =>
+          sessionStorage.getItem("jobhuntr-cover-letter-wizard"),
+        ),
+        null,
+        "an incompatible saved wizard should recover to the document library",
+      );
       await page.getByRole("button", { name: "Create Cover Letter" }).click();
       await page.getByRole("heading", { name: "Choose a Template" }).waitFor();
       await assertAccessible(page, "Cover Letter wizard");

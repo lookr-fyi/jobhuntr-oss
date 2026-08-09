@@ -5177,6 +5177,50 @@ const COVER_LETTER_TEMPLATES = [
     content: `Dear {{company}},\n\n{{opening}} I’m excited to apply for the {{role}} position.\n\n{{evidence}}\n\nMy experience with {{skills}} would help me contribute quickly. {{closing}}\n\nSincerely,\n{{name}}`,
   })),
 ];
+const normalizeCoverLetterWizard = (value) => {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !Number.isInteger(value.step) ||
+    value.step < 1 ||
+    value.step > 5 ||
+    typeof value.templateId !== "string" ||
+    typeof value.templateName !== "string" ||
+    typeof value.templateContent !== "string"
+  )
+    return null;
+  const text = (field, limit) =>
+    typeof value[field] === "string" ? value[field].slice(0, limit) : "";
+  const result =
+    value.result &&
+    typeof value.result === "object" &&
+    typeof value.result.id === "string" &&
+    typeof value.result.title === "string" &&
+    typeof value.result.body === "string"
+      ? {
+          id: value.result.id.slice(0, 200),
+          title: value.result.title.slice(0, 300),
+          body: value.result.body.slice(0, 100000),
+        }
+      : null;
+  if (value.step === 5 && !result) return null;
+  return {
+    step: value.step,
+    templateId: value.templateId.slice(0, 200),
+    templateName: value.templateName.slice(0, 300),
+    templateContent: value.templateContent.slice(0, 100000),
+    resumeId: text("resumeId", 200),
+    atsTemplateId: text("atsTemplateId", 200),
+    jobId: text("jobId", 200),
+    jobCompany: text("jobCompany", 300),
+    jobTitle: text("jobTitle", 500),
+    jobDescription: text("jobDescription", 5000),
+    promptInstructions: text("promptInstructions", 5000),
+    coverLetterInstructions: text("coverLetterInstructions", 5000),
+    promptApplied: Boolean(value.promptApplied),
+    result,
+  };
+};
 function Resume({ state, reload, mode = "resume" }) {
   const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
@@ -5193,7 +5237,12 @@ function Resume({ state, reload, mode = "resume" }) {
     if (mode !== "cover-letter") return null;
     try {
       const saved = sessionStorage.getItem("jobhuntr-cover-letter-wizard");
-      return saved ? JSON.parse(saved) : null;
+      const restored = saved
+        ? normalizeCoverLetterWizard(JSON.parse(saved))
+        : null;
+      if (saved && !restored)
+        sessionStorage.removeItem("jobhuntr-cover-letter-wizard");
+      return restored;
     } catch {
       sessionStorage.removeItem("jobhuntr-cover-letter-wizard");
       return null;
