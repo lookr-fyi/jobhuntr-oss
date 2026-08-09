@@ -693,14 +693,14 @@ function App() {
     ["agent", InfinityIcon, "Infinite Hunting", "automation"],
     ["queue", ListChecks, "Submission Queue", "automation"],
     ["board", Briefcase, "Job Board", "automation"],
-    ["runs", List, "Agent Runs", "automation"],
-    ["resume", Sparkles, "ATS Templates", "documents"],
+    ["runs", List, "All Runs", "automation", "Agent Runs"],
+    ["resume", Sparkles, "ATS Resume", "documents", "ATS Templates"],
     ["cover-letter", FileText, "Cover Letter", "documents"],
     ["tracker", Columns3, "Job Tracker", "career"],
     ["outreach", Users, "Outreach", "career"],
     ["audit", Search, "LinkedIn Audit", "career"],
     ["gigs", CircleDollarSign, "Gigs", "career"],
-    ["coach", MessageSquare, "AI Career Coach", "career"],
+    ["coach", MessageSquare, "AI Coach", "career", "AI Career Coach"],
   ];
   if (!state && err)
     return (
@@ -770,13 +770,13 @@ function App() {
           <b>JobHuntr</b>
         </div>
         <nav className="v2-nav" ref={navigationRef}>
-          {tabs.map(([name, Icon, label, group], index) => (
+          {tabs.map(([name, Icon, label, group, tooltip], index) => (
             <div className="v2-nav-slot" key={name}>
               {index > 0 && tabs[index - 1][3] !== group && (
                 <div className="v2-divider" />
               )}
               <button
-                title={label}
+                title={tooltip || label}
                 aria-current={tab === name ? "page" : undefined}
                 className={tab === name ? "active" : ""}
                 onClick={() => setTab(name)}

@@ -230,6 +230,19 @@ test(
             expandedNavigationBox.x + expandedNavigationBox.width,
         "expanded navigation labels should not clip outside the sidebar",
       );
+      for (const [tooltip, label] of [
+        ["Agent Runs", "All Runs"],
+        ["ATS Templates", "ATS Resume"],
+        ["AI Career Coach", "AI Coach"],
+      ]) {
+        assert.equal(
+          await page
+            .locator(`.v2-nav button[title="${tooltip}"] span`)
+            .innerText(),
+          label,
+          `${tooltip} should use the authoritative expanded v2 label`,
+        );
+      }
       const guidance = page.getByRole("button", { name: /Getting Started/ });
       const firstGuidanceTask = page
         .locator(".v2-guidance-list button")
@@ -280,7 +293,7 @@ test(
         state: "hidden",
       });
 
-      await page.getByRole("button", { name: "ATS Templates" }).click();
+      await page.locator('button[title="ATS Templates"]').click();
       await page
         .getByText("Generate a resume manually", { exact: true })
         .click();
@@ -367,7 +380,7 @@ test(
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor({ state: "hidden" });
 
-      await page.getByRole("button", { name: "Agent Runs" }).click();
+      await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
       await page
         .locator(".v2-run-row", { hasText: "Search" })
@@ -490,7 +503,7 @@ test(
           .isChecked(),
         true,
       );
-      await page.getByRole("button", { name: "Agent Runs" }).click();
+      await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
       await assertAccessible(page, "Agent Runs");
       const huntStatus = page.getByRole("button", {
@@ -579,7 +592,7 @@ test(
         .waitFor();
       await assertAccessible(page, "Job Board");
 
-      await page.getByRole("button", { name: "ATS Templates" }).click();
+      await page.locator('button[title="ATS Templates"]').click();
       await page
         .getByRole("heading", { name: "ATS Resume Templates" })
         .waitFor();
@@ -1500,7 +1513,7 @@ test(
       await deleteContactDialog.getByRole("button", { name: "Cancel" }).click();
       await assertAccessible(page, "Outreach");
 
-      await page.getByRole("button", { name: "AI Career Coach" }).click();
+      await page.locator('button[title="AI Career Coach"]').click();
       await Promise.all([
         page.waitForResponse(
           (response) =>
