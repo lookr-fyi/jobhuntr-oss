@@ -558,9 +558,19 @@ test("Job Board refresh and queue actions are single-flight", async () => {
 
   assert.match(board, /const queueingRef = useRef\(""\)/);
   assert.match(board, /const searchingRef = useRef\(false\)/);
+  assert.match(board, /const boardSearchRequestId = useRef\(0\)/);
   assert.match(board, /if \(searchingRef\.current\) return/);
   assert.match(board, /searchingRef\.current = true/);
   assert.match(board, /searchingRef\.current = false/);
+  assert.ok(
+    (board.match(/\+\+boardSearchRequestId\.current/g) || []).length >= 2,
+    "initial and manual feed requests must share newest-request ordering",
+  );
+  assert.ok(
+    (board.match(/boardSearchRequestId\.current === requestId/g) || [])
+      .length >= 2,
+    "initial and manual responses must reject stale feed results",
+  );
   assert.match(
     board,
     /if \(!job\?\.url \|\| queueingRef\.current \|\| queuedUrls\.has\(job\.url\)\) return/,

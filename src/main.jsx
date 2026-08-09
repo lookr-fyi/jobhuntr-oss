@@ -4121,20 +4121,24 @@ function Board({ state, reload }) {
   const [searching, setSearching] = useState(false);
   const queueingRef = useRef("");
   const searchingRef = useRef(false);
+  const boardSearchRequestId = useRef(0);
   const [notice, setNotice] = useState("");
   const [leaderboardOpen, setLeaderboardOpen] = useState(false);
   const leaderboardCloseRef = useRef(null);
   const search = async () => {
     if (searchingRef.current) return;
     searchingRef.current = true;
+    const requestId = ++boardSearchRequestId.current;
     setSearching(true);
     try {
       const jobs = await api("/api/board/search", {
         method: "POST",
         body: JSON.stringify({ q: "", location: "" }),
       });
-      setResults(jobs);
-      setSelectedUrl("");
+      if (boardSearchRequestId.current === requestId) {
+        setResults(jobs);
+        setSelectedUrl("");
+      }
     } catch {
       // Keep the current feed visible so refreshing can be retried.
     } finally {
@@ -4143,11 +4147,14 @@ function Board({ state, reload }) {
     }
   };
   useEffect(() => {
+    const requestId = ++boardSearchRequestId.current;
     api("/api/board/search", {
       method: "POST",
       body: JSON.stringify({ q: "" }),
     })
-      .then(setResults)
+      .then((jobs) => {
+        if (boardSearchRequestId.current === requestId) setResults(jobs);
+      })
       .catch(() => {});
   }, []);
   const queuedUrls = new Set([
