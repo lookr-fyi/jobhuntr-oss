@@ -1991,6 +1991,13 @@ app.post("/api/agent-runs/start", async (req, res) => {
       error: "Add a real profile resume before generating tailored resumes",
     });
   const run = await mutate((db) => {
+    const scheduleGeneration = safeText(req.body?.scheduleGeneration, 200);
+    if (
+      scheduleGeneration &&
+      (!db.infiniteHunt?.enabled ||
+        db.infiniteHunt.generation !== scheduleGeneration)
+    )
+      return { staleSchedule: true };
     const runId = nanoid();
     const options = huntOptions(req.body, db.profile);
     const matches = findLocalMatches(seedJobs, db.profile, options);
@@ -2172,6 +2179,10 @@ app.post("/api/agent-runs/start", async (req, res) => {
     );
     return item;
   });
+  if (run.staleSchedule)
+    return res.status(409).json({
+      error: "This Infinite Hunt schedule was stopped or restarted",
+    });
   res.status(201).json(run);
 });
 app.delete("/api/agent-runs/:id", async (req, res) => {
@@ -2436,7 +2447,11 @@ export const runScheduledHunt = async (
     const response = await fetch(`${baseUrl}/api/agent-runs/start`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...claim.options, origin: "infinite" }),
+      body: JSON.stringify({
+        ...claim.options,
+        origin: "infinite",
+        scheduleGeneration: claim.generation,
+      }),
     });
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));

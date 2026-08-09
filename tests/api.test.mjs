@@ -363,7 +363,9 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
   const persisted = (await req("/api/state")).body.infiniteHunt;
   assert.equal(persisted.options.q, "product engineer");
   assert.deepEqual(persisted.options.workflows, ["linkedin", "indeed"]);
-  const runsBefore = (await req("/api/state")).body.agentRuns.length;
+  const stateBeforeSchedule = (await req("/api/state")).body;
+  const runsBefore = stateBeforeSchedule.agentRuns.length;
+  const jobsBefore = stateBeforeSchedule.jobs.length;
   await mutate((db) => {
     db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
   });
@@ -390,6 +392,24 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
   assert.equal(
     afterStaleClaim.infiniteHunt.options.q,
     "frontend platform engineer",
+  );
+  const staleRunAttempt = await req("/api/agent-runs/start", {
+    method: "POST",
+    body: JSON.stringify({
+      q: "stale scheduler request",
+      origin: "infinite",
+      scheduleGeneration: started.body.generation,
+      minFit: 0,
+      workflows: ["linkedin"],
+    }),
+  });
+  assert.equal(staleRunAttempt.res.status, 409);
+  const afterStaleRunAttempt = (await req("/api/state")).body;
+  assert.equal(afterStaleRunAttempt.agentRuns.length, runsBefore);
+  assert.equal(
+    afterStaleRunAttempt.jobs.length,
+    jobsBefore,
+    "a stale scheduler request must not create run data",
   );
   await mutate((db) => {
     db.infiniteHunt.nextRunAt = new Date(Date.now() - 1000).toISOString();
