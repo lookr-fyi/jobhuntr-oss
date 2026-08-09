@@ -171,6 +171,12 @@ test("agent run saves matches and logs actions", async () => {
       (item) => !item.atsDecision || Number.isFinite(item.atsScore),
     ),
   );
+  assert.ok(
+    state.submissions
+      .filter((item) => item.atsDecision)
+      .every((item) => item.checklist.every((check) => check.done === false)),
+    "generated documents must never auto-complete human review",
+  );
 });
 
 test("agent run history can be permanently deleted without deleting saved jobs", async () => {
@@ -821,6 +827,40 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(restored.res.status, 200);
   const after = (await req("/api/state")).body;
   assert.equal(after.unexpectedCloudConfig, undefined);
+
+  const malformedNested = await req("/api/import", {
+    method: "POST",
+    body: JSON.stringify({
+      ...after,
+      profile: {
+        ...after.profile,
+        skills: "not-an-array",
+        faqAnswers: "not-an-array",
+      },
+      jobs: [
+        {
+          ...after.jobs[0],
+          tags: "not-an-array",
+          notes: "not-an-array",
+          contacts: [null, { id: "valid-contact", name: "Alex" }],
+          statusHistory: "not-an-array",
+        },
+      ],
+      gigs: [{ id: "legacy-gig", title: "Legacy", statusHistory: "bad" }],
+      coachConversations: [{ id: "legacy-chat", messages: "bad" }],
+    }),
+  });
+  assert.equal(malformedNested.res.status, 200);
+  const normalized = (await req("/api/state")).body;
+  assert.deepEqual(normalized.profile.skills, []);
+  assert.deepEqual(normalized.profile.faqAnswers, []);
+  assert.deepEqual(normalized.jobs[0].tags, []);
+  assert.deepEqual(normalized.jobs[0].notes, []);
+  assert.equal(normalized.jobs[0].contacts.length, 1);
+  assert.equal(normalized.jobs[0].statusHistory.length, 1);
+  assert.equal(normalized.gigs[0].statusHistory.length, 1);
+  assert.deepEqual(normalized.coachConversations[0].messages, []);
+  assert.equal(normalized.meta.version, 10);
 
   for (const invalidBackup of [
     { jobs: "not-an-array" },

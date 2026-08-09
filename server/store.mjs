@@ -161,15 +161,34 @@ export function defaultTemplates() {
   ];
 }
 
-function migrate(db) {
-  db.meta ||= {};
-  db.profile ||= emptyDb().profile;
-  db.jobs ||= [];
-  db.resumes ||= [];
-  db.coverLetters ||= [];
-  db.templates ||= defaultTemplates();
-  db.submissions ||= [];
+const isRecord = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+const records = (value) => (Array.isArray(value) ? value.filter(isRecord) : []);
+const strings = (value) =>
+  Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+
+function migrate(input) {
+  const db = isRecord(input) ? input : {};
+  db.meta = isRecord(db.meta) ? db.meta : {};
+  db.profile = isRecord(db.profile) ? db.profile : emptyDb().profile;
+  db.profile.preferences = isRecord(db.profile.preferences)
+    ? db.profile.preferences
+    : {};
+  db.profile.targetRoles = strings(db.profile.targetRoles);
+  db.profile.skills = strings(db.profile.skills);
+  db.profile.preferences.locations = strings(db.profile.preferences.locations);
+  db.profile.faqAnswers = records(db.profile.faqAnswers);
+  db.jobs = records(db.jobs);
+  db.resumes = records(db.resumes);
+  db.coverLetters = records(db.coverLetters);
+  db.templates = Array.isArray(db.templates)
+    ? records(db.templates)
+    : defaultTemplates();
+  for (const template of db.templates)
+    template.sections = strings(template.sections);
+  db.submissions = records(db.submissions);
   for (const submission of db.submissions) {
+    submission.checklist = records(submission.checklist);
     if (!Array.isArray(submission.applicationQuestions)) {
       submission.applicationQuestions = [
         "Why are you interested in this role?",
@@ -188,40 +207,63 @@ function migrate(db) {
         questionType: "text_input",
         confident: false,
       }));
-    }
+    } else
+      submission.applicationQuestions = records(
+        submission.applicationQuestions,
+      );
   }
-  db.coachConversations ||= [];
-  db.coachingSessions ||= [];
-  db.outreachDrafts ||= [];
-  db.huntPresets ||= [];
-  db.careerStories ||= [];
-  db.profileAudits ||= [];
-  db.gigs ||= [];
+  db.coachConversations = records(db.coachConversations);
+  for (const conversation of db.coachConversations)
+    conversation.messages = records(conversation.messages);
+  db.coachingSessions = records(db.coachingSessions);
+  db.outreachDrafts = records(db.outreachDrafts);
+  db.huntPresets = records(db.huntPresets);
+  for (const preset of db.huntPresets) {
+    preset.requiredKeywords = strings(preset.requiredKeywords);
+    preset.excludeKeywords = strings(preset.excludeKeywords);
+    preset.workflows = strings(preset.workflows);
+  }
+  db.careerStories = records(db.careerStories);
+  for (const story of db.careerStories) story.skills = strings(story.skills);
+  db.profileAudits = records(db.profileAudits);
+  db.gigs = records(db.gigs);
   for (const gig of db.gigs) {
     gig.status ||= "lead";
-    gig.statusHistory ||= [{ status: gig.status, at: gig.createdAt || now() }];
+    gig.statusHistory = records(gig.statusHistory);
+    if (!gig.statusHistory.length)
+      gig.statusHistory = [{ status: gig.status, at: gig.createdAt || now() }];
   }
   for (const draft of db.outreachDrafts) draft.status ||= "draft";
   for (const session of db.coachingSessions) {
     session.status ||= "in-progress";
-    session.answers ||= Object.fromEntries(
-      (session.questions || []).map((q) => [q, ""]),
-    );
-    session.matchedStoryIds ||= [];
-    session.researchDone ||= [];
+    session.questions = strings(session.questions);
+    session.answers = isRecord(session.answers)
+      ? session.answers
+      : Object.fromEntries(session.questions.map((q) => [q, ""]));
+    session.matchedStoryIds = strings(session.matchedStoryIds);
+    session.researchDone = strings(session.researchDone);
   }
-  db.agentRuns ||= [];
-  db.activities ||= [];
+  db.agentRuns = records(db.agentRuns);
+  for (const run of db.agentRuns) {
+    run.matches = records(run.matches);
+    run.activities = records(run.activities);
+    run.workflows = strings(run.workflows);
+  }
+  db.activities = records(db.activities);
   for (const job of db.jobs) {
-    job.notes ||= [];
-    job.tasks ||= [];
-    job.contacts ||= [];
-    job.tags ||= [];
-    job.statusHistory ||= [
-      { status: job.status || "saved", at: job.createdAt || now() },
-    ];
+    job.notes = records(job.notes);
+    job.tasks = records(job.tasks);
+    job.contacts = records(job.contacts);
+    job.tags = strings(job.tags);
+    job.matchReasons = strings(job.matchReasons);
+    job.interviewRounds = records(job.interviewRounds);
+    job.statusHistory = records(job.statusHistory);
+    if (!job.statusHistory.length)
+      job.statusHistory = [
+        { status: job.status || "saved", at: job.createdAt || now() },
+      ];
   }
-  db.meta.version = 9;
+  db.meta.version = 10;
   return db;
 }
 

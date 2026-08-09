@@ -1473,7 +1473,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
           atsDecision: decision,
           applicationQuestions: applicationQuestionsFor(db),
           checklist: [
-            { id: nanoid(), text: "Review resume alignment", done: true },
+            { id: nanoid(), text: "Review resume alignment", done: false },
             { id: nanoid(), text: "Review cover letter", done: false },
             {
               id: nanoid(),
