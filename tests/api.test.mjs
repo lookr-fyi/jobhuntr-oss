@@ -1294,6 +1294,46 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   const stillHealthy = await req("/api/state");
   assert.equal(stillHealthy.res.status, 200);
   assert.equal(Array.isArray(stillHealthy.body.jobs), true);
+
+  const partialRestore = await req("/api/import", {
+    method: "POST",
+    body: JSON.stringify({
+      jobs: [
+        {
+          id: "restored-only-job",
+          company: "Restored Company",
+          title: "Restored Role",
+          status: "saved",
+        },
+      ],
+    }),
+  });
+  assert.equal(partialRestore.res.status, 200);
+  const replaced = (await req("/api/state")).body;
+  assert.deepEqual(
+    replaced.jobs.map((job) => job.id),
+    ["restored-only-job"],
+  );
+  for (const collection of [
+    "resumes",
+    "coverLetters",
+    "submissions",
+    "coachConversations",
+    "coachingSessions",
+    "outreachDrafts",
+    "huntPresets",
+    "careerStories",
+    "profileAudits",
+    "gigs",
+    "agentRuns",
+  ])
+    assert.deepEqual(
+      replaced[collection],
+      [],
+      `a replacement restore retained private ${collection} omitted by the backup`,
+    );
+  assert.equal(replaced.profile.onboarded, false);
+  assert.equal(replaced.infiniteHunt.enabled, false);
 });
 
 test("resume templates can be created, edited, and safely removed", async () => {

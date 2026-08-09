@@ -12,6 +12,7 @@ import {
   summarize,
   seedJobs,
   findLocalMatches,
+  emptyDb,
   DB_PATH,
 } from "./store.mjs";
 import { renderResumeDocument, renderCoverLetterDocument } from "./render.mjs";
@@ -2067,7 +2068,9 @@ app.post("/api/import", async (req, res) => {
     });
   const imported = parsed.data;
   await mutate((db) => {
-    for (const [key, value] of Object.entries(imported)) db[key] = value;
+    const replacement = { ...emptyDb(), ...imported };
+    for (const key of Object.keys(db)) delete db[key];
+    Object.assign(db, replacement);
     auditEvent(db, "import", "Imported and migrated a local JobHuntr backup.");
   });
   res.json({ ok: true });
