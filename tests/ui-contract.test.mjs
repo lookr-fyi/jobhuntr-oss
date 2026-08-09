@@ -291,6 +291,13 @@ test("application packet actions are single-flight with truthful progress", asyn
   assert.match(queue, /"Preparing…"[\s\S]*?: "Prepare application"/);
   assert.match(queue, /"Adding…"[\s\S]*?: "Add to queue"/);
   assert.match(queue, /aria-busy=\{submittingReady\}/);
+  const archive = queue.slice(
+    queue.indexOf('title="Archive filtered queue jobs?"'),
+    queue.indexOf('<div className="v2-queue-title-row">'),
+  );
+  assert.match(archive, /api\("\/api\/submissions\/archive"/);
+  assert.match(archive, /ids: filtered\.map\(\(item\) => item\.id\)/);
+  assert.doesNotMatch(archive, /Promise\.all/);
 });
 
 test("confirmation dialogs reject duplicate actions and report truthful work", async () => {

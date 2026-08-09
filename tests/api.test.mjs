@@ -1241,6 +1241,52 @@ test("terminal job stages retire stale application packets", async () => {
   );
 });
 
+test("bulk packet archiving is atomic when any packet is invalid", async () => {
+  const packetIds = [];
+  for (const suffix of ["one", "two"]) {
+    const job = await req("/api/jobs", {
+      method: "POST",
+      body: JSON.stringify({
+        company: "Atomic Archive Co",
+        title: `Engineer ${suffix}`,
+        url: `https://atomic-archive.example/jobs/${suffix}`,
+      }),
+    });
+    const packet = await req("/api/submissions", {
+      method: "POST",
+      body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+    });
+    packetIds.push(packet.body.id);
+  }
+
+  const rejected = await req("/api/submissions/archive", {
+    method: "POST",
+    body: JSON.stringify({ ids: [...packetIds, "missing-packet"] }),
+  });
+  assert.equal(rejected.res.status, 404);
+  let state = (await req("/api/state")).body;
+  assert.deepEqual(
+    packetIds.map(
+      (id) => state.submissions.find((packet) => packet.id === id).status,
+    ),
+    ["draft", "draft"],
+  );
+
+  const archived = await req("/api/submissions/archive", {
+    method: "POST",
+    body: JSON.stringify({ ids: packetIds }),
+  });
+  assert.equal(archived.res.status, 200);
+  assert.equal(archived.body.count, 2);
+  state = (await req("/api/state")).body;
+  assert.deepEqual(
+    packetIds.map(
+      (id) => state.submissions.find((packet) => packet.id === id).status,
+    ),
+    ["archived", "archived"],
+  );
+});
+
 test("rapid application review edits cannot overwrite each other", async () => {
   const job = await req("/api/jobs", {
     method: "POST",

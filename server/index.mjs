@@ -1212,6 +1212,40 @@ app.post("/api/submissions", async (req, res) => {
     });
   res.status(201).json(submission);
 });
+app.post("/api/submissions/archive", async (req, res) => {
+  const ids = [
+    ...new Set(
+      z.array(z.string().min(1).max(80)).min(1).max(500).parse(req.body?.ids),
+    ),
+  ];
+  const result = await mutate((db) => {
+    const packets = ids.map((id) =>
+      db.submissions.find((submission) => submission.id === id),
+    );
+    if (packets.some((packet) => !packet)) return { missing: true };
+    if (packets.some((packet) => packet.status === "submitted"))
+      return { blockedSubmitted: true };
+    const updatedAt = timestamp();
+    for (const packet of packets) {
+      packet.status = "archived";
+      packet.updatedAt = updatedAt;
+    }
+    auditEvent(
+      db,
+      "submission",
+      `Archived ${packets.length} application packet${packets.length === 1 ? "" : "s"}.`,
+    );
+    return { count: packets.length };
+  });
+  if (result.missing)
+    return res.status(404).json({ error: "Submission not found" });
+  if (result.blockedSubmitted)
+    return res.status(409).json({
+      error: "Submitted application packets cannot be archived in bulk",
+    });
+  res.json(result);
+});
+
 app.patch("/api/submissions/:id", async (req, res) => {
   const submission = await mutate((db) => {
     const item = db.submissions.find((s) => s.id === req.params.id);

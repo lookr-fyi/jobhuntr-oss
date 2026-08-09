@@ -5057,15 +5057,10 @@ function Queue({ state, reload, setTab }) {
         busyLabel="Archiving…"
         onClose={() => setArchiveOpen(false)}
         onConfirm={async () => {
-          await Promise.all(
-            filtered.map((item) =>
-              api(`/api/submissions/${item.id}`, {
-                method: "PATCH",
-                body: JSON.stringify({ status: "archived" }),
-              }),
-            ),
-          );
-          setArchiveOpen(false);
+          await api("/api/submissions/archive", {
+            method: "POST",
+            body: JSON.stringify({ ids: filtered.map((item) => item.id) }),
+          });
           setSelectedId("");
           await reload();
         }}
