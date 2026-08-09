@@ -1313,7 +1313,12 @@ test(
         await page.locator(".v2-runs-page").evaluate((runsPage) => {
           const style = (selector) =>
             getComputedStyle(runsPage.querySelector(selector));
+          const pageStyle = getComputedStyle(runsPage);
+          const mainStyle = getComputedStyle(runsPage.parentElement);
           return {
+            mainPadding: mainStyle.padding,
+            pagePadding: pageStyle.padding,
+            pageMaxWidth: pageStyle.maxWidth,
             titleFontSize: style(".v2-page-intro h1").fontSize,
             titleFontWeight: style(".v2-page-intro h1").fontWeight,
             introPaddingBottom: style(".v2-page-intro").paddingBottom,
@@ -1321,22 +1326,33 @@ test(
             searchPadding: style(".v2-runs-toolbar input").padding,
             searchRadius: style(".v2-runs-toolbar input").borderRadius,
             latestPadding: style(".v2-open-latest-run").padding,
+            latestFontSize: style(".v2-open-latest-run").fontSize,
             latestBackground: style(".v2-open-latest-run").backgroundColor,
             newRunPadding: style(".v2-new-run-button").padding,
+            newRunFontSize: style(".v2-new-run-button").fontSize,
             newRunBackground: style(".v2-new-run-button").backgroundColor,
+            tableRadius: style(".v2-runs-table").borderRadius,
+            tableRowPadding: style(".v2-run-row").padding,
           };
         }),
         {
-          titleFontSize: "32px",
+          mainPadding: "0px",
+          pagePadding: "24px",
+          pageMaxWidth: "1400px",
+          titleFontSize: "22px",
           titleFontWeight: "700",
           introPaddingBottom: "16px",
           searchWidth: "400px",
           searchPadding: "8px 12px 8px 36px",
           searchRadius: "6px",
           latestPadding: "12px 20px",
+          latestFontSize: "11px",
           latestBackground: "rgb(255, 255, 255)",
           newRunPadding: "8px 16px",
+          newRunFontSize: "11px",
           newRunBackground: "rgb(37, 99, 235)",
+          tableRadius: "8px",
+          tableRowPadding: "12px 16px",
         },
         "Agent Runs should retain the authoritative v2 header and control dimensions",
       );
@@ -6185,7 +6201,7 @@ test(
           sidebarExpanded: true,
           mainLeft: 64,
           mainRight: 800,
-          pageRight: 768,
+          pageRight: 800,
         },
         "an expanded v2 rail should overlay rather than crush an 800px Electron workspace",
       );

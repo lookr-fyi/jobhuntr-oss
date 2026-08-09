@@ -6207,6 +6207,9 @@ main:has(> .v2-board-page) {
 main:has(> .v2-queue-page) {
   padding: 0;
 }
+main:has(> .v2-runs-page) {
+  padding: 0;
+}
 main > header {
   max-width: 1440px;
   margin: 0 auto 24px;
@@ -6349,8 +6352,13 @@ select:focus {
   color: var(--v2-secondary);
 }
 .v2-runs-page {
-  max-width: 1440px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  min-height: 100%;
   margin: 0 auto;
+  padding: 24px;
+  background: #fff;
 }
 .v2-runs-page > .v2-page-intro {
   margin-bottom: 24px;
@@ -6359,7 +6367,8 @@ select:focus {
 }
 .v2-runs-page > .v2-page-intro h1 {
   margin: 0;
-  font-size: 32px;
+  color: #1f2937;
+  font-size: 2rem;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -6373,7 +6382,7 @@ select:focus {
   border-radius: 6px;
   background: #fff !important;
   color: var(--v2-text);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-runs-page .v2-new-run-button {
@@ -6381,7 +6390,7 @@ select:focus {
   border-radius: 6px;
   background: #2563eb;
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-run-stats {
@@ -6425,14 +6434,14 @@ select:focus {
   padding: 8px 12px 8px 36px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 1rem;
 }
 .v2-switch-control {
   display: flex;
   align-items: center;
   gap: 8px;
   color: #334155;
-  font-size: 12px;
+  font-size: 0.9375rem;
   white-space: nowrap;
 }
 .v2-switch-control > button {
@@ -6463,7 +6472,7 @@ select:focus {
 .v2-runs-filter-caption {
   margin: -12px 0 16px;
   color: #64748b;
-  font-size: 11px;
+  font-size: 0.875rem;
 }
 .v2-runs-toolbar .check {
   margin: 0;
@@ -6499,6 +6508,8 @@ select:focus {
 }
 .v2-runs-table {
   padding: 0;
+  border-color: #e5e7eb;
+  border-radius: 8px;
   overflow: hidden;
 }
 .v2-runs-pagination {
@@ -6525,7 +6536,7 @@ select:focus {
   grid-template-columns: 24px minmax(240px, 1fr) 100px 120px 100px 60px;
   gap: 16px;
   align-items: center;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 .v2-run-action-menu {
   position: relative;
