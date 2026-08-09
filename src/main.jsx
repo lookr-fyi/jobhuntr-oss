@@ -2295,6 +2295,7 @@ function Tracker({ state, reload, setTab }) {
       <div className="tracker-filter-panel v2-tracker-filters-always job-tracker-filters">
         <div className="searchbox filter-group">
           <input
+            name="tracker-search"
             aria-label="Search tracked jobs"
             value={query}
             onChange={(e) => {
@@ -2316,6 +2317,7 @@ function Tracker({ state, reload, setTab }) {
             {stages.map((stage) => (
               <label className="status-filter-item" key={stage}>
                 <input
+                  name={`tracker-status-${stage}`}
                   className="status-filter-checkbox"
                   type="checkbox"
                   checked={visibleStages.has(stage)}
@@ -2333,6 +2335,7 @@ function Tracker({ state, reload, setTab }) {
         <label className="filter-group run-filter-group">
           <span className="tracker-filter-label filter-label">Run:</span>
           <select
+            name="tracker-agent-run-filter"
             className="workflow-run-select"
             aria-label="Filter by agent run"
             value={runFilter}

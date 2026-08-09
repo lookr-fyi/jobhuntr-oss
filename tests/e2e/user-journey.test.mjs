@@ -2619,6 +2619,12 @@ test(
       ]) {
         await mobile.locator(`button[title="${navigation}"]`).click();
         await mobile.getByRole("heading", { name: heading }).first().waitFor();
+        await assertNamedFormControls(mobile, `Mobile ${navigation}`);
+        assert.equal(
+          await mobile.getByText("Invalid Date", { exact: true }).count(),
+          0,
+          `${navigation} should never render invalid dates on mobile`,
+        );
         if (navigation === "Infinite Hunting") {
           const actionBounds = await mobile
             .locator(".v2-hunt-actions > button, .v2-hunt-actions select")
