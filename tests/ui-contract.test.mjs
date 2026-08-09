@@ -312,6 +312,22 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
     savePreset,
     /if \(huntConfigurationRevisionRef\.current === savingRevision\)\s*setPresetSaved\(true\)/,
   );
+  const previewMatches = agent.slice(
+    agent.indexOf("const previewMatches = async"),
+    agent.indexOf("const savePreset = async"),
+  );
+  assert.match(
+    previewMatches,
+    /const previewRevision = huntConfigurationRevisionRef\.current/,
+  );
+  assert.match(
+    previewMatches,
+    /if \(huntConfigurationRevisionRef\.current === previewRevision\)\s*setPreview\(result\)/,
+  );
+  assert.match(
+    agent,
+    /const markHuntConfigurationEdited = \(\) => \{[\s\S]*?setPreview\(null\)/,
+  );
 });
 
 test("Infinite Hunt recovers a bounded complete configuration draft", async () => {

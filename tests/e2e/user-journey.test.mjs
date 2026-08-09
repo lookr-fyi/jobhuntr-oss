@@ -744,6 +744,13 @@ test(
         await new Promise((resolve) => setTimeout(resolve, 200));
         await route.continue();
       });
+      const locationBeforePreviewRace = await page
+        .getByLabel("Location")
+        .inputValue();
+      const stalePreviewResponse = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/agent-runs/preview") && response.ok(),
+      );
       await page.getByRole("button", { name: "Preview matches" }).click();
       await page.getByRole("button", { name: "Previewing matches…" }).waitFor();
       assert.equal(
@@ -753,6 +760,16 @@ test(
         true,
         "match preview should prevent duplicate submissions while pending",
       );
+      await page.getByLabel("Location").fill("Newer preview location");
+      await stalePreviewResponse;
+      await page.getByRole("button", { name: "Preview matches" }).waitFor();
+      assert.equal(
+        await page.getByText(/eligible matches/).count(),
+        0,
+        "a preview for an older hunt configuration must not replace newer edits",
+      );
+      await page.getByLabel("Location").fill(locationBeforePreviewRace);
+      await page.getByRole("button", { name: "Preview matches" }).click();
       await page.getByText(/eligible matches/).waitFor();
       await page.unroute("**/api/agent-runs/preview");
       let scheduleStartRequests = 0;

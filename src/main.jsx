@@ -12769,6 +12769,7 @@ function Agent({ state, reload, setTab }) {
   ]);
   const markHuntConfigurationEdited = () => {
     huntConfigurationRevisionRef.current += 1;
+    setPreview(null);
     setPresetSaved(false);
     setHuntDraftTouched(true);
     setHuntDraftRestored(false);
@@ -12900,14 +12901,15 @@ function Agent({ state, reload, setTab }) {
   const previewMatches = async () => {
     if (previewingRef.current) return;
     previewingRef.current = true;
+    const previewRevision = huntConfigurationRevisionRef.current;
     setPreviewing(true);
     try {
-      setPreview(
-        await api("/api/agent-runs/preview", {
-          method: "POST",
-          body: JSON.stringify(payload()),
-        }),
-      );
+      const result = await api("/api/agent-runs/preview", {
+        method: "POST",
+        body: JSON.stringify(payload()),
+      });
+      if (huntConfigurationRevisionRef.current === previewRevision)
+        setPreview(result);
     } catch {
       // The shared API error surface already explains the failure. Keep the
       // rejected request from escaping the click handler as a browser error.
