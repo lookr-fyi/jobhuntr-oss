@@ -4611,10 +4611,7 @@ function Queue({ state, reload, setTab }) {
       <div className="v2-queue-title-row">
         <div>
           <h2>Submission Queue</h2>
-          <p>
-            Review collected jobs, attachments, and application details before
-            submitting.
-          </p>
+          <p>Review and submit jobs collected by your agents</p>
         </div>
         <div className="inline">
           <button
@@ -4639,9 +4636,7 @@ function Queue({ state, reload, setTab }) {
         </div>
       </div>
       <div className="v2-queue-info">
-        <ShieldCheck size={18} />
         <div>
-          <strong>Review before you submit</strong>
           <p>
             Complete each packet checklist first. This local edition records
             your confirmation but never submits to an external website. New
@@ -4658,68 +4653,93 @@ function Queue({ state, reload, setTab }) {
           </button>
         </div>
       </div>
-      <div className="v2-queue-tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={queueTab === "apply"}
-          className={queueTab === "apply" ? "active" : ""}
-          onClick={() => setQueueTab("apply")}
-        >
-          <ClipboardListIcon /> From Apply Runs <em>{active.length}</em>
-        </button>
-        <button
-          role="tab"
-          aria-selected={queueTab === "search"}
-          className={queueTab === "search" ? "active" : ""}
-          onClick={() => setQueueTab("search")}
-        >
-          <Search size={15} /> From Search Runs{" "}
-          <em>
-            {
-              state.jobs.filter(
-                (job) =>
-                  !queuedJobIds.has(job.id) &&
-                  !["manual", "import", "csv import"].includes(
-                    String(job.source || "").toLowerCase(),
-                  ),
-              ).length
+      <div className="v2-queue-tabs">
+        <div className="v2-queue-tab-buttons" role="tablist">
+          <button
+            role="tab"
+            aria-selected={queueTab === "apply"}
+            className={queueTab === "apply" ? "active" : ""}
+            onClick={() => setQueueTab("apply")}
+          >
+            <ClipboardListIcon /> From Apply Runs <em>{active.length}</em>
+          </button>
+          <button
+            role="tab"
+            aria-selected={queueTab === "search"}
+            className={queueTab === "search" ? "active" : ""}
+            onClick={() => setQueueTab("search")}
+          >
+            <Search size={15} /> From Search Runs{" "}
+            <em>
+              {
+                state.jobs.filter(
+                  (job) =>
+                    !queuedJobIds.has(job.id) &&
+                    !["manual", "import", "csv import"].includes(
+                      String(job.source || "").toLowerCase(),
+                    ),
+                ).length
+              }
+            </em>
+          </button>
+          <button
+            role="tab"
+            aria-selected={queueTab === "manual"}
+            className={queueTab === "manual" ? "active" : ""}
+            onClick={() => setQueueTab("manual")}
+          >
+            <Briefcase size={15} /> From Job Board{" "}
+            <em>
+              {
+                state.jobs.filter(
+                  (job) =>
+                    !queuedJobIds.has(job.id) &&
+                    ["manual", "import", "csv import"].includes(
+                      String(job.source || "").toLowerCase(),
+                    ),
+                ).length
+              }
+            </em>
+          </button>
+        </div>
+        <div className="v2-queue-tab-tools">
+          <Search size={16} />
+          <input
+            name={`queue-${queueTab}-search`}
+            aria-label={
+              queueTab === "apply"
+                ? "Search submission queue"
+                : `Search ${queueTab} jobs`
             }
-          </em>
-        </button>
-        <button
-          role="tab"
-          aria-selected={queueTab === "manual"}
-          className={queueTab === "manual" ? "active" : ""}
-          onClick={() => setQueueTab("manual")}
-        >
-          <Briefcase size={15} /> From Job Board{" "}
-          <em>
-            {
-              state.jobs.filter(
-                (job) =>
-                  !queuedJobIds.has(job.id) &&
-                  ["manual", "import", "csv import"].includes(
-                    String(job.source || "").toLowerCase(),
-                  ),
-              ).length
-            }
-          </em>
-        </button>
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search by company or title"
+          />
+          {queueTab === "apply" && (
+            <>
+              <button
+                className={filtersOpen ? "active-filter" : ""}
+                aria-label="Filters"
+                aria-expanded={filtersOpen}
+                onClick={() => setFiltersOpen((current) => !current)}
+              >
+                <Filter size={16} />
+              </button>
+              <button
+                className="danger"
+                aria-label="Archive filtered"
+                title="Archive filtered"
+                disabled={!filtered.length}
+                onClick={() => setArchiveOpen(true)}
+              >
+                <Trash2 size={16} />
+              </button>
+            </>
+          )}
+        </div>
       </div>
       {queueTab !== "apply" ? (
         <>
-          <div className="v2-queue-toolbar">
-            <div className="searchbox">
-              <Search size={16} />
-              <input
-                name={`queue-${queueTab}-search`}
-                aria-label={`Search ${queueTab} jobs`}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search jobs or companies"
-              />
-            </div>
-          </div>
           <div className="v2-queue-layout">
             <div className="v2-queue-list">
               <div className="v2-queue-list-head">
@@ -4786,31 +4806,7 @@ function Queue({ state, reload, setTab }) {
       ) : (
         <>
           <div className="v2-queue-toolbar">
-            <div className="searchbox">
-              <Search size={16} />
-              <input
-                name="submission-queue-search"
-                aria-label="Search submission queue"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search jobs or companies"
-              />
-            </div>
             <div className="v2-create-packet">
-              <button
-                className="secondary"
-                aria-expanded={filtersOpen}
-                onClick={() => setFiltersOpen((current) => !current)}
-              >
-                <Filter size={15} /> Filters
-              </button>
-              <button
-                className="secondary danger"
-                disabled={!filtered.length}
-                onClick={() => setArchiveOpen(true)}
-              >
-                <Trash2 size={15} /> Archive filtered
-              </button>
               <select
                 name="submission-queue-job"
                 aria-label="Tracked role"

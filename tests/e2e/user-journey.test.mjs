@@ -911,6 +911,38 @@ test(
 
       await page.locator('button[title="Submission Queue"]').click();
       await page.getByText(/never submits to an external website/i).waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-queue-page").evaluate((queue) => {
+          const style = (selector) =>
+            getComputedStyle(queue.querySelector(selector));
+          return {
+            titleFontSize: style(".v2-queue-title-row h2").fontSize,
+            titleFontWeight: style(".v2-queue-title-row h2").fontWeight,
+            infoPadding: style(".v2-queue-info").padding,
+            infoRadius: style(".v2-queue-info").borderRadius,
+            tabPadding: style(".v2-queue-tabs button.active").padding,
+            tabRadius: style(".v2-queue-tabs button.active").borderRadius,
+            tabBackground: style(".v2-queue-tabs button.active")
+              .backgroundColor,
+            searchWidth: style(".v2-queue-tab-tools input").width,
+            searchPadding: style(".v2-queue-tab-tools input").padding,
+            searchRadius: style(".v2-queue-tab-tools input").borderRadius,
+          };
+        }),
+        {
+          titleFontSize: "26px",
+          titleFontWeight: "600",
+          infoPadding: "24px",
+          infoRadius: "12px",
+          tabPadding: "8px 16px",
+          tabRadius: "8px",
+          tabBackground: "rgb(24, 24, 26)",
+          searchWidth: "220px",
+          searchPadding: "8px 12px",
+          searchRadius: "6px",
+        },
+        "the queue command surface should retain authoritative v2 dimensions",
+      );
       assert.equal(
         await page.getByText(/processed in your next Infinite Hunt/i).count(),
         0,

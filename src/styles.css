@@ -7233,6 +7233,8 @@ main > header.integrated-page-header {
 .v2-queue-title-row h2 {
   margin: 0 0 6px;
   font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 .v2-queue-title-row p {
   margin: 0;
@@ -7240,13 +7242,13 @@ main > header.integrated-page-header {
 }
 .v2-queue-info {
   display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  margin-bottom: 18px;
-  padding: 14px 16px;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 24px;
   color: #475569;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #f8fafc;
 }
 .v2-queue-info svg {
@@ -7257,8 +7259,8 @@ main > header.integrated-page-header {
   color: #334155;
 }
 .v2-queue-info p {
-  margin: 3px 0 0;
-  font-size: 12px;
+  margin: 0;
+  font-size: 16px;
   line-height: 1.5;
 }
 .v2-queue-info .text-button {
@@ -7277,30 +7279,34 @@ main > header.integrated-page-header {
 }
 .v2-queue-tabs {
   display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--v2-border);
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
 }
-.v2-queue-tabs button {
-  position: relative;
-  margin-bottom: -1px;
-  padding: 10px 15px;
+.v2-queue-tab-buttons {
+  display: flex;
+  gap: 16px;
+}
+.v2-queue-tab-buttons button {
+  padding: 8px 16px;
   border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border-radius: 8px;
   background: transparent;
-  color: var(--v2-secondary);
+  color: #374151;
   box-shadow: none;
+  font-size: 16px;
+  font-weight: 400;
 }
-.v2-queue-tabs button:hover {
-  background: #f8fafc;
+.v2-queue-tab-buttons button:hover {
+  background: #f3f4f6;
   color: var(--v2-text);
 }
-.v2-queue-tabs button.active {
-  border-bottom-color: var(--v2-primary);
-  color: var(--v2-text);
-  background: transparent;
+.v2-queue-tab-buttons button.active {
+  background: var(--v2-primary);
+  color: #fff;
+  font-weight: 600;
 }
-.v2-queue-tabs button em {
+.v2-queue-tab-buttons button em {
   min-width: 20px;
   padding: 2px 6px;
   border-radius: 999px;
@@ -7309,16 +7315,49 @@ main > header.integrated-page-header {
   font-size: 10px;
   font-style: normal;
 }
-.v2-queue-tabs button.active em {
+.v2-queue-tab-buttons button.active em {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.v2-queue-tab-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: #6b7280;
+}
+.v2-queue-tab-tools input {
+  width: 220px;
+  margin: 0;
+  padding: 8px 12px;
+  border-color: #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.v2-queue-tab-tools button {
+  width: 34px;
+  height: 34px;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #374151;
+}
+.v2-queue-tab-tools button.active-filter {
+  border-color: var(--v2-primary);
   background: var(--v2-primary);
   color: #fff;
+}
+.v2-queue-tab-tools button.danger {
+  color: #dc2626;
 }
 .v2-queue-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 0;
+  padding: 0 0 16px;
 }
 .v2-queue-toolbar .searchbox {
   width: 340px;
@@ -7329,6 +7368,7 @@ main > header.integrated-page-header {
   display: flex;
   align-items: end;
   gap: 8px;
+  margin-left: auto;
 }
 .v2-create-packet label {
   display: grid;
@@ -7942,6 +7982,18 @@ main > header.integrated-page-header {
   background: #f8fafc;
 }
 @media (max-width: 900px) {
+  .v2-queue-tabs {
+    flex-wrap: wrap;
+  }
+  .v2-queue-tab-tools {
+    width: 100%;
+    margin-left: 0;
+  }
+  .v2-queue-tab-tools input {
+    min-width: 0;
+    flex: 1;
+    width: auto;
+  }
   .v2-queue-layout {
     grid-template-columns: 1fr;
   }
@@ -7974,6 +8026,18 @@ main > header.integrated-page-header {
   }
 }
 @media (max-width: 600px) {
+  .v2-queue-tabs {
+    gap: 8px;
+  }
+  .v2-queue-tab-buttons {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .v2-queue-tab-buttons > button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
   .v2-queue-title-row {
     align-items: flex-start;
     flex-direction: column;
