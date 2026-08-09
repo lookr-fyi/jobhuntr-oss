@@ -47,6 +47,7 @@ import {
   ListPlus,
   MoreHorizontal,
   Pencil,
+  Eye,
   X,
   createLucideIcon,
 } from "lucide-react";
@@ -5943,6 +5944,15 @@ function Resume({ state, reload, mode = "resume" }) {
   });
   const [editingLetterName, setEditingLetterName] = useState(false);
   const [letterNameDraft, setLetterNameDraft] = useState("");
+  const [coverSourcePreview, setCoverSourcePreview] = useState(null);
+  useEffect(() => {
+    if (!coverSourcePreview) return undefined;
+    const closePreview = (event) => {
+      if (event.key === "Escape") setCoverSourcePreview(null);
+    };
+    window.addEventListener("keydown", closePreview);
+    return () => window.removeEventListener("keydown", closePreview);
+  }, [coverSourcePreview]);
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
@@ -6291,6 +6301,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 <div className="v2-cover-name-editor">
                   <input
                     autoFocus
+                    name="cover-letter-template-name"
                     aria-label="Cover letter template name"
                     maxLength={300}
                     value={letterNameDraft}
@@ -6544,56 +6555,90 @@ function Resume({ state, reload, mode = "resume" }) {
                   Option 1: Select Resume
                 </h4>
                 <div className="v2-cover-resume-list">
-                  <button
-                    className={
+                  <div
+                    className={`v2-cover-source-card ${
                       letterWizard.resumeId === "profile-resume" &&
                       !letterWizard.atsTemplateId
                         ? "selected"
                         : ""
-                    }
-                    disabled={!profileResumeReady}
-                    onClick={() =>
-                      setLetterWizard({
-                        ...letterWizard,
-                        resumeId: "profile-resume",
-                        atsTemplateId: "",
-                      })
-                    }
+                    }`}
                   >
-                    <FileText size={20} />
-                    <span>
-                      <b>Profile resume</b>
-                      <small>
-                        {profileResumeReady
-                          ? "Use your current profile resume text"
-                          : "Add a real profile resume first"}
-                      </small>
-                    </span>
-                  </button>
-                  {state.resumes.map((item) => (
                     <button
-                      className={
-                        letterWizard.resumeId === item.id ? "selected" : ""
-                      }
-                      key={item.id}
+                      className="v2-cover-source-select"
+                      disabled={!profileResumeReady}
                       onClick={() =>
                         setLetterWizard({
                           ...letterWizard,
-                          resumeId: item.id,
+                          resumeId: "profile-resume",
                           atsTemplateId: "",
                         })
                       }
                     >
                       <FileText size={20} />
                       <span>
-                        <b>{item.name}</b>
+                        <b>Profile resume</b>
                         <small>
-                          {state.templates.find(
-                            (template) => template.id === item.templateId,
-                          )?.name || "ATS resume"}
+                          {profileResumeReady
+                            ? "Use your current profile resume text"
+                            : "Add a real profile resume first"}
                         </small>
                       </span>
                     </button>
+                    {profileResumeReady && (
+                      <button
+                        className="v2-cover-source-preview-button"
+                        aria-label="Preview profile resume"
+                        onClick={() =>
+                          setCoverSourcePreview({
+                            type: "resume",
+                            name: "Profile resume",
+                            content: state.profile.resumeText,
+                          })
+                        }
+                      >
+                        <Eye size={17} />
+                      </button>
+                    )}
+                  </div>
+                  {state.resumes.map((item) => (
+                    <div
+                      className={`v2-cover-source-card ${letterWizard.resumeId === item.id ? "selected" : ""}`}
+                      key={item.id}
+                    >
+                      <button
+                        className="v2-cover-source-select"
+                        onClick={() =>
+                          setLetterWizard({
+                            ...letterWizard,
+                            resumeId: item.id,
+                            atsTemplateId: "",
+                          })
+                        }
+                      >
+                        <FileText size={20} />
+                        <span>
+                          <b>{item.name}</b>
+                          <small>
+                            {state.templates.find(
+                              (template) => template.id === item.templateId,
+                            )?.name || "ATS resume"}
+                          </small>
+                        </span>
+                      </button>
+                      <button
+                        className="v2-cover-source-preview-button"
+                        aria-label={`Preview ${item.name}`}
+                        onClick={() =>
+                          setCoverSourcePreview({
+                            type: "resume",
+                            name: item.name,
+                            content: item.content,
+                          })
+                        }
+                      >
+                        <Eye size={17} />
+                      </button>
+                    </div>
                   ))}
                 </div>
                 <h4 className="v2-cover-option-title">
@@ -6601,31 +6646,47 @@ function Resume({ state, reload, mode = "resume" }) {
                 </h4>
                 <div className="v2-cover-resume-list v2-cover-ats-list">
                   {state.templates.map((template) => (
-                    <button
-                      className={
-                        letterWizard.atsTemplateId === template.id
-                          ? "selected"
-                          : ""
-                      }
+                    <div
+                      className={`v2-cover-source-card ${letterWizard.atsTemplateId === template.id ? "selected" : ""}`}
                       key={template.id}
-                      disabled={!profileResumeReady}
-                      onClick={() =>
-                        setLetterWizard({
-                          ...letterWizard,
-                          resumeId: "",
-                          atsTemplateId: template.id,
-                        })
-                      }
                     >
-                      <Sparkles size={20} />
-                      <span>
-                        <b>{template.name}</b>
-                        <small>
-                          {template.description ||
-                            "Use this ATS template with your profile resume"}
-                        </small>
-                      </span>
-                    </button>
+                      <button
+                        className="v2-cover-source-select"
+                        disabled={!profileResumeReady}
+                        onClick={() =>
+                          setLetterWizard({
+                            ...letterWizard,
+                            resumeId: "",
+                            atsTemplateId: template.id,
+                          })
+                        }
+                      >
+                        <Sparkles size={20} />
+                        <span>
+                          <b>{template.name}</b>
+                          <small>
+                            {template.description ||
+                              "Use this ATS template with your profile resume"}
+                          </small>
+                        </span>
+                      </button>
+                      <button
+                        className="v2-cover-source-preview-button"
+                        aria-label={`Preview ${template.name} ATS template`}
+                        onClick={() =>
+                          setCoverSourcePreview({
+                            type: "ats",
+                            name: template.name,
+                            content:
+                              template.editedResume ||
+                              template.originalResume ||
+                              state.profile.resumeText,
+                          })
+                        }
+                      >
+                        <Eye size={17} />
+                      </button>
+                    </div>
                   ))}
                 </div>
                 {!coverSourceReady && (
@@ -6900,6 +6961,52 @@ function Resume({ state, reload, mode = "resume" }) {
               )}
             </div>
           </div>
+          {coverSourcePreview && (
+            <>
+              <button
+                className="v2-cover-preview-backdrop"
+                aria-label="Close source preview"
+                onClick={() => setCoverSourcePreview(null)}
+              />
+              <aside
+                className="v2-cover-preview-drawer"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="cover-source-preview-title"
+                onKeyDown={containDialogFocus}
+              >
+                <header>
+                  <div>
+                    {coverSourcePreview.type === "ats" ? (
+                      <Sparkles size={20} />
+                    ) : (
+                      <FileText size={20} />
+                    )}
+                    <span>
+                      <h2 id="cover-source-preview-title">
+                        {coverSourcePreview.type === "ats"
+                          ? "ATS Template Preview"
+                          : "Resume Preview"}
+                      </h2>
+                      <p>{coverSourcePreview.name}</p>
+                    </span>
+                  </div>
+                  <button
+                    autoFocus
+                    className="secondary"
+                    aria-label="Close source preview"
+                    onClick={() => setCoverSourcePreview(null)}
+                  >
+                    <X size={20} />
+                  </button>
+                </header>
+                <div className="v2-cover-preview-page">
+                  <h1>{state.profile.name || "Your Name"}</h1>
+                  <p>{coverSourcePreview.content}</p>
+                </div>
+              </aside>
+            </>
+          )}
         </section>
       );
     }

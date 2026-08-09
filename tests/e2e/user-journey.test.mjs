@@ -1929,7 +1929,24 @@ test(
       await page.getByRole("button", { name: "Apply Prompt" }).click();
       await page.getByText("Prompt applied locally").waitFor();
       await page.getByRole("button", { name: "Continue" }).click();
-      await page.getByRole("button", { name: /E2E tailored resume/ }).click();
+      await page
+        .getByRole("button", { name: "Preview E2E tailored resume" })
+        .click();
+      const sourcePreview = page.getByRole("dialog", {
+        name: "Resume Preview",
+      });
+      await sourcePreview.waitFor();
+      assert.match(
+        await sourcePreview.textContent(),
+        /increased conversion by 42%/i,
+        "the source preview should show the exact resume evidence before selection",
+      );
+      await page.keyboard.press("Escape");
+      await sourcePreview.waitFor({ state: "detached" });
+      await page
+        .locator(".v2-cover-source-select")
+        .filter({ hasText: "E2E tailored resume" })
+        .click();
       await assertNamedFormControls(page, "Cover Letter resume selection");
       await page
         .getByLabel("Cover Letter Instructions")
