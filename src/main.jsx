@@ -1892,10 +1892,13 @@ function Tracker({ state, reload, setTab }) {
   const [editBusy, setEditBusy] = useState(false);
   const [funnelOpen, setFunnelOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState("");
+  const [draggingJobId, setDraggingJobId] = useState("");
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
   const jobDrawerCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
+  const deleteTarget = state.jobs.find((item) => item.id === deleteJobId);
   const jobDrawerOpen = Boolean(job);
   const jobSubmission = state.submissions
     .filter((item) => item.jobId === selected)
@@ -2126,9 +2129,10 @@ function Tracker({ state, reload, setTab }) {
     await reload();
   };
   const remove = async () => {
-    if (!job) return;
-    await api(`/api/jobs/${job.id}`, { method: "DELETE" });
-    setSelected(null);
+    if (!deleteTarget) return;
+    await api(`/api/jobs/${deleteTarget.id}`, { method: "DELETE" });
+    if (selected === deleteTarget.id) setSelected(null);
+    setDeleteJobId("");
     await reload();
   };
   return (
@@ -2137,11 +2141,14 @@ function Tracker({ state, reload, setTab }) {
         open={deleteOpen}
         title="Delete tracked job?"
         description={
-          job
-            ? `${job.title} at ${job.company} and its related notes, tasks, and drafts${jobSubmission?.status === "submitted" ? ", submitted application record, and locked document snapshots" : ""} will be permanently removed.`
+          deleteTarget
+            ? `${deleteTarget.title} at ${deleteTarget.company} and its related notes, tasks, and drafts${state.submissions.some((submission) => submission.jobId === deleteTarget.id && submission.status === "submitted") ? ", submitted application record, and locked document snapshots" : ""} will be permanently removed.`
             : "This tracked job will be permanently removed."
         }
-        onClose={() => setDeleteOpen(false)}
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteJobId("");
+        }}
         onConfirm={remove}
       />
       <ConfirmDialog
@@ -2314,9 +2321,12 @@ function Tracker({ state, reload, setTab }) {
                           <article className="job-card" key={item.id}>
                             <button
                               draggable
-                              onDragStart={(e) =>
-                                e.dataTransfer.setData("jobId", item.id)
-                              }
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData("jobId", item.id);
+                                e.dataTransfer.effectAllowed = "move";
+                                setDraggingJobId(item.id);
+                              }}
+                              onDragEnd={() => setDraggingJobId("")}
                               onClick={() => selectJob(item.id)}
                               className={`kanban-card ${item.id === selected ? "selected" : ""}`}
                             >
@@ -2608,7 +2618,10 @@ function Tracker({ state, reload, setTab }) {
                   </div>
                   <button
                     className="danger"
-                    onClick={() => setDeleteOpen(true)}
+                    onClick={() => {
+                      setDeleteJobId(job.id);
+                      setDeleteOpen(true);
+                    }}
                   >
                     Delete role
                   </button>
@@ -2623,6 +2636,32 @@ function Tracker({ state, reload, setTab }) {
           <Search />
           <h3>No matching roles</h3>
           <p>Try a different filter or add a new opportunity.</p>
+        </div>
+      )}
+      {draggingJobId && (
+        <div
+          className="global-delete-zone"
+          role="button"
+          tabIndex={-1}
+          aria-label="Drop to delete job"
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            const droppedJobId =
+              event.dataTransfer.getData("jobId") || draggingJobId;
+            setDraggingJobId("");
+            if (!state.jobs.some((item) => item.id === droppedJobId)) return;
+            setDeleteJobId(droppedJobId);
+            setDeleteOpen(true);
+          }}
+        >
+          <span className="delete-zone-content">
+            <Trash2 className="delete-icon" size={32} />
+            <span className="delete-text">Drop to Delete</span>
+          </span>
         </div>
       )}
       {funnelOpen && (

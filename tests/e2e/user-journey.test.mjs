@@ -1332,6 +1332,43 @@ test(
         (await page.locator(".ats-score").count()) > 0,
         "automated tracker cards should expose their ATS score like v2",
       );
+      const dragCard = structuredTrackerCard.locator(".kanban-card");
+      const dragCardTitle = await dragCard.locator(".job-title").innerText();
+      const dragCardBox = await dragCard.boundingBox();
+      assert.ok(dragCardBox, "a tracker card should be available to drag");
+      await page.mouse.move(
+        dragCardBox.x + dragCardBox.width / 2,
+        dragCardBox.y + dragCardBox.height / 2,
+      );
+      await page.mouse.down();
+      await page.mouse.move(
+        dragCardBox.x + dragCardBox.width / 2 + 12,
+        dragCardBox.y + dragCardBox.height / 2 + 12,
+        { steps: 4 },
+      );
+      const deleteDropZone = page.getByRole("button", {
+        name: "Drop to delete job",
+      });
+      await deleteDropZone.waitFor();
+      await page.waitForTimeout(350);
+      const deleteDropBox = await deleteDropZone.boundingBox();
+      assert.ok(deleteDropBox, "v2 should reveal its global drag delete zone");
+      await page.mouse.move(
+        deleteDropBox.x + deleteDropBox.width / 2,
+        deleteDropBox.y + deleteDropBox.height / 2,
+        { steps: 8 },
+      );
+      await page.mouse.up();
+      const dragDeleteDialog = page.getByRole("alertdialog", {
+        name: "Delete tracked job?",
+      });
+      await dragDeleteDialog.waitFor();
+      await dragDeleteDialog
+        .getByText(dragCardTitle, { exact: false })
+        .waitFor();
+      await dragDeleteDialog.getByRole("button", { name: "Cancel" }).click();
+      await dragDeleteDialog.waitFor({ state: "hidden" });
+      await dragCard.waitFor();
       assert.equal(
         await page.getByLabel("Filter by agent run").inputValue(),
         "all",
