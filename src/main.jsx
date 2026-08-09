@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import { createLatestRequest } from "./latest-request.mjs";
 import {
   Briefcase,
   Bot,
@@ -740,20 +741,23 @@ function App() {
   const userMenuTriggerRef = useRef(null);
   const userMenuFirstItemRef = useRef(null);
   const [err, setErr] = useState("");
-  const load = () =>
-    api("/api/state")
-      .then(setState)
-      .catch((e) => setErr(e.message));
-  useEffect(load, []);
+  const stateLoader = useMemo(
+    () => createLatestRequest(setState, (error) => setErr(error.message)),
+    [],
+  );
+  const load = useCallback(
+    () => stateLoader(() => api("/api/state")),
+    [stateLoader],
+  );
+  useEffect(() => {
+    const initialLoad = window.setTimeout(load, 0);
+    return () => window.clearTimeout(initialLoad);
+  }, [load]);
   useEffect(() => {
     if (!state?.infiniteHunt?.enabled) return undefined;
-    const refresh = window.setInterval(() => {
-      api("/api/state")
-        .then(setState)
-        .catch((error) => setErr(error.message));
-    }, 15_000);
+    const refresh = window.setInterval(load, 15_000);
     return () => window.clearInterval(refresh);
-  }, [state?.infiniteHunt?.enabled]);
+  }, [load, state?.infiniteHunt?.enabled]);
   useEffect(() => {
     const showApiError = (event) => setErr(event.detail);
     window.addEventListener("jobhuntr:api-error", showApiError);
