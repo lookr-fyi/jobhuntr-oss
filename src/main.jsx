@@ -1779,9 +1779,15 @@ function Overview({ state, setTab, reload }) {
   };
   const refresh = async () => {
     setRefreshing(true);
-    await reload();
-    setMotivationIndex((index) => (index + 1) % OVERVIEW_MOTIVATION.length);
-    setRefreshing(false);
+    try {
+      await reload();
+      setMotivationIndex((index) => (index + 1) % OVERVIEW_MOTIVATION.length);
+    } catch {
+      // The shared workspace loader reports the failure without leaving the
+      // v2 refresh control stuck or creating an uncaught browser error.
+    } finally {
+      setRefreshing(false);
+    }
   };
   const exitJobHuntr = async () => {
     if (state.infiniteHunt?.enabled)
@@ -8464,6 +8470,8 @@ function OutreachPage({ state, reload }) {
       setConnectOpen(false);
       setDraft(null);
       await reload();
+    } catch {
+      // Keep the selected contacts and confirmation open for a safe retry.
     } finally {
       setConnecting(false);
     }
@@ -8983,7 +8991,11 @@ function Coach({ state, reload }) {
       localStorage.removeItem("jobhuntr-coach-chat");
       await reload();
     };
-    migrate();
+    void migrate().catch(() => {
+      // Preserve the legacy local copy and retry after a future reload rather
+      // than surfacing an unhandled rejection during automatic migration.
+      coachMigrationStarted.current = false;
+    });
   }, [conversations, reload, state.coachConversations?.length]);
   const newConversation = () => {
     setChatInput("");

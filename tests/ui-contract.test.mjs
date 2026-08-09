@@ -143,3 +143,18 @@ test("v2 getting-started guidance does not obscure the expanded sidebar", async 
   assert.match(guidance, /aria-controls="getting-started-checklist"/);
   assert.match(guidance, /id="getting-started-checklist"/);
 });
+
+test("refresh, bulk outreach, and legacy migration failures stay contained", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  for (const action of ["refresh", "markSelectedOutreached"]) {
+    const start = source.indexOf(`const ${action} = async`);
+    assert.notEqual(start, -1, `${action} must exist`);
+    const nextAction = source.indexOf("\n  };", start);
+    const body = source.slice(start, nextAction);
+    assert.match(body, /catch/, `${action} must contain rejected work`);
+  }
+  assert.match(source, /void migrate\(\)\.catch/);
+});

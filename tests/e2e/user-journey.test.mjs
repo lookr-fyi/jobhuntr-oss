@@ -404,12 +404,18 @@ test(
         .locator(".v2-guidance-list button")
         .filter({ hasText: "Start Infinite Hunt" });
       await guidance.waitFor();
-      await firstGuidanceTask.waitFor();
       assert.match(
         await guidance.innerText(),
         /\d\/6 completed/,
         "expanded v2 navigation should show live setup progress",
       );
+      assert.equal(
+        await guidance.getAttribute("aria-expanded"),
+        "false",
+        "v2 setup guidance should stay compact until requested",
+      );
+      await guidance.click();
+      await firstGuidanceTask.waitFor();
       await guidance.click();
       await firstGuidanceTask.waitFor({ state: "hidden" });
       await guidance.click();
@@ -480,6 +486,28 @@ test(
         "an extreme legacy workspace date must not create an unbounded chart",
       );
       await page.unroute("**/api/state");
+      const runtimeErrorsBeforeFailedRefresh = runtimeErrors.length;
+      await page.route("**/api/state", (route) => route.abort("failed"), {
+        times: 1,
+      });
+      await page.getByRole("button", { name: "Refresh", exact: true }).click();
+      await page.locator(".v2-error-toast").waitFor();
+      await page
+        .getByRole("button", { name: "Refresh", exact: true })
+        .waitFor();
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Refresh", exact: true })
+          .isDisabled(),
+        false,
+        "a failed workspace refresh must return its control to a retryable state",
+      );
+      assert.equal(
+        runtimeErrors.length,
+        runtimeErrorsBeforeFailedRefresh,
+        "a handled workspace refresh failure must not become a browser page error",
+      );
+      await page.getByRole("button", { name: "Dismiss error" }).click();
       const [recordedSubmissionResponse] = await Promise.all([
         page.waitForResponse(
           (response) => response.url().endsWith("/api/state") && response.ok(),
