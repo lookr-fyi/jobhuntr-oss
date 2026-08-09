@@ -1969,7 +1969,14 @@ test(
         await page.locator(".v2-queue-page").evaluate((queue) => {
           const style = (selector) =>
             getComputedStyle(queue.querySelector(selector));
+          const pageStyle = getComputedStyle(queue);
+          const mainStyle = getComputedStyle(queue.parentElement);
           return {
+            mainPadding: mainStyle.padding,
+            pageDisplay: pageStyle.display,
+            pageHeight: pageStyle.height,
+            titlePadding: style(".v2-queue-title-row").padding,
+            titleBorder: style(".v2-queue-title-row").borderBottomWidth,
             titleFontSize: style(".v2-queue-title-row h2").fontSize,
             titleFontWeight: style(".v2-queue-title-row h2").fontWeight,
             infoPadding: style(".v2-queue-info").padding,
@@ -1981,12 +1988,21 @@ test(
             searchWidth: style(".v2-queue-tab-tools input").width,
             searchPadding: style(".v2-queue-tab-tools input").padding,
             searchRadius: style(".v2-queue-tab-tools input").borderRadius,
+            listColumnWidth: Number.parseFloat(
+              style(".v2-queue-layout").gridTemplateColumns,
+            ),
+            layoutMargin: style(".v2-queue-layout").margin,
           };
         }),
         {
-          titleFontSize: "26px",
+          mainPadding: "0px",
+          pageDisplay: "flex",
+          pageHeight: "1000px",
+          titlePadding: "24px 24px 20px",
+          titleBorder: "1px",
+          titleFontSize: "17.875px",
           titleFontWeight: "600",
-          infoPadding: "24px",
+          infoPadding: "16px",
           infoRadius: "12px",
           tabPadding: "8px 16px",
           tabRadius: "8px",
@@ -1994,6 +2010,8 @@ test(
           searchWidth: "220px",
           searchPadding: "8px 12px",
           searchRadius: "6px",
+          listColumnWidth: 400,
+          layoutMargin: "0px 24px 24px",
         },
         "the queue command surface should retain authoritative v2 dimensions",
       );
