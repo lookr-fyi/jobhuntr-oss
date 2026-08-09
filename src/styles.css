@@ -1116,6 +1116,21 @@ button:disabled {
   color: #18181a;
   font-weight: 500;
 }
+.job-card-primary-action {
+  padding: 0 16px 12px;
+}
+.job-card-primary-action button {
+  display: flex;
+  width: 100%;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
 .job-drawer {
   position: fixed;
   z-index: 301;

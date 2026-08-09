@@ -1332,6 +1332,31 @@ test(
         (await page.locator(".ats-score").count()) > 0,
         "automated tracker cards should expose their ATS score like v2",
       );
+      const queuedCardAction = queuedColumn
+        .getByRole("button", { name: "Go to Submission Queue" })
+        .first();
+      if ((await queuedCardAction.count()) === 0) {
+        const automatedTrackerCard = page
+          .locator(".job-card", { has: page.locator(".ats-score") })
+          .first()
+          .locator(".kanban-card");
+        await automatedTrackerCard.dragTo(
+          queuedColumn.locator(".status-column-content"),
+        );
+      }
+      await queuedCardAction.waitFor();
+      await queuedCardAction.click();
+      await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
+      assert.match(
+        page.url(),
+        /#\/queue(?:\?packet=|$)/,
+        "the queued card action should open its submission queue context",
+      );
+      await page.goBack();
+      await page
+        .getByRole("heading", { name: "Job Tracker", exact: true })
+        .waitFor();
+      await structuredTrackerCard.waitFor();
       const dragCard = structuredTrackerCard.locator(".kanban-card");
       const dragCardTitle = await dragCard.locator(".job-title").innerText();
       await page.getByRole("button", { name: "Copy URL" }).click();
@@ -1492,6 +1517,7 @@ test(
       const insightsJobId = activeTrackerSubmission.jobId;
       await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
       await page
+        .locator(".job-drawer")
         .getByRole("button", { name: "Go to Submission Queue" })
         .waitFor();
       const atsAnalysis = page.getByRole("region", { name: "ATS Analysis" });

@@ -2433,6 +2433,29 @@ function Tracker({ state, reload, setTab }) {
                                 </a>
                               )}
                             </div>
+                            {item.status === "interested" &&
+                              item.workflowRunId && (
+                                <div className="job-card-primary-action">
+                                  <button
+                                    onClick={() => {
+                                      const queueHash = packet
+                                        ? `#/queue?packet=${encodeURIComponent(packet.id)}`
+                                        : "#/queue";
+                                      window.history.pushState(
+                                        {
+                                          tab: "queue",
+                                          packet: packet?.id || null,
+                                        },
+                                        "",
+                                        queueHash,
+                                      );
+                                      setTab("queue");
+                                    }}
+                                  >
+                                    Go to Submission Queue
+                                  </button>
+                                </div>
+                              )}
                           </article>
                         );
                       })}
