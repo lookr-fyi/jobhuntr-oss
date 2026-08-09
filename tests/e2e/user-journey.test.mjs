@@ -558,18 +558,35 @@ test(
         name: "Create New Template",
       });
       await templateDialog.getByLabel("Template name").fill("E2E Leadership");
+      const pdfBuilder = await page.context().newPage();
+      await pdfBuilder.setContent(
+        "<html><body><h1>Product Engineer</h1><p>React, TypeScript, leadership, and 40% performance gains across customer-facing products.</p></body></html>",
+      );
+      const resumePdf = await pdfBuilder.pdf({ format: "Letter" });
+      await pdfBuilder.close();
       await templateDialog
         .getByLabel("Upload resume for ATS template")
         .setInputFiles({
-          name: "e2e-resume.txt",
-          mimeType: "text/plain",
-          buffer: Buffer.from(
-            "Product engineer with React, TypeScript, leadership, and 40% performance gains.",
-          ),
+          name: "empty-resume.pdf",
+          mimeType: "application/pdf",
+          buffer: Buffer.from("%PDF-1.7\ninvalid"),
+        });
+      await templateDialog.getByRole("alert").waitFor();
+      assert.match(await templateDialog.getByRole("alert").innerText(), /pdf/i);
+      await templateDialog
+        .getByLabel("Upload resume for ATS template")
+        .setInputFiles({
+          name: "e2e-resume.pdf",
+          mimeType: "application/pdf",
+          buffer: resumePdf,
         });
       await templateDialog.getByText(/Resume uploaded successfully/).waitFor();
       await templateDialog.getByRole("button", { name: /Next/ }).click();
       await templateDialog.getByText("Edit your cloned resume").waitFor();
+      assert.match(
+        await templateDialog.getByLabel("Cloned resume content").inputValue(),
+        /TypeScript.*40% performance gains/,
+      );
       await templateDialog
         .getByLabel("Cloned resume content")
         .fill(

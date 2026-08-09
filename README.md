@@ -50,7 +50,7 @@ No account, hosted database, cloud storage, analytics, object store, or third-pa
 - **Application tracker**: draggable Kanban and list views, search/status filters, status timeline, fit scores, notes, tasks, contacts, and cascading deletion.
 - **Command center**: weekly application goals, pipeline conversion metrics, dated follow-ups, overdue/upcoming priorities, stale-opportunity detection, and activity history.
 - **Local job board**: seed jobs and local search without scraping or external services.
-- **Resume studio**: reusable ATS templates, named version history, keyword analysis, secure print previews, and browser-native PDF export.
+- **Resume studio**: real local PDF/HTML/TXT ingestion, reusable ATS templates, named version history, keyword analysis, secure print previews, and browser-native PDF export.
 - **Cover letters**: offline generation, persistent editing/history, print previews, and PDF-ready layouts.
 - **Autonomous hunt**: truthful role/location filtering, required and excluded keywords, profile-fit thresholds, previews, reusable presets, deduplication, match explanations, and run history.
 - **Profile and preferences**: target roles, skills, locations, remote preference, and minimum salary.

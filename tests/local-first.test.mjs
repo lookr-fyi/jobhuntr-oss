@@ -13,6 +13,7 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
     "express",
     "lucide-react",
     "nanoid",
+    "pdfjs-dist",
     "react",
     "react-dom",
     "zod",

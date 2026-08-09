@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
   Briefcase,
   Bot,
@@ -200,6 +201,50 @@ const isUsableResumeText = (value) => {
     text.length >= 80 &&
     !text.toLowerCase().startsWith("paste your resume here")
   );
+};
+const extractResumeFileText = async (file) => {
+  if (file.size > 10 * 1024 * 1024)
+    throw new Error("Choose a resume file smaller than 10 MB.");
+  let text = "";
+  if (file.type === "application/pdf" || /\.pdf$/i.test(file.name)) {
+    const { getDocument, GlobalWorkerOptions } = await import("pdfjs-dist");
+    GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    const document = await getDocument({
+      data: new Uint8Array(await file.arrayBuffer()),
+    }).promise;
+    try {
+      if (document.numPages > 50)
+        throw new Error("Choose a PDF with 50 pages or fewer.");
+      const pages = [];
+      for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber++) {
+        const page = await document.getPage(pageNumber);
+        const content = await page.getTextContent();
+        pages.push(
+          content.items
+            .map((item) => ("str" in item ? item.str : ""))
+            .join(" "),
+        );
+      }
+      text = pages.join("\n\n");
+    } finally {
+      await document.cleanup();
+    }
+  } else {
+    text = await file.text();
+    if (file.type === "text/html" || /\.html?$/i.test(file.name))
+      text = new DOMParser().parseFromString(text, "text/html").body
+        .textContent;
+  }
+  const normalized = String(text || "")
+    .replace(/\u0000/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  if (normalized.length < 40)
+    throw new Error(
+      "JobHuntr could not extract enough resume text. Try a text-based PDF, HTML, or TXT file.",
+    );
+  return normalized;
 };
 const isValidApplicationAnswer = (question) => {
   const answer = String(question?.answer || "").trim();
@@ -4955,6 +5000,8 @@ function Resume({ state, reload, mode = "resume" }) {
       additionalExperience: template?.additionalExperience || "",
       testJobId: template?.testJobId || state.jobs[0]?.id || "",
       uploadedFileName: template?.originalResume ? "Saved resume" : "",
+      extractingFile: false,
+      uploadError: "",
       scoreResult: null,
       sections: (
         template?.sections || ["Summary", "Skills", "Experience", "Education"]
@@ -6338,19 +6385,48 @@ function Resume({ state, reload, mode = "resume" }) {
                     onChange={async (event) => {
                       const file = event.target.files?.[0];
                       if (!file) return;
-                      const content =
-                        file.type === "application/pdf"
-                          ? state.profile.resumeText
-                          : await file.text();
-                      setTemplateDialog({
-                        ...templateDialog,
+                      setTemplateDialog((current) => ({
+                        ...current,
+                        extractingFile: true,
+                        uploadError: "",
                         uploadedFileName: file.name,
-                        originalResume: content,
-                        editedResume: content,
-                      });
+                        originalResume: "",
+                        editedResume: "",
+                      }));
+                      try {
+                        const content = await extractResumeFileText(file);
+                        setTemplateDialog((current) => ({
+                          ...current,
+                          extractingFile: false,
+                          uploadError: "",
+                          uploadedFileName: file.name,
+                          originalResume: content,
+                          editedResume: content,
+                        }));
+                      } catch (error) {
+                        setTemplateDialog((current) => ({
+                          ...current,
+                          extractingFile: false,
+                          uploadError: error.message,
+                          originalResume: "",
+                          editedResume: "",
+                        }));
+                      } finally {
+                        event.target.value = "";
+                      }
                     }}
                   />
                 </label>
+                {templateDialog.extractingFile && (
+                  <div className="v2-template-upload-progress" role="status">
+                    <RefreshCcw size={18} /> Extracting resume text locally…
+                  </div>
+                )}
+                {templateDialog.uploadError && (
+                  <div className="v2-submit-safety-note" role="alert">
+                    {templateDialog.uploadError}
+                  </div>
+                )}
                 {templateDialog.originalResume && (
                   <div className="v2-template-upload-success" role="status">
                     <CheckCircle2 size={18} /> Resume uploaded successfully and
@@ -6501,7 +6577,8 @@ function Resume({ state, reload, mode = "resume" }) {
                   disabled={
                     (templateDialog.step === 1 &&
                       (!templateDialog.name.trim() ||
-                        !templateDialog.originalResume.trim())) ||
+                        !templateDialog.originalResume.trim() ||
+                        templateDialog.extractingFile)) ||
                     (templateDialog.step === 2 &&
                       !templateDialog.editedResume.trim()) ||
                     (templateDialog.step === 4 && !templateDialog.testJobId)

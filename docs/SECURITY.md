@@ -8,6 +8,8 @@ The production and development servers bind to `127.0.0.1` by default. API respo
 
 Resume and cover-letter print pages escape all user-controlled values before generating HTML. Documents are rendered locally and PDF creation uses the browser’s native Print dialog; no document is uploaded to a conversion service.
 
+Resume PDF ingestion uses the pinned Mozilla PDF.js distribution inside the local renderer. Files are limited to 10 MB and 50 pages, extracted text remains on-device, malformed or image-only PDFs fail visibly, and JobHuntr never substitutes unrelated profile content for a failed upload.
+
 Professional profile audits are paste-only and deterministic. JobHuntr does not sign into LinkedIn, reuse browser cookies, scrape a profile, or transmit pasted headline, about, experience, or skill content. Audit inputs and history are part of the local backup, so exported JSON should be treated as sensitive.
 
 ## Before publishing

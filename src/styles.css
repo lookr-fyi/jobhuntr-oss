@@ -8572,6 +8572,7 @@ main > header.integrated-page-header {
   font-size: 11px;
 }
 .v2-template-upload-success,
+.v2-template-upload-progress,
 .v2-template-test-summary {
   display: flex;
   align-items: center;
@@ -8582,6 +8583,14 @@ main > header.integrated-page-header {
   border-radius: 9px;
   background: #f0fdf4;
   font-size: 12px;
+}
+.v2-template-upload-progress svg {
+  animation: v2-template-spin 1s linear infinite;
+}
+@keyframes v2-template-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .v2-template-edit-step textarea {
   min-height: 270px;
