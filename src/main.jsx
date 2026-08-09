@@ -4050,6 +4050,8 @@ function InboxIcon() {
   return <Download size={24} />;
 }
 function SubmissionCard({ submission: s, state, reload }) {
+  const [externalSubmissionVerified, setExternalSubmissionVerified] =
+    useState(false);
   const job = state.jobs.find((j) => j.id === s.jobId);
   const attachedResume = state.resumes.find((item) => item.id === s.resumeId);
   const attachedLetter = state.coverLetters.find(
@@ -4331,14 +4333,32 @@ function SubmissionCard({ submission: s, state, reload }) {
         </label>
       </div>
       <div className="v2-packet-footer-actions">
+        <label className="check v2-submit-confirmation">
+          <input
+            type="checkbox"
+            checked={externalSubmissionVerified}
+            onChange={(event) =>
+              setExternalSubmissionVerified(event.target.checked)
+            }
+          />
+          I personally checked the employer&apos;s confirmation page or email
+          and verified this application was submitted successfully.
+        </label>
+        <small className="v2-submit-safety-note">
+          Do not confirm for a saved draft, validation error, incomplete upload,
+          CAPTCHA, or form that merely closed.
+        </small>
         <button
           className="success"
-          disabled={!s.checklist.every((x) => x.done)}
+          disabled={
+            !s.checklist.every((x) => x.done) || !externalSubmissionVerified
+          }
           onClick={async () => {
             await api(`/api/submissions/${s.id}/submit`, {
               method: "POST",
               body: JSON.stringify({ confirmedByUser: true }),
             });
+            setExternalSubmissionVerified(false);
             reload();
           }}
         >

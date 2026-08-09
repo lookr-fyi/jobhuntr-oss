@@ -715,6 +715,16 @@ test(
           checkbox.click(),
         ]);
       }
+      const directSubmitButton = page.getByRole("button", {
+        name: "I submitted this externally",
+      });
+      assert.equal(await directSubmitButton.isDisabled(), true);
+      const externalProof = page.getByLabel(
+        /I personally checked the employer's confirmation page/,
+      );
+      await externalProof.check();
+      assert.equal(await directSubmitButton.isEnabled(), true);
+      await externalProof.uncheck();
       await page.getByRole("button", { name: "Start Submitting" }).click();
       const submitDialog = page.getByRole("dialog", {
         name: "Start submitting",

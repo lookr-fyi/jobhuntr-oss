@@ -7015,7 +7015,19 @@ main > header.integrated-page-header {
 }
 .v2-packet-footer-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
+}
+.v2-packet-footer-actions .v2-submit-confirmation {
+  flex: 1 0 100%;
+  margin: 0;
+}
+.v2-packet-footer-actions .v2-submit-safety-note {
+  flex: 1 0 100%;
+  margin: -3px 0 2px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.45;
 }
 .v2-apply-manually {
   display: flex;
