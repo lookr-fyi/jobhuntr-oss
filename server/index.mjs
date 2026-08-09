@@ -628,9 +628,30 @@ app.post("/api/board/search", async (req, res) => {
 });
 
 app.post("/api/cover-letters", async (req, res) => {
+  const current = await readDb();
+  const trackedJob = current.jobs.find((job) => job.id === req.body.jobId);
+  const manualJob = req.body.job || {};
+  const sourceResume =
+    req.body.resumeId === "profile-resume" || req.body.atsTemplateId
+      ? current.profile.resumeText
+      : current.resumes.find((item) => item.id === req.body.resumeId)?.content;
+  if (!isUsableResumeText(sourceResume))
+    return res.status(409).json({
+      error: "Select a valid resume before generating a cover letter",
+    });
+  if (
+    !trackedJob &&
+    (!safeText(manualJob.title, 500) || !safeText(manualJob.company, 300))
+  )
+    return res.status(400).json({
+      error: "Select a tracked job or provide a company and role",
+    });
   const letter = await mutate((db) => {
-    const job =
-      db.jobs.find((j) => j.id === req.body.jobId) || req.body.job || {};
+    const job = db.jobs.find((j) => j.id === req.body.jobId) || {
+      title: safeText(manualJob.title, 500),
+      company: safeText(manualJob.company, 300),
+      description: safeText(manualJob.description, 5000),
+    };
     const style = ["professional", "concise", "story-driven"].includes(
       req.body.style,
     )
@@ -653,20 +674,18 @@ app.post("/api/cover-letters", async (req, res) => {
       concise: `I’m applying for the ${job.title || "role"} role because my experience aligns directly with your needs.`,
       "story-driven": `The strongest work in my career has started with a difficult customer problem and a team determined to solve it well. That is what drew me to the ${job.title || "role"} opportunity.`,
     }[style];
-    const resumeEvidence = resume?.content
-      ?.split(/\n+/)
-      .map((line) => line.trim())
-      .find((line) => line.length > 30)
-      ?.slice(0, 260);
+    const resumeEvidence =
+      sourceResume
+        ?.split(/\n+/)
+        .map((line) => line.trim())
+        .find((line) => line.length > 30)
+        ?.slice(0, 260) || sourceResume.replace(/\s+/g, " ").slice(0, 260);
     const values = {
       "{{company}}": job.company || "Hiring Team",
       "{{role}}": job.title || "role",
       "{{opening}}": opening || styleOpening,
       "{{skills}}": skills || "shipping user-focused software",
-      "{{evidence}}":
-        emphasis ||
-        resumeEvidence ||
-        "In prior work I have built reliable product workflows, improved user experience, and operated with strong ownership.",
+      "{{evidence}}": emphasis || resumeEvidence,
       "{{closing}}": `I would welcome the chance to discuss how I can help ${job.company || "your team"} deliver meaningful results.`,
       "{{name}}": db.profile.name || "Job Hunter",
     };
@@ -677,7 +696,9 @@ app.post("/api/cover-letters", async (req, res) => {
     const item = {
       id: nanoid(),
       jobId: job.id,
-      resumeId: resume?.id || "",
+      resumeId:
+        resume?.id ||
+        (req.body.resumeId === "profile-resume" ? "profile-resume" : ""),
       atsTemplateId,
       style,
       templateId,

@@ -761,6 +761,34 @@ test("local gigs track proposals, deadlines, status history, and earnings", asyn
 test("cover letters can be edited, printed safely, and removed", async () => {
   const state = (await req("/api/state")).body;
   const job = state.jobs[0];
+  const ungrounded = await req("/api/cover-letters", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.id }),
+  });
+  assert.equal(ungrounded.res.status, 409);
+  const incompleteManual = await req("/api/cover-letters", {
+    method: "POST",
+    body: JSON.stringify({
+      resumeId: "profile-resume",
+      job: { description: "Build an accessible product." },
+    }),
+  });
+  assert.equal(incompleteManual.res.status, 400);
+  const manual = await req("/api/cover-letters", {
+    method: "POST",
+    body: JSON.stringify({
+      resumeId: "profile-resume",
+      job: {
+        company: "Manual Company",
+        title: "Product Engineer",
+        description: "Build an accessible product.",
+      },
+    }),
+  });
+  assert.equal(manual.res.status, 201);
+  assert.match(manual.body.body, /Manual Company/);
+  assert.match(manual.body.body, /Product Engineer/);
+  await req(`/api/cover-letters/${manual.body.id}`, { method: "DELETE" });
   const created = await req("/api/cover-letters", {
     method: "POST",
     body: JSON.stringify({
@@ -771,6 +799,7 @@ test("cover letters can be edited, printed safely, and removed", async () => {
       templateId: "modern",
       templateName: "Modern Impact",
       atsTemplateId: "clean-ats",
+      resumeId: "profile-resume",
       jobDescription: "Build accessible React products for customers.",
       templateContent:
         "Hello {{company}} team,\n\n{{opening}}\n\n{{evidence}}\n\n{{name}}",
@@ -818,7 +847,7 @@ test("deleting a job cascades its private workflow records", async () => {
   const jobId = created.body.id;
   await req("/api/cover-letters", {
     method: "POST",
-    body: JSON.stringify({ jobId }),
+    body: JSON.stringify({ jobId, resumeId: "profile-resume" }),
   });
   await req("/api/coach/prepare", {
     method: "POST",

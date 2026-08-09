@@ -4800,14 +4800,27 @@ function Resume({ state, reload, mode = "resume" }) {
       templateId: COVER_LETTER_TEMPLATES[0].id,
       templateName: COVER_LETTER_TEMPLATES[0].name,
       templateContent: COVER_LETTER_TEMPLATES[0].content,
-      resumeId: state.resumes[0]?.id || "",
+      resumeId:
+        state.resumes.find((item) => isUsableResumeText(item.content))?.id ||
+        (isUsableResumeText(state.profile.resumeText) ? "profile-resume" : ""),
       jobId: jobId || state.jobs[0]?.id || "",
       jobDescription:
         state.jobs.find((item) => item.id === (jobId || state.jobs[0]?.id))
           ?.description || "",
     });
   const generateLetter = async (wizard = null, keepWizard = false) => {
-    const options = wizard || { jobId };
+    const options = wizard
+      ? {
+          ...wizard,
+          job: wizard.jobId
+            ? undefined
+            : {
+                title: wizard.jobTitle,
+                company: wizard.jobCompany,
+                description: wizard.jobDescription,
+              },
+        }
+      : { jobId, resumeId: "profile-resume" };
     const created = await api("/api/cover-letters", {
       method: "POST",
       body: JSON.stringify(options),
@@ -4855,6 +4868,12 @@ function Resume({ state, reload, mode = "resume" }) {
       const selectedResume = state.resumes.find(
         (item) => item.id === letterWizard.resumeId,
       );
+      const profileResumeReady = isUsableResumeText(state.profile.resumeText);
+      const coverSourceReady = letterWizard.atsTemplateId
+        ? profileResumeReady
+        : letterWizard.resumeId === "profile-resume"
+          ? profileResumeReady
+          : isUsableResumeText(selectedResume?.content);
       return (
         <section className="v2-cover-wizard">
           <div className="v2-cover-wizard-head">
@@ -5087,14 +5106,16 @@ function Resume({ state, reload, mode = "resume" }) {
                 <div className="v2-cover-resume-list">
                   <button
                     className={
-                      !letterWizard.resumeId && !letterWizard.atsTemplateId
+                      letterWizard.resumeId === "profile-resume" &&
+                      !letterWizard.atsTemplateId
                         ? "selected"
                         : ""
                     }
+                    disabled={!profileResumeReady}
                     onClick={() =>
                       setLetterWizard({
                         ...letterWizard,
-                        resumeId: "",
+                        resumeId: "profile-resume",
                         atsTemplateId: "",
                       })
                     }
@@ -5102,7 +5123,11 @@ function Resume({ state, reload, mode = "resume" }) {
                     <FileText size={20} />
                     <span>
                       <b>Profile resume</b>
-                      <small>Use your current profile resume text</small>
+                      <small>
+                        {profileResumeReady
+                          ? "Use your current profile resume text"
+                          : "Add a real profile resume first"}
+                      </small>
                     </span>
                   </button>
                   {state.resumes.map((item) => (
@@ -5143,6 +5168,7 @@ function Resume({ state, reload, mode = "resume" }) {
                           : ""
                       }
                       key={template.id}
+                      disabled={!profileResumeReady}
                       onClick={() =>
                         setLetterWizard({
                           ...letterWizard,
@@ -5162,6 +5188,12 @@ function Resume({ state, reload, mode = "resume" }) {
                     </button>
                   ))}
                 </div>
+                {!coverSourceReady && (
+                  <p className="error-text" role="alert">
+                    Add or select a valid resume before continuing. Cover
+                    letters must be grounded in your real experience.
+                  </p>
+                )}
                 <label className="v2-cover-instructions">
                   Cover Letter Instructions
                   <textarea
@@ -5215,6 +5247,36 @@ function Resume({ state, reload, mode = "resume" }) {
                       ))}
                     </select>
                   </label>
+                )}
+                {!letterWizard.jobId && (
+                  <div className="double">
+                    <label>
+                      Company
+                      <input
+                        aria-label="Target company"
+                        value={letterWizard.jobCompany || ""}
+                        onChange={(event) =>
+                          setLetterWizard({
+                            ...letterWizard,
+                            jobCompany: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Role
+                      <input
+                        aria-label="Target role"
+                        value={letterWizard.jobTitle || ""}
+                        onChange={(event) =>
+                          setLetterWizard({
+                            ...letterWizard,
+                            jobTitle: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
                 )}
                 {selectedJob && (
                   <div className="v2-cover-job-summary">
@@ -5361,6 +5423,7 @@ function Resume({ state, reload, mode = "resume" }) {
               </button>
               {letterWizard.step < 4 ? (
                 <button
+                  disabled={letterWizard.step === 3 && !coverSourceReady}
                   onClick={() =>
                     setLetterWizard({
                       ...letterWizard,
@@ -5373,7 +5436,11 @@ function Resume({ state, reload, mode = "resume" }) {
               ) : letterWizard.step === 4 ? (
                 <button
                   disabled={
-                    !letterWizard.jobId && !letterWizard.jobDescription?.trim()
+                    !coverSourceReady ||
+                    (!letterWizard.jobId &&
+                      (!letterWizard.jobCompany?.trim() ||
+                        !letterWizard.jobTitle?.trim() ||
+                        !letterWizard.jobDescription?.trim()))
                   }
                   onClick={() => generateLetter(letterWizard, true)}
                 >
