@@ -388,6 +388,10 @@ const formatCalendarDate = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleDateString() : fallback;
 };
+const formatDateTime = (value, fallback = "Recently") => {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
+};
 const coverLetterPreviewDocument = (content, templateId = "minimal") => {
   const escaped = String(content || "")
     .replaceAll("&", "&amp;")
@@ -566,9 +570,7 @@ function InfiniteHuntStatus({ runs, onOpen }) {
               <strong>{latest.search?.q || "Latest local hunt"}</strong>
               <small>
                 {latest.search?.location || "All locations"} ·{" "}
-                {new Date(
-                  latest.completedAt || latest.createdAt,
-                ).toLocaleDateString()}
+                {formatCalendarDate(latest.completedAt || latest.createdAt)}
               </small>
               <dl>
                 <div>
@@ -1512,7 +1514,7 @@ function Overview({ state, setTab, reload }) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-  const chartStart = new Date(
+  const chartStartCandidate = new Date(
     state.meta?.createdAt ||
       state.jobs
         .map((job) => job.createdAt || job.updatedAt)
@@ -1520,6 +1522,9 @@ function Overview({ state, setTab, reload }) {
         .sort()[0] ||
       now,
   );
+  const chartStart = Number.isFinite(chartStartCandidate.getTime())
+    ? chartStartCandidate
+    : new Date(now);
   chartStart.setHours(0, 0, 0, 0);
   const chartDays = Math.max(
     1,
@@ -2184,7 +2189,7 @@ function Tracker({ state, reload, setTab }) {
       trackerStageLabel(item.status),
       item.url,
       item.applicationDatetime
-        ? new Date(item.applicationDatetime).toLocaleString()
+        ? formatDateTime(item.applicationDatetime, "")
         : "",
       item.hiringContactName || item.contacts?.[0]?.name || "",
       item.fitScore ?? "",
@@ -2193,8 +2198,8 @@ function Tracker({ state, reload, setTab }) {
       item.numApplicants ?? "",
       item.statusInsight || "",
       item.workflowRunId || "",
-      item.createdAt ? new Date(item.createdAt).toLocaleString() : "",
-      item.updatedAt ? new Date(item.updatedAt).toLocaleString() : "",
+      item.createdAt ? formatDateTime(item.createdAt, "") : "",
+      item.updatedAt ? formatDateTime(item.updatedAt, "") : "",
     ]);
     const csv = [headers, ...rows]
       .map((row) => row.map(escapeCsv).join(","))
@@ -2358,7 +2363,7 @@ function Tracker({ state, reload, setTab }) {
             {(state.agentRuns || []).map((run) => (
               <option value={run.id} key={run.id}>
                 {run.runName || run.search?.q || "Local hunt"} -{" "}
-                {new Date(run.createdAt).toLocaleDateString()}
+                {formatCalendarDate(run.createdAt)}
               </option>
             ))}
           </select>
@@ -2436,13 +2441,16 @@ function Tracker({ state, reload, setTab }) {
                               new Date(b.updatedAt || b.createdAt || 0) -
                               new Date(a.updatedAt || a.createdAt || 0),
                           )[0];
-                        const shortDate = (value) =>
-                          value
-                            ? new Date(value).toLocaleDateString("en-US", {
+                        const shortDate = (value) => {
+                          if (!value) return "";
+                          const date = new Date(value);
+                          return Number.isFinite(date.getTime())
+                            ? date.toLocaleDateString("en-US", {
                                 month: "short",
                                 day: "numeric",
                               })
                             : "";
+                        };
                         return (
                           <article className="job-card" key={item.id}>
                             <button
@@ -2780,9 +2788,10 @@ function Tracker({ state, reload, setTab }) {
                           <span className="date-label">Posted:</span>
                           <span className="date-value">
                             {job.postedAt || job.collectedAt
-                              ? new Date(
+                              ? formatCalendarDate(
                                   job.postedAt || job.collectedAt,
-                                ).toLocaleDateString()
+                                  "Not available",
+                                )
                               : "Not available"}
                           </span>
                         </div>
@@ -2790,7 +2799,7 @@ function Tracker({ state, reload, setTab }) {
                           <span className="date-label">Last Updated:</span>
                           <span className="date-value">
                             {job.updatedAt
-                              ? new Date(job.updatedAt).toLocaleString()
+                              ? formatDateTime(job.updatedAt, "Not available")
                               : "Not available"}
                           </span>
                         </div>
@@ -2800,12 +2809,13 @@ function Tracker({ state, reload, setTab }) {
                           <div className="date-item">
                             <span className="date-label">Applied:</span>
                             <span className="date-value">
-                              {new Date(
+                              {formatDateTime(
                                 [...job.statusHistory]
                                   .reverse()
                                   .find((event) => event.status === "applied")
                                   .at,
-                              ).toLocaleString()}
+                                "Not available",
+                              )}
                             </span>
                           </div>
                         )}
@@ -2858,7 +2868,7 @@ function Tracker({ state, reload, setTab }) {
                         {(job.statusHistory || []).map((event, index) => (
                           <p key={`${event.at}-${index}`}>
                             <b>{trackerStageLabel(event.status)}</b>
-                            <small>{new Date(event.at).toLocaleString()}</small>
+                            <small>{formatDateTime(event.at)}</small>
                           </p>
                         ))}
                       </div>
@@ -3197,7 +3207,7 @@ function TrackerApplicationInsights({ job, submission, profile }) {
           </div>
           <p>
             {submission.submittedAt
-              ? `Verified externally on ${new Date(submission.submittedAt).toLocaleString()}. `
+              ? `Verified externally on ${formatDateTime(submission.submittedAt)}. `
               : "Recorded as externally submitted. "}
             This snapshot cannot be changed by later profile or document edits.
           </p>
@@ -3530,7 +3540,7 @@ function Actions({ job, reload }) {
         <div className="note v2-record-row" key={n.id}>
           <span>
             {n.text}
-            <small>{new Date(n.at).toLocaleString()}</small>
+            <small>{formatDateTime(n.at)}</small>
           </span>
           <button
             className="icon danger"
@@ -3599,7 +3609,7 @@ function Actions({ job, reload }) {
               {t.text}
               {t.due && (
                 <small>
-                  Due {new Date(`${t.due}T12:00:00`).toLocaleDateString()}
+                  Due {formatCalendarDate(`${t.due}T12:00:00`, "Not set")}
                 </small>
               )}
             </span>
@@ -6746,9 +6756,7 @@ function Resume({ state, reload, mode = "resume" }) {
                       <b>{item.title}</b>
                       <small>
                         <Calendar size={13} />{" "}
-                        {new Date(
-                          item.updatedAt || item.createdAt,
-                        ).toLocaleDateString()}
+                        {formatCalendarDate(item.updatedAt || item.createdAt)}
                       </small>
                     </button>
                     <button
@@ -7180,9 +7188,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         </b>
                         <span>
                           {job?.location || "Local resume"} · Created{" "}
-                          {new Date(
-                            item.createdAt || item.updatedAt,
-                          ).toLocaleDateString()}
+                          {formatCalendarDate(item.createdAt || item.updatedAt)}
                         </span>
                         <small>{item.name}</small>
                       </button>
@@ -9323,7 +9329,7 @@ function Gigs({ state, reload }) {
                 <small>by {item.client}</small>
               </span>
               <strong>{money(item.earned || item.budget)}</strong>
-              <time>{new Date(item.createdAt).toLocaleDateString()}</time>
+              <time>{formatCalendarDate(item.createdAt)}</time>
               <em className={`v2-gig-status ${item.status}`}>
                 {gigStatusLabel(item.status)}
               </em>
@@ -9386,9 +9392,10 @@ function Gigs({ state, reload }) {
                       {item.dueDate && (
                         <small>
                           Due{" "}
-                          {new Date(
+                          {formatCalendarDate(
                             `${item.dueDate}T12:00:00`,
-                          ).toLocaleDateString()}
+                            "Not set",
+                          )}
                         </small>
                       )}
                     </button>
@@ -9483,7 +9490,7 @@ function Gigs({ state, reload }) {
                 {gig.statusHistory.map((event, index) => (
                   <p key={`${event.at}-${index}`}>
                     <b>{event.status}</b>
-                    <small>{new Date(event.at).toLocaleString()}</small>
+                    <small>{formatDateTime(event.at)}</small>
                   </p>
                 ))}
               </div>
@@ -9979,12 +9986,12 @@ function ProfileAudit({ state, reload }) {
                     }}
                   >
                     <strong>{item.total}</strong>
-                    <span>{new Date(item.createdAt).toLocaleString()}</span>
+                    <span>{formatDateTime(item.createdAt)}</span>
                     <small>{item.suggestions.length} recommendation(s)</small>
                   </button>
                   <button
                     className="danger"
-                    aria-label={`Delete profile audit from ${new Date(item.createdAt).toLocaleDateString()}`}
+                    aria-label={`Delete profile audit from ${formatCalendarDate(item.createdAt)}`}
                     onClick={() => setDeleteAudit(item)}
                   >
                     ×
@@ -10265,8 +10272,7 @@ function Agent({ state, reload, setTab }) {
               <small>Recurring hunts continue while JobHuntr is running.</small>
               {state.infiniteHunt.nextRunAt && (
                 <small>
-                  Next run{" "}
-                  {new Date(state.infiniteHunt.nextRunAt).toLocaleString()}
+                  Next run {formatDateTime(state.infiniteHunt.nextRunAt)}
                 </small>
               )}
             </span>
@@ -10630,10 +10636,8 @@ function Agent({ state, reload, setTab }) {
                     matched
                   </b>
                   <small>
-                    {new Date(
-                      run.completedAt || run.createdAt,
-                    ).toLocaleString()}{" "}
-                    · {run.added ?? run.found} saved · {run.duplicates || 0}{" "}
+                    {formatDateTime(run.completedAt || run.createdAt)} ·{" "}
+                    {run.added ?? run.found} saved · {run.duplicates || 0}{" "}
                     duplicates
                   </small>
                 </summary>
@@ -10675,7 +10679,7 @@ function Agent({ state, reload, setTab }) {
               </span>
             </div>
             <p className="v2-session-time">
-              Started {new Date(latestRun.createdAt).toLocaleString()}
+              Started {formatDateTime(latestRun.createdAt)}
             </p>
             <div className="v2-session-stats">
               <div>
@@ -11094,7 +11098,7 @@ function RunsPage({ state, setTab, reload }) {
             </div>
             <p className="v2-session-time">
               {selectedRun.search?.location || "All locations"} · Started{" "}
-              {new Date(selectedRun.createdAt).toLocaleString()}
+              {formatDateTime(selectedRun.createdAt)}
             </p>
             <div className="v2-session-stats">
               <div>
