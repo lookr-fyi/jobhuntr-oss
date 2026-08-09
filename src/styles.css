@@ -699,7 +699,7 @@ button:disabled {
   min-height: 100vh;
   flex-direction: column;
   gap: 0;
-  margin: -32px;
+  margin: 0;
   overflow: hidden;
   background: var(--v2-bg);
 }
@@ -731,8 +731,8 @@ button:disabled {
 .tracker-filter-panel {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 32px;
+  gap: 1rem;
+  padding: 1rem 2rem;
   border: 0;
   border-bottom: 1px solid #e2e8f0;
   border-radius: 0;
@@ -753,10 +753,10 @@ button:disabled {
   width: 200px;
   min-width: 200px;
   margin: 0;
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--v2-border);
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .tracker-filter-label {
   display: inline;
@@ -6254,6 +6254,9 @@ main:has(> .gigs-page) {
 main:has(> .coach-page) {
   padding: 0;
 }
+main:has(> .tracker-page) {
+  padding: 0;
+}
 main > header {
   max-width: 1440px;
   margin: 0 auto 24px;
@@ -11451,7 +11454,7 @@ main > header.integrated-page-header {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0;
-  padding: 24px 32px;
+  padding: 1.5rem 2rem;
   border-bottom: 1px solid var(--v2-border);
   background: #fff;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -11459,7 +11462,7 @@ main > header.integrated-page-header {
 .v2-tracker-header h1 {
   margin: 0;
   color: var(--v2-text);
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 600;
 }
 .v2-tracker-header > div {
@@ -11474,13 +11477,13 @@ main > header.integrated-page-header {
 .v2-tracker-header .funnel-button,
 .v2-tracker-header .export-button {
   box-sizing: border-box;
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   border: 1px solid var(--v2-border);
   border-radius: 6px;
   background: #fff;
   color: var(--v2-text);
   box-shadow: none;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   text-decoration: none;
 }

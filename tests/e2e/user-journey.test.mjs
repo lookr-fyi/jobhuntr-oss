@@ -3299,6 +3299,8 @@ test(
           const search = filters.querySelector(".search-input");
           const style = (element) => getComputedStyle(element);
           return {
+            mainPadding: style(tracker.parentElement).padding,
+            trackerMargin: style(tracker).margin,
             headerPadding: style(header).padding,
             headingFontSize: style(heading).fontSize,
             headingFontWeight: style(heading).fontWeight,
@@ -3312,16 +3314,18 @@ test(
           };
         }),
         {
-          headerPadding: "24px 32px",
-          headingFontSize: "28px",
+          mainPadding: "0px",
+          trackerMargin: "0px",
+          headerPadding: "16.5px 22px",
+          headingFontSize: "19.25px",
           headingFontWeight: "600",
-          buttonPadding: "8px 16px",
+          buttonPadding: "5.5px 11px",
           buttonRadius: "6px",
-          buttonFontSize: "13px",
-          filterPadding: "16px 32px",
-          searchPadding: "8px 12px",
+          buttonFontSize: "8.9375px",
+          filterPadding: "11px 22px",
+          searchPadding: "5.5px 8.25px",
           searchRadius: "6px",
-          searchFontSize: "14px",
+          searchFontSize: "9.625px",
         },
         "the tracker shell should retain the authoritative v2 dimensions",
       );
