@@ -3153,6 +3153,37 @@ test(
       await page.getByRole("button", { name: "Share conversation" }).click();
       await page.getByText("Link copied", { exact: true }).waitFor();
       await assertAccessible(page, "Career Coach");
+      const originalCoachJobId = await page
+        .getByLabel("Coaching role")
+        .inputValue();
+      const alternateCoachJobId = await page
+        .getByLabel("Coaching role")
+        .evaluate(
+          (select, current) =>
+            [...select.options].find((option) => option.value !== current)
+              ?.value || "",
+          originalCoachJobId,
+        );
+      assert.ok(alternateCoachJobId, "a second coaching role should exist");
+      await page.getByLabel("Coaching role").selectOption(alternateCoachJobId);
+      await page
+        .getByRole("heading", { name: "Hi, I'm your Career Coach!" })
+        .waitFor();
+      assert.doesNotMatch(
+        page.url(),
+        /conversation=/,
+        "changing roles should start a fresh v2 coaching context instead of silently retargeting an existing conversation",
+      );
+      await page
+        .getByRole("button", {
+          name: "Help me prepare for an interview 1 coaching exchange",
+        })
+        .click();
+      assert.equal(
+        await page.getByLabel("Coaching role").inputValue(),
+        originalCoachJobId,
+        "opening a saved coaching conversation should restore its original role context",
+      );
       await page
         .getByRole("button", { name: "New coaching conversation" })
         .click();

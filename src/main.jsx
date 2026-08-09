@@ -8795,7 +8795,13 @@ function Coach({ state, reload }) {
     selectConversationState(conversations, null);
   };
   const openConversation = (id) => {
+    const conversation = conversations.find((item) => item.id === id);
     setChatInput("");
+    if (
+      conversation?.jobId &&
+      state.jobs.some((job) => job.id === conversation.jobId)
+    )
+      setJobId(conversation.jobId);
     setActiveConversationId(id);
   };
   const deleteConversation = async (id) => {
@@ -8946,6 +8952,7 @@ function Coach({ state, reload }) {
             setJobId(e.target.value);
             setSession(null);
             setDraft(null);
+            if (view === "chat" && activeConversation) newConversation();
           }}
         >
           {state.jobs.map((job) => (
