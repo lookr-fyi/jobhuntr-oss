@@ -9883,6 +9883,16 @@ function OutreachPage({ state, reload }) {
     </section>
   );
 }
+const practiceSessionDigest = (session) =>
+  session
+    ? JSON.stringify({
+        id: session.id,
+        answers: session.answers || {},
+        notes: session.notes || "",
+        researchDone: session.researchDone || [],
+        status: session.status || "draft",
+      })
+    : "";
 function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
   const [chatInput, setChatInput] = useState("");
@@ -9935,12 +9945,54 @@ function Coach({ state, reload }) {
       state.jobs[0]?.id ||
       "",
   );
-  const [session, setSession] = useState(state.coachingSessions[0] || null);
+  const initialPracticeSession = state.coachingSessions[0] || null;
+  const [session, setSession] = useState(initialPracticeSession);
+  const [practiceBaseline, setPracticeBaseline] = useState(() =>
+    practiceSessionDigest(initialPracticeSession),
+  );
+  const [pendingPracticeNavigation, setPendingPracticeNavigation] =
+    useState(null);
   const [draft, setDraft] = useState(state.outreachDrafts[0] || null);
   const activeConversation =
     conversations.find(({ id }) => id === activeConversationId) ||
     (activeConversationId ? conversations[0] || null : null);
   const messages = activeConversation?.messages || [];
+  const hasUnsavedPractice = Boolean(
+    session && practiceSessionDigest(session) !== practiceBaseline,
+  );
+  const finishPracticeNavigation = (navigation) => {
+    setPendingPracticeNavigation(null);
+    if (navigation?.type === "session") {
+      const next =
+        state.coachingSessions.find(
+          (candidate) => candidate.id === navigation.id,
+        ) || null;
+      setSession(next);
+      setPracticeBaseline(practiceSessionDigest(next));
+      return;
+    }
+    if (navigation?.type === "role") {
+      setJobId(navigation.id);
+      setSession(null);
+      setPracticeBaseline("");
+      setDraft(null);
+      if (view === "chat" && activeConversation) newConversation();
+      return;
+    }
+    if (navigation?.type === "prepare") void prepare();
+  };
+  const requestPracticeNavigation = (navigation) => {
+    if (
+      preparingSessionRef.current ||
+      (navigation?.type === "session" && navigation.id === session?.id)
+    )
+      return;
+    if (hasUnsavedPractice) {
+      setPendingPracticeNavigation(navigation);
+      return;
+    }
+    finishPracticeNavigation(navigation);
+  };
   const selectConversationState = (next, activeId = activeConversationId) => {
     setConversations(next);
     if (activeId) {
@@ -10056,6 +10108,7 @@ function Coach({ state, reload }) {
         body: JSON.stringify({ jobId }),
       });
       setSession(created);
+      setPracticeBaseline(practiceSessionDigest(created));
       await reload();
     } catch {
       // Preserve the selected role so practice-plan creation can be retried.
@@ -10132,6 +10185,15 @@ function Coach({ state, reload }) {
   return (
     <section className="coach-page">
       <ConfirmDialog
+        open={Boolean(pendingPracticeNavigation)}
+        title="Discard practice changes?"
+        description="Your latest interview answers, checklist progress, or notes have not been saved. Discard them and continue?"
+        confirmLabel="Discard Changes"
+        busyLabel="Discarding…"
+        onClose={() => setPendingPracticeNavigation(null)}
+        onConfirm={() => finishPracticeNavigation(pendingPracticeNavigation)}
+      />
+      <ConfirmDialog
         open={Boolean(deleteConversationTarget)}
         title="Delete coaching conversation?"
         description={`“${deleteConversationTarget?.title || "This conversation"}” and its local message history will be permanently removed.`}
@@ -10170,12 +10232,9 @@ function Coach({ state, reload }) {
           name="coaching-role"
           aria-label="Coaching role"
           value={jobId}
-          onChange={(e) => {
-            setJobId(e.target.value);
-            setSession(null);
-            setDraft(null);
-            if (view === "chat" && activeConversation) newConversation();
-          }}
+          onChange={(e) =>
+            requestPracticeNavigation({ type: "role", id: e.target.value })
+          }
         >
           {state.jobs.map((job) => (
             <option value={job.id} key={job.id}>
@@ -10369,7 +10428,7 @@ function Coach({ state, reload }) {
             <button
               disabled={preparingSession}
               aria-busy={preparingSession}
-              onClick={prepare}
+              onClick={() => requestPracticeNavigation({ type: "prepare" })}
             >
               <MessageSquare size={16} />{" "}
               {preparingSession ? "Preparing…" : "New role-specific plan"}
@@ -10384,7 +10443,9 @@ function Coach({ state, reload }) {
                       : "session-row"
                   }
                   key={item.id}
-                  onClick={() => setSession(item)}
+                  onClick={() =>
+                    requestPracticeNavigation({ type: "session", id: item.id })
+                  }
                 >
                   <b>{job?.company || "Deleted role"}</b>
                   <span>{job?.title}</span>
@@ -10401,6 +10462,9 @@ function Coach({ state, reload }) {
               <PracticeSession
                 session={session}
                 setSession={setSession}
+                onSaved={(updated) =>
+                  setPracticeBaseline(practiceSessionDigest(updated))
+                }
                 state={state}
                 reload={reload}
               />
@@ -10477,7 +10541,7 @@ function Coach({ state, reload }) {
     </section>
   );
 }
-function PracticeSession({ session, setSession, state, reload }) {
+function PracticeSession({ session, setSession, onSaved, state, reload }) {
   const [savingPractice, setSavingPractice] = useState(false);
   const savingPracticeRef = useRef(false);
   const job = state.jobs.find((x) => x.id === session.jobId);
@@ -10499,6 +10563,7 @@ function PracticeSession({ session, setSession, state, reload }) {
         }),
       });
       setSession(updated);
+      onSaved(updated);
       await reload();
     } catch {
       // Keep answers and notes in the editor so saving can be retried.

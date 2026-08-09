@@ -763,6 +763,35 @@ test("Career Coach evidence saves are single-flight and preserve retry context",
   assert.match(stories, /savingStory\s*\? "Saving…"/);
 });
 
+test("Career Coach protects unsaved interview practice during navigation", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const coach = source.slice(
+    source.indexOf("function Coach"),
+    source.indexOf("function PracticeSession"),
+  );
+  const practice = source.slice(
+    source.indexOf("function PracticeSession"),
+    source.indexOf("function StoryVault"),
+  );
+
+  assert.match(coach, /const \[practiceBaseline, setPracticeBaseline\]/);
+  assert.match(coach, /const hasUnsavedPractice = Boolean/);
+  assert.match(coach, /title="Discard practice changes\?"/);
+  assert.match(coach, /requestPracticeNavigation\(\{ type: "prepare" \}\)/);
+  assert.match(
+    coach,
+    /requestPracticeNavigation\(\{ type: "session", id: item\.id \}\)/,
+  );
+  assert.match(
+    coach,
+    /setPracticeBaseline\(practiceSessionDigest\(updated\)\)/,
+  );
+  assert.match(practice, /onSaved\(updated\)/);
+});
+
 test("Career Coach protects unsaved STAR evidence during navigation", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

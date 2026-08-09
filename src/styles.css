@@ -469,7 +469,7 @@ button:disabled {
   padding: 7px;
 }
 .success {
-  background: #16a34a;
+  background: #15803d;
 }
 .coach-item {
   display: grid;
@@ -5130,6 +5130,10 @@ button.v2-workflow-card.selected {
 .session-row.selected {
   background: #dbeafe;
   border-color: #60a5fa;
+}
+.session-row.selected span,
+.session-row.selected small {
+  color: #475569;
 }
 .session-row span,
 .session-row small {

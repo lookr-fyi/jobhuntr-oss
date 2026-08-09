@@ -3732,6 +3732,30 @@ test(
         .getByRole("heading", { name: /Developer Tools Engineer/ })
         .waitFor();
       await assertNamedFormControls(page, "Career Coach interview practice");
+      const privatePracticeNotes = page.locator(
+        'textarea[name="practice-private-notes"]',
+      );
+      await privatePracticeNotes.fill(
+        "Unsaved interview evidence and follow-up questions",
+      );
+      await page
+        .getByRole("button", { name: "New role-specific plan" })
+        .click();
+      const discardPracticeDialog = page.getByRole("alertdialog", {
+        name: "Discard practice changes?",
+      });
+      await discardPracticeDialog.waitFor();
+      await assertAccessible(page, "Discard interview practice confirmation");
+      await discardPracticeDialog
+        .getByRole("button", { name: "Cancel" })
+        .click();
+      await discardPracticeDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await privatePracticeNotes.inputValue(),
+        "Unsaved interview evidence and follow-up questions",
+        "canceling practice navigation should preserve unsaved notes",
+      );
+      await page.getByRole("button", { name: "Save progress" }).click();
       await page.getByRole("button", { name: "STAR story vault" }).click();
       await assertNamedFormControls(page, "Career Coach STAR story vault");
       await page
