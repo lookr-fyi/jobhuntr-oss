@@ -525,6 +525,72 @@ test(
         /#\/board/,
         "the first pointer press on collapsed desktop navigation must navigate even while the sidebar expands",
       );
+      await page.locator(".v2-board-row").first().waitFor();
+      await page.locator(".v2-board-detail").waitFor();
+      const boardGeometry = await page
+        .locator(".v2-board-page")
+        .evaluate((board) => {
+          const style = getComputedStyle(board);
+          const mainStyle = getComputedStyle(board.parentElement);
+          const searchStyle = getComputedStyle(
+            board.querySelector(".v2-board-search"),
+          );
+          const layoutStyle = getComputedStyle(
+            board.querySelector(".v2-board-layout"),
+          );
+          const rowStyle = getComputedStyle(
+            board.querySelector(".v2-board-row"),
+          );
+          const detailStyle = getComputedStyle(
+            board.querySelector(".v2-board-detail"),
+          );
+          const columns = layoutStyle.gridTemplateColumns
+            .split(" ")
+            .map(Number.parseFloat);
+          return {
+            mainPadding: mainStyle.padding,
+            pagePadding: style.padding,
+            pageWidth: style.width,
+            searchRadius: searchStyle.borderRadius,
+            searchPadding: searchStyle.padding,
+            columns,
+            layoutGap: layoutStyle.gap,
+            rowPadding: rowStyle.padding,
+            rowRadius: rowStyle.borderRadius,
+            detailPadding: detailStyle.padding,
+            detailRadius: detailStyle.borderRadius,
+          };
+        });
+      assert.deepEqual(
+        {
+          ...boardGeometry,
+          pageWidth: undefined,
+          columns: undefined,
+        },
+        {
+          mainPadding: "0px",
+          pagePadding: "22px 27.5px",
+          pageWidth: undefined,
+          searchRadius: "9999px",
+          searchPadding: "8.25px 11px",
+          columns: undefined,
+          layoutGap: "16.5px",
+          rowPadding: "16px",
+          rowRadius: "16px",
+          detailPadding: "24px",
+          detailRadius: "24px",
+        },
+        "Job Board should retain the authoritative v2 full-width split-pane geometry",
+      );
+      assert.ok(
+        Number.parseFloat(boardGeometry.pageWidth) > 1200,
+        "the Job Board should use the available desktop workspace instead of the legacy 1180px cap",
+      );
+      assert.ok(
+        Math.abs(boardGeometry.columns[1] / boardGeometry.columns[0] - 5 / 3) <
+          0.02,
+        "the authoritative v2 Job Board detail pane should remain 5:3 relative to its list",
+      );
       await page.locator('button[title="Overview"]').click();
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
       assert.deepEqual(
