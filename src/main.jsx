@@ -1261,6 +1261,8 @@ function App() {
 function Onboarding({ profile, reload }) {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const extractingResumeRef = useRef(false);
   const [form, setForm] = useState({
     name: "",
     role: profile.targetRoles?.[0] || "Software Engineer",
@@ -1280,6 +1282,8 @@ function Onboarding({ profile, reload }) {
     extractingResume: false,
   });
   const finish = async (overrides = {}) => {
+    if (savingRef.current || extractingResumeRef.current) return;
+    savingRef.current = true;
     const values = { ...form, ...overrides };
     setSaving(true);
     try {
@@ -1312,7 +1316,39 @@ function Onboarding({ profile, reload }) {
     } catch {
       // Keep onboarding data and the current step available for retry.
     } finally {
+      savingRef.current = false;
       setSaving(false);
+    }
+  };
+  const loadResumeFile = async (event) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    if (!file || extractingResumeRef.current || savingRef.current) return;
+    extractingResumeRef.current = true;
+    setForm((current) => ({
+      ...current,
+      resumeFileName: file.name,
+      resumeError: "",
+      extractingResume: true,
+    }));
+    try {
+      const resumeText = await extractResumeFileText(file);
+      setForm((current) => ({
+        ...current,
+        resumeText,
+        resumeError: "",
+        extractingResume: false,
+      }));
+    } catch (error) {
+      setForm((current) => ({
+        ...current,
+        resumeText: "",
+        resumeError: error.message,
+        extractingResume: false,
+      }));
+    } finally {
+      extractingResumeRef.current = false;
+      input.value = "";
     }
   };
   return (
@@ -1376,11 +1412,13 @@ function Onboarding({ profile, reload }) {
                 Everything is saved to this computer and can be exported
                 anytime.
               </p>
-              <button onClick={() => setStep(1)}>
+              <button disabled={saving} onClick={() => setStep(1)}>
                 Set up my workspace <ChevronRight size={17} />
               </button>
               <button
                 className="text-button"
+                disabled={saving}
+                aria-busy={saving}
                 onClick={() =>
                   finish({
                     name: "Demo Job Hunter",
@@ -1497,35 +1535,9 @@ function Onboarding({ profile, reload }) {
                   name="onboarding-resume-file"
                   aria-label="Upload resume during setup"
                   type="file"
+                  disabled={form.extractingResume || saving}
                   accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
-                  onChange={async (event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    setForm((current) => ({
-                      ...current,
-                      resumeFileName: file.name,
-                      resumeError: "",
-                      extractingResume: true,
-                    }));
-                    try {
-                      const resumeText = await extractResumeFileText(file);
-                      setForm((current) => ({
-                        ...current,
-                        resumeText,
-                        resumeError: "",
-                        extractingResume: false,
-                      }));
-                    } catch (error) {
-                      setForm((current) => ({
-                        ...current,
-                        resumeText: "",
-                        resumeError: error.message,
-                        extractingResume: false,
-                      }));
-                    } finally {
-                      event.target.value = "";
-                    }
-                  }}
+                  onChange={loadResumeFile}
                 />
               </label>
               {form.extractingResume && (
@@ -1542,6 +1554,7 @@ function Onboarding({ profile, reload }) {
                 Resume text
                 <textarea
                   name="onboarding-resume-text"
+                  disabled={form.extractingResume || saving}
                   value={form.resumeText}
                   onChange={(event) =>
                     setForm({
@@ -1554,7 +1567,11 @@ function Onboarding({ profile, reload }) {
                 />
               </label>
               <div className="v2-onboarding-actions">
-                <button className="secondary" onClick={() => setStep(2)}>
+                <button
+                  className="secondary"
+                  disabled={form.extractingResume}
+                  onClick={() => setStep(2)}
+                >
                   Back
                 </button>
                 <button
@@ -1626,7 +1643,11 @@ function Onboarding({ profile, reload }) {
                 <button className="secondary" onClick={() => setStep(3)}>
                   Back
                 </button>
-                <button disabled={saving} onClick={() => finish()}>
+                <button
+                  disabled={saving}
+                  aria-busy={saving}
+                  onClick={() => finish()}
+                >
                   {saving ? "Creating workspace…" : "Open my command center"}
                 </button>
               </div>

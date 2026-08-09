@@ -177,6 +177,36 @@ test("ATS template scoring is single-flight and retryable", async () => {
   assert.match(source, /"Scoring…"/);
 });
 
+test("first-run onboarding cannot duplicate saves or overlap resume extraction", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const onboarding = source.slice(
+    source.indexOf("function Onboarding("),
+    source.indexOf("function title("),
+  );
+
+  for (const operation of ["saving", "extractingResume"]) {
+    assert.match(
+      onboarding,
+      new RegExp(`const ${operation}Ref = useRef\\(false\\)`),
+    );
+    assert.match(onboarding, new RegExp(`${operation}Ref\\.current = true`));
+    assert.match(onboarding, new RegExp(`${operation}Ref\\.current = false`));
+  }
+  assert.match(
+    onboarding,
+    /if \(savingRef\.current \|\| extractingResumeRef\.current\) return/,
+  );
+  assert.match(
+    onboarding,
+    /if \(!file \|\| extractingResumeRef\.current \|\| savingRef\.current\) return/,
+  );
+  assert.match(onboarding, /disabled=\{form\.extractingResume \|\| saving\}/);
+  assert.match(onboarding, /aria-busy=\{saving\}/);
+});
+
 test("Resume Studio save and scoring actions are single-flight and retryable", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
