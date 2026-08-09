@@ -503,6 +503,28 @@ test("all authoritative cover-letter templates retain distinct visual themes", a
   assert.match(styles, /font-family: var\(--letter-font\)/);
 });
 
+test("saved cover letters retain a safe themed live editing workspace", async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL("../src/main.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(source, /title="Saved Cover Letter Preview"/);
+  assert.match(source, /sandbox=""/);
+  assert.match(
+    source,
+    /coverLetterPreviewDocument\(\s*letter\.body,\s*letter\.templateId/,
+  );
+  assert.match(styles, /\.v2-letter-editor-split\s*\{/);
+  assert.match(
+    styles,
+    /grid-template-columns: minmax\(320px, 0\.82fr\) minmax\(420px, 1\.18fr\)/,
+  );
+  assert.match(
+    styles,
+    /@media \(max-width: 900px\)[\s\S]*?\.v2-letter-editor-split/,
+  );
+});
+
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

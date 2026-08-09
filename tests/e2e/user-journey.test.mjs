@@ -2444,6 +2444,42 @@ test(
         0,
         "editing should use a focused document workspace instead of stacking beneath the card grid",
       );
+      await page.getByTitle("Saved Cover Letter Preview").waitFor();
+      assert.equal(
+        await page
+          .getByTitle("Saved Cover Letter Preview")
+          .evaluate((frame) => frame.getAttribute("sandbox")),
+        "",
+        "saved-letter previews must remain isolated from the application",
+      );
+      await page
+        .getByLabel("Cover letter content")
+        .fill("Dear hiring team,\n\nThis saved edit updates live and safely.");
+      await page.waitForFunction(() =>
+        document
+          .querySelector('iframe[title="Saved Cover Letter Preview"]')
+          ?.getAttribute("srcdoc")
+          ?.includes("This saved edit updates live and safely."),
+      );
+      const savedEditorPreview = await page
+        .getByTitle("Saved Cover Letter Preview")
+        .getAttribute("srcdoc");
+      assert.match(savedEditorPreview, /background:#f8f9fa/);
+      assert.match(savedEditorPreview, /border-left:5px solid #667eea/);
+      assert.match(
+        savedEditorPreview,
+        /font:15px\/1\.7 'Helvetica Neue', Arial, sans-serif/,
+        "the saved editor should retain its Modern template during live editing",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/cover-letters/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save Changes" }).click(),
+      ]);
       await page.getByRole("button", { name: "Back to Cover Letters" }).click();
       await page.getByRole("heading", { name: "Cover Letters" }).waitFor();
 

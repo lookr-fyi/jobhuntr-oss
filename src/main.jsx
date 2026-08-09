@@ -7869,54 +7869,89 @@ function Resume({ state, reload, mode = "resume" }) {
             </div>
           )}
           {letter && (
-            <div className="card v2-letter-workspace">
-              <>
-                <div className="row">
-                  <h3>{letter.title}</h3>
+            <div className="v2-letter-workspace">
+              <div className="v2-letter-editor-toolbar">
+                <div>
+                  <b>Cover Letter Editor</b>
+                  <span>
+                    {letter.templateName ||
+                      COVER_LETTER_PREVIEW_THEMES[letter.templateId]?.name ||
+                      "Minimal"}{" "}
+                    template
+                  </span>
+                </div>
+                <div>
                   <a
+                    className="secondary buttonlike"
                     href={`/print/cover-letter/${letter.id}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Preview PDF ↗
+                    <Download size={15} /> Preview PDF
                   </a>
-                </div>
-                <input
-                  name="cover-letter-title"
-                  aria-label="Cover letter title"
-                  value={letter.title}
-                  onChange={(e) =>
-                    setLetter({ ...letter, title: e.target.value })
-                  }
-                />
-                <textarea
-                  name="cover-letter-content"
-                  aria-label="Cover letter content"
-                  className="letter"
-                  value={letter.body}
-                  onChange={(e) =>
-                    setLetter({ ...letter, body: e.target.value })
-                  }
-                />
-                <div className="inline">
                   <button
                     disabled={savingLetter}
                     aria-busy={savingLetter}
                     onClick={saveLetter}
                   >
-                    <Save size={16} />{" "}
-                    {savingLetter ? "Saving…" : "Save changes"}
+                    <Save size={16} />
+                    {savingLetter ? "Saving…" : "Save Changes"}
                   </button>
+                </div>
+              </div>
+              <div className="v2-letter-editor-split">
+                <div className="v2-letter-source">
+                  <label htmlFor="saved-cover-letter-title">
+                    Document title
+                  </label>
+                  <input
+                    id="saved-cover-letter-title"
+                    name="cover-letter-title"
+                    aria-label="Cover letter title"
+                    value={letter.title}
+                    onChange={(e) =>
+                      setLetter({ ...letter, title: e.target.value })
+                    }
+                  />
+                  <label htmlFor="saved-cover-letter-content">
+                    Letter content
+                  </label>
+                  <textarea
+                    id="saved-cover-letter-content"
+                    name="cover-letter-content"
+                    aria-label="Cover letter content"
+                    className="letter"
+                    value={letter.body}
+                    onChange={(e) =>
+                      setLetter({ ...letter, body: e.target.value })
+                    }
+                  />
                   <button
-                    className="danger"
+                    className="danger v2-letter-editor-delete"
                     onClick={() =>
                       setDeleteTarget({ type: "letter", item: letter })
                     }
                   >
-                    Delete
+                    <Trash2 size={15} /> Delete Cover Letter
                   </button>
                 </div>
-              </>
+                <div className="v2-letter-live-preview">
+                  <div>
+                    <span>Cover Letter Preview</span>
+                    <small>Updates as you type</small>
+                  </div>
+                  <div className="v2-letter-preview-canvas">
+                    <iframe
+                      sandbox=""
+                      srcDoc={coverLetterPreviewDocument(
+                        letter.body,
+                        letter.templateId,
+                      )}
+                      title="Saved Cover Letter Preview"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
