@@ -1657,46 +1657,37 @@ app.get("/api/export", async (_req, res) => {
   );
   res.json(db);
 });
+
+const BackupRecordSchema = z.record(z.string(), z.unknown());
+const BackupSchema = z.object({
+  meta: BackupRecordSchema.optional(),
+  profile: BackupRecordSchema.optional(),
+  jobs: z.array(BackupRecordSchema).max(5000),
+  resumes: z.array(BackupRecordSchema).max(500).optional(),
+  coverLetters: z.array(BackupRecordSchema).max(1000).optional(),
+  templates: z.array(BackupRecordSchema).max(500).optional(),
+  submissions: z.array(BackupRecordSchema).max(5000).optional(),
+  coachConversations: z.array(BackupRecordSchema).max(500).optional(),
+  coachingSessions: z.array(BackupRecordSchema).max(1000).optional(),
+  outreachDrafts: z.array(BackupRecordSchema).max(5000).optional(),
+  huntPresets: z.array(BackupRecordSchema).max(500).optional(),
+  careerStories: z.array(BackupRecordSchema).max(1000).optional(),
+  profileAudits: z.array(BackupRecordSchema).max(1000).optional(),
+  gigs: z.array(BackupRecordSchema).max(5000).optional(),
+  agentRuns: z.array(BackupRecordSchema).max(5000).optional(),
+  activities: z.array(BackupRecordSchema).max(10000).optional(),
+});
+
 app.post("/api/import", async (req, res) => {
-  const imported = req.body;
-  if (
-    !imported ||
-    typeof imported !== "object" ||
-    Array.isArray(imported) ||
-    !Array.isArray(imported.jobs)
-  )
-    return res
-      .status(400)
-      .json({ error: "Expected a JobHuntr export with jobs[]" });
-  if (
-    imported.jobs.length > 5000 ||
-    (imported.activities?.length || 0) > 10000 ||
-    (imported.coachConversations?.length || 0) > 500
-  )
-    return res
-      .status(400)
-      .json({ error: "Backup exceeds safe local import limits" });
-  const allowed = [
-    "meta",
-    "profile",
-    "jobs",
-    "resumes",
-    "coverLetters",
-    "templates",
-    "submissions",
-    "coachConversations",
-    "coachingSessions",
-    "outreachDrafts",
-    "huntPresets",
-    "careerStories",
-    "profileAudits",
-    "gigs",
-    "agentRuns",
-    "activities",
-  ];
+  const parsed = BackupSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({
+      error: "Invalid or oversized JobHuntr backup",
+      details: parsed.error.issues,
+    });
+  const imported = parsed.data;
   await mutate((db) => {
-    for (const key of allowed)
-      if (imported[key] !== undefined) db[key] = imported[key];
+    for (const [key, value] of Object.entries(imported)) db[key] = value;
     auditEvent(db, "import", "Imported and migrated a local JobHuntr backup.");
   });
   res.json({ ok: true });

@@ -779,6 +779,22 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(restored.res.status, 200);
   const after = (await req("/api/state")).body;
   assert.equal(after.unexpectedCloudConfig, undefined);
+
+  for (const invalidBackup of [
+    { jobs: "not-an-array" },
+    { jobs: ["not-a-job-record"] },
+    { jobs: [], coachConversations: "not-an-array" },
+  ]) {
+    const rejected = await req("/api/import", {
+      method: "POST",
+      body: JSON.stringify(invalidBackup),
+    });
+    assert.equal(rejected.res.status, 400);
+  }
+
+  const stillHealthy = await req("/api/state");
+  assert.equal(stillHealthy.res.status, 200);
+  assert.equal(Array.isArray(stillHealthy.body.jobs), true);
 });
 
 test("resume templates can be created, edited, and safely removed", async () => {
