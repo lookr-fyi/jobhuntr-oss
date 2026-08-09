@@ -13034,6 +13034,14 @@ function SettingsPage({ state, reload, setTab }) {
     ["about-me", "About Me"],
     ["settings", "Settings"],
   ];
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 560px)").matches) return;
+    window.requestAnimationFrame(() =>
+      document
+        .getElementById(`user-tab-${activeTab}`)
+        ?.scrollIntoView({ block: "nearest", inline: "center" }),
+    );
+  }, [activeTab]);
   const handleUserTabKeyDown = (event, value) => {
     const currentIndex = userTabs.findIndex(([tab]) => tab === value);
     let nextIndex = currentIndex;

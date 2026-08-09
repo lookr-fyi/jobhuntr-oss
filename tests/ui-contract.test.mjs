@@ -937,3 +937,28 @@ test("Job Tracker cards stack vertically and mobile stages snap at full width", 
   );
   assert.match(styles, /scroll-snap-align: start;\s*scroll-snap-stop: always;/);
 });
+
+test("mobile User Center tabs remain readable and keep the active tab visible", async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL("../src/main.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  const settings = source.slice(
+    source.indexOf("function SettingsPage"),
+    source.indexOf("function Privacy"),
+  );
+
+  assert.match(
+    settings,
+    /getElementById\(`user-tab-\$\{activeTab\}`\)[\s\S]*?scrollIntoView\(\{ block: "nearest", inline: "center" \}\)/,
+  );
+  assert.match(settings, /\}, \[activeTab\]\);/);
+  assert.match(
+    styles,
+    /@media \(max-width: 560px\) \{[\s\S]*?\.v2-user-tabs \{[\s\S]*?overflow-x: auto;[\s\S]*?scroll-snap-type: x mandatory;/,
+  );
+  assert.match(
+    styles,
+    /\.v2-user-tabs button \{\s*flex: 0 0 auto;\s*min-width: max-content;\s*padding: 11px 14px;[\s\S]*?scroll-snap-align: center;/,
+  );
+});
