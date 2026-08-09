@@ -8755,15 +8755,19 @@ main > header.integrated-page-header {
 .v2-wizard-progress li.complete {
   color: #1e293b;
 }
-.v2-wizard-progress li.active > button,
-.v2-wizard-progress li.complete > button {
+.v2-wizard-progress li.active > button {
   border-color: #18181a;
   background: #18181a;
   color: #fff;
 }
+.v2-wizard-progress li.complete > button {
+  border-color: #059669;
+  background: #059669;
+  color: #fff;
+}
 .v2-wizard-progress li.complete::before,
 .v2-wizard-progress li.active::before {
-  background: #18181a;
+  background: #059669;
 }
 .v2-cover-step {
   max-width: 960px;

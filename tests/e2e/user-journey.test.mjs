@@ -1991,6 +1991,18 @@ test(
         "generated cover letters should not introduce duplicate sentence punctuation",
       );
       await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
+      assert.deepEqual(
+        await page
+          .locator(".v2-wizard-progress")
+          .evaluate((progress) => [
+            getComputedStyle(progress.querySelector("li.complete button"))
+              .backgroundColor,
+            getComputedStyle(progress.querySelector("li.active button"))
+              .backgroundColor,
+          ]),
+        ["rgb(5, 150, 105)", "rgb(24, 24, 26)"],
+        "cover-letter progress should use v2's green completed state and dark active state",
+      );
       assert.equal(
         await page.getByRole("button", { name: "Previous" }).isEnabled(),
         true,
