@@ -1854,6 +1854,25 @@ test(
           .locator(`button[title="${navigation}"]`)
           .evaluate((button) => button.click());
         await mobile.getByRole("heading", { name: heading }).first().waitFor();
+        const activeNavigationIsVisible = await mobile
+          .locator(`button[title="${navigation}"]`)
+          .evaluate((button) => {
+            const buttonRect = button.getBoundingClientRect();
+            const navigationRect = button
+              .closest(".v2-nav")
+              ?.getBoundingClientRect();
+            if (!navigationRect)
+              return buttonRect.left >= 0 && buttonRect.right <= innerWidth;
+            return (
+              buttonRect.left >= navigationRect.left - 1 &&
+              buttonRect.right <= navigationRect.right + 1
+            );
+          });
+        assert.equal(
+          activeNavigationIsVisible,
+          true,
+          `${navigation} should scroll into the visible mobile navigation`,
+        );
         const overflow = await mobile.evaluate(
           () =>
             document.documentElement.scrollWidth >

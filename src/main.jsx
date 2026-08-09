@@ -601,6 +601,7 @@ function App() {
         : "overview",
   );
   const [sidebarHovered, setSidebarHovered] = useState(false);
+  const navigationRef = useRef(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const [err, setErr] = useState("");
@@ -651,6 +652,13 @@ function App() {
       .replace(/^#\/?/, "")
       .split("?")[0];
     if (currentRoute !== tab) window.history.pushState({ tab }, "", nextHash);
+    if (window.matchMedia("(max-width: 760px)").matches) {
+      window.requestAnimationFrame(() => {
+        navigationRef.current
+          ?.querySelector('button[aria-current="page"]')
+          ?.scrollIntoView({ block: "nearest", inline: "center" });
+      });
+    }
   }, [tab]);
   useEffect(() => {
     const followHistory = () => {
@@ -736,7 +744,7 @@ function App() {
           <img className="logo-image" src={jobHuntrLogo} alt="JobHuntr" />
           <b>JobHuntr</b>
         </div>
-        <nav className="v2-nav">
+        <nav className="v2-nav" ref={navigationRef}>
           {tabs.map(([name, Icon, label, group], index) => (
             <div className="v2-nav-slot" key={name}>
               {index > 0 && tabs[index - 1][3] !== group && (
