@@ -5,6 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import net from "node:net";
 import { spawn, execFileSync } from "node:child_process";
+import {
+  dependenciesNeedInstall,
+  markDependenciesInstalled,
+} from "../scripts/dependency-state.mjs";
 
 const freePort = () =>
   new Promise((resolve) => {
@@ -14,6 +18,25 @@ const freePort = () =>
       server.close(() => resolve(port));
     });
   });
+
+test("one-command launchers reinstall when the dependency lock changes", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "jobhuntr-deps-"));
+  try {
+    await fs.mkdir(path.join(root, "node_modules"));
+    await fs.writeFile(
+      path.join(root, "node_modules", ".package-lock.json"),
+      "{}",
+    );
+    await fs.writeFile(path.join(root, "package-lock.json"), '{"version":1}');
+    assert.equal(dependenciesNeedInstall(root), true);
+    markDependenciesInstalled(root);
+    assert.equal(dependenciesNeedInstall(root), false);
+    await fs.writeFile(path.join(root, "package-lock.json"), '{"version":2}');
+    assert.equal(dependenciesNeedInstall(root), true);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
 
 test(
   "one-line launcher builds and serves the complete local app",

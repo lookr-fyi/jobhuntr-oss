@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import { spawnSync, spawn } from "node:child_process";
-import fs from "node:fs";
 import path from "node:path";
+import {
+  dependenciesNeedInstall,
+  markDependenciesInstalled,
+} from "./dependency-state.mjs";
 
 const root = path.resolve(import.meta.dirname, "..");
 process.chdir(root);
@@ -14,9 +17,10 @@ const run = (args) => {
   if (result.status !== 0) process.exit(result.status || 1);
 };
 
-if (!fs.existsSync("node_modules/.package-lock.json")) {
+if (dependenciesNeedInstall(root)) {
   console.log("Installing locked dependencies locally (first run only)…");
   run(["ci"]);
+  markDependenciesInstalled(root);
 }
 console.log("Building the local app…");
 run(["run", "build"]);
