@@ -1223,6 +1223,15 @@ test("coach and outreach create private role-specific drafts", async () => {
   });
   assert.equal(outreach.res.status, 201);
   assert.match(outreach.body.body, new RegExp(job.company));
+  assert.doesNotMatch(
+    outreach.body.body,
+    /\.\.(?:\s|$)/,
+    "role descriptions with punctuation must not create double periods",
+  );
+  assert.ok(
+    outreach.body.body.trim().split(/\s+/).length <= 100,
+    "connection drafts should preserve v2's concise outreach format",
+  );
 });
 
 test("Career Coach conversations persist in portable local storage", async () => {

@@ -7675,6 +7675,7 @@ function OutreachPage({ state, reload }) {
         </div>
         <div className="inline">
           <select
+            name="outreach-role"
             aria-label="Role for outreach"
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
@@ -7733,6 +7734,7 @@ function OutreachPage({ state, reload }) {
           <label className="check v2-show-messages">
             <input
               type="checkbox"
+              name="show-connection-messages"
               checked={showMessages}
               onChange={(event) => setShowMessages(event.target.checked)}
             />
@@ -7760,6 +7762,7 @@ function OutreachPage({ state, reload }) {
               <label className="check" key={value}>
                 <input
                   type="checkbox"
+                  name={`outreach-status-${value}`}
                   checked={statuses.includes(value)}
                   onChange={() =>
                     toggleOutreachFilter(value, statuses, setStatuses)
@@ -7772,6 +7775,7 @@ function OutreachPage({ state, reload }) {
           <label>
             Sort contacts
             <select
+              name="outreach-sort"
               aria-label="Sort contacts"
               value={sort}
               onChange={(event) => setSort(event.target.value)}
@@ -7791,6 +7795,7 @@ function OutreachPage({ state, reload }) {
               <label className="check" key={value}>
                 <input
                   type="checkbox"
+                  name={`outreach-category-${value}`}
                   checked={categories.includes(value)}
                   onChange={() =>
                     toggleOutreachFilter(value, categories, setCategories)
@@ -7816,6 +7821,7 @@ function OutreachPage({ state, reload }) {
       <div className="searchbox v2-outreach-search">
         <Search size={16} />
         <input
+          name="outreach-search"
           aria-label="Search outreach contacts"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -7827,6 +7833,7 @@ function OutreachPage({ state, reload }) {
           <div className="v2-contact-head">
             <input
               type="checkbox"
+              name="select-visible-outreach-contacts"
               aria-label="Select all visible contacts"
               checked={allVisibleSelected}
               onChange={() =>
@@ -7850,6 +7857,7 @@ function OutreachPage({ state, reload }) {
                 <div className="v2-contact-row" key={item.id}>
                   <input
                     type="checkbox"
+                    name={`select-outreach-contact-${item.id}`}
                     aria-label={`Select ${item.recipient || "hiring team"} at ${job?.company || "company"}`}
                     checked={selectedIds.has(item.id)}
                     onChange={() => toggleSelected(item.id)}
@@ -8813,6 +8821,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
       <div className="row">
         <h3>Edit outreach</h3>
         <select
+          name={`outreach-status-${draft.id}`}
           aria-label="Outreach status"
           value={draft.status || "draft"}
           onChange={(e) => {
@@ -8828,6 +8837,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
       <label>
         Subject
         <input
+          name={`outreach-subject-${draft.id}`}
           value={draft.subject}
           onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
         />
@@ -8835,6 +8845,7 @@ function OutreachEditor({ draft, setDraft, reload }) {
       <label>
         Message
         <textarea
+          name={`outreach-message-${draft.id}`}
           className="letter"
           value={draft.body}
           onChange={(e) => setDraft({ ...draft, body: e.target.value })}

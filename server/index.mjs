@@ -1689,7 +1689,13 @@ app.post("/api/outreach/draft", async (req, res) => {
         : /hiring|manager|director|head|lead/i.test(contactRole)
           ? "hiring_manager"
           : "peer";
-      const body = `Hi ${recipient},\n\nI’m exploring the ${job.title} opportunity at ${job.company}. My background in ${(db.profile.skills || []).slice(0, 3).join(", ")} looks closely aligned, particularly with ${job.description || "the team’s product goals"}.\n\nIf you’re open to it, I’d appreciate hearing what the team values most in candidates for this role.\n\nBest,\n${db.profile.name}`;
+      const roleContext =
+        safeText(job.description, 500)
+          .split(/[.!?](?:\s|$)/)[0]
+          .trim()
+          .slice(0, 240)
+          .replace(/[.!?]+$/, "") || "the team’s product goals";
+      const body = `Hi ${recipient},\n\nI’m exploring the ${job.title} opportunity at ${job.company}. My background in ${(db.profile.skills || []).slice(0, 3).join(", ")} looks closely aligned, particularly with ${roleContext}.\n\nIf you’re open to it, I’d appreciate hearing what the team values most in candidates for this role.\n\nBest,\n${db.profile.name}`;
       const item = {
         id: nanoid(),
         jobId: job.id,

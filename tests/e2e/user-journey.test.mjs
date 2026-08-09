@@ -2018,6 +2018,14 @@ test(
         "connection messages should default hidden like v2",
       );
       await page.getByLabel("Show Connection Messages").check();
+      await assertNamedFormControls(page, "Outreach editor");
+      assert.doesNotMatch(
+        await page
+          .locator('.v2-contact-detail textarea[name^="outreach-message-"]')
+          .inputValue(),
+        /\.\.(?:\s|$)/,
+        "generated outreach should not duplicate sentence punctuation",
+      );
       const subject = page.getByLabel("Subject");
       await subject.fill("E2E persisted outreach subject");
       await page.getByRole("button", { name: "Save locally" }).click();
@@ -2064,6 +2072,7 @@ test(
       ]);
       await connectDialog.waitFor({ state: "hidden" });
       await page.getByText("Outreached", { exact: true }).first().waitFor();
+      await assertNamedFormControls(page, "Outreach");
       await page.getByRole("button", { name: "Delete Hiring team" }).click();
       const deleteContactDialog = page.getByRole("alertdialog", {
         name: "Delete outreach contact?",
