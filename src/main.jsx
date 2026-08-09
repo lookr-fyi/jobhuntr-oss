@@ -3843,7 +3843,7 @@ function Board({ state, reload }) {
   const search = async () => {
     const jobs = await api("/api/board/search", {
       method: "POST",
-      body: JSON.stringify({ q, location }),
+      body: JSON.stringify({ q: "", location: "" }),
     });
     setResults(jobs);
     setSelectedUrl("");
@@ -3861,8 +3861,17 @@ function Board({ state, reload }) {
   const visibleResults = useMemo(
     () =>
       results
-        .filter(
-          (job) =>
+        .filter((job) => {
+          const normalizedQuery = q.trim().toLowerCase();
+          const normalizedLocation = location.trim().toLowerCase();
+          const searchableText =
+            `${job.company || ""} ${job.title || ""} ${job.location || ""}`.toLowerCase();
+          return (
+            (!normalizedQuery || searchableText.includes(normalizedQuery)) &&
+            (!normalizedLocation ||
+              String(job.location || "")
+                .toLowerCase()
+                .includes(normalizedLocation)) &&
             job.fitScore >= minimumFit &&
             maximumListedSalary(job) >= minimumSalary &&
             (remoteType === "all" ||
@@ -3872,8 +3881,9 @@ function Board({ state, reload }) {
             (jobType === "all" || boardJobType(job) === jobType) &&
             (seniority === "all" || boardSeniority(job) === seniority) &&
             (sponsorship === "all" || boardSponsorship(job) === sponsorship) &&
-            (source === "all" || job.source === source),
-        )
+            (source === "all" || job.source === source)
+          );
+        })
         .sort((a, b) =>
           sort === "fit"
             ? b.fitScore - a.fitScore
@@ -3891,6 +3901,8 @@ function Board({ state, reload }) {
         ),
     [
       results,
+      q,
+      location,
       minimumFit,
       minimumSalary,
       remoteType,
@@ -4212,7 +4224,10 @@ function Board({ state, reload }) {
         </div>
       )}
       <div className="v2-board-results-summary">
-        <strong>{visibleResults.length} opportunities</strong>
+        <strong>
+          {visibleResults.length}{" "}
+          {visibleResults.length === 1 ? "opportunity" : "opportunities"}
+        </strong>
         <span>Updated just now · Local community feed</span>
       </div>
       <div className="v2-board-layout">
