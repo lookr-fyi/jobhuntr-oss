@@ -4157,7 +4157,13 @@ test(
           const input = style(".v2-audit-url input");
           const analyze = style(".v2-audit-url button");
           const context = style(".v2-audit-context-toggle");
+          const rootStyle = getComputedStyle(root);
           return {
+            page: [
+              getComputedStyle(root.parentElement).padding,
+              rootStyle.maxWidth,
+              rootStyle.padding,
+            ],
             heading: [heading.fontSize, heading.fontWeight],
             subtitle: [subtitle.fontSize, subtitle.color],
             input: [input.padding, input.fontSize, input.borderRadius],
@@ -4166,11 +4172,12 @@ test(
           };
         }),
         {
-          heading: ["32px", "700"],
-          subtitle: ["16px", "rgb(75, 85, 99)"],
-          input: ["12px 16px", "16px", "6px"],
-          analyze: ["12px 20px", "16px", "500"],
-          context: ["12px 16px", "16px", "500"],
+          page: ["0px", "1248px", "24px"],
+          heading: ["22px", "700"],
+          subtitle: ["11px", "rgb(75, 85, 99)"],
+          input: ["12px 16px", "11px", "6px"],
+          analyze: ["12px 20px", "11px", "500"],
+          context: ["12px 16px", "11px", "500"],
         },
         "LinkedIn Audit should retain the authoritative v2 input and heading geometry",
       );
