@@ -3625,12 +3625,14 @@ function Actions({ job, reload }) {
         <button
           disabled={!note.trim()}
           onClick={async () => {
-            await api(`/api/jobs/${job.id}/notes`, {
-              method: "POST",
-              body: JSON.stringify({ text: note }),
-            });
-            setNote("");
-            reload();
+            try {
+              await api(`/api/jobs/${job.id}/notes`, {
+                method: "POST",
+                body: JSON.stringify({ text: note }),
+              });
+              setNote("");
+              await reload();
+            } catch {}
           }}
         >
           Save
@@ -3671,15 +3673,17 @@ function Actions({ job, reload }) {
         <button
           disabled={!task.trim()}
           onClick={async () => {
-            await api(
-              `/api/jobs/${job.id}/tasks${editingTaskId ? `/${editingTaskId}` : ""}`,
-              {
-                method: editingTaskId ? "PATCH" : "POST",
-                body: JSON.stringify({ text: task, due: taskDue }),
-              },
-            );
-            resetTask();
-            await reload();
+            try {
+              await api(
+                `/api/jobs/${job.id}/tasks${editingTaskId ? `/${editingTaskId}` : ""}`,
+                {
+                  method: editingTaskId ? "PATCH" : "POST",
+                  body: JSON.stringify({ text: task, due: taskDue }),
+                },
+              );
+              resetTask();
+              await reload();
+            } catch {}
           }}
         >
           {editingTaskId ? "Save task" : "Add"}
@@ -3698,11 +3702,13 @@ function Actions({ job, reload }) {
               name={`task-${t.id}`}
               checked={t.done}
               onChange={async (e) => {
-                await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
-                  method: "PATCH",
-                  body: JSON.stringify({ done: e.target.checked }),
-                });
-                reload();
+                try {
+                  await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
+                    method: "PATCH",
+                    body: JSON.stringify({ done: e.target.checked }),
+                  });
+                  await reload();
+                } catch {}
               }}
             />
             <span>
@@ -3783,15 +3789,17 @@ function Actions({ job, reload }) {
       <button
         disabled={!contact.name.trim()}
         onClick={async () => {
-          await api(
-            `/api/jobs/${job.id}/contacts${editingContactId ? `/${editingContactId}` : ""}`,
-            {
-              method: editingContactId ? "PATCH" : "POST",
-              body: JSON.stringify(contact),
-            },
-          );
-          resetContact();
-          reload();
+          try {
+            await api(
+              `/api/jobs/${job.id}/contacts${editingContactId ? `/${editingContactId}` : ""}`,
+              {
+                method: editingContactId ? "PATCH" : "POST",
+                body: JSON.stringify(contact),
+              },
+            );
+            resetContact();
+            await reload();
+          } catch {}
         }}
       >
         {editingContactId ? "Save contact" : "Add contact"}
@@ -4235,23 +4243,24 @@ function Board({ state, reload }) {
             type="button"
             disabled={!activeFilterCount}
             onClick={async () => {
-              setLocation("");
-              setMinimumFit(0);
-              setMinimumSalary(0);
-              setRemoteType("all");
-              setJobType("all");
-              setSeniority("all");
-              setSponsorship("all");
-              setSource("all");
-              setSort("fit");
-              setQ("");
-              setResults(
-                await api("/api/board/search", {
+              try {
+                const jobs = await api("/api/board/search", {
                   method: "POST",
                   body: JSON.stringify({ q: "", location: "" }),
-                }),
-              );
-              setSelectedUrl("");
+                });
+                setLocation("");
+                setMinimumFit(0);
+                setMinimumSalary(0);
+                setRemoteType("all");
+                setJobType("all");
+                setSeniority("all");
+                setSponsorship("all");
+                setSource("all");
+                setSort("fit");
+                setQ("");
+                setResults(jobs);
+                setSelectedUrl("");
+              } catch {}
             }}
           >
             Clear all
@@ -5438,8 +5447,8 @@ function SubmissionCard({ submission: s, state, reload }) {
         });
         await reload();
       });
-    packetUpdateQueue.current = update;
-    await update;
+    packetUpdateQueue.current = update.catch(() => {});
+    await update.catch(() => {});
   };
   const updateChecklist = async (id, done) => {
     await updatePacket({
@@ -5788,12 +5797,14 @@ function SubmissionCard({ submission: s, state, reload }) {
             !questionsReady
           }
           onClick={async () => {
-            await api(`/api/submissions/${s.id}/submit`, {
-              method: "POST",
-              body: JSON.stringify({ confirmedByUser: true }),
-            });
-            setExternalSubmissionVerified(false);
-            reload();
+            try {
+              await api(`/api/submissions/${s.id}/submit`, {
+                method: "POST",
+                body: JSON.stringify({ confirmedByUser: true }),
+              });
+              setExternalSubmissionVerified(false);
+              await reload();
+            } catch {}
           }}
         >
           <CheckCircle2 size={16} /> I submitted this externally
@@ -7531,14 +7542,16 @@ function Resume({ state, reload, mode = "resume" }) {
             <button
               className="secondary"
               disabled={!resumeReady}
-              onClick={async () =>
-                setScore(
-                  await api("/api/resume/score", {
-                    method: "POST",
-                    body: JSON.stringify({ resumeText: resume, jobId }),
-                  }),
-                )
-              }
+              onClick={async () => {
+                try {
+                  setScore(
+                    await api("/api/resume/score", {
+                      method: "POST",
+                      body: JSON.stringify({ resumeText: resume, jobId }),
+                    }),
+                  );
+                } catch {}
+              }}
             >
               Analyze ATS fit
             </button>
@@ -8277,8 +8290,10 @@ function OutreachPage({ state, reload }) {
           : "All contacts for this role are already collected.",
       );
       await reload();
+      return true;
     } catch {
       // The shared API error surface leaves contact collection retryable.
+      return false;
     } finally {
       setCollecting(false);
     }
@@ -8712,8 +8727,7 @@ function OutreachPage({ state, reload }) {
               <button
                 disabled={!jobId || collecting}
                 onClick={async () => {
-                  await generate();
-                  setCollectOpen(false);
+                  if (await generate()) setCollectOpen(false);
                 }}
               >
                 Collect contacts
@@ -11065,8 +11079,10 @@ function Agent({ state, reload, setTab }) {
             <button
               className="secondary"
               onClick={async () => {
-                await api("/api/infinite-hunt/stop", { method: "POST" });
-                await reload();
+                try {
+                  await api("/api/infinite-hunt/stop", { method: "POST" });
+                  await reload();
+                } catch {}
               }}
             >
               Stop Infinite Hunt
