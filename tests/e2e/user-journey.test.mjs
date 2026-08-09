@@ -3637,9 +3637,17 @@ test(
       await page.locator('[title="Profile and settings"]').click();
       await page.getByRole("menuitem", { name: "Profile & usage" }).click();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
-      await page.getByRole("tab", { name: "About Me" }).click();
+      await page.goto(`${baseUrl}/#/settings?tab=about`);
+      await page.getByRole("tab", { name: "About Me" }).waitFor();
+      assert.equal(
+        await page
+          .getByRole("tab", { name: "About Me" })
+          .getAttribute("aria-selected"),
+        "true",
+        "legacy About Me links should continue to open the correct v2 tab",
+      );
       await assertNamedFormControls(page, "User Center About Me");
-      assert.equal(new URL(page.url()).hash, "#/settings?tab=about");
+      assert.equal(new URL(page.url()).hash, "#/settings?tab=about-me");
       await page
         .getByLabel("Long-form career context")
         .fill("E2E product engineer with React and TypeScript experience.");

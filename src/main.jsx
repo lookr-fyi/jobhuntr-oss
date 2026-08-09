@@ -4746,7 +4746,7 @@ function Queue({ state, reload, setTab }) {
           <button
             className="text-button"
             onClick={() => {
-              sessionStorage.setItem("jobhuntr-user-tab", "about");
+              sessionStorage.setItem("jobhuntr-user-tab", "about-me");
               setTab("settings");
             }}
           >
@@ -12085,12 +12085,31 @@ function SettingsPage({ state, reload, setTab }) {
     const linkedTab = new URLSearchParams(hashQuery).get("tab");
     const pending = sessionStorage.getItem("jobhuntr-user-tab");
     sessionStorage.removeItem("jobhuntr-user-tab");
-    return ["profile", "coaches", "about", "settings"].includes(linkedTab)
-      ? linkedTab
-      : ["profile", "coaches", "about", "settings"].includes(pending)
-        ? pending
+    const normalizeUserTab = (value) =>
+      value === "about" ? "about-me" : value;
+    const normalizedLinkedTab = normalizeUserTab(linkedTab);
+    const normalizedPending = normalizeUserTab(pending);
+    return ["profile", "coaches", "about-me", "settings"].includes(
+      normalizedLinkedTab,
+    )
+      ? normalizedLinkedTab
+      : ["profile", "coaches", "about-me", "settings"].includes(
+            normalizedPending,
+          )
+        ? normalizedPending
         : "profile";
   });
+  useEffect(() => {
+    const hashQuery = window.location.hash.split("?")[1] || "";
+    const params = new URLSearchParams(hashQuery);
+    if (params.get("tab") !== "about") return;
+    params.set("tab", "about-me");
+    window.history.replaceState(
+      { tab: "settings", userTab: "about-me" },
+      "",
+      `#/settings?${params}`,
+    );
+  }, []);
   const [saved, setSaved] = useState(false);
   const [faqDeleteMode, setFaqDeleteMode] = useState(false);
   const [faqDeleteTarget, setFaqDeleteTarget] = useState(null);
@@ -12198,8 +12217,17 @@ function SettingsPage({ state, reload, setTab }) {
     const syncTabFromHistory = () => {
       const hashQuery = window.location.hash.split("?")[1] || "";
       const linkedTab = new URLSearchParams(hashQuery).get("tab");
-      if (["profile", "coaches", "about", "settings"].includes(linkedTab))
-        setActiveTab(linkedTab);
+      const normalizedTab = linkedTab === "about" ? "about-me" : linkedTab;
+      if (linkedTab === "about")
+        window.history.replaceState(
+          { tab: "settings", userTab: "about-me" },
+          "",
+          "#/settings?tab=about-me",
+        );
+      if (
+        ["profile", "coaches", "about-me", "settings"].includes(normalizedTab)
+      )
+        setActiveTab(normalizedTab);
     };
     window.addEventListener("hashchange", syncTabFromHistory);
     window.addEventListener("popstate", syncTabFromHistory);
@@ -12222,7 +12250,7 @@ function SettingsPage({ state, reload, setTab }) {
   const userTabs = [
     ["profile", "Profile & Usage"],
     ["coaches", "Coaches"],
-    ["about", "About Me"],
+    ["about-me", "About Me"],
     ["settings", "Settings"],
   ];
   const handleUserTabKeyDown = (event, value) => {
@@ -12561,12 +12589,12 @@ function SettingsPage({ state, reload, setTab }) {
           </div>
         </div>
       )}
-      {activeTab === "about" && (
+      {activeTab === "about-me" && (
         <div
-          id="user-panel-about"
+          id="user-panel-about-me"
           className="v2-about-hub"
           role="tabpanel"
-          aria-labelledby="user-tab-about"
+          aria-labelledby="user-tab-about-me"
         >
           <div className="card v2-about-hero">
             <div>
