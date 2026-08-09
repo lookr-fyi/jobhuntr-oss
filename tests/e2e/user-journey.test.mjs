@@ -985,7 +985,18 @@ test(
         name: "Create New Template",
       });
       await assertNamedFormControls(page, "ATS Resume template wizard");
-      await templateDialog.getByLabel("Template name").fill("E2E Leadership");
+      const templateNameInput = templateDialog.getByLabel("Template name");
+      await templateNameInput.click();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.type("E2E Leadership");
+      assert.equal(
+        await templateNameInput.evaluate(
+          (input) => input === document.activeElement,
+        ),
+        true,
+        "typing in the ATS wizard must not move focus to another control after state updates",
+      );
+      assert.equal(await templateNameInput.inputValue(), "E2E Leadership");
       const pdfBuilder = await page.context().newPage();
       await pdfBuilder.setContent(
         "<html><body><h1>Product Engineer</h1><p>React, TypeScript, leadership, and 40% performance gains across customer-facing products.</p></body></html>",

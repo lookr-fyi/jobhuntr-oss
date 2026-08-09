@@ -6006,8 +6006,9 @@ function Resume({ state, reload, mode = "resume" }) {
       ),
     }))
     .filter((group) => group.resumes.length > 0);
+  const templateDialogOpen = Boolean(templateDialog);
   useEffect(() => {
-    if (!templateDialog) return undefined;
+    if (!templateDialogOpen) return undefined;
     const returnFocus = document.activeElement;
     templateDialogCloseRef.current?.focus();
     const closeOnEscape = (event) => {
@@ -6018,7 +6019,7 @@ function Resume({ state, reload, mode = "resume" }) {
       window.removeEventListener("keydown", closeOnEscape);
       returnFocus?.focus?.();
     };
-  }, [templateDialog]);
+  }, [templateDialogOpen]);
   const openTemplateDialog = (template = null) =>
     setTemplateDialog({
       id: template?.id || null,
