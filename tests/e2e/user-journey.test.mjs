@@ -2097,6 +2097,28 @@ test(
       await page
         .getByRole("heading", { name: "Hi, I'm your Career Coach!" })
         .waitFor();
+      await assertNamedFormControls(page, "Career Coach chat");
+      assert.equal(
+        await page.getByText("Invalid Date", { exact: true }).count(),
+        0,
+        "Career Coach should never render invalid dates",
+      );
+      await page.getByRole("button", { name: "Interview practice" }).click();
+      await page
+        .getByRole("button", { name: "New role-specific plan" })
+        .click();
+      await page
+        .getByRole("heading", { name: /Developer Tools Engineer/ })
+        .waitFor();
+      await assertNamedFormControls(page, "Career Coach interview practice");
+      await page.getByRole("button", { name: "STAR story vault" }).click();
+      await assertNamedFormControls(page, "Career Coach STAR story vault");
+      await page
+        .getByRole("main")
+        .getByRole("button", { name: "Outreach", exact: true })
+        .click();
+      await assertNamedFormControls(page, "Career Coach outreach");
+      await page.getByRole("button", { name: "Local Career Coach" }).click();
       await Promise.all([
         page.waitForResponse(
           (response) =>

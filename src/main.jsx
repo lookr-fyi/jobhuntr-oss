@@ -8267,6 +8267,7 @@ function Coach({ state, reload }) {
           </button>
         </div>
         <select
+          name="coaching-role"
           aria-label="Coaching role"
           value={jobId}
           onChange={(e) => {
@@ -8431,6 +8432,7 @@ function Coach({ state, reload }) {
             </div>
             <div className="v2-coach-input">
               <textarea
+                name="career-coach-message"
                 aria-label="Message Career Coach"
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
@@ -8481,9 +8483,7 @@ function Coach({ state, reload }) {
                   <span>{job?.title}</span>
                   <small>
                     {item.status} ·{" "}
-                    {new Date(
-                      item.updatedAt || item.createdAt,
-                    ).toLocaleDateString()}
+                    {formatCalendarDate(item.updatedAt || item.createdAt)}
                   </small>
                 </button>
               );
@@ -8536,9 +8536,7 @@ function Coach({ state, reload }) {
                   <span>{job?.company}</span>
                   <small>
                     {item.status || "draft"} ·{" "}
-                    {new Date(
-                      item.updatedAt || item.createdAt,
-                    ).toLocaleDateString()}
+                    {formatCalendarDate(item.updatedAt || item.createdAt)}
                   </small>
                 </button>
               );
@@ -8617,6 +8615,7 @@ function PracticeSession({ session, setSession, state, reload }) {
             {index + 1}. {question}
           </b>
           <textarea
+            name={`practice-answer-${index + 1}`}
             value={session.answers?.[question] || ""}
             onChange={(e) =>
               setSession({
@@ -8632,6 +8631,7 @@ function PracticeSession({ session, setSession, state, reload }) {
       {session.companyResearch.map((item) => (
         <label className="check task" key={item}>
           <input
+            name={`research-check-${item}`}
             type="checkbox"
             checked={(session.researchDone || []).includes(item)}
             onChange={(e) =>
@@ -8648,6 +8648,7 @@ function PracticeSession({ session, setSession, state, reload }) {
       ))}
       <h3>Private notes</h3>
       <textarea
+        name="practice-private-notes"
         value={session.notes || ""}
         onChange={(e) => setSession({ ...session, notes: e.target.value })}
         placeholder="Questions to ask, interviewer names, follow-up notes…"
@@ -8738,6 +8739,7 @@ function StoryVault({ stories, reload }) {
         <label>
           Story title
           <input
+            name="career-story-title"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="Improved onboarding conversion 24%"
@@ -8752,6 +8754,7 @@ function StoryVault({ stories, reload }) {
           <label key={key}>
             {label}
             <textarea
+              name={`career-story-${key}`}
               value={form[key]}
               onChange={(e) => setForm({ ...form, [key]: e.target.value })}
             />
@@ -8760,6 +8763,7 @@ function StoryVault({ stories, reload }) {
         <label>
           Skills, comma-separated
           <input
+            name="career-story-skills"
             value={form.skills}
             onChange={(e) => setForm({ ...form, skills: e.target.value })}
           />
