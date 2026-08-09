@@ -12552,10 +12552,39 @@ function Agent({ state, reload, setTab }) {
   const profileResumeReady = isUsableResumeText(state.profile.resumeText);
   const [newRunDraft] = useState(() => {
     try {
-      return JSON.parse(
+      const saved = JSON.parse(
         localStorage.getItem("jobhuntr-new-run-draft") || "null",
       );
+      if (!saved) return null;
+      return {
+        runName: String(saved.runName || "").slice(0, 300),
+        origin: String(saved.origin || "infinite").slice(0, 50),
+        q: String(saved.q || "").slice(0, 500),
+        location: String(saved.location || "").slice(0, 500),
+        minFit: Math.min(95, Math.max(30, Number(saved.minFit) || 60)),
+        maxResults: [5, 10, 25, 50].includes(Number(saved.maxResults))
+          ? Number(saved.maxResults)
+          : 25,
+        requiredKeywords: Array.isArray(saved.requiredKeywords)
+          ? saved.requiredKeywords
+              .slice(0, 100)
+              .map((item) => String(item).slice(0, 100))
+          : [],
+        excludeKeywords: Array.isArray(saved.excludeKeywords)
+          ? saved.excludeKeywords
+              .slice(0, 100)
+              .map((item) => String(item).slice(0, 100))
+          : [],
+        workflows: normalizeHuntWorkflows(saved.workflows),
+        optimizeResume: Boolean(saved.optimizeResume),
+        intervalMinutes: [15, 60, 240, 1440].includes(
+          Number(saved.intervalMinutes),
+        )
+          ? Number(saved.intervalMinutes)
+          : 60,
+      };
     } catch {
+      localStorage.removeItem("jobhuntr-new-run-draft");
       return null;
     }
   });
@@ -12591,7 +12620,13 @@ function Agent({ state, reload, setTab }) {
         localStorage.getItem("jobhuntr-optimize-resume") === "true"),
   );
   const [intervalMinutes, setIntervalMinutes] = useState(
-    state.infiniteHunt?.intervalMinutes || 60,
+    newRunDraft?.intervalMinutes || state.infiniteHunt?.intervalMinutes || 60,
+  );
+  const [huntDraftRestored, setHuntDraftRestored] = useState(
+    Boolean(newRunDraft),
+  );
+  const [huntDraftTouched, setHuntDraftTouched] = useState(
+    Boolean(newRunDraft),
   );
   const [running, setRunning] = useState(false);
   const [stoppingInfinite, setStoppingInfinite] = useState(false);
@@ -12622,6 +12657,45 @@ function Agent({ state, reload, setTab }) {
       String(Boolean(newRunDraft.optimizeResume)),
     );
   }, [newRunDraft]);
+  useEffect(() => {
+    if (!huntDraftTouched) return;
+    localStorage.setItem(
+      "jobhuntr-new-run-draft",
+      JSON.stringify({
+        runName: newRunDraft?.runName || form.q,
+        origin: newRunDraft?.origin || "infinite",
+        q: form.q,
+        location: form.location,
+        minFit: Number(form.minFit),
+        maxResults: Number(form.maxResults),
+        requiredKeywords: form.required
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        excludeKeywords: form.excluded
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        workflows: selectedRuns,
+        optimizeResume: profileResumeReady && optimizeResume,
+        intervalMinutes: Number(intervalMinutes),
+      }),
+    );
+  }, [
+    form,
+    huntDraftTouched,
+    intervalMinutes,
+    newRunDraft?.origin,
+    newRunDraft?.runName,
+    optimizeResume,
+    profileResumeReady,
+    selectedRuns,
+  ]);
+  const editHuntForm = (next) => {
+    setForm(next);
+    setHuntDraftTouched(true);
+    setHuntDraftRestored(false);
+  };
   useEffect(() => {
     if (!statusOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -12654,7 +12728,7 @@ function Agent({ state, reload, setTab }) {
     optimizeResume: profileResumeReady && optimizeResume,
   });
   const loadPreset = (preset) => {
-    setForm({
+    editHuntForm({
       ...form,
       ...preset.options,
       required: (preset.options.requiredKeywords || []).join(", "),
@@ -12687,6 +12761,8 @@ function Agent({ state, reload, setTab }) {
         added: result.added,
       });
       localStorage.removeItem("jobhuntr-new-run-draft");
+      setHuntDraftRestored(false);
+      setHuntDraftTouched(false);
       await reload();
     } catch {
       // Keep the configured run available after the shared error is shown.
@@ -12715,6 +12791,8 @@ function Agent({ state, reload, setTab }) {
         added: result.added,
       });
       localStorage.removeItem("jobhuntr-new-run-draft");
+      setHuntDraftRestored(false);
+      setHuntDraftTouched(false);
       await reload();
     } catch {
       // One local transaction creates both schedule and initial run, so a
@@ -12779,6 +12857,8 @@ function Agent({ state, reload, setTab }) {
   const workflows = HUNT_WORKFLOWS;
   const saveRunOrder = (runs) => {
     setSelectedRuns(runs);
+    setHuntDraftTouched(true);
+    setHuntDraftRestored(false);
     localStorage.setItem("jobhuntr-infinite-workflows", JSON.stringify(runs));
   };
   const toggleRun = (id) =>
@@ -12840,6 +12920,11 @@ function Agent({ state, reload, setTab }) {
         </div>
       )}
       <div className="card v2-hunt-builder">
+        {huntDraftRestored && (
+          <p className="v2-draft-restored" role="status">
+            Unsaved Infinite Hunt configuration restored.
+          </p>
+        )}
         {state.infiniteHunt?.enabled && (
           <div className="v2-queue-banner v2-infinite-active" role="status">
             <CheckCircle2 size={20} />
@@ -12901,6 +12986,8 @@ function Agent({ state, reload, setTab }) {
               disabled={!profileResumeReady}
               onChange={(e) => {
                 setOptimizeResume(e.target.checked);
+                setHuntDraftTouched(true);
+                setHuntDraftRestored(false);
                 localStorage.setItem(
                   "jobhuntr-optimize-resume",
                   String(e.target.checked),
@@ -13010,7 +13097,7 @@ function Agent({ state, reload, setTab }) {
               <input
                 name="hunt-role-keywords"
                 value={form.q}
-                onChange={(e) => setForm({ ...form, q: e.target.value })}
+                onChange={(e) => editHuntForm({ ...form, q: e.target.value })}
                 placeholder="Product engineer"
               />
             </label>
@@ -13019,7 +13106,9 @@ function Agent({ state, reload, setTab }) {
               <input
                 name="hunt-location"
                 value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                onChange={(e) =>
+                  editHuntForm({ ...form, location: e.target.value })
+                }
                 placeholder="Remote or leave blank"
               />
             </label>
@@ -13030,7 +13119,7 @@ function Agent({ state, reload, setTab }) {
                   name="hunt-required-keywords"
                   value={form.required}
                   onChange={(e) =>
-                    setForm({ ...form, required: e.target.value })
+                    editHuntForm({ ...form, required: e.target.value })
                   }
                   placeholder="typescript, react"
                 />
@@ -13041,7 +13130,7 @@ function Agent({ state, reload, setTab }) {
                   name="hunt-excluded-keywords"
                   value={form.excluded}
                   onChange={(e) =>
-                    setForm({ ...form, excluded: e.target.value })
+                    editHuntForm({ ...form, excluded: e.target.value })
                   }
                   placeholder="senior, clearance"
                 />
@@ -13056,7 +13145,7 @@ function Agent({ state, reload, setTab }) {
                 max="95"
                 value={form.minFit}
                 onChange={(e) =>
-                  setForm({ ...form, minFit: Number(e.target.value) })
+                  editHuntForm({ ...form, minFit: Number(e.target.value) })
                 }
               />
             </label>
@@ -13066,7 +13155,10 @@ function Agent({ state, reload, setTab }) {
                 name="hunt-maximum-results"
                 value={form.maxResults}
                 onChange={(e) =>
-                  setForm({ ...form, maxResults: Number(e.target.value) })
+                  editHuntForm({
+                    ...form,
+                    maxResults: Number(e.target.value),
+                  })
                 }
               >
                 {[5, 10, 25, 50].map((x) => (
@@ -13098,7 +13190,11 @@ function Agent({ state, reload, setTab }) {
               aria-label="Infinite Hunt interval"
               value={intervalMinutes}
               disabled={running || state.infiniteHunt?.enabled}
-              onChange={(event) => setIntervalMinutes(event.target.value)}
+              onChange={(event) => {
+                setIntervalMinutes(event.target.value);
+                setHuntDraftTouched(true);
+                setHuntDraftRestored(false);
+              }}
             >
               <option value="15">Every 15 minutes</option>
               <option value="60">Every hour</option>

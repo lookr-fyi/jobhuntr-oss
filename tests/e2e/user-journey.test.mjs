@@ -674,6 +674,34 @@ test(
         .getByLabel("Generate an optimized resume for each job")
         .check();
       await page.getByRole("button", { name: "Move Indeed up" }).click();
+      await page.getByText("Search preferences", { exact: true }).click();
+      await page
+        .getByLabel("Exclude keywords")
+        .fill("government-clearance-only");
+      await page.locator('button[title="Job Board"]').click();
+      await page.locator('button[title="Infinite Hunting"]').click();
+      await page
+        .getByText("Unsaved Infinite Hunt configuration restored.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await page.getByLabel("Exclude keywords").inputValue(),
+        "government-clearance-only",
+        "Infinite Hunt search configuration should recover after navigation",
+      );
+      assert.deepEqual(
+        await page.locator(".v2-loop-row strong").allTextContents(),
+        ["Indeed", "LinkedIn Jobs"],
+        "the recovered hunt draft should retain workflow order",
+      );
+      assert.equal(
+        await page
+          .getByLabel("Generate an optimized resume for each job")
+          .isChecked(),
+        true,
+        "the recovered hunt draft should retain resume optimization",
+      );
       await page.route("**/api/agent-runs/preview", (route) => route.abort());
       await page.getByRole("button", { name: "Preview matches" }).click();
       const apiError = page.getByRole("alert");

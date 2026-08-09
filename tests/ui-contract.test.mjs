@@ -297,6 +297,27 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   assert.match(agent, /stoppingInfinite \? "Stopping…" : "Stop Infinite Hunt"/);
 });
 
+test("Infinite Hunt recovers a bounded complete configuration draft", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const agent = source.slice(
+    source.indexOf("function Agent"),
+    source.indexOf("function RunsPage"),
+  );
+
+  assert.match(agent, /jobhuntr-new-run-draft/);
+  assert.match(agent, /String\(saved\.q \|\| ""\)\.slice\(0, 500\)/);
+  assert.match(agent, /normalizeHuntWorkflows\(saved\.workflows\)/);
+  assert.match(agent, /intervalMinutes: Number\(intervalMinutes\)/);
+  assert.match(agent, /requiredKeywords: form\.required/);
+  assert.match(agent, /excludeKeywords: form\.excluded/);
+  assert.match(agent, /Unsaved Infinite Hunt configuration restored\./);
+  assert.match(agent, /if \(!huntDraftTouched\) return/);
+  assert.match(agent, /setHuntDraftTouched\(false\)/);
+});
+
 test("application packet actions are single-flight with truthful progress", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
