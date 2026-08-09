@@ -6875,6 +6875,9 @@ select:focus {
   bottom: 24px;
   z-index: 90;
 }
+.app:has(.v2-cover-wizard) > .v2-hunt-float {
+  display: none;
+}
 .v2-error-toast {
   position: fixed;
   top: 18px;

@@ -1897,6 +1897,13 @@ test(
         },
         "the cover-letter wizard should use v2's full route and always-visible navigation footer",
       );
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Open Infinite Hunting status" })
+          .isVisible(),
+        false,
+        "global hunt controls must not cover or enter the tab order of the full-route wizard",
+      );
       await assertAccessible(page, "Cover Letter wizard");
       await page.getByRole("button", { name: "Select Modern" }).click();
       await page.getByRole("button", { name: "Continue" }).click();
