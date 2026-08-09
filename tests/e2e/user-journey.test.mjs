@@ -68,6 +68,21 @@ const assertAccessible = async (page, surface) => {
   );
 };
 
+const assertNamedFormControls = async (page, surface) => {
+  const unnamed = await page
+    .locator(
+      "input:not([id]):not([name]), select:not([id]):not([name]), textarea:not([id]):not([name])",
+    )
+    .evaluateAll((elements) =>
+      elements.map((element) => element.outerHTML.slice(0, 240)),
+    );
+  assert.deepEqual(
+    unnamed,
+    [],
+    `${surface} controls should be identifiable to Chrome and autofill`,
+  );
+};
+
 test(
   "a user can onboard, hunt, inspect runs, and persist outreach through the real UI",
   { timeout: 75_000 },
@@ -381,6 +396,7 @@ test(
         "Infinite Hunt should render every authoritative platform logo",
       );
       await assertAccessible(page, "Infinite Hunting");
+      await assertNamedFormControls(page, "Infinite Hunting");
       await page
         .getByLabel("Generate an optimized resume for each job")
         .check();
@@ -921,6 +937,7 @@ test(
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
       await assertAccessible(page, "Submission Queue");
+      await assertNamedFormControls(page, "Submission Queue");
       const checklistCount = await checklist.count();
       assert.ok(checklistCount > 0, "submission checklist should be visible");
       const resumeAttachment = page.getByLabel("Resume attachment");

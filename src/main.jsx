@@ -3553,6 +3553,7 @@ function Actions({ job, reload }) {
           <label className="check">
             <input
               type="checkbox"
+              name={`task-${t.id}`}
               checked={t.done}
               onChange={async (e) => {
                 await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
@@ -10194,6 +10195,7 @@ function Agent({ state, reload, setTab }) {
           <label className="v2-check-row">
             <input
               type="checkbox"
+              name="optimize-resume"
               checked={optimizeResume}
               disabled={!profileResumeReady}
               onChange={(e) => {
@@ -10305,6 +10307,7 @@ function Agent({ state, reload, setTab }) {
             <label>
               Role or keywords
               <input
+                name="hunt-role-keywords"
                 value={form.q}
                 onChange={(e) => setForm({ ...form, q: e.target.value })}
                 placeholder="Product engineer"
@@ -10313,6 +10316,7 @@ function Agent({ state, reload, setTab }) {
             <label>
               Location
               <input
+                name="hunt-location"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
                 placeholder="Remote or leave blank"
@@ -10322,6 +10326,7 @@ function Agent({ state, reload, setTab }) {
               <label>
                 Required keywords
                 <input
+                  name="hunt-required-keywords"
                   value={form.required}
                   onChange={(e) =>
                     setForm({ ...form, required: e.target.value })
@@ -10332,6 +10337,7 @@ function Agent({ state, reload, setTab }) {
               <label>
                 Exclude keywords
                 <input
+                  name="hunt-excluded-keywords"
                   value={form.excluded}
                   onChange={(e) =>
                     setForm({ ...form, excluded: e.target.value })
@@ -10343,6 +10349,7 @@ function Agent({ state, reload, setTab }) {
             <label>
               Minimum profile fit: <b>{form.minFit}%</b>
               <input
+                name="hunt-minimum-fit"
                 type="range"
                 min="30"
                 max="95"
@@ -10355,6 +10362,7 @@ function Agent({ state, reload, setTab }) {
             <label>
               Maximum results
               <select
+                name="hunt-maximum-results"
                 value={form.maxResults}
                 onChange={(e) =>
                   setForm({ ...form, maxResults: Number(e.target.value) })
@@ -10385,6 +10393,7 @@ function Agent({ state, reload, setTab }) {
           <label className="v2-hunt-interval">
             Repeat
             <select
+              name="infinite-hunt-interval"
               aria-label="Infinite Hunt interval"
               value={intervalMinutes}
               disabled={running || state.infiniteHunt?.enabled}
