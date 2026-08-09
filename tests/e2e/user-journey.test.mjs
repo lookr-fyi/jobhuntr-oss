@@ -1167,6 +1167,13 @@ test(
         await page.getByRole("tabpanel").getAttribute("aria-labelledby"),
         "queue-tab-search",
       );
+      assert.equal(
+        await page
+          .locator(".v2-queue-list > button.selected .v2-queue-job-copy small")
+          .evaluate((company) => getComputedStyle(company).color),
+        "rgb(71, 85, 105)",
+        "selected source rows should retain WCAG AA company-name contrast",
+      );
       await page.keyboard.press("Home");
       assert.equal(await applyRunsTab.getAttribute("aria-selected"), "true");
       assert.equal(

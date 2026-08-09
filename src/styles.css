@@ -7780,6 +7780,9 @@ main > header.integrated-page-header {
   background: #f1f5f9;
   box-shadow: inset 3px 0 0 var(--v2-primary);
 }
+.v2-queue-job-copy small {
+  color: #475569;
+}
 .v2-job-logo {
   width: 36px;
   height: 36px;
