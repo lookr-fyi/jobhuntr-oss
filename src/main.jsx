@@ -11446,9 +11446,11 @@ function Agent({ state, reload, setTab }) {
     state.infiniteHunt?.intervalMinutes || 60,
   );
   const [running, setRunning] = useState(false);
+  const [stoppingInfinite, setStoppingInfinite] = useState(false);
   const [previewing, setPreviewing] = useState(false);
   const [savingPreset, setSavingPreset] = useState(false);
   const runningRef = useRef(false);
+  const stoppingInfiniteRef = useRef(false);
   const previewingRef = useRef(false);
   const savingPresetRef = useRef(false);
   const [presetSaved, setPresetSaved] = useState(false);
@@ -11521,7 +11523,7 @@ function Agent({ state, reload, setTab }) {
     }
   };
   const run = async () => {
-    if (runningRef.current) return;
+    if (runningRef.current || stoppingInfiniteRef.current) return;
     runningRef.current = true;
     setRunning(true);
     try {
@@ -11546,7 +11548,7 @@ function Agent({ state, reload, setTab }) {
     }
   };
   const startInfiniteHunt = async () => {
-    if (runningRef.current) return;
+    if (runningRef.current || stoppingInfiniteRef.current) return;
     runningRef.current = true;
     setRunning(true);
     let schedule = null;
@@ -11583,6 +11585,20 @@ function Agent({ state, reload, setTab }) {
     } finally {
       runningRef.current = false;
       setRunning(false);
+    }
+  };
+  const stopInfiniteHunt = async () => {
+    if (runningRef.current || stoppingInfiniteRef.current) return;
+    stoppingInfiniteRef.current = true;
+    setStoppingInfinite(true);
+    try {
+      await api("/api/infinite-hunt/stop", { method: "POST" });
+      await reload();
+    } catch {
+      // Keep the active schedule visible and retryable after the shared error.
+    } finally {
+      stoppingInfiniteRef.current = false;
+      setStoppingInfinite(false);
     }
   };
   const previewMatches = async () => {
@@ -11707,14 +11723,11 @@ function Agent({ state, reload, setTab }) {
             </span>
             <button
               className="secondary"
-              onClick={async () => {
-                try {
-                  await api("/api/infinite-hunt/stop", { method: "POST" });
-                  await reload();
-                } catch {}
-              }}
+              disabled={stoppingInfinite || running}
+              aria-busy={stoppingInfinite}
+              onClick={stopInfiniteHunt}
             >
-              Stop Infinite Hunt
+              {stoppingInfinite ? "Stopping…" : "Stop Infinite Hunt"}
             </button>
           </div>
         )}

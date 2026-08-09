@@ -219,7 +219,12 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
 
   for (const action of ["running", "previewing", "savingPreset"]) {
     assert.match(agent, new RegExp(`const ${action}Ref = useRef\\(false\\)`));
-    assert.match(agent, new RegExp(`if \\(${action}Ref\\.current\\) return`));
+    assert.match(
+      agent,
+      action === "running"
+        ? /if \(runningRef\.current \|\| stoppingInfiniteRef\.current\) return/
+        : new RegExp(`if \\(${action}Ref\\.current\\) return`),
+    );
     assert.match(agent, new RegExp(`${action}Ref\\.current = true`));
     assert.match(agent, new RegExp(`${action}Ref\\.current = false`));
   }
@@ -233,6 +238,22 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   );
   assert.match(oneOff, /runningRef\.current/);
   assert.match(recurring, /runningRef\.current/);
+  assert.match(agent, /const stoppingInfiniteRef = useRef\(false\)/);
+  const stopping = agent.slice(
+    agent.indexOf("const stopInfiniteHunt = async"),
+    agent.indexOf("const previewMatches"),
+  );
+  assert.match(
+    stopping,
+    /if \(runningRef\.current \|\| stoppingInfiniteRef\.current\) return/,
+  );
+  assert.match(stopping, /stoppingInfiniteRef\.current = true/);
+  assert.match(
+    stopping,
+    /finally \{\s*stoppingInfiniteRef\.current = false;\s*setStoppingInfinite\(false\)/,
+  );
+  assert.match(agent, /aria-busy=\{stoppingInfinite\}/);
+  assert.match(agent, /stoppingInfinite \? "Stopping…" : "Stop Infinite Hunt"/);
 });
 
 test("application packet actions are single-flight with truthful progress", async () => {
