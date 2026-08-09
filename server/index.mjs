@@ -1022,21 +1022,33 @@ app.patch("/api/submissions/:id", async (req, res) => {
         updated.verified = Boolean(incoming?.verified) && updated.confident;
         return updated;
       });
-      db.profile.faqAnswers = item.applicationQuestions
-        .filter(
-          (question) =>
-            isValidApplicationAnswer(question) && question.verified === true,
-        )
-        .map((question) => ({
+      const verifiedAnswers = item.applicationQuestions.filter(
+        (question) =>
+          isValidApplicationAnswer(question) && question.verified === true,
+      );
+      for (const question of verifiedAnswers) {
+        const normalizedQuestion = question.question.trim().toLowerCase();
+        const existingIndex = db.profile.faqAnswers.findIndex(
+          (answer) =>
+            safeText(answer?.question, 1000).toLowerCase() ===
+            normalizedQuestion,
+        );
+        const remembered = {
+          ...(existingIndex >= 0 ? db.profile.faqAnswers[existingIndex] : {}),
           question: question.question,
           answer: question.answer,
-        }));
-      auditEvent(
-        db,
-        "about-me",
-        "Remembered application answers in the About Me profile.",
-        { submissionId: item.id },
-      );
+        };
+        if (existingIndex >= 0)
+          db.profile.faqAnswers[existingIndex] = remembered;
+        else db.profile.faqAnswers.push(remembered);
+      }
+      if (verifiedAnswers.length)
+        auditEvent(
+          db,
+          "about-me",
+          `Remembered ${verifiedAnswers.length} verified application answer${verifiedAnswers.length === 1 ? "" : "s"} in the About Me profile.`,
+          { submissionId: item.id },
+        );
     }
     if (req.body.status === "archived") item.status = "archived";
     else if (["draft", "ready"].includes(req.body.status))

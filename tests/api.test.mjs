@@ -492,6 +492,18 @@ test("invalid jobs return a safe 400 response", async () => {
 
 test("submission queue enforces review before local submission", async () => {
   const state = (await req("/api/state")).body;
+  const customFaq = {
+    id: "custom-easy-apply-evidence",
+    question: "Describe a project that demonstrates systems thinking.",
+    answer: "I redesigned a release process and cut recovery time by 40%.",
+  };
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      ...state.profile,
+      faqAnswers: [...state.profile.faqAnswers, customFaq],
+    }),
+  });
   const packet = await req("/api/submissions", {
     method: "POST",
     body: JSON.stringify({ jobId: state.jobs[0].id }),
@@ -532,9 +544,18 @@ test("submission queue enforces review before local submission", async () => {
     answered.body.applicationQuestions[0].answer,
     "I build products that match this mission.",
   );
+  const rememberedAfterAnswer = (await req("/api/state")).body.profile
+    .faqAnswers;
   assert.equal(
-    (await req("/api/state")).body.profile.faqAnswers[0].answer,
+    rememberedAfterAnswer.find(
+      (answer) => answer.question === questions[0].question,
+    ).answer,
     "I build products that match this mission.",
+  );
+  assert.deepEqual(
+    rememberedAfterAnswer.find((answer) => answer.id === customFaq.id),
+    customFaq,
+    "reviewing a packet must not erase unrelated About Me evidence",
   );
   const blocked = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",
@@ -598,10 +619,10 @@ test("submission queue enforces review before local submission", async () => {
   const unverifiedQuestions = tampered.body.applicationQuestions.map(
     (question, index) => ({
       ...question,
-      verified: index !== 1,
+      verified: index !== 0,
       answer:
         index === 0
-          ? "I build products that match this mission."
+          ? "Unverified replacement that must not enter About Me."
           : index === 1
             ? "$150,000 base, depending on the complete package."
             : index === 2
@@ -619,6 +640,19 @@ test("submission queue enforces review before local submission", async () => {
     }),
   });
   assert.equal(unverified.body.status, "draft");
+  const rememberedAfterUnverifiedEdit = (await req("/api/state")).body.profile
+    .faqAnswers;
+  assert.equal(
+    rememberedAfterUnverifiedEdit.find(
+      (answer) => answer.question === questions[0].question,
+    ).answer,
+    "I build products that match this mission.",
+    "an unverified form edit must not replace the last verified answer",
+  );
+  assert.deepEqual(
+    rememberedAfterUnverifiedEdit.find((answer) => answer.id === customFaq.id),
+    customFaq,
+  );
   const unverifiedSubmit = await req(
     `/api/submissions/${packet.body.id}/submit`,
     {
