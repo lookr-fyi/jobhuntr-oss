@@ -1606,7 +1606,20 @@ test(
       await deleteContactDialog.getByRole("button", { name: "Cancel" }).click();
       await assertAccessible(page, "Outreach");
 
+      await page.evaluate(() => {
+        localStorage.setItem(
+          "jobhuntr-coach-conversations",
+          JSON.stringify([null, {}, { id: "damaged-chat", messages: [null] }]),
+        );
+        localStorage.setItem(
+          "jobhuntr-coach-chat",
+          JSON.stringify([null, { role: "unknown", content: 42 }]),
+        );
+      });
       await page.locator('button[title="AI Career Coach"]').click();
+      await page
+        .getByRole("heading", { name: "Hi, I'm your Career Coach!" })
+        .waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) =>

@@ -159,6 +159,50 @@ const normalizeHuntWorkflows = (value, fallback = ["linkedin", "indeed"]) => {
     : [];
   return valid.length ? valid : [...fallback];
 };
+const normalizeCoachMessages = (value) =>
+  Array.isArray(value)
+    ? value
+        .filter(
+          (message) =>
+            message &&
+            ["user", "assistant"].includes(message.role) &&
+            typeof message.content === "string" &&
+            message.content.trim(),
+        )
+        .map((message) => ({
+          role: message.role,
+          content: message.content.slice(0, 30000),
+        }))
+        .slice(0, 200)
+    : [];
+const normalizeCoachConversations = (value) =>
+  Array.isArray(value)
+    ? value
+        .filter(
+          (conversation) =>
+            conversation &&
+            typeof conversation.id === "string" &&
+            conversation.id.trim() &&
+            normalizeCoachMessages(conversation.messages).length,
+        )
+        .map((conversation) => ({
+          id: conversation.id.slice(0, 200),
+          jobId:
+            typeof conversation.jobId === "string"
+              ? conversation.jobId.slice(0, 200)
+              : "",
+          title:
+            typeof conversation.title === "string" && conversation.title.trim()
+              ? conversation.title.slice(0, 300)
+              : "Career coaching session",
+          messages: normalizeCoachMessages(conversation.messages),
+          updatedAt:
+            typeof conversation.updatedAt === "string"
+              ? conversation.updatedAt
+              : new Date().toISOString(),
+        }))
+        .slice(0, 100)
+    : [];
 const OVERVIEW_MOTIVATION = [
   "One thoughtful application today is a brick in your next chapter.",
   "Interviews start with consistent, courageous outreach.",
@@ -7404,12 +7448,14 @@ function Coach({ state, reload }) {
   const [conversations, setConversations] = useState(() => {
     if (state.coachConversations?.length) return state.coachConversations;
     try {
-      const saved = JSON.parse(
-        localStorage.getItem("jobhuntr-coach-conversations") || "[]",
+      const saved = normalizeCoachConversations(
+        JSON.parse(
+          localStorage.getItem("jobhuntr-coach-conversations") || "[]",
+        ),
       );
       if (saved.length) return saved;
-      const legacy = JSON.parse(
-        localStorage.getItem("jobhuntr-coach-chat") || "[]",
+      const legacy = normalizeCoachMessages(
+        JSON.parse(localStorage.getItem("jobhuntr-coach-chat") || "[]"),
       );
       return legacy.length
         ? [
