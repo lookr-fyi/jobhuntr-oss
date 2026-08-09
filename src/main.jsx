@@ -152,6 +152,13 @@ const HUNT_WORKFLOWS = [
     "Evaluate imported company-career-page roles locally.",
   ],
 ];
+const HUNT_WORKFLOW_IDS = new Set(HUNT_WORKFLOWS.map(([id]) => id));
+const normalizeHuntWorkflows = (value, fallback = ["linkedin", "indeed"]) => {
+  const valid = Array.isArray(value)
+    ? [...new Set(value.filter((id) => HUNT_WORKFLOW_IDS.has(id)))]
+    : [];
+  return valid.length ? valid : [...fallback];
+};
 const OVERVIEW_MOTIVATION = [
   "One thoughtful application today is a brick in your next chapter.",
   "Interviews start with consistent, courageous outreach.",
@@ -9313,12 +9320,11 @@ function Agent({ state, reload, setTab }) {
       const saved = JSON.parse(
         localStorage.getItem("jobhuntr-infinite-workflows") || "null",
       );
-      return Array.isArray(newRunDraft?.workflows) &&
-        newRunDraft.workflows.length
-        ? newRunDraft.workflows
-        : Array.isArray(saved) && saved.length
-          ? saved
-          : ["linkedin", "indeed"];
+      return normalizeHuntWorkflows(
+        Array.isArray(newRunDraft?.workflows) && newRunDraft.workflows.length
+          ? newRunDraft.workflows
+          : saved,
+      );
     } catch {
       return ["linkedin", "indeed"];
     }
@@ -9341,11 +9347,13 @@ function Agent({ state, reload, setTab }) {
   const statusCloseRef = useRef(null);
   const latestRun = state.agentRuns[0] || null;
   useEffect(() => {
-    if (!newRunDraft) return;
     localStorage.setItem(
       "jobhuntr-infinite-workflows",
-      JSON.stringify(newRunDraft.workflows),
+      JSON.stringify(selectedRuns),
     );
+  }, [selectedRuns]);
+  useEffect(() => {
+    if (!newRunDraft) return;
     localStorage.setItem(
       "jobhuntr-optimize-resume",
       String(Boolean(newRunDraft.optimizeResume)),
@@ -9390,7 +9398,7 @@ function Agent({ state, reload, setTab }) {
       excluded: (preset.options.excludeKeywords || []).join(", "),
     });
     if (preset.options.workflows?.length)
-      saveRunOrder(preset.options.workflows);
+      saveRunOrder(normalizeHuntWorkflows(preset.options.workflows));
     if (preset.options.optimizeResume !== undefined) {
       setOptimizeResume(Boolean(preset.options.optimizeResume));
       localStorage.setItem(

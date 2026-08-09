@@ -344,10 +344,28 @@ test(
         .first()
         .waitFor();
 
+      await page.evaluate(() =>
+        localStorage.setItem(
+          "jobhuntr-infinite-workflows",
+          JSON.stringify(["linkedin", "retired-job-board", "indeed", "indeed"]),
+        ),
+      );
       await page
         .getByRole("button", { name: "Infinite Hunting", exact: true })
         .click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      assert.equal(
+        await page.locator(".v2-loop-row").count(),
+        2,
+        "obsolete and duplicate saved workflows should recover without crashing Infinite Hunt",
+      );
+      assert.deepEqual(
+        await page.evaluate(() =>
+          JSON.parse(localStorage.getItem("jobhuntr-infinite-workflows")),
+        ),
+        ["linkedin", "indeed"],
+        "the repaired workflow order should persist for the next launch",
+      );
       const platformLogos = page.locator(".v2-workflow-grid img");
       assert.equal(await platformLogos.count(), 10);
       await page.waitForFunction(() =>
