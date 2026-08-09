@@ -142,7 +142,7 @@ test(
       const llms = await (await page.request.get(`${baseUrl}/llms.txt`)).text();
       assert.match(llms, /^# JobHuntr/m);
       const onboardingProgress = page.getByRole("progressbar", {
-        name: "Setup step 1 of 3",
+        name: "Setup step 1 of 4",
       });
       await onboardingProgress.waitFor();
       assert.equal(await onboardingProgress.getAttribute("aria-valuenow"), "1");

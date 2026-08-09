@@ -35,6 +35,12 @@ test(
         .getByLabel("Skills, comma-separated")
         .fill("React, TypeScript, Product Strategy");
       await window.getByRole("button", { name: /Continue/ }).click();
+      await window
+        .getByLabel("Resume text")
+        .fill(
+          "Product engineer with eight years of experience delivering React and TypeScript products. Improved customer conversion by 42% and led cross-functional launches.",
+        );
+      await window.getByRole("button", { name: /Continue/ }).click();
       await window.getByLabel("Preferred locations").fill("Seattle, Remote");
       await window.getByLabel("Minimum salary").fill("150000");
       await window.getByLabel("Weekly application goal").fill("7");
@@ -44,7 +50,12 @@ test(
       await window.getByRole("heading", { name: /Welcome back/ }).waitFor();
       await window.getByText("Welcome back, Electron").waitFor();
       assert.equal(await window.title(), "JobHuntr");
-      await fs.access(path.join(userDataDir, "data", "jobhuntr.json"));
+      const workspacePath = path.join(userDataDir, "data", "jobhuntr.json");
+      await fs.access(workspacePath);
+      const onboardedWorkspace = JSON.parse(
+        await fs.readFile(workspacePath, "utf8"),
+      );
+      assert.match(onboardedWorkspace.profile.resumeText, /conversion by 42%/);
       const security = await electronApp.evaluate(({ BrowserWindow }) => {
         const preferences =
           BrowserWindow.getAllWindows()[0].webContents.getLastWebPreferences();

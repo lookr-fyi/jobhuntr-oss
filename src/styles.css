@@ -8587,6 +8587,10 @@ main > header.integrated-page-header {
 .v2-template-upload-progress svg {
   animation: v2-template-spin 1s linear infinite;
 }
+.v2-onboarding-resume-dropzone {
+  min-height: 92px;
+  padding: 14px;
+}
 @keyframes v2-template-spin {
   to {
     transform: rotate(360deg);

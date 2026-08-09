@@ -940,6 +940,12 @@ function Onboarding({ profile, reload }) {
     minSalary: profile.preferences?.minSalary || 120000,
     weeklyGoal: profile.preferences?.weeklyApplicationGoal || 5,
     remote: true,
+    resumeText: isUsableResumeText(profile.resumeText)
+      ? profile.resumeText
+      : "",
+    resumeFileName: "",
+    resumeError: "",
+    extractingResume: false,
   });
   const finish = async () => {
     setSaving(true);
@@ -966,6 +972,7 @@ function Onboarding({ profile, reload }) {
             minSalary: Number(form.minSalary) || 0,
             weeklyApplicationGoal: Math.max(1, Number(form.weeklyGoal) || 5),
           },
+          resumeText: form.resumeText || profile.resumeText,
         }),
       });
       await reload();
@@ -1011,12 +1018,12 @@ function Onboarding({ profile, reload }) {
           <div
             className="v2-onboarding-progress"
             role="progressbar"
-            aria-label={`Setup step ${Math.max(1, step)} of 3`}
+            aria-label={`Setup step ${Math.max(1, step)} of 4`}
             aria-valuemin="1"
-            aria-valuemax="3"
+            aria-valuemax="4"
             aria-valuenow={Math.max(1, step)}
           >
-            {[1, 2, 3].map((value) => (
+            {[1, 2, 3, 4].map((value) => (
               <i key={value} className={step >= value ? "active" : ""} />
             ))}
           </div>
@@ -1044,7 +1051,7 @@ function Onboarding({ profile, reload }) {
           )}
           {step === 1 && (
             <>
-              <span className="eyebrow">STEP 1 OF 3</span>
+              <span className="eyebrow">STEP 1 OF 4</span>
               <h2 id="onboarding-title">What are you looking for?</h2>
               <p>
                 Start with the role and identity JobHuntr should optimize for.
@@ -1087,7 +1094,7 @@ function Onboarding({ profile, reload }) {
           )}
           {step === 2 && (
             <>
-              <span className="eyebrow">STEP 2 OF 3</span>
+              <span className="eyebrow">STEP 2 OF 4</span>
               <h2 id="onboarding-title">Show us your strengths</h2>
               <p>
                 Add the skills JobHuntr should prioritize when scoring roles.
@@ -1124,7 +1131,93 @@ function Onboarding({ profile, reload }) {
           )}
           {step === 3 && (
             <>
-              <span className="eyebrow">STEP 3 OF 3</span>
+              <span className="eyebrow">STEP 3 OF 4</span>
+              <h2 id="onboarding-title">Add your resume privately</h2>
+              <p>
+                JobHuntr uses your real experience for ATS matching. The file is
+                processed only on this computer.
+              </p>
+              <label className="v2-template-dropzone v2-onboarding-resume-dropzone">
+                <Upload size={28} />
+                <b>{form.resumeFileName || "Choose your resume"}</b>
+                <span>PDF, HTML, or TXT · 10 MB maximum</span>
+                <input
+                  aria-label="Upload resume during setup"
+                  type="file"
+                  accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setForm((current) => ({
+                      ...current,
+                      resumeFileName: file.name,
+                      resumeError: "",
+                      extractingResume: true,
+                    }));
+                    try {
+                      const resumeText = await extractResumeFileText(file);
+                      setForm((current) => ({
+                        ...current,
+                        resumeText,
+                        resumeError: "",
+                        extractingResume: false,
+                      }));
+                    } catch (error) {
+                      setForm((current) => ({
+                        ...current,
+                        resumeText: "",
+                        resumeError: error.message,
+                        extractingResume: false,
+                      }));
+                    } finally {
+                      event.target.value = "";
+                    }
+                  }}
+                />
+              </label>
+              {form.extractingResume && (
+                <div className="v2-template-upload-progress" role="status">
+                  <RefreshCcw size={17} /> Extracting resume text locally…
+                </div>
+              )}
+              {form.resumeError && (
+                <div className="v2-submit-safety-note" role="alert">
+                  {form.resumeError}
+                </div>
+              )}
+              <label>
+                Resume text
+                <textarea
+                  value={form.resumeText}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      resumeText: event.target.value,
+                      resumeError: "",
+                    })
+                  }
+                  placeholder="Or paste your complete resume here…"
+                />
+              </label>
+              <div className="v2-onboarding-actions">
+                <button className="secondary" onClick={() => setStep(2)}>
+                  Back
+                </button>
+                <button
+                  disabled={
+                    form.extractingResume ||
+                    !isUsableResumeText(form.resumeText)
+                  }
+                  onClick={() => setStep(4)}
+                >
+                  Continue <ChevronRight size={17} />
+                </button>
+              </div>
+            </>
+          )}
+          {step === 4 && (
+            <>
+              <span className="eyebrow">STEP 4 OF 4</span>
               <h2 id="onboarding-title">Set your search preferences</h2>
               <p>These defaults can be changed anytime in User Center.</p>
               <label>
@@ -1172,7 +1265,7 @@ function Onboarding({ profile, reload }) {
                 Include remote jobs
               </label>
               <div className="v2-onboarding-actions">
-                <button className="secondary" onClick={() => setStep(2)}>
+                <button className="secondary" onClick={() => setStep(3)}>
                   Back
                 </button>
                 <button disabled={saving} onClick={finish}>
