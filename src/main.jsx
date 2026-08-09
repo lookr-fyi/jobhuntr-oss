@@ -2683,6 +2683,7 @@ function Tracker({ state, reload, setTab }) {
                         <label key={field}>
                           {field === "url" ? "Job URL" : field}
                           <input
+                            name={`edit-job-${field}`}
                             required={["title", "company"].includes(field)}
                             value={editForm[field]}
                             onChange={(event) =>
@@ -2698,6 +2699,7 @@ function Tracker({ state, reload, setTab }) {
                     <label>
                       Status
                       <select
+                        name="edit-job-status"
                         aria-label="Edit job status"
                         value={editForm.status}
                         onChange={(event) =>
@@ -2717,6 +2719,7 @@ function Tracker({ state, reload, setTab }) {
                     <label>
                       Description
                       <textarea
+                        name="edit-job-description"
                         value={editForm.description}
                         onChange={(event) =>
                           setEditForm({
@@ -2755,6 +2758,7 @@ function Tracker({ state, reload, setTab }) {
                     <section className="info-section status-section">
                       <h3 className="section-title">Status</h3>
                       <select
+                        name="job-status"
                         className="status-select"
                         aria-label="Job status"
                         value={job.status}
@@ -2930,6 +2934,7 @@ function Tracker({ state, reload, setTab }) {
                     <label key={field}>
                       {field === "url" ? "Job URL" : field}
                       <input
+                        name={`new-job-${field}`}
                         required={["title", "company"].includes(field)}
                         value={form[field]}
                         onChange={(event) =>
@@ -2942,6 +2947,7 @@ function Tracker({ state, reload, setTab }) {
                 <label>
                   Status
                   <select
+                    name="new-job-status"
                     aria-label="New job status"
                     value={form.status}
                     onChange={(event) =>
@@ -2958,6 +2964,7 @@ function Tracker({ state, reload, setTab }) {
                 <label>
                   Description
                   <textarea
+                    name="new-job-description"
                     value={form.description}
                     onChange={(event) =>
                       setForm({ ...form, description: event.target.value })
@@ -3394,6 +3401,7 @@ function InterviewRounds({ job, reload }) {
           <label>
             Round number
             <input
+              name="interview-round-number"
               type="number"
               min="1"
               value={number}
@@ -3404,6 +3412,7 @@ function InterviewRounds({ job, reload }) {
           <label>
             Notes
             <textarea
+              name="interview-round-notes"
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               placeholder="Add details about this interview round…"
@@ -3497,6 +3506,7 @@ function Actions({ job, reload }) {
       <h3>Notes</h3>
       <div className="inline">
         <input
+          name="private-job-note"
           aria-label="Private job note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -3536,11 +3546,13 @@ function Actions({ job, reload }) {
       <h3>Tasks</h3>
       <div className="task-compose">
         <input
+          name="job-task-description"
           aria-label="Task description"
           value={task}
           onChange={(e) => setTask(e.target.value)}
         />
         <input
+          name="job-task-due-date"
           type="date"
           aria-label="Task due date"
           value={taskDue}
@@ -3620,6 +3632,7 @@ function Actions({ job, reload }) {
         <label>
           Name
           <input
+            name="job-contact-name"
             placeholder="Alex Morgan"
             value={contact.name}
             onChange={(e) => setContact({ ...contact, name: e.target.value })}
@@ -3628,6 +3641,7 @@ function Actions({ job, reload }) {
         <label>
           Role
           <input
+            name="job-contact-role"
             placeholder="Recruiter"
             value={contact.role}
             onChange={(e) => setContact({ ...contact, role: e.target.value })}
@@ -3636,6 +3650,7 @@ function Actions({ job, reload }) {
         <label>
           Email
           <input
+            name="job-contact-email"
             type="email"
             placeholder="alex@company.com"
             value={contact.email}
@@ -3645,6 +3660,7 @@ function Actions({ job, reload }) {
         <label>
           LinkedIn profile
           <input
+            name="job-contact-linkedin"
             type="url"
             placeholder="https://www.linkedin.com/in/alex"
             value={contact.linkedIn}
@@ -4803,6 +4819,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Minimum profile match
                 <select
+                  name="queue-minimum-match"
                   aria-label="Minimum queue match score"
                   value={minimumFit}
                   onChange={(event) =>
@@ -4820,6 +4837,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Minimum ATS score
                 <select
+                  name="queue-minimum-ats"
                   aria-label="Minimum queue ATS score"
                   value={minimumAts}
                   onChange={(event) =>
@@ -4837,6 +4855,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Has ATS resume
                 <select
+                  name="queue-has-ats-resume"
                   aria-label="Show jobs with ATS resume"
                   value={String(showAtsOnly)}
                   onChange={(event) =>
@@ -4850,6 +4869,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Sort by
                 <select
+                  name="queue-sort"
                   aria-label="Sort submission queue"
                   value={queueSort}
                   onChange={(event) => setQueueSort(event.target.value)}
@@ -4862,6 +4882,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Location
                 <input
+                  name="queue-location"
                   aria-label="Queue location"
                   value={queueLocation}
                   onChange={(event) => setQueueLocation(event.target.value)}
@@ -4871,6 +4892,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Minimum salary
                 <select
+                  name="queue-minimum-salary"
                   aria-label="Minimum queue salary"
                   value={queueSalary}
                   onChange={(event) =>
@@ -4888,6 +4910,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Work arrangement
                 <select
+                  name="queue-work-arrangement"
                   aria-label="Queue work arrangement"
                   value={queueRemote}
                   onChange={(event) => setQueueRemote(event.target.value)}
@@ -4900,6 +4923,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Job type
                 <select
+                  name="queue-job-type"
                   aria-label="Queue job type"
                   value={queueJobType}
                   onChange={(event) => setQueueJobType(event.target.value)}
@@ -4913,6 +4937,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Seniority
                 <select
+                  name="queue-seniority"
                   aria-label="Queue seniority"
                   value={queueSeniority}
                   onChange={(event) => setQueueSeniority(event.target.value)}
@@ -4927,6 +4952,7 @@ function Queue({ state, reload, setTab }) {
               <label>
                 Visa sponsorship
                 <select
+                  name="queue-sponsorship"
                   aria-label="Queue visa sponsorship"
                   value={queueSponsorship}
                   onChange={(event) => setQueueSponsorship(event.target.value)}
