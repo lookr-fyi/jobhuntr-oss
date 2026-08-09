@@ -4013,11 +4013,48 @@ function InterviewRounds({ job, reload }) {
   );
 }
 function Actions({ job, reload }) {
-  const [note, setNote] = useState("");
-  const [task, setTask] = useState("Follow up with recruiter");
-  const [taskDue, setTaskDue] = useState("");
-  const [editingTaskId, setEditingTaskId] = useState("");
-  const [editingContactId, setEditingContactId] = useState("");
+  const defaultTask = "Follow up with recruiter";
+  const defaultContact = {
+    name: "",
+    role: "Recruiter",
+    email: "",
+    linkedIn: "",
+  };
+  const actionDraftKey = `jobhuntr-tracker-action-draft:${job.id}`;
+  const [initialActionDraft] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(actionDraftKey) || "null");
+      if (!saved || saved.jobId !== job.id) return null;
+      return {
+        note: String(saved.note || "").slice(0, 10_000),
+        task: String(saved.task || defaultTask).slice(0, 500),
+        taskDue: String(saved.taskDue || "").slice(0, 10),
+        editingTaskId: String(saved.editingTaskId || "").slice(0, 100),
+        contact: {
+          name: String(saved.contact?.name || "").slice(0, 200),
+          role: String(saved.contact?.role || "Recruiter").slice(0, 200),
+          email: String(saved.contact?.email || "").slice(0, 320),
+          linkedIn: String(saved.contact?.linkedIn || "").slice(0, 2_000),
+        },
+        editingContactId: String(saved.editingContactId || "").slice(0, 100),
+      };
+    } catch {
+      localStorage.removeItem(actionDraftKey);
+      return null;
+    }
+  });
+  const [note, setNote] = useState(initialActionDraft?.note || "");
+  const [task, setTask] = useState(initialActionDraft?.task || defaultTask);
+  const [taskDue, setTaskDue] = useState(initialActionDraft?.taskDue || "");
+  const [editingTaskId, setEditingTaskId] = useState(
+    initialActionDraft?.editingTaskId || "",
+  );
+  const [editingContactId, setEditingContactId] = useState(
+    initialActionDraft?.editingContactId || "",
+  );
+  const [actionDraftRestored, setActionDraftRestored] = useState(
+    Boolean(initialActionDraft),
+  );
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [savingNote, setSavingNote] = useState(false);
   const [savingTask, setSavingTask] = useState(false);
@@ -4027,12 +4064,49 @@ function Actions({ job, reload }) {
   const savingContactRef = useRef(false);
   const [pendingTaskIds, setPendingTaskIds] = useState(new Set());
   const pendingTaskIdsRef = useRef(new Set());
-  const [contact, setContact] = useState({
-    name: "",
-    role: "Recruiter",
-    email: "",
-    linkedIn: "",
-  });
+  const [contact, setContact] = useState(
+    initialActionDraft?.contact || defaultContact,
+  );
+  useEffect(() => {
+    const hasDraft = Boolean(
+      note.trim() ||
+      (task.trim() && task !== defaultTask) ||
+      taskDue ||
+      editingTaskId ||
+      contact.name.trim() ||
+      contact.role !== defaultContact.role ||
+      contact.email.trim() ||
+      contact.linkedIn.trim() ||
+      editingContactId,
+    );
+    if (!hasDraft) {
+      localStorage.removeItem(actionDraftKey);
+      return;
+    }
+    localStorage.setItem(
+      actionDraftKey,
+      JSON.stringify({
+        jobId: job.id,
+        note,
+        task,
+        taskDue,
+        editingTaskId,
+        contact,
+        editingContactId,
+      }),
+    );
+  }, [
+    actionDraftKey,
+    contact,
+    defaultContact.role,
+    defaultTask,
+    editingContactId,
+    editingTaskId,
+    job.id,
+    note,
+    task,
+    taskDue,
+  ]);
   const resetContact = () => {
     setContact({
       name: "",
@@ -4126,6 +4200,11 @@ function Actions({ job, reload }) {
   };
   return (
     <div className="job-actions">
+      {actionDraftRestored && (
+        <p className="v2-draft-restored" role="status">
+          Unsaved note, task, or contact draft restored.
+        </p>
+      )}
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title={`Delete ${deleteTarget?.type || "item"}?`}
@@ -4147,7 +4226,10 @@ function Actions({ job, reload }) {
           aria-label="Private job note"
           disabled={savingNote}
           value={note}
-          onChange={(e) => setNote(e.target.value)}
+          onChange={(e) => {
+            setNote(e.target.value);
+            setActionDraftRestored(false);
+          }}
           placeholder="Add a private note"
         />
         <button
@@ -4182,7 +4264,10 @@ function Actions({ job, reload }) {
           aria-label="Task description"
           disabled={savingTask}
           value={task}
-          onChange={(e) => setTask(e.target.value)}
+          onChange={(e) => {
+            setTask(e.target.value);
+            setActionDraftRestored(false);
+          }}
         />
         <input
           name="job-task-due-date"
@@ -4190,7 +4275,10 @@ function Actions({ job, reload }) {
           aria-label="Task due date"
           disabled={savingTask}
           value={taskDue}
-          onChange={(e) => setTaskDue(e.target.value)}
+          onChange={(e) => {
+            setTaskDue(e.target.value);
+            setActionDraftRestored(false);
+          }}
         />
         <button
           disabled={savingTask || !task.trim()}
@@ -4263,7 +4351,10 @@ function Actions({ job, reload }) {
             disabled={savingContact}
             placeholder="Alex Morgan"
             value={contact.name}
-            onChange={(e) => setContact({ ...contact, name: e.target.value })}
+            onChange={(e) => {
+              setContact({ ...contact, name: e.target.value });
+              setActionDraftRestored(false);
+            }}
           />
         </label>
         <label>
@@ -4273,7 +4364,10 @@ function Actions({ job, reload }) {
             disabled={savingContact}
             placeholder="Recruiter"
             value={contact.role}
-            onChange={(e) => setContact({ ...contact, role: e.target.value })}
+            onChange={(e) => {
+              setContact({ ...contact, role: e.target.value });
+              setActionDraftRestored(false);
+            }}
           />
         </label>
         <label>
@@ -4284,7 +4378,10 @@ function Actions({ job, reload }) {
             disabled={savingContact}
             placeholder="alex@company.com"
             value={contact.email}
-            onChange={(e) => setContact({ ...contact, email: e.target.value })}
+            onChange={(e) => {
+              setContact({ ...contact, email: e.target.value });
+              setActionDraftRestored(false);
+            }}
           />
         </label>
         <label>
@@ -4295,9 +4392,10 @@ function Actions({ job, reload }) {
             disabled={savingContact}
             placeholder="https://www.linkedin.com/in/alex"
             value={contact.linkedIn}
-            onChange={(e) =>
-              setContact({ ...contact, linkedIn: e.target.value })
-            }
+            onChange={(e) => {
+              setContact({ ...contact, linkedIn: e.target.value });
+              setActionDraftRestored(false);
+            }}
           />
         </label>
       </div>

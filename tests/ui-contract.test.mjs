@@ -1097,6 +1097,28 @@ test("Job Tracker notes, tasks, and contacts save as isolated units", async () =
   );
 });
 
+test("Job Tracker action drafts recover after its drawer closes", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const actions = source.slice(
+    source.indexOf("function Actions"),
+    source.indexOf("function Board"),
+  );
+
+  assert.match(actions, /jobhuntr-tracker-action-draft:/);
+  assert.match(actions, /localStorage\.getItem\(actionDraftKey\)/);
+  assert.match(actions, /localStorage\.setItem\(/);
+  assert.match(actions, /localStorage\.removeItem\(actionDraftKey\)/);
+  assert.match(actions, /Unsaved note, task, or contact draft restored\./);
+  assert.match(actions, /String\(saved\.note \|\| ""\)\.slice\(0, 10_000\)/);
+  assert.match(
+    actions,
+    /String\(saved\.contact\?\.email \|\| ""\)\.slice\(0, 320\)/,
+  );
+});
+
 test("task completion toggles serialize independently per task", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

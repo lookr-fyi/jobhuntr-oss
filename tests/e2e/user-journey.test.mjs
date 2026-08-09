@@ -3276,6 +3276,32 @@ test(
         page.locator(".job-drawer"),
         "Job details drawer",
       );
+      await page.getByLabel("Private job note").fill("Recovered draft note");
+      await page.getByLabel("Task description").fill("Recovered draft task");
+      await page.getByLabel("Task due date").fill("2030-04-12");
+      const contactForm = page.locator(".contact-form");
+      await contactForm.getByLabel("Name").fill("Recovered Draft Contact");
+      await contactForm.getByLabel("Role").fill("Draft Recruiter");
+      await page.getByRole("button", { name: "Close job details" }).click();
+      await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
+      await page
+        .getByText("Unsaved note, task, or contact draft restored.", {
+          exact: true,
+        })
+        .waitFor();
+      assert.equal(
+        await page.getByLabel("Private job note").inputValue(),
+        "Recovered draft note",
+      );
+      assert.equal(
+        await page.getByLabel("Task description").inputValue(),
+        "Recovered draft task",
+      );
+      assert.equal(
+        await contactForm.getByLabel("Name").inputValue(),
+        "Recovered Draft Contact",
+        "closing and reopening a tracked role should recover action drafts",
+      );
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
@@ -3318,7 +3344,6 @@ test(
       await page
         .getByText("Prepare product portfolio")
         .waitFor({ state: "hidden" });
-      const contactForm = page.locator(".contact-form");
       await contactForm.getByLabel("Name").fill("Alex Morgan");
       await contactForm.getByLabel("Role").fill("Engineering Recruiter");
       await contactForm.getByLabel("Email").fill("alex@example.com");
