@@ -107,6 +107,26 @@ test("workspace startup retains the authoritative v2 branded loading screen", as
   assert.match(styles, /@keyframes v2-loading-spin-reverse/);
 });
 
+test("first-run onboarding recovers bounded private edits until setup succeeds", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const onboarding = source.slice(
+    source.indexOf('const ONBOARDING_DRAFT_KEY = "jobhuntr-onboarding-draft"'),
+    source.indexOf("function title(t)"),
+  );
+
+  assert.match(onboarding, /readOnboardingDraft/);
+  assert.match(onboarding, /resumeText, 100_000/);
+  assert.match(onboarding, /localStorage\.setItem\(\s*ONBOARDING_DRAFT_KEY/);
+  assert.match(
+    onboarding,
+    /await api\("\/api\/profile"[\s\S]*?localStorage\.removeItem\(ONBOARDING_DRAFT_KEY\)/,
+    "the recovery draft must only clear after the profile save succeeds",
+  );
+});
+
 test("user-triggered API actions contain rejected requests", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

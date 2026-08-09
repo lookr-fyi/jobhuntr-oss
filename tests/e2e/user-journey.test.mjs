@@ -307,6 +307,29 @@ test(
       await page
         .getByLabel("Skills, comma-separated")
         .fill("React, TypeScript, Product strategy");
+      await page.reload();
+      await page
+        .getByRole("heading", { name: "Show us your strengths" })
+        .waitFor();
+      assert.equal(
+        await page.getByLabel("Skills, comma-separated").inputValue(),
+        "React, TypeScript, Product strategy",
+        "first-run setup must recover private edits after the desktop renderer reloads",
+      );
+      await page.getByRole("button", { name: "Back" }).click();
+      assert.equal(
+        await page.getByLabel("Your name").inputValue(),
+        "E2E Job Hunter",
+      );
+      assert.equal(
+        await page.getByLabel("Primary target role").inputValue(),
+        "Product Engineer",
+      );
+      assert.equal(
+        await page.getByLabel("Home location").inputValue(),
+        "San Francisco, CA",
+      );
+      await page.getByRole("button", { name: /Continue/ }).click();
       await page.getByRole("button", { name: /Continue/ }).click();
       await page
         .getByRole("heading", { name: "Add your resume privately" })
@@ -376,6 +399,13 @@ test(
       await page
         .getByRole("heading", { level: 2, name: "Pipeline over time" })
         .waitFor();
+      assert.equal(
+        await page.evaluate(() =>
+          localStorage.getItem("jobhuntr-onboarding-draft"),
+        ),
+        null,
+        "completed onboarding must remove its private recovery draft",
+      );
       await page
         .getByRole("heading", {
           level: 2,

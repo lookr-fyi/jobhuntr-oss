@@ -1390,29 +1390,90 @@ function App() {
     </div>
   );
 }
+const ONBOARDING_DRAFT_KEY = "jobhuntr-onboarding-draft";
+const readOnboardingDraft = () => {
+  try {
+    const value = JSON.parse(localStorage.getItem(ONBOARDING_DRAFT_KEY));
+    if (!value || typeof value !== "object" || typeof value.form !== "object")
+      return null;
+    const boundedString = (input, maximum) =>
+      typeof input === "string" ? input.slice(0, maximum) : "";
+    return {
+      step: Math.min(4, Math.max(0, Number(value.step) || 0)),
+      form: {
+        name: boundedString(value.form.name, 200),
+        role: boundedString(value.form.role, 200),
+        skills: boundedString(value.form.skills, 4_000),
+        location: boundedString(value.form.location, 300),
+        preferredLocations: boundedString(value.form.preferredLocations, 2_000),
+        minSalary: Math.max(0, Number(value.form.minSalary) || 0),
+        weeklyGoal: Math.min(
+          100,
+          Math.max(1, Number(value.form.weeklyGoal) || 5),
+        ),
+        remote: value.form.remote !== false,
+        resumeText: boundedString(value.form.resumeText, 100_000),
+      },
+    };
+  } catch {
+    localStorage.removeItem(ONBOARDING_DRAFT_KEY);
+    return null;
+  }
+};
 function Onboarding({ profile, reload }) {
-  const [step, setStep] = useState(0);
+  const restoredDraftRef = useRef(undefined);
+  if (restoredDraftRef.current === undefined)
+    restoredDraftRef.current = readOnboardingDraft();
+  const restoredDraft = restoredDraftRef.current;
+  const [step, setStep] = useState(restoredDraft?.step || 0);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const extractingResumeRef = useRef(false);
-  const [form, setForm] = useState({
-    name: "",
-    role: profile.targetRoles?.[0] || "Software Engineer",
-    skills: (profile.skills || []).join(", "),
-    location: profile.location || "United States",
-    preferredLocations: (profile.preferences?.locations || ["Remote"]).join(
-      ", ",
-    ),
-    minSalary: profile.preferences?.minSalary || 120000,
-    weeklyGoal: profile.preferences?.weeklyApplicationGoal || 5,
-    remote: true,
-    resumeText: isUsableResumeText(profile.resumeText)
-      ? profile.resumeText
-      : "",
+  const [form, setForm] = useState(() => ({
+    name: restoredDraft?.form.name || "",
+    role:
+      restoredDraft?.form.role ||
+      profile.targetRoles?.[0] ||
+      "Software Engineer",
+    skills: restoredDraft?.form.skills || (profile.skills || []).join(", "),
+    location:
+      restoredDraft?.form.location || profile.location || "United States",
+    preferredLocations:
+      restoredDraft?.form.preferredLocations ||
+      (profile.preferences?.locations || ["Remote"]).join(", "),
+    minSalary:
+      restoredDraft?.form.minSalary ?? profile.preferences?.minSalary ?? 120000,
+    weeklyGoal:
+      restoredDraft?.form.weeklyGoal ??
+      profile.preferences?.weeklyApplicationGoal ??
+      5,
+    remote: restoredDraft?.form.remote ?? true,
+    resumeText:
+      restoredDraft?.form.resumeText ||
+      (isUsableResumeText(profile.resumeText) ? profile.resumeText : ""),
     resumeFileName: "",
     resumeError: "",
     extractingResume: false,
-  });
+  }));
+  useEffect(() => {
+    localStorage.setItem(
+      ONBOARDING_DRAFT_KEY,
+      JSON.stringify({
+        step,
+        form: {
+          name: form.name,
+          role: form.role,
+          skills: form.skills,
+          location: form.location,
+          preferredLocations: form.preferredLocations,
+          minSalary: form.minSalary,
+          weeklyGoal: form.weeklyGoal,
+          remote: form.remote,
+          resumeText: form.resumeText,
+        },
+      }),
+    );
+  }, [form, step]);
   const finish = async (overrides = {}) => {
     if (savingRef.current || extractingResumeRef.current) return;
     savingRef.current = true;
@@ -1444,6 +1505,7 @@ function Onboarding({ profile, reload }) {
           resumeText: values.resumeText || profile.resumeText,
         }),
       });
+      localStorage.removeItem(ONBOARDING_DRAFT_KEY);
       await reload();
     } catch {
       // Keep onboarding data and the current step available for retry.
