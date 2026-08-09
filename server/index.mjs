@@ -794,8 +794,16 @@ const applicationQuestionsFor = (db) => {
       )?.answer || "",
     questionType,
     options,
+    required: true,
     confident: false,
   }));
+};
+const isValidApplicationAnswer = (question) => {
+  const answer = safeText(question?.answer, 10000);
+  if (!answer) return question?.required === false;
+  if (["dropdown", "multiple_choice"].includes(question?.questionType))
+    return (question.options || []).includes(answer);
+  return true;
 };
 app.post("/api/submissions", async (req, res) => {
   const submission = await mutate((db) => {
@@ -868,30 +876,26 @@ app.patch("/api/submissions/:id", async (req, res) => {
     if (req.body.coverLetterId !== undefined)
       item.coverLetterId = safeText(req.body.coverLetterId, 50);
     if (Array.isArray(req.body.applicationQuestions)) {
-      item.applicationQuestions = req.body.applicationQuestions
-        .slice(0, 30)
+      item.applicationQuestions = item.applicationQuestions.map((existing) => {
+        const incoming = req.body.applicationQuestions.find(
+          (candidate) => safeText(candidate?.id, 80) === existing.id,
+        );
+        const updated = {
+          ...existing,
+          required: existing.required !== false,
+          answer: incoming
+            ? safeText(incoming.answer, 10000)
+            : safeText(existing.answer, 10000),
+        };
+        updated.confident = isValidApplicationAnswer(updated);
+        return updated;
+      });
+      db.profile.faqAnswers = item.applicationQuestions
+        .filter(isValidApplicationAnswer)
         .map((question) => ({
-          id: safeText(question.id, 80) || nanoid(),
-          question: safeText(question.question, 500),
-          answer: safeText(question.answer, 10000),
-          questionType: ["text_input", "dropdown", "multiple_choice"].includes(
-            question.questionType,
-          )
-            ? question.questionType
-            : "text_input",
-          options: Array.isArray(question.options)
-            ? question.options
-                .map((option) => safeText(option, 500))
-                .filter(Boolean)
-                .slice(0, 30)
-            : [],
-          confident: Boolean(question.answer),
-        }))
-        .filter((question) => question.question);
-      db.profile.faqAnswers = item.applicationQuestions.map((question) => ({
-        question: question.question,
-        answer: question.answer,
-      }));
+          question: question.question,
+          answer: question.answer,
+        }));
       auditEvent(
         db,
         "about-me",
@@ -901,9 +905,11 @@ app.patch("/api/submissions/:id", async (req, res) => {
     }
     if (req.body.status === "archived") item.status = "archived";
     else if (["draft", "ready"].includes(req.body.status))
-      item.status = item.checklist.every((entry) => entry.done)
-        ? "ready"
-        : "draft";
+      item.status =
+        item.checklist.every((entry) => entry.done) &&
+        item.applicationQuestions.every(isValidApplicationAnswer)
+          ? "ready"
+          : "draft";
     item.updatedAt = timestamp();
     return item;
   });
@@ -926,6 +932,8 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
       !item.checklist.every((x) => x.done)
     )
       return { blocked: true, item };
+    if (!item.applicationQuestions.every(isValidApplicationAnswer))
+      return { blockedQuestions: true, item };
     const attachedResume =
       item.resumeId === "profile-resume"
         ? db.profile.resumeText
@@ -963,6 +971,10 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
   if (submission.blockedResume)
     return res.status(409).json({
       error: "Attach a valid resume before recording this submission",
+    });
+  if (submission.blockedQuestions)
+    return res.status(409).json({
+      error: "Answer every required application question before submitting",
     });
   res.json(submission);
 });

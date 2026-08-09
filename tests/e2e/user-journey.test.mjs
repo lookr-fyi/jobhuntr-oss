@@ -699,9 +699,7 @@ test(
           .getByRole("radio", { name: "No", exact: true })
           .click(),
       ]);
-      await interestAnswer.fill(
-        "I enjoy building reliable user-facing products.",
-      );
+      await interestAnswer.fill("The product mission matches my experience.");
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -759,6 +757,34 @@ test(
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Minimum queue match score").selectOption("40");
       await page.getByLabel("Sort submission queue").selectOption("fit");
+      const queueQuestions = page.locator(".v2-application-questions");
+      const whyAnswer = queueQuestions.getByLabel(
+        /Why are you interested in this role/,
+      );
+      assert.equal(
+        await whyAnswer.inputValue(),
+        "The product mission matches my experience.",
+      );
+      const salaryAnswer = queueQuestions.getByLabel(
+        /What are your salary expectations/,
+      );
+      await salaryAnswer.fill(
+        "$150,000 base, depending on the complete compensation package.",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        salaryAnswer.press("Tab"),
+      ]);
+      await queueQuestions
+        .getByLabel(/When are you available to start/)
+        .selectOption("Within 2 weeks");
+      await queueQuestions.getByLabel("No", { exact: true }).check();
+      await page.getByText(/4\/4 answered/).waitFor();
       for (const item of [
         "Review resume alignment",
         "Review cover letter",
@@ -1392,7 +1418,7 @@ test(
         await page
           .getByLabel("Why are you interested in this role?")
           .inputValue(),
-        "I enjoy building reliable user-facing products.",
+        "The product mission matches my experience.",
       );
       const faqPanel = page.locator(".v2-faq-panel");
       assert.equal(
@@ -1414,7 +1440,7 @@ test(
         await page
           .getByLabel("Why are you interested in this role?")
           .inputValue(),
-        "I enjoy building reliable user-facing products.",
+        "The product mission matches my experience.",
         "FAQ refresh should restore the persisted answer",
       );
       await faqPanel.locator("button", { hasText: "Delete" }).click();

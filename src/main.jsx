@@ -170,6 +170,13 @@ const isUsableResumeText = (value) => {
     !text.toLowerCase().startsWith("paste your resume here")
   );
 };
+const isValidApplicationAnswer = (question) => {
+  const answer = String(question?.answer || "").trim();
+  if (!answer) return question?.required === false;
+  if (["dropdown", "multiple_choice"].includes(question?.questionType))
+    return (question.options || []).includes(answer);
+  return true;
+};
 const maximumListedSalary = (job) => {
   const values = String(job.salary || "")
     .match(/\d+(?:\.\d+)?\s*k?/gi)
@@ -4135,6 +4142,11 @@ function SubmissionCard({ submission: s, state, reload }) {
     s.resumeId === "profile-resume"
       ? profileResumeReady
       : isUsableResumeText(attachedResume?.content);
+  const answeredQuestionCount = (s.applicationQuestions || []).filter(
+    isValidApplicationAnswer,
+  ).length;
+  const questionsReady =
+    answeredQuestionCount === (s.applicationQuestions || []).length;
   const resumeLabel = attachedResume?.name
     ? attachedResume.name
     : s.resumeId === "profile-resume"
@@ -4270,18 +4282,14 @@ function SubmissionCard({ submission: s, state, reload }) {
               </p>
             </div>
             <span>
-              {
-                s.applicationQuestions.filter((question) =>
-                  question.answer?.trim(),
-                ).length
-              }
-              /{s.applicationQuestions.length} answered
+              {answeredQuestionCount}/{s.applicationQuestions.length} answered
             </span>
           </div>
           {s.applicationQuestions.map((question) => {
             const prompt = (
               <span>
                 {question.question}
+                {question.required !== false && <b aria-hidden="true"> *</b>}
                 {question.answer?.trim() && <em>Remembered</em>}
               </span>
             );
@@ -4339,6 +4347,12 @@ function SubmissionCard({ submission: s, state, reload }) {
               </label>
             );
           })}
+          {!questionsReady && (
+            <p className="error-text" role="alert">
+              Answer every required question and verify each response before
+              recording the external submission.
+            </p>
+          )}
         </section>
       )}
       <section className="v2-packet-section v2-packet-checklist">
@@ -4441,7 +4455,8 @@ function SubmissionCard({ submission: s, state, reload }) {
           disabled={
             !s.checklist.every((x) => x.done) ||
             !externalSubmissionVerified ||
-            !selectedResumeReady
+            !selectedResumeReady ||
+            !questionsReady
           }
           onClick={async () => {
             await api(`/api/submissions/${s.id}/submit`, {
