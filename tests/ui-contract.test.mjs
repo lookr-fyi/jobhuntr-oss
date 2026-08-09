@@ -172,7 +172,8 @@ test("ATS template scoring is single-flight and retryable", async () => {
   assert.match(scoringFlow, /try \{/);
   assert.match(scoringFlow, /catch \{/);
   assert.match(scoringFlow, /scoring: false/);
-  assert.match(source, /templateDialog\.scoring \|\|/);
+  assert.match(scoringFlow, /templateOperationRef\.current/);
+  assert.match(source, /templateDialogBusy \|\|/);
   assert.match(source, /"Scoring…"/);
 });
 
@@ -377,14 +378,23 @@ test("Resume Studio document writes are single-flight and keep editors retryable
     assert.match(studio, new RegExp(`${action}Ref\\.current = false`));
     assert.match(studio, new RegExp(`aria-busy=\\{${action}\\}`));
   }
-  assert.match(studio, /if \(savingTemplateRef\.current\) return/);
+  assert.match(studio, /if \(templateOperationRef\.current\) return/);
   assert.match(studio, /if \(generatingLetterRef\.current\) return/);
   assert.match(studio, /finishingLetterRef\.current\) return/);
   assert.match(studio, /savingLetterRef\.current\) return/);
   assert.match(studio, /"Generating…" : "Generate Cover Letter"/);
   assert.match(studio, /"Saving template…" : "Complete Template"/);
-  assert.match(studio, /Escape" && !savingTemplateRef\.current/);
-  assert.match(studio, /disabled=\{savingTemplate\}/);
+  assert.match(studio, /Escape" && !templateOperationRef\.current/);
+  assert.match(
+    studio,
+    /savingTemplate \|\| templateDialog\?\.scoring \|\| templateDialog\?\.extractingFile/,
+  );
+  assert.match(studio, /disabled=\{templateDialogBusy\}/);
+  assert.match(studio, /disabled=\{coverWizardBusy\}/);
+  assert.match(
+    studio,
+    /!generatingLetterRef\.current && !finishingLetterRef\.current/,
+  );
 });
 
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
