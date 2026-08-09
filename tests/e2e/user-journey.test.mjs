@@ -726,6 +726,22 @@ test(
       await newRunDialog
         .getByRole("radio", { name: /Glassdoor Auto Search/ })
         .click();
+      await page.keyboard.press("ArrowRight");
+      const hiringCafeTemplate = newRunDialog.getByRole("radio", {
+        name: /HiringCafe Auto Search/,
+      });
+      assert.equal(
+        await hiringCafeTemplate.getAttribute("aria-checked"),
+        "true",
+      );
+      assert.equal(
+        await hiringCafeTemplate.evaluate(
+          (template) => template === document.activeElement,
+        ),
+        true,
+        "run templates should support conventional radio-group arrow navigation",
+      );
+      await page.keyboard.press("ArrowLeft");
       assert.equal(
         await newRunDialog
           .getByRole("radio", { name: /Glassdoor Auto Search/ })

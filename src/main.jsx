@@ -11011,6 +11011,22 @@ function RunsPage({ state, setTab, reload }) {
     window.addEventListener("hashchange", followLinkedRun);
     return () => window.removeEventListener("hashchange", followLinkedRun);
   }, [runs]);
+  const handleRunTemplateKeyDown = (event, templateId) => {
+    const templateIds = HUNT_WORKFLOWS.map(([id]) => id);
+    const currentIndex = templateIds.indexOf(templateId);
+    let nextIndex = currentIndex;
+    if (["ArrowRight", "ArrowDown"].includes(event.key))
+      nextIndex = (currentIndex + 1) % templateIds.length;
+    else if (["ArrowLeft", "ArrowUp"].includes(event.key))
+      nextIndex = (currentIndex - 1 + templateIds.length) % templateIds.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = templateIds.length - 1;
+    else return;
+    event.preventDefault();
+    const nextTemplate = templateIds[nextIndex];
+    setNewRunTemplate(nextTemplate);
+    document.getElementById(`run-template-${nextTemplate}`)?.focus();
+  };
   return (
     <section className="v2-runs-page">
       <div className="v2-page-intro">
@@ -11396,12 +11412,15 @@ function RunsPage({ state, setTab, reload }) {
             >
               {HUNT_WORKFLOWS.map(([id, mark, name, description]) => (
                 <button
+                  id={`run-template-${id}`}
                   type="button"
                   role="radio"
                   aria-checked={newRunTemplate === id}
+                  tabIndex={newRunTemplate === id ? 0 : -1}
                   className={newRunTemplate === id ? "selected" : ""}
                   key={id}
                   onClick={() => setNewRunTemplate(id)}
+                  onKeyDown={(event) => handleRunTemplateKeyDown(event, id)}
                 >
                   <span className={`v2-platform-mark ${id}`}>{mark}</span>
                   <span>
