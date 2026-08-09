@@ -1035,6 +1035,23 @@ test(
         .click();
       await templateDialog.getByText("ATS Optimization Complete").waitFor();
       await templateDialog.getByText("ATS match score").waitFor();
+      await templateDialog
+        .getByRole("button", { name: "Go to template step 3: Enrich Exp" })
+        .click();
+      assert.equal(
+        await templateDialog
+          .getByLabel("Additional experience and skills")
+          .inputValue(),
+        "Mentored five engineers and led accessibility delivery.",
+        "completed ATS wizard steps should be revisitable without losing work",
+      );
+      await templateDialog
+        .getByRole("button", { name: "Go to template step 4: Test" })
+        .click();
+      await templateDialog
+        .getByRole("button", { name: /Run ATS Test/ })
+        .click();
+      await templateDialog.getByText("ATS Optimization Complete").waitFor();
       await Promise.all([
         page.waitForResponse(
           (response) =>

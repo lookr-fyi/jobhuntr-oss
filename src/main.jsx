@@ -7421,8 +7421,32 @@ function Resume({ state, reload, mode = "resume" }) {
                       templateDialog.step === index + 1 ? "step" : undefined
                     }
                   >
-                    <i>{index + 1}</i>
-                    <span>{label}</span>
+                    <button
+                      type="button"
+                      className="v2-template-progress-step"
+                      disabled={
+                        ![
+                          true,
+                          Boolean(templateDialog.originalResume),
+                          Boolean(templateDialog.editedResume),
+                          Boolean(
+                            templateDialog.testJobId ||
+                            templateDialog.scoreResult,
+                          ),
+                          Boolean(templateDialog.scoreResult),
+                        ][index]
+                      }
+                      aria-label={`Go to template step ${index + 1}: ${label}`}
+                      onClick={() =>
+                        setTemplateDialog({
+                          ...templateDialog,
+                          step: index + 1,
+                        })
+                      }
+                    >
+                      <i>{index + 1}</i>
+                      <span>{label}</span>
+                    </button>
                   </li>
                 ),
               )}

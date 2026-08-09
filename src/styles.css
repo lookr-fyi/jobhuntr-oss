@@ -9551,11 +9551,32 @@ main > header.integrated-page-header {
 }
 .v2-template-progress li {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 7px;
   color: #64748b;
   font-size: 11px;
+}
+.v2-template-progress-step {
+  display: flex;
+  width: auto;
+  min-height: 23px;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+.v2-template-progress-step:hover:not(:disabled) {
+  color: #1d4ed8;
+  border: 0;
+  background: #eff6ff;
+}
+.v2-template-progress-step:disabled {
+  color: inherit;
+  opacity: 1;
+  cursor: default;
 }
 .v2-template-progress li:not(:last-child)::after {
   position: absolute;
