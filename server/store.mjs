@@ -456,10 +456,83 @@ function migrate(input) {
           ? "ready"
           : "draft";
   }
-  db.coachConversations = records(db.coachConversations);
-  for (const conversation of db.coachConversations)
-    conversation.messages = records(conversation.messages);
-  db.coachingSessions = records(db.coachingSessions);
+  const conversationIds = new Set();
+  db.coachConversations = records(db.coachConversations)
+    .map((conversation, index) => ({
+      id: uniqueLegacyId(
+        conversation.id,
+        "legacy-coach-conversation",
+        index,
+        conversationIds,
+      ),
+      jobId: boundedText(conversation.jobId, 200),
+      title: boundedText(conversation.title, 300) || "Career coaching session",
+      messages: records(conversation.messages)
+        .filter(
+          (message) =>
+            ["user", "assistant"].includes(message.role) &&
+            boundedText(message.content, 30000),
+        )
+        .map((message) => ({
+          role: message.role,
+          content: boundedText(message.content, 30000),
+        }))
+        .slice(0, 200),
+      createdAt: boundedText(conversation.createdAt, 100),
+      updatedAt: boundedText(conversation.updatedAt, 100),
+    }))
+    .filter((conversation) => conversation.messages.length)
+    .slice(0, 500);
+  const sessionIds = new Set();
+  db.coachingSessions = records(db.coachingSessions)
+    .slice(0, 1000)
+    .map((session, index) => {
+      const questions = [
+        ...new Set(
+          strings(session.questions)
+            .map((question) => boundedText(question, 1000))
+            .filter(Boolean),
+        ),
+      ].slice(0, 100);
+      const answers = isRecord(session.answers) ? session.answers : {};
+      const companyResearch = strings(session.companyResearch)
+        .map((item) => boundedText(item, 2000))
+        .filter(Boolean)
+        .slice(0, 100);
+      return {
+        id: uniqueLegacyId(
+          session.id,
+          "legacy-coaching-session",
+          index,
+          sessionIds,
+        ),
+        jobId: boundedText(session.jobId, 200),
+        status: session.status === "completed" ? "completed" : "in-progress",
+        questions,
+        answers: Object.fromEntries(
+          questions.map((question) => [
+            question,
+            boundedText(answers[question], 10000),
+          ]),
+        ),
+        matchedStoryIds: strings(session.matchedStoryIds)
+          .map((id) => boundedText(id, 200))
+          .filter(Boolean)
+          .slice(0, 100),
+        talkingPoints: strings(session.talkingPoints)
+          .map((item) => boundedText(item, 2000))
+          .filter(Boolean)
+          .slice(0, 100),
+        companyResearch,
+        researchDone: strings(session.researchDone)
+          .map((item) => boundedText(item, 2000))
+          .filter((item) => companyResearch.includes(item))
+          .slice(0, 100),
+        notes: boundedText(session.notes, 20000),
+        createdAt: boundedText(session.createdAt, 100),
+        updatedAt: boundedText(session.updatedAt, 100),
+      };
+    });
   db.outreachDrafts = records(db.outreachDrafts);
   db.huntPresets = records(db.huntPresets);
   for (const preset of db.huntPresets) {
@@ -471,8 +544,31 @@ function migrate(input) {
     delete preset.excludeKeywords;
     delete preset.workflows;
   }
-  db.careerStories = records(db.careerStories);
-  for (const story of db.careerStories) story.skills = strings(story.skills);
+  const storyIds = new Set();
+  db.careerStories = records(db.careerStories)
+    .slice(0, 1000)
+    .map((story, index) => ({
+      id: uniqueLegacyId(story.id, "legacy-career-story", index, storyIds),
+      title: boundedText(story.title, 160) || `STAR Story ${index + 1}`,
+      situation: boundedText(story.situation, 10000),
+      task: boundedText(story.task, 10000),
+      action: boundedText(story.action, 20000),
+      result: boundedText(story.result, 10000),
+      skills: [
+        ...new Set(
+          strings(story.skills)
+            .map((skill) => boundedText(skill, 100))
+            .filter(Boolean),
+        ),
+      ].slice(0, 30),
+      createdAt: boundedText(story.createdAt, 100),
+      updatedAt: boundedText(story.updatedAt, 100),
+    }));
+  const validStoryIds = new Set(db.careerStories.map((story) => story.id));
+  for (const session of db.coachingSessions)
+    session.matchedStoryIds = session.matchedStoryIds.filter((id) =>
+      validStoryIds.has(id),
+    );
   db.profileAudits = records(db.profileAudits);
   db.gigs = records(db.gigs);
   for (const gig of db.gigs) {
@@ -482,15 +578,6 @@ function migrate(input) {
       gig.statusHistory = [{ status: gig.status, at: gig.createdAt || now() }];
   }
   for (const draft of db.outreachDrafts) draft.status ||= "draft";
-  for (const session of db.coachingSessions) {
-    session.status ||= "in-progress";
-    session.questions = strings(session.questions);
-    session.answers = isRecord(session.answers)
-      ? session.answers
-      : Object.fromEntries(session.questions.map((q) => [q, ""]));
-    session.matchedStoryIds = strings(session.matchedStoryIds);
-    session.researchDone = strings(session.researchDone);
-  }
   db.agentRuns = records(db.agentRuns);
   for (const run of db.agentRuns) {
     run.id = String(run.id || nanoid()).slice(0, 200);

@@ -2111,7 +2111,54 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
         },
       ],
       gigs: [{ id: "legacy-gig", title: "Legacy", statusHistory: "bad" }],
-      coachConversations: [{ id: "legacy-chat", messages: "bad" }],
+      coachConversations: [
+        { id: "empty-legacy-chat", messages: "bad" },
+        {
+          id: "duplicate-coach-id",
+          title: { malformed: true },
+          messages: [
+            { role: "system", content: "must be removed" },
+            { role: "user", content: { malformed: true } },
+            { role: "user", content: "  Preserved coaching question  " },
+            { role: "assistant", content: "  Preserved coaching answer  " },
+          ],
+        },
+        {
+          id: "duplicate-coach-id",
+          title: "Second conversation",
+          messages: [{ role: "assistant", content: "Second answer" }],
+        },
+      ],
+      careerStories: [
+        {
+          id: "duplicate-story-id",
+          title: { malformed: true },
+          action: { malformed: true },
+          result: "  Increased retention by 20%  ",
+          skills: ["React", "", 42, "React"],
+        },
+        {
+          id: "duplicate-story-id",
+          title: "  Preserved STAR story  ",
+          skills: "bad",
+        },
+      ],
+      coachingSessions: [
+        {
+          id: "duplicate-session-id",
+          status: "unexpected",
+          questions: ["  Valid question?  ", "", 42, "Valid question?"],
+          answers: {
+            "Valid question?": "  Preserved practice answer  ",
+            "Removed question": "Must not survive",
+          },
+          matchedStoryIds: ["duplicate-story-id", "missing-story"],
+          talkingPoints: ["  Use specific evidence  ", 42],
+          companyResearch: ["  Read the product page  ", 42],
+          researchDone: ["Read the product page", "Invented task"],
+          notes: { malformed: true },
+        },
+      ],
     }),
   });
   assert.equal(malformedNested.res.status, 200);
@@ -2183,7 +2230,51 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(unsafeSubmit.res.status, 409);
   assert.match(unsafeSubmit.body.error, /checklist/i);
   assert.equal(normalized.gigs[0].statusHistory.length, 1);
-  assert.deepEqual(normalized.coachConversations[0].messages, []);
+  assert.equal(normalized.coachConversations.length, 2);
+  assert.equal(
+    normalized.coachConversations[0].title,
+    "Career coaching session",
+  );
+  assert.deepEqual(normalized.coachConversations[0].messages, [
+    { role: "user", content: "Preserved coaching question" },
+    { role: "assistant", content: "Preserved coaching answer" },
+  ]);
+  assert.notEqual(
+    normalized.coachConversations[0].id,
+    normalized.coachConversations[1].id,
+  );
+  assert.equal(normalized.careerStories[0].title, "STAR Story 1");
+  assert.equal(normalized.careerStories[0].action, "");
+  assert.equal(
+    normalized.careerStories[0].result,
+    "Increased retention by 20%",
+  );
+  assert.deepEqual(normalized.careerStories[0].skills, ["React"]);
+  assert.equal(normalized.careerStories[1].title, "Preserved STAR story");
+  assert.notEqual(
+    normalized.careerStories[0].id,
+    normalized.careerStories[1].id,
+  );
+  assert.equal(normalized.coachingSessions[0].status, "in-progress");
+  assert.deepEqual(normalized.coachingSessions[0].questions, [
+    "Valid question?",
+  ]);
+  assert.deepEqual(normalized.coachingSessions[0].answers, {
+    "Valid question?": "Preserved practice answer",
+  });
+  assert.deepEqual(normalized.coachingSessions[0].matchedStoryIds, [
+    "duplicate-story-id",
+  ]);
+  assert.deepEqual(normalized.coachingSessions[0].talkingPoints, [
+    "Use specific evidence",
+  ]);
+  assert.deepEqual(normalized.coachingSessions[0].companyResearch, [
+    "Read the product page",
+  ]);
+  assert.deepEqual(normalized.coachingSessions[0].researchDone, [
+    "Read the product page",
+  ]);
+  assert.equal(normalized.coachingSessions[0].notes, "");
   assert.equal(normalized.meta.version, 11);
 
   for (const invalidBackup of [

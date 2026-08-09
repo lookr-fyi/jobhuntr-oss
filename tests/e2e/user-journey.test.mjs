@@ -4015,6 +4015,43 @@ test(
                 body: { unsafe: true },
               },
             ],
+            coachConversations: [
+              {
+                id: "malformed-browser-conversation",
+                title: { unsafe: true },
+                messages: [
+                  { role: "system", content: "Do not render" },
+                  { role: "user", content: { unsafe: true } },
+                  { role: "user", content: "Restored coaching question" },
+                  {
+                    role: "assistant",
+                    content: "Restored coaching answer",
+                  },
+                ],
+              },
+            ],
+            careerStories: [
+              {
+                id: "malformed-browser-story",
+                title: { unsafe: true },
+                action: { unsafe: true },
+                result: "Restored measurable result",
+                skills: ["React", { unsafe: true }],
+              },
+            ],
+            coachingSessions: [
+              {
+                id: "malformed-browser-session",
+                questions: ["Restored practice question", { unsafe: true }],
+                answers: {
+                  "Restored practice question": "Restored practice answer",
+                },
+                matchedStoryIds: ["malformed-browser-story", "missing-story"],
+                talkingPoints: ["Restored talking point", { unsafe: true }],
+                companyResearch: ["Restored research task", { unsafe: true }],
+                researchDone: ["Restored research task", "Unknown task"],
+              },
+            ],
           },
         },
       );
@@ -4041,6 +4078,25 @@ test(
         .locator(".v2-template-grid footer b", { hasText: "Cover Letter 1" })
         .waitFor();
       await assertAccessible(page, "Restored Cover Letters");
+      await page.goto(`${baseUrl}/#/coach`);
+      await page
+        .getByRole("button", { name: /Career coaching session/ })
+        .first()
+        .click();
+      await page
+        .getByText("Restored coaching question", { exact: true })
+        .waitFor();
+      await page
+        .getByText("Restored coaching answer", { exact: true })
+        .waitFor();
+      await page.getByRole("button", { name: "Interview practice" }).click();
+      await page.getByText(/Restored practice question/).waitFor();
+      await page.getByRole("button", { name: "STAR story vault" }).click();
+      await page.getByText("STAR Story 1", { exact: true }).waitFor();
+      await page
+        .getByText("Restored measurable result", { exact: true })
+        .waitFor();
+      await assertAccessible(page, "Restored Career Coach");
       const restoredDocumentWorkspace = await page.request.post(
         `${baseUrl}/api/import`,
         { data: documentRestorePoint },
