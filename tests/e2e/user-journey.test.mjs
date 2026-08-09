@@ -2527,6 +2527,32 @@ test(
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
       await assertNamedFormControls(page, "Settings and data");
+      const [jobsCsvDownload] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("link", { name: "Download jobs CSV" }).click(),
+      ]);
+      assert.equal(jobsCsvDownload.suggestedFilename(), "jobhuntr-jobs.csv");
+      const exportedJobsCsv = await fs.readFile(
+        await jobsCsvDownload.path(),
+        "utf8",
+      );
+      assert.match(
+        exportedJobsCsv,
+        /^company,title,status,location,salary,url,source,fitScore,tags,description/m,
+      );
+      const importedCsv = [
+        "company,title,location,status,url,tags",
+        'CSV Journey Co,"Imported, Product Engineer",Remote,interested,https://example.com/jobs/csv-journey,"React, Product"',
+      ].join("\n");
+      await page.getByLabel("Import jobs CSV").setInputFiles({
+        name: "jobhuntr-jobs-import.csv",
+        mimeType: "text/csv",
+        buffer: Buffer.from(importedCsv),
+      });
+      await page.getByRole("button", { name: "Import CSV" }).click();
+      await page.getByText("1 jobs imported · 0 duplicates skipped").waitFor();
+      await page.getByRole("button", { name: "Import CSV" }).click();
+      await page.getByText("0 jobs imported · 1 duplicates skipped").waitFor();
       const [backupDownload] = await Promise.all([
         page.waitForEvent("download"),
         page.getByRole("link", { name: "Download JSON" }).click(),
