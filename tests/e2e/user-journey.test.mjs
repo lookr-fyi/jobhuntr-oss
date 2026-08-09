@@ -478,6 +478,47 @@ test(
       await assertAccessible(page, "Overview farewell dialog");
       await page.keyboard.press("Escape");
       await farewellDialog.waitFor({ state: "hidden" });
+      await page.evaluate(async () => {
+        const response = await fetch("/api/infinite-hunt/start", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            intervalMinutes: 60,
+            options: {
+              q: "Product Engineer",
+              minFit: 60,
+              workflows: ["linkedin"],
+            },
+          }),
+        });
+        if (!response.ok) throw new Error("Could not prepare farewell test");
+      });
+      await page.reload();
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await page.evaluate(() => {
+        window.close = () => {};
+        const originalSetTimeout = window.setTimeout.bind(window);
+        window.setTimeout = (callback, delay, ...args) =>
+          delay === 120 ? 0 : originalSetTimeout(callback, delay, ...args);
+      });
+      await page.getByRole("button", { name: /I got an offer/ }).click();
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/infinite-hunt/stop") && response.ok(),
+        ),
+        farewellDialog.getByRole("button", { name: "Bye" }).click(),
+      ]);
+      assert.equal(
+        await page.evaluate(async () => {
+          const response = await fetch("/api/state");
+          return (await response.json()).infiniteHunt.enabled;
+        }),
+        false,
+        "farewell must stop background hunting before closing JobHuntr",
+      );
+      await page.reload();
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
 
       await page.locator('button[title="ATS Templates"]').click();
       await page

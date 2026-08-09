@@ -1661,7 +1661,10 @@ function Overview({ state, setTab, reload }) {
     setMotivationIndex((index) => (index + 1) % OVERVIEW_MOTIVATION.length);
     setRefreshing(false);
   };
-  const exitJobHuntr = () => {
+  const exitJobHuntr = async () => {
+    if (state.infiniteHunt?.enabled) {
+      await api("/api/infinite-hunt/stop", { method: "POST" });
+    }
     window.close();
     window.setTimeout(() => {
       window.location.href = "about:blank";
