@@ -608,6 +608,44 @@ test("agent run history can be permanently deleted without deleting saved jobs",
   );
 });
 
+test("bulk agent run deletion is atomic when any selected run is missing", async () => {
+  await mutate((db) => {
+    for (const id of ["bulk-run-a", "bulk-run-b"])
+      db.agentRuns.unshift({
+        id,
+        runName: id,
+        status: "completed",
+        search: { q: "engineer" },
+        workflows: ["linkedin"],
+        steps: [],
+        actions: [],
+        matches: [],
+        createdAt: new Date().toISOString(),
+      });
+  });
+  const rejected = await req("/api/agent-runs/delete", {
+    method: "POST",
+    body: JSON.stringify({ ids: ["bulk-run-a", "missing-bulk-run"] }),
+  });
+  assert.equal(rejected.res.status, 404);
+  let state = (await req("/api/state")).body;
+  assert.ok(state.agentRuns.some((run) => run.id === "bulk-run-a"));
+  assert.ok(state.agentRuns.some((run) => run.id === "bulk-run-b"));
+  const removed = await req("/api/agent-runs/delete", {
+    method: "POST",
+    body: JSON.stringify({ ids: ["bulk-run-a", "bulk-run-b"] }),
+  });
+  assert.equal(removed.res.status, 200);
+  assert.equal(removed.body.deleted, 2);
+  state = (await req("/api/state")).body;
+  assert.equal(
+    state.agentRuns.some((run) =>
+      ["bulk-run-a", "bulk-run-b"].includes(run.id),
+    ),
+    false,
+  );
+});
+
 test("hunt preview applies role, location, required, excluded, and fit rules truthfully", async () => {
   const preview = await req("/api/agent-runs/preview", {
     method: "POST",

@@ -393,6 +393,26 @@ test("Job Tracker saves cannot duplicate or dismiss in-flight work", async () =>
   assert.match(tracker, /disabled=\{movingJobIds\.has\(job\.id\)\}/);
 });
 
+test("Agent Runs bulk deletion uses one atomic retryable request", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const runs = source.slice(
+    source.indexOf("function RunsPage"),
+    source.indexOf("function SettingsPage"),
+  );
+  const deletion = runs.slice(
+    runs.indexOf("const deleteRuns = async"),
+    runs.indexOf("useEffect", runs.indexOf("const deleteRuns = async")),
+  );
+
+  assert.match(deletion, /await api\("\/api\/agent-runs\/delete"/);
+  assert.match(deletion, /JSON\.stringify\(\{ ids: deleteIds \}\)/);
+  assert.doesNotMatch(deletion, /Promise\.all/);
+  assert.doesNotMatch(deletion, /setDeleteIds\(\[\]\)[\s\S]*?await api/);
+});
+
 test("Resume Studio document writes are single-flight and keep editors retryable", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

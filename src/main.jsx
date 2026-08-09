@@ -12349,13 +12349,18 @@ function RunsPage({ state, setTab, reload }) {
     });
   };
   const deleteRuns = async () => {
-    await Promise.all(
-      deleteIds.map((id) => api(`/api/agent-runs/${id}`, { method: "DELETE" })),
-    );
-    setSelectedRun(null);
-    setSelectedIds(new Set());
-    setDeleteIds([]);
-    await reload();
+    try {
+      await api("/api/agent-runs/delete", {
+        method: "POST",
+        body: JSON.stringify({ ids: deleteIds }),
+      });
+      setSelectedRun(null);
+      setSelectedIds(new Set());
+      setDeleteIds([]);
+      await reload();
+    } catch (error) {
+      throw error;
+    }
   };
   useEffect(() => {
     if (!selectedRun) return undefined;

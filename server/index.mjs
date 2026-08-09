@@ -2331,6 +2331,34 @@ app.delete("/api/agent-runs/:id", async (req, res) => {
   if (!deleted) return res.status(404).json({ error: "Agent run not found" });
   res.status(204).end();
 });
+app.post("/api/agent-runs/delete", async (req, res) => {
+  const parsed = z
+    .array(z.string().min(1).max(200))
+    .min(1)
+    .max(100)
+    .safeParse(req.body?.ids);
+  if (!parsed.success)
+    return res.status(400).json({ error: "Choose 1 to 100 agent runs" });
+  const ids = [...new Set(parsed.data)];
+  const result = await mutate((db) => {
+    const existingIds = new Set(db.agentRuns.map((run) => run.id));
+    const missing = ids.filter((id) => !existingIds.has(id));
+    if (missing.length) return { missing };
+    db.agentRuns = db.agentRuns.filter((run) => !ids.includes(run.id));
+    auditEvent(
+      db,
+      "agent",
+      `Deleted ${ids.length} agent run${ids.length === 1 ? "" : "s"}.`,
+    );
+    return { deleted: ids.length };
+  });
+  if (result.missing)
+    return res.status(404).json({
+      error: "One or more selected agent runs no longer exist",
+      missing: result.missing,
+    });
+  res.json(result);
+});
 app.get("/api/hunt-presets", async (_req, res) => {
   const db = await readDb();
   res.json(db.huntPresets);
