@@ -253,6 +253,17 @@ app.get("/api/summary", async (_req, res) => {
 });
 app.put("/api/profile", async (req, res) => {
   const profile = ProfileSchema.parse(req.body || {});
+  if (profile.resumeText !== undefined) {
+    const current = await readDb();
+    if (
+      isUsableResumeText(current.profile.resumeText) &&
+      !isUsableResumeText(profile.resumeText)
+    )
+      return res.status(409).json({
+        error:
+          "A valid base resume cannot be replaced with empty or placeholder content",
+      });
+  }
   const db = await mutate((db) => {
     db.profile = {
       ...db.profile,

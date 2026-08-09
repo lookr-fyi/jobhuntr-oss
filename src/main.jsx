@@ -10456,6 +10456,8 @@ function SettingsPage({ state, reload, setTab }) {
     `${form.firstName || ""} ${form.lastName || ""}`.trim() ||
     form.name ||
     "Job Hunter";
+  const resumeRegressionBlocked =
+    isUsableResumeText(p.resumeText) && !isUsableResumeText(form.resumeText);
   const usage = [
     ["Generated Resumes", state.resumes.length, "versions created"],
     ["Cover Letters", state.coverLetters.length, "letters created"],
@@ -10654,7 +10656,6 @@ function SettingsPage({ state, reload, setTab }) {
                   setSaved(false);
                   setForm((current) => ({
                     ...current,
-                    resumeFileName: file.name,
                     resumeError: "",
                     extractingResume: true,
                   }));
@@ -10662,6 +10663,7 @@ function SettingsPage({ state, reload, setTab }) {
                     const resumeText = await extractResumeFileText(file);
                     setForm((current) => ({
                       ...current,
+                      resumeFileName: file.name,
                       resumeText,
                       resumeError: "",
                       extractingResume: false,
@@ -10708,8 +10710,17 @@ function SettingsPage({ state, reload, setTab }) {
               {form.resumeText.trim().length.toLocaleString()} characters · Save
               profile to keep changes
             </small>
+            {resumeRegressionBlocked && (
+              <div className="v2-submit-safety-note" role="alert">
+                Keep a complete resume in your profile. Upload a replacement or
+                restore the previous content before saving.
+              </div>
+            )}
           </div>
-          <button onClick={save}>
+          <button
+            disabled={form.extractingResume || resumeRegressionBlocked}
+            onClick={save}
+          >
             <Save size={16} /> Save profile
           </button>
           <div className="v2-usage-section">

@@ -1565,6 +1565,13 @@ test(
       await page.getByLabel("First name").fill("E2E");
       await page.getByLabel("Last name").fill("Hunter");
       await page.getByLabel("Nickname (for job cards)").fill("E2E Builder");
+      await page.getByLabel("Base resume text").fill("");
+      assert.equal(
+        await page.getByRole("button", { name: "Save profile" }).isDisabled(),
+        true,
+        "a valid base resume must not be accidentally replaced with empty content",
+      );
+      await page.getByText(/Keep a complete resume in your profile/).waitFor();
       await page.getByLabel("Replace base resume").setInputFiles({
         name: "updated-profile-resume.txt",
         mimeType: "text/plain",

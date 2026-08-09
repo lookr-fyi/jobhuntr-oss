@@ -202,6 +202,16 @@ test("agent run saves matches and logs actions", async () => {
         "Senior product engineer with eight years of experience. Increased conversion by 42% using React, TypeScript, Python, and customer research.",
     }),
   });
+  const clearedResume = await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ resumeText: "" }),
+  });
+  assert.equal(clearedResume.res.status, 409);
+  assert.match(clearedResume.body.error, /valid base resume/i);
+  assert.match(
+    (await req("/api/state")).body.profile.resumeText,
+    /Increased conversion by 42%/,
+  );
   const run = await req("/api/agent-runs/start", {
     method: "POST",
     body: JSON.stringify({
