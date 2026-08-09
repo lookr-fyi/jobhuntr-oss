@@ -191,3 +191,37 @@ test("the expanded sidebar overlays instead of crushing compact desktop pages", 
     /@media \(min-width: 961px\) \{\s*\.app\.sidebar-open main \{\s*margin-left: 280px/,
   );
 });
+
+test("editing a saved User Center form clears its saved confirmation", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const settings = source.slice(
+    source.indexOf("function SettingsPage"),
+    source.indexOf("function Privacy"),
+  );
+
+  assert.match(
+    settings,
+    /const editForm = \(next\) => \{\s*setSaved\(false\);\s*setForm\(next\);/,
+  );
+  assert.match(
+    settings,
+    /name=\{`profile-\$\{key\}`\}[\s\S]*?onChange=[\s\S]*?editForm\(/,
+  );
+  for (const control of [
+    "profile-career-context",
+    "settings-target-roles",
+    "settings-ats-threshold",
+    "settings-remote-roles",
+  ]) {
+    const start = settings.indexOf(`name="${control}"`);
+    assert.notEqual(start, -1, `${control} must exist`);
+    assert.match(
+      settings.slice(start, start + 700),
+      /onChange=[\s\S]*?editForm\(/,
+      `${control} must invalidate the saved notice when edited`,
+    );
+  }
+});

@@ -12389,6 +12389,10 @@ function SettingsPage({ state, reload, setTab }) {
     resumeError: "",
     extractingResume: false,
   });
+  const editForm = (next) => {
+    setSaved(false);
+    setForm(next);
+  };
   const save = async () => {
     setSaved(false);
     const fullName = `${form.firstName || ""} ${form.lastName || ""}`.trim();
@@ -12460,7 +12464,7 @@ function SettingsPage({ state, reload, setTab }) {
         ? ["What is your preferred working arrangement?"]
         : []),
     ];
-    setForm({
+    editForm({
       ...form,
       faqAnswers: questions.map((question, index) => ({
         id: `faq-${Date.now()}-${index}`,
@@ -12615,7 +12619,7 @@ function SettingsPage({ state, reload, setTab }) {
                     value={form[key] || ""}
                     placeholder={placeholder}
                     onChange={(event) =>
-                      setForm({ ...form, [key]: event.target.value })
+                      editForm({ ...form, [key]: event.target.value })
                     }
                   />
                   {key === "nickname" && (
@@ -12635,7 +12639,7 @@ function SettingsPage({ state, reload, setTab }) {
                     name={`profile-${key}`}
                     value={form[key] || ""}
                     onChange={(event) =>
-                      setForm({ ...form, [key]: event.target.value })
+                      editForm({ ...form, [key]: event.target.value })
                     }
                   />
                 </label>
@@ -12881,7 +12885,7 @@ function SettingsPage({ state, reload, setTab }) {
                 name="profile-career-context"
                 value={form.additionalInfo}
                 onChange={(event) =>
-                  setForm({ ...form, additionalInfo: event.target.value })
+                  editForm({ ...form, additionalInfo: event.target.value })
                 }
                 placeholder="Example: I’m a systems thinker with 5+ years leading go-to-market experiments…"
               />
@@ -12949,7 +12953,7 @@ function SettingsPage({ state, reload, setTab }) {
                             ...faq,
                             answer: event.target.value,
                           };
-                          setForm({ ...form, faqAnswers });
+                          editForm({ ...form, faqAnswers });
                         }}
                       />
                     </label>
@@ -13001,7 +13005,7 @@ function SettingsPage({ state, reload, setTab }) {
                 name="settings-target-roles"
                 value={form.targetRoles}
                 onChange={(event) =>
-                  setForm({ ...form, targetRoles: event.target.value })
+                  editForm({ ...form, targetRoles: event.target.value })
                 }
               />
             </label>
@@ -13011,7 +13015,7 @@ function SettingsPage({ state, reload, setTab }) {
                 name="settings-skills"
                 value={form.skills}
                 onChange={(event) =>
-                  setForm({ ...form, skills: event.target.value })
+                  editForm({ ...form, skills: event.target.value })
                 }
               />
             </label>
@@ -13021,7 +13025,7 @@ function SettingsPage({ state, reload, setTab }) {
                 name="settings-locations"
                 value={form.locations || ""}
                 onChange={(e) =>
-                  setForm({ ...form, locations: e.target.value })
+                  editForm({ ...form, locations: e.target.value })
                 }
               />
             </label>
@@ -13032,7 +13036,7 @@ function SettingsPage({ state, reload, setTab }) {
                 type="number"
                 value={form.minSalary || 0}
                 onChange={(e) =>
-                  setForm({ ...form, minSalary: e.target.value })
+                  editForm({ ...form, minSalary: e.target.value })
                 }
               />
             </label>
@@ -13045,7 +13049,7 @@ function SettingsPage({ state, reload, setTab }) {
                 max="100"
                 value={form.weeklyApplicationGoal}
                 onChange={(e) =>
-                  setForm({ ...form, weeklyApplicationGoal: e.target.value })
+                  editForm({ ...form, weeklyApplicationGoal: e.target.value })
                 }
               />
             </label>
@@ -13062,7 +13066,7 @@ function SettingsPage({ state, reload, setTab }) {
                 step="5"
                 value={form.atsThreshold}
                 onChange={(event) =>
-                  setForm({
+                  editForm({
                     ...form,
                     atsThreshold: Number(event.target.value),
                   })
@@ -13079,7 +13083,9 @@ function SettingsPage({ state, reload, setTab }) {
                 name="settings-remote-roles"
                 type="checkbox"
                 checked={form.remote}
-                onChange={(e) => setForm({ ...form, remote: e.target.checked })}
+                onChange={(e) =>
+                  editForm({ ...form, remote: e.target.checked })
+                }
               />{" "}
               Include remote roles
             </label>

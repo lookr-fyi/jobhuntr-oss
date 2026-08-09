@@ -3883,7 +3883,11 @@ test(
         ),
         page.getByRole("button", { name: "Save settings" }).click(),
       ]);
-      await page.getByText("Changes saved locally.").waitFor();
+      const settingsSavedNotice = page.getByText("Changes saved locally.");
+      await settingsSavedNotice.waitFor();
+      await page.getByLabel("ATS template application threshold").fill("90");
+      await settingsSavedNotice.waitFor({ state: "hidden" });
+      await page.getByLabel("ATS template application threshold").fill("85");
       await assertAccessible(page, "User Center");
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
