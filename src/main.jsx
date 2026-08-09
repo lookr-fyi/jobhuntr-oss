@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import {
@@ -476,7 +477,7 @@ function ConfirmDialog({
       setBusy(false);
     }
   };
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       onMouseDown={(event) =>
@@ -514,7 +515,8 @@ function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 function InfiniteHuntStatus({ runs, onOpen }) {
@@ -1853,9 +1855,7 @@ function Tracker({ state, reload, setTab }) {
     tags: "",
     status: "saved",
   });
-  const [selected, setSelected] = useState(
-    trackerParams.get("job") || state.jobs[0]?.id,
-  );
+  const [selected, setSelected] = useState(trackerParams.get("job") || null);
   const [query, setQuery] = useState("");
   const [visibleStages, setVisibleStages] = useState(() => {
     const linkedStages = trackerParams
@@ -1894,7 +1894,9 @@ function Tracker({ state, reload, setTab }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
+  const jobDrawerCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
+  const jobDrawerOpen = Boolean(job);
   const jobSubmission = state.submissions
     .filter((item) => item.jobId === selected)
     .sort((a, b) => {
@@ -2042,6 +2044,22 @@ function Tracker({ state, reload, setTab }) {
       returnFocus?.focus?.();
     };
   }, [funnelOpen]);
+  useEffect(() => {
+    if (!jobDrawerOpen) return undefined;
+    const returnFocus = document.activeElement;
+    jobDrawerCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setSelected(null);
+        setEditForm(null);
+      }
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [jobDrawerOpen]);
   const patch = async (id, body) => {
     await api(`/api/jobs/${id}`, {
       method: "PATCH",
@@ -2244,9 +2262,7 @@ function Tracker({ state, reload, setTab }) {
           </button>
         </div>
       )}
-      <div
-        className={job ? "tracker-workspace with-detail" : "tracker-workspace"}
-      >
+      <div className="tracker-workspace">
         <div
           className="kanban"
           style={{
@@ -2309,196 +2325,221 @@ function Tracker({ state, reload, setTab }) {
             ))}
         </div>
         {job && (
-          <div className="job-drawer">
-            <div className="row">
-              <span className={`pill ${editForm?.status || job.status}`}>
-                {trackerStageLabel(editForm?.status || job.status)}
-              </span>
-              <div className="inline">
-                {!job.workflowRunId && !editForm && (
+          <>
+            <button
+              className="job-drawer-backdrop"
+              tabIndex={-1}
+              aria-label="Dismiss job details"
+              onClick={() => {
+                setSelected(null);
+                setEditForm(null);
+              }}
+            />
+            <div
+              className="job-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${job.title} at ${job.company} details`}
+              onKeyDown={containDialogFocus}
+            >
+              <div className="row">
+                <span className={`pill ${editForm?.status || job.status}`}>
+                  {trackerStageLabel(editForm?.status || job.status)}
+                </span>
+                <div className="inline">
+                  {!job.workflowRunId && !editForm && (
+                    <button
+                      className="secondary small"
+                      aria-label="Edit job"
+                      onClick={() =>
+                        setEditForm({
+                          company: job.company || "",
+                          title: job.title || "",
+                          location: job.location || "",
+                          salary: job.salary || "",
+                          url: job.url || "",
+                          description: job.description || "",
+                          status: job.status,
+                          tags: (job.tags || []).join(", "),
+                        })
+                      }
+                    >
+                      Edit
+                    </button>
+                  )}
                   <button
-                    className="secondary small"
-                    aria-label="Edit job"
-                    onClick={() =>
-                      setEditForm({
-                        company: job.company || "",
-                        title: job.title || "",
-                        location: job.location || "",
-                        salary: job.salary || "",
-                        url: job.url || "",
-                        description: job.description || "",
-                        status: job.status,
-                        tags: (job.tags || []).join(", "),
-                      })
-                    }
+                    ref={jobDrawerCloseRef}
+                    className="drawer-close"
+                    aria-label="Close job details"
+                    onClick={() => {
+                      setSelected(null);
+                      setEditForm(null);
+                    }}
                   >
-                    Edit
+                    ×
                   </button>
-                )}
-                <button
-                  className="drawer-close"
-                  aria-label="Close job details"
-                  onClick={() => {
-                    setSelected(null);
-                    setEditForm(null);
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            {editForm ? (
-              <div className="job-edit-form">
-                <h2>Edit Job</h2>
-                <div className="form-grid">
-                  {[
-                    "title",
-                    "company",
-                    "location",
-                    "salary",
-                    "url",
-                    "tags",
-                  ].map((field) => (
-                    <label key={field}>
-                      {field === "url" ? "Job URL" : field}
-                      <input
-                        required={["title", "company"].includes(field)}
-                        value={editForm[field]}
-                        onChange={(event) =>
-                          setEditForm({
-                            ...editForm,
-                            [field]: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                  ))}
                 </div>
-                <label>
-                  Status
+              </div>
+              {editForm ? (
+                <div className="job-edit-form">
+                  <h2>Edit Job</h2>
+                  <div className="form-grid">
+                    {[
+                      "title",
+                      "company",
+                      "location",
+                      "salary",
+                      "url",
+                      "tags",
+                    ].map((field) => (
+                      <label key={field}>
+                        {field === "url" ? "Job URL" : field}
+                        <input
+                          required={["title", "company"].includes(field)}
+                          value={editForm[field]}
+                          onChange={(event) =>
+                            setEditForm({
+                              ...editForm,
+                              [field]: event.target.value,
+                            })
+                          }
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <label>
+                    Status
+                    <select
+                      aria-label="Edit job status"
+                      value={editForm.status}
+                      onChange={(event) =>
+                        setEditForm({ ...editForm, status: event.target.value })
+                      }
+                    >
+                      {stages.map((stage) => (
+                        <option value={stage} key={stage}>
+                          {trackerStageLabel(stage)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Description
+                    <textarea
+                      value={editForm.description}
+                      onChange={(event) =>
+                        setEditForm({
+                          ...editForm,
+                          description: event.target.value,
+                        })
+                      }
+                    />
+                  </label>
+                  <div className="inline">
+                    <button
+                      disabled={
+                        editBusy ||
+                        !editForm.title.trim() ||
+                        !editForm.company.trim()
+                      }
+                      onClick={saveEdit}
+                    >
+                      {editBusy ? "Saving…" : "Save job"}
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={editBusy}
+                      onClick={() => setEditForm(null)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2>{job.title}</h2>
+                  <p className="muted">
+                    {job.company} · {job.location} · {job.salary}
+                  </p>
                   <select
-                    aria-label="Edit job status"
-                    value={editForm.status}
-                    onChange={(event) =>
-                      setEditForm({ ...editForm, status: event.target.value })
+                    aria-label="Job status"
+                    value={job.status}
+                    onChange={(e) =>
+                      requestStatusChange(job.id, e.target.value)
                     }
                   >
-                    {stages.map((stage) => (
-                      <option value={stage} key={stage}>
-                        {trackerStageLabel(stage)}
+                    {stages.map((s) => (
+                      <option value={s} key={s}>
+                        {trackerStageLabel(s)}
                       </option>
                     ))}
                   </select>
-                </label>
-                <label>
-                  Description
-                  <textarea
-                    value={editForm.description}
-                    onChange={(event) =>
-                      setEditForm({
-                        ...editForm,
-                        description: event.target.value,
-                      })
-                    }
-                  />
-                </label>
-                <div className="inline">
-                  <button
-                    disabled={
-                      editBusy ||
-                      !editForm.title.trim() ||
-                      !editForm.company.trim()
-                    }
-                    onClick={saveEdit}
-                  >
-                    {editBusy ? "Saving…" : "Save job"}
-                  </button>
-                  <button
-                    className="secondary"
-                    disabled={editBusy}
-                    onClick={() => setEditForm(null)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <h2>{job.title}</h2>
-                <p className="muted">
-                  {job.company} · {job.location} · {job.salary}
-                </p>
-                <select
-                  aria-label="Job status"
-                  value={job.status}
-                  onChange={(e) => requestStatusChange(job.id, e.target.value)}
-                >
-                  {stages.map((s) => (
-                    <option value={s} key={s}>
-                      {trackerStageLabel(s)}
-                    </option>
-                  ))}
-                </select>
-                {safeHttpUrl(job.url) && (
-                  <a
-                    href={safeHttpUrl(job.url)}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open job listing ↗
-                  </a>
-                )}
-                <p>{job.description || "No description saved."}</p>
-                <div className="chips">
-                  {(job.tags || []).map((tag) => (
-                    <span key={tag}>{tag}</span>
-                  ))}
-                </div>
-                <TrackerApplicationInsights
-                  job={job}
-                  submission={jobSubmission}
-                  profile={state.profile}
-                />
-                {jobSubmission &&
-                  !["submitted", "archived"].includes(jobSubmission.status) && (
-                    <div className="v2-tracker-primary-actions">
-                      <button
-                        onClick={() => {
-                          window.history.pushState(
-                            { tab: "queue", packet: jobSubmission.id },
-                            "",
-                            `#/queue?packet=${encodeURIComponent(jobSubmission.id)}`,
-                          );
-                          setTab("queue");
-                        }}
-                      >
-                        Go to Submission Queue
-                      </button>
-                    </div>
+                  {safeHttpUrl(job.url) && (
+                    <a
+                      href={safeHttpUrl(job.url)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Open job listing ↗
+                    </a>
                   )}
-                {["interview", "offer", "rejected"].includes(job.status) && (
-                  <InterviewRounds job={job} reload={reload} />
-                )}
-                <Actions key={job.id} job={job} reload={reload} />
-              </>
-            )}
-            {!editForm && (
-              <>
-                <h3>Status timeline</h3>
-                <div className="status-history">
-                  {(job.statusHistory || []).map((event, index) => (
-                    <p key={`${event.at}-${index}`}>
-                      <b>{trackerStageLabel(event.status)}</b>
-                      <small>{new Date(event.at).toLocaleString()}</small>
-                    </p>
-                  ))}
-                </div>
-                <button className="danger" onClick={() => setDeleteOpen(true)}>
-                  Delete role
-                </button>
-              </>
-            )}
-          </div>
+                  <p>{job.description || "No description saved."}</p>
+                  <div className="chips">
+                    {(job.tags || []).map((tag) => (
+                      <span key={tag}>{tag}</span>
+                    ))}
+                  </div>
+                  <TrackerApplicationInsights
+                    job={job}
+                    submission={jobSubmission}
+                    profile={state.profile}
+                  />
+                  {jobSubmission &&
+                    !["submitted", "archived"].includes(
+                      jobSubmission.status,
+                    ) && (
+                      <div className="v2-tracker-primary-actions">
+                        <button
+                          onClick={() => {
+                            window.history.pushState(
+                              { tab: "queue", packet: jobSubmission.id },
+                              "",
+                              `#/queue?packet=${encodeURIComponent(jobSubmission.id)}`,
+                            );
+                            setTab("queue");
+                          }}
+                        >
+                          Go to Submission Queue
+                        </button>
+                      </div>
+                    )}
+                  {["interview", "offer", "rejected"].includes(job.status) && (
+                    <InterviewRounds job={job} reload={reload} />
+                  )}
+                  <Actions key={job.id} job={job} reload={reload} />
+                </>
+              )}
+              {!editForm && (
+                <>
+                  <h3>Status timeline</h3>
+                  <div className="status-history">
+                    {(job.statusHistory || []).map((event, index) => (
+                      <p key={`${event.at}-${index}`}>
+                        <b>{trackerStageLabel(event.status)}</b>
+                        <small>{new Date(event.at).toLocaleString()}</small>
+                      </p>
+                    ))}
+                  </div>
+                  <button
+                    className="danger"
+                    onClick={() => setDeleteOpen(true)}
+                  >
+                    Delete role
+                  </button>
+                </>
+              )}
+            </div>
+          </>
         )}
       </div>
       {!filtered.length && (

@@ -1304,6 +1304,45 @@ test(
         "all",
         "a deleted saved agent run should recover to All Runs",
       );
+      assert.equal(
+        await page.locator(".job-drawer").count(),
+        0,
+        "the v2 tracker should not open job details until the user selects a card",
+      );
+      const firstTrackedJob = page.locator(".kanban-card").first();
+      await firstTrackedJob.click();
+      const jobDetailsDialog = page.locator(".job-drawer");
+      await jobDetailsDialog.waitFor();
+      await page.waitForTimeout(350);
+      const drawerLayout = await jobDetailsDialog.evaluate((element) => ({
+        position: getComputedStyle(element).position,
+        width: getComputedStyle(element).width,
+        right: element.getBoundingClientRect().right,
+        viewportWidth: window.innerWidth,
+      }));
+      assert.equal(
+        drawerLayout.width,
+        "480px",
+        "v2 job details should use the 480px sidebar width",
+      );
+      assert.equal(
+        drawerLayout.position,
+        "fixed",
+        "v2 job details should stay fixed while the tracker scrolls",
+      );
+      assert.ok(
+        Math.abs(drawerLayout.right - drawerLayout.viewportWidth) <= 1,
+        `v2 job details should be fixed to the right edge (${drawerLayout.right} vs ${drawerLayout.viewportWidth})`,
+      );
+      await page.keyboard.press("Escape");
+      await jobDetailsDialog.waitFor({ state: "detached" });
+      assert.equal(
+        await firstTrackedJob.evaluate(
+          (element) => document.activeElement === element,
+        ),
+        true,
+        "closing job details should return keyboard focus to the selected card",
+      );
       await page.goto(`${baseUrl}/#/tracker?job=${recordedSubmission.jobId}`);
       await page
         .getByRole("region", { name: "Submitted application evidence" })
@@ -1317,6 +1356,7 @@ test(
           true,
         );
       }
+      await page.getByRole("button", { name: "Close job details" }).click();
       await page.getByLabel("Filter by agent run").selectOption("automated");
       assert.equal(
         await page.getByLabel("Filter by agent run").inputValue(),
@@ -1355,6 +1395,7 @@ test(
       await applicationQuestions
         .getByText("Why are you interested in this role?", { exact: true })
         .waitFor();
+      await page.getByRole("button", { name: "Close job details" }).click();
       await page.getByRole("button", { name: "Funnel Analysis" }).click();
       const funnelDialog = page.getByRole("dialog", {
         name: "Job Application Funnel Analysis",
@@ -1381,6 +1422,8 @@ test(
       );
       await page.keyboard.press("Escape");
       await funnelDialog.waitFor({ state: "hidden" });
+      await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
+      await page.getByLabel("Job status").waitFor();
       await page.getByLabel("Job status").selectOption("interview");
       await page.getByRole("button", { name: "Add Round" }).click();
       const roundForm = page.locator(".interview-round-form");
@@ -1409,6 +1452,7 @@ test(
           exact: true,
         })
         .waitFor();
+      await page.getByRole("button", { name: "Close job details" }).click();
       await page.getByRole("button", { name: "Funnel Analysis" }).click();
       await funnelDialog.getByText("Round-by-round conversion").waitFor();
       await funnelDialog
@@ -1416,6 +1460,8 @@ test(
         .waitFor();
       await page.keyboard.press("Escape");
       await funnelDialog.waitFor({ state: "hidden" });
+      await page.goto(`${baseUrl}/#/tracker?job=${insightsJobId}`);
+      await page.getByLabel("Private job note").waitFor();
       await page.getByLabel("Private job note").fill("E2E tracker note");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page.getByText("E2E tracker note").waitFor();
@@ -1498,6 +1544,7 @@ test(
         true,
         "closing a dialog should restore focus to its trigger",
       );
+      await page.getByRole("button", { name: "Close job details" }).click();
       await page.getByLabel("Filter by agent run").selectOption("manual");
       await page
         .getByRole("button", { name: /Founding Product Engineer/ })
@@ -1572,13 +1619,14 @@ test(
       assert.match(page.url(), new RegExp(`job=${editedJobId}`));
       await assertAccessible(page, "Job Tracker");
 
+      await page.getByRole("button", { name: "Close job details" }).click();
       await page.getByRole("button", { name: "LinkedIn Audit" }).click();
       await page
         .getByRole("heading", { name: "LinkedIn Profile Audit" })
         .waitFor();
       await page.goBack();
       await page
-        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .getByRole("heading", { name: "Job Tracker", exact: true })
         .waitFor();
       await page.goForward();
       await page
