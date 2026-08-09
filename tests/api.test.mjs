@@ -1759,6 +1759,12 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
     body: JSON.stringify({ jobs: "not-an-array" }),
   });
   assert.equal(invalidPreview.res.status, 400);
+  const malformedJsonPreview = await req("/api/import/preview", {
+    method: "POST",
+    body: "not valid json",
+  });
+  assert.equal(malformedJsonPreview.res.status, 400);
+  assert.match(malformedJsonPreview.body.error, /valid JobHuntr backup JSON/);
   const restored = await req("/api/import", {
     method: "POST",
     body: JSON.stringify({

@@ -3682,6 +3682,32 @@ test(
       );
       assert.equal(exportedBackup.profile.nickname, "E2E Builder");
       assert.ok(exportedBackup.jobs.length > 0);
+      const restoreWorkspaceCard = page.locator(".v2-data-card").filter({
+        has: page.getByRole("heading", { name: "Restore workspace" }),
+      });
+      await page.getByLabel("Import JobHuntr JSON backup").setInputFiles({
+        name: "not-a-backup.json",
+        mimeType: "application/json",
+        buffer: Buffer.from("not valid json"),
+      });
+      await restoreWorkspaceCard.getByRole("alert").waitFor();
+      assert.equal(
+        await page.locator(".v2-error-toast").count(),
+        0,
+        "expected inline backup validation should not duplicate itself as a global error toast",
+      );
+      assert.equal(
+        await page.getByText("0 jobs imported · 1 duplicates skipped").count(),
+        1,
+        "an invalid backup should not clear the separate CSV import result",
+      );
+      assert.equal(
+        await restoreWorkspaceCard
+          .getByRole("button", { name: "Review restore" })
+          .isDisabled(),
+        true,
+        "an invalid backup must remain impossible to restore",
+      );
       await page.getByLabel("Import JobHuntr JSON backup").setInputFiles({
         name: "e2e-backup.json",
         mimeType: "application/json",
@@ -3695,6 +3721,9 @@ test(
           }),
         ),
       });
+      await restoreWorkspaceCard
+        .getByRole("alert")
+        .waitFor({ state: "hidden" });
       await page.getByText(/Contains 1 jobs, 1 resumes/).waitFor();
       await page.getByText(/1 coach chats/).waitFor();
       await page

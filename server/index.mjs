@@ -2361,6 +2361,12 @@ app.use((err, req, res, _next) => {
         ? "JobHuntr backups must be 50 MB or smaller"
         : "Request body must be 2 MB or smaller",
     });
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err)
+    return res.status(400).json({
+      error: largeBackupPaths.has(req.path)
+        ? "This file is not valid JobHuntr backup JSON"
+        : "Request body must contain valid JSON",
+    });
   if (err instanceof z.ZodError)
     return res
       .status(400)

@@ -435,13 +435,14 @@ const resumeEditorPreviewDocument = (content) => {
 };
 
 const api = async (path, options = {}) => {
+  const { suppressGlobalError = false, ...requestOptions } = options;
   try {
     const res = await fetch(path, {
       headers: {
         "Content-Type": "application/json",
-        ...(options.headers || {}),
+        ...(requestOptions.headers || {}),
       },
-      ...options,
+      ...requestOptions,
     });
     if (!res.ok) {
       const body = await res.text();
@@ -454,11 +455,12 @@ const api = async (path, options = {}) => {
     }
     return res.status === 204 ? null : res.json();
   } catch (error) {
-    window.dispatchEvent(
-      new CustomEvent("jobhuntr:api-error", {
-        detail: error.message || "JobHuntr could not complete that action.",
-      }),
-    );
+    if (!suppressGlobalError)
+      window.dispatchEvent(
+        new CustomEvent("jobhuntr:api-error", {
+          detail: error.message || "JobHuntr could not complete that action.",
+        }),
+      );
     throw error;
   }
 };
@@ -12804,6 +12806,7 @@ function SettingsPage({ state, reload, setTab }) {
 function Privacy({ state }) {
   const [backupFile, setBackupFile] = useState(null);
   const [backupPreview, setBackupPreview] = useState(null);
+  const [backupError, setBackupError] = useState("");
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const restoreCancelRef = useRef(null);
@@ -12831,29 +12834,41 @@ function Privacy({ state }) {
   const restore = async () => {
     if (!backupFile) return;
     setRestoring(true);
-    await api("/api/import", { method: "POST", body: await backupFile.text() });
-    location.reload();
+    setBackupError("");
+    try {
+      await api("/api/import", {
+        method: "POST",
+        body: await backupFile.text(),
+        suppressGlobalError: true,
+      });
+      location.reload();
+    } catch (error) {
+      setBackupError(error.message || "The workspace could not be restored.");
+      setRestoreOpen(false);
+    } finally {
+      setRestoring(false);
+    }
   };
   const inspectBackup = async (file) => {
     setBackupFile(file || null);
     setBackupPreview(null);
-    setResult(null);
+    setBackupError("");
     if (!file) return;
     if (file.size > 50 * 1024 * 1024) {
-      setResult({ error: "JobHuntr backups must be 50 MB or smaller." });
+      setBackupError("JobHuntr backups must be 50 MB or smaller.");
       return;
     }
     try {
       const preview = await api("/api/import/preview", {
         method: "POST",
         body: await file.text(),
+        suppressGlobalError: true,
       });
       setBackupPreview(preview);
     } catch (error) {
-      setResult({
-        error:
-          error.message || "This file is not a valid JobHuntr JSON backup.",
-      });
+      setBackupError(
+        error.message || "This file is not a valid JobHuntr JSON backup.",
+      );
     }
   };
   const importCsv = async () => {
@@ -12980,6 +12995,11 @@ function Privacy({ state }) {
                 </small>
               )}
             </div>
+          )}
+          {backupError && (
+            <p className="error" role="alert">
+              {backupError}
+            </p>
           )}
           <button
             disabled={!backupPreview}
