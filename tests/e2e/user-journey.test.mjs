@@ -3663,7 +3663,7 @@ test(
           "I test complex React workflows and provide evidence-based feedback.",
         );
       await assertAccessible(page, "Gig application review");
-      await Promise.all([
+      const [gigCreateResponse] = await Promise.all([
         page.waitForResponse(
           (response) =>
             response.url().endsWith("/api/gigs") &&
@@ -3674,6 +3674,7 @@ test(
           .getByRole("button", { name: "Submit Application" })
           .click(),
       ]);
+      const createdGigId = (await gigCreateResponse.json()).id;
       await page
         .getByRole("heading", { name: "Review an AI resume workflow" })
         .last()
@@ -3683,18 +3684,28 @@ test(
       });
       await gigDialog.waitFor();
       await assertNamedFormControls(gigDialog, "Gig details");
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().includes("/api/gigs/") &&
-            response.request().method() === "PATCH" &&
-            response.ok(),
-        ),
-        gigDialog.getByLabel("Gig application status").selectOption("proposal"),
-      ]);
+      let queuedGigPatchCount = 0;
+      await page.route(`**/api/gigs/${createdGigId}`, async (route) => {
+        queuedGigPatchCount += 1;
+        if (queuedGigPatchCount === 1)
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        await route.continue();
+      });
       await gigDialog
         .getByLabel("Gig application status")
-        .selectOption("negotiation");
+        .evaluate((select) => {
+          select.value = "proposal";
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          select.value = "negotiation";
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      await gigDialog.getByRole("button", { name: "Start Work" }).waitFor();
+      assert.equal(
+        queuedGigPatchCount,
+        2,
+        "rapid Gig mutations must run in order without dropping the latest status",
+      );
+      await page.unroute(`**/api/gigs/${createdGigId}`);
       await gigDialog.getByRole("button", { name: "Start Work" }).click();
       await gigDialog.getByText("Work started.").waitFor();
       await gigDialog.getByRole("button", { name: "Submit Work" }).click();

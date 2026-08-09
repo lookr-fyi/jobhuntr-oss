@@ -582,6 +582,15 @@ test("Gig creation and applications are single-flight and retryable", async () =
     (gigs.match(/disabled=\{savingGig\}/g) || []).length >= 3,
     "gig fields and close action must lock while creation is pending",
   );
+  assert.match(gigs, /const gigMutationQueuesRef = useRef\(new Map\(\)\)/);
+  assert.match(
+    gigs,
+    /const previous = gigMutationQueuesRef\.current\.get\(id\)/,
+  );
+  assert.match(gigs, /previous[\s\S]*?\.catch\(\(\) => false\)[\s\S]*?\.then/);
+  assert.match(gigs, /gigMutationQueuesRef\.current\.set\(id, operation\)/);
+  assert.match(gigs, /gigMutationQueuesRef\.current\.get\(id\) !== operation/);
+  assert.match(gigs, /draggable=\{!patchingGigIds\.has\(item\.id\)\}/);
 });
 
 test("LinkedIn audits cannot duplicate or publish stale results", async () => {

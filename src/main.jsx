@@ -10299,6 +10299,8 @@ function Gigs({ state, reload }) {
   const [applyingGig, setApplyingGig] = useState(false);
   const savingGigRef = useRef(false);
   const applyingGigRef = useRef(false);
+  const gigMutationQueuesRef = useRef(new Map());
+  const [patchingGigIds, setPatchingGigIds] = useState(() => new Set());
   const gigCloseRef = useRef(null);
   const campaignCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
@@ -10328,17 +10330,34 @@ function Gigs({ state, reload }) {
       setSavingGig(false);
     }
   };
-  const patch = async (id, body) => {
-    try {
-      await api(`/api/gigs/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(body),
+  const patch = (id, body) => {
+    if (!id) return Promise.resolve(false);
+    const previous = gigMutationQueuesRef.current.get(id) || Promise.resolve();
+    setPatchingGigIds((current) => new Set(current).add(id));
+    const operation = previous
+      .catch(() => false)
+      .then(async () => {
+        try {
+          await api(`/api/gigs/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(body),
+          });
+          await reload();
+          return true;
+        } catch {
+          return false;
+        }
       });
-      await reload();
-      return true;
-    } catch {
-      return false;
-    }
+    gigMutationQueuesRef.current.set(id, operation);
+    return operation.finally(() => {
+      if (gigMutationQueuesRef.current.get(id) !== operation) return;
+      gigMutationQueuesRef.current.delete(id);
+      setPatchingGigIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    });
   };
   const advanceGig = async (id, status, message) => {
     if (await patch(id, { status })) setActionFeedback(message);
@@ -10419,6 +10438,8 @@ function Gigs({ state, reload }) {
   );
   const deleteGig = async () => {
     try {
+      await (gigMutationQueuesRef.current.get(deleteTarget.id) ||
+        Promise.resolve());
       await api(`/api/gigs/${deleteTarget.id}`, { method: "DELETE" });
       setSelected(null);
       await reload();
@@ -10795,7 +10816,9 @@ function Gigs({ state, reload }) {
                   .filter((item) => item.status === stage)
                   .map((item) => (
                     <button
-                      draggable
+                      draggable={!patchingGigIds.has(item.id)}
+                      disabled={patchingGigIds.has(item.id)}
+                      aria-busy={patchingGigIds.has(item.id)}
                       onDragStart={(e) =>
                         e.dataTransfer.setData("gigId", item.id)
                       }
@@ -10841,6 +10864,8 @@ function Gigs({ state, reload }) {
               <select
                 name="gig-stage"
                 aria-label="Gig stage"
+                disabled={patchingGigIds.has(gig.id)}
+                aria-busy={patchingGigIds.has(gig.id)}
                 value={gig.status}
                 onChange={(e) => patch(gig.id, { status: e.target.value })}
               >
@@ -10913,7 +10938,11 @@ function Gigs({ state, reload }) {
                   </p>
                 ))}
               </div>
-              <button className="danger" onClick={() => setDeleteTarget(gig)}>
+              <button
+                className="danger"
+                disabled={patchingGigIds.has(gig.id)}
+                onClick={() => setDeleteTarget(gig)}
+              >
                 Delete gig
               </button>
             </div>
@@ -10960,6 +10989,8 @@ function Gigs({ state, reload }) {
               <select
                 name="gig-application-status"
                 aria-label="Gig application status"
+                disabled={patchingGigIds.has(gig.id)}
+                aria-busy={patchingGigIds.has(gig.id)}
                 value={gig.status}
                 onChange={(event) =>
                   patch(gig.id, { status: event.target.value })
@@ -10977,6 +11008,8 @@ function Gigs({ state, reload }) {
                   <p>Confirm when you are ready to begin this gig.</p>
                 </div>
                 <button
+                  disabled={patchingGigIds.has(gig.id)}
+                  aria-busy={patchingGigIds.has(gig.id)}
                   onClick={() =>
                     advanceGig(
                       gig.id,
@@ -10999,6 +11032,8 @@ function Gigs({ state, reload }) {
                   </p>
                 </div>
                 <button
+                  disabled={patchingGigIds.has(gig.id)}
+                  aria-busy={patchingGigIds.has(gig.id)}
                   onClick={() =>
                     advanceGig(
                       gig.id,
@@ -11080,7 +11115,11 @@ function Gigs({ state, reload }) {
               />
             </label>
             <div className="v2-gig-modal-footer">
-              <button className="danger" onClick={() => setDeleteTarget(gig)}>
+              <button
+                className="danger"
+                disabled={patchingGigIds.has(gig.id)}
+                onClick={() => setDeleteTarget(gig)}
+              >
                 Close application
               </button>
               <button className="secondary" onClick={() => setSelected(null)}>
