@@ -9972,6 +9972,7 @@ function RunsPage({ state, setTab, reload }) {
   );
   const [deleteIds, setDeleteIds] = useState([]);
   const runCloseRef = useRef(null);
+  const newRunCloseRef = useRef(null);
   const actionRequiredRunIds = new Set(
     state.submissions
       .filter((submission) => ["draft", "ready"].includes(submission.status))
@@ -10051,6 +10052,19 @@ function RunsPage({ state, setTab, reload }) {
       returnFocus?.focus?.();
     };
   }, [selectedRun]);
+  useEffect(() => {
+    if (!newRunOpen) return undefined;
+    const returnFocus = document.activeElement;
+    newRunCloseRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setNewRunOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [newRunOpen]);
   useEffect(() => {
     const hash = selectedRun ? `#/runs?run=${selectedRun.id}` : "#/runs";
     if (window.location.hash !== hash)
@@ -10426,9 +10440,9 @@ function RunsPage({ state, setTab, reload }) {
                 <h3 id="new-agent-run-title">Create New Agent Run</h3>
               </div>
               <button
+                ref={newRunCloseRef}
                 className="v2-run-delete"
                 aria-label="Close"
-                autoFocus
                 onClick={() => setNewRunOpen(false)}
               >
                 <X size={18} />

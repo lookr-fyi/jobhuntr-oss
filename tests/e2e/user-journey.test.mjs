@@ -306,6 +306,11 @@ test(
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
       const platformLogos = page.locator(".v2-workflow-grid img");
       assert.equal(await platformLogos.count(), 10);
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll(".v2-workflow-grid img")].every(
+          (image) => image.complete && image.naturalWidth > 0,
+        ),
+      );
       assert.equal(
         await platformLogos.evaluateAll((images) =>
           images.every((image) => image.complete && image.naturalWidth > 0),
@@ -432,11 +437,19 @@ test(
         .click();
       await linkedRunDialog.waitFor({ state: "hidden" });
       assert.match(page.url(), /#\/runs$/);
-      await page.getByRole("button", { name: "New Run" }).click();
+      const newRunTrigger = page.getByRole("button", { name: "New Run" });
+      await newRunTrigger.click();
       const newRunDialog = page.getByRole("dialog", {
         name: "Create New Agent Run",
       });
       await newRunDialog.waitFor();
+      assert.equal(
+        await newRunDialog
+          .getByRole("button", { name: "Close", exact: true })
+          .evaluate((button) => button === document.activeElement),
+        true,
+        "new-run dialogs should focus a visible close action",
+      );
       await newRunDialog
         .getByRole("radio", { name: /Glassdoor Auto Search/ })
         .click();
@@ -444,7 +457,14 @@ test(
       await newRunDialog.getByLabel("Generate ATS-optimized resumes").check();
       await newRunDialog.getByRole("button", { name: "Cancel" }).click();
       await newRunDialog.waitFor({ state: "hidden" });
-      await page.getByRole("button", { name: "New Run" }).click();
+      assert.equal(
+        await newRunTrigger.evaluate(
+          (button) => button === document.activeElement,
+        ),
+        true,
+        "closing a new-run dialog should restore focus to its trigger",
+      );
+      await newRunTrigger.click();
       await newRunDialog
         .getByRole("radio", { name: /Dice Auto Search/ })
         .click();
