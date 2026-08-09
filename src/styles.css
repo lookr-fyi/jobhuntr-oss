@@ -713,53 +713,116 @@ button:disabled {
   font-size: 10px;
 }
 .tracker-filter-panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr) auto;
-  gap: 24px;
-  align-items: end;
-  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: 0 1px 3px #0f172a0f;
   animation: slide-in 0.18s ease;
 }
 .v2-tracker-filters-always {
-  grid-template-columns:
-    minmax(180px, 0.6fr) minmax(420px, 1.4fr) minmax(220px, 0.55fr)
-    auto;
   align-items: center;
   animation: none;
 }
 .v2-tracker-filters-always .searchbox {
+  width: 200px;
+  min-width: 200px;
   align-self: center;
 }
 .tracker-filter-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  display: inline;
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
 }
 .tracker-filter-panel select {
   margin: 0;
 }
+.tracker-filter-panel .filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tracker-filter-panel .status-filter-group {
+  min-width: 0;
+  flex: 1;
+}
+.tracker-filter-panel .run-filter-group {
+  flex: 0 0 auto;
+}
 .tracker-status-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
+  align-items: center;
+  gap: 8px;
 }
 .tracker-status-filters label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #475569;
-  font-size: 12px;
-  text-transform: capitalize;
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 13px;
+  text-transform: none;
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+.tracker-status-filters label:hover {
+  background: #f1f5f9;
 }
 .tracker-status-filters input {
   width: 14px;
   height: 14px;
   margin: 0;
+}
+.status-filter-label {
+  color: #6b7280;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+.status-filter-label.hidden {
+  color: #9ca3af;
+}
+.status-filter-label.applied.visible {
+  color: #2563eb;
+}
+.status-filter-label.interview.visible {
+  color: #b45309;
+}
+.status-filter-label.offer.visible {
+  color: #047857;
+}
+.status-filter-label.rejected.visible,
+.status-filter-label.failed.visible {
+  color: #dc2626;
+}
+.status-filter-label.submitting.visible {
+  color: #c2410c;
+}
+.tracker-filter-panel .workflow-run-select {
+  width: 220px;
+  min-width: 200px;
+}
+.tracker-filter-panel .filter-action-button {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
 }
 .tracker-status-dot {
   width: 7px;
@@ -1511,12 +1574,19 @@ button:disabled {
     grid-column: span 2;
   }
   .tracker-filter-panel {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
   .v2-tracker-filters-always .searchbox {
-    grid-column: auto;
+    width: auto;
+  }
+  .tracker-filter-panel .filter-group {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .tracker-filter-panel .workflow-run-select {
+    width: 100%;
   }
   .form-grid {
     grid-template-columns: 1fr 1fr;

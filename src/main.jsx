@@ -2168,8 +2168,8 @@ function Tracker({ state, reload, setTab }) {
           </a>
         </div>
       </div>
-      <div className="card tracker-filter-panel v2-tracker-filters-always">
-        <div className="searchbox">
+      <div className="tracker-filter-panel v2-tracker-filters-always job-tracker-filters">
+        <div className="searchbox filter-group">
           <Search size={16} />
           <input
             aria-label="Search tracked jobs"
@@ -2178,25 +2178,32 @@ function Tracker({ state, reload, setTab }) {
             placeholder="Search jobs..."
           />
         </div>
-        <div>
-          <span className="tracker-filter-label">Show Columns:</span>
-          <div className="tracker-status-filters">
+        <div className="filter-group status-filter-group">
+          <span className="tracker-filter-label filter-label">
+            Show Columns:
+          </span>
+          <div className="tracker-status-filters status-filter-grid">
             {stages.map((stage) => (
-              <label key={stage}>
+              <label className="status-filter-item" key={stage}>
                 <input
+                  className="status-filter-checkbox"
                   type="checkbox"
                   checked={visibleStages.has(stage)}
                   onChange={() => toggleStage(stage)}
                 />
-                <span className={`tracker-status-dot ${stage}`} />
-                {trackerStageLabel(stage)}
+                <span
+                  className={`status-filter-label ${stage} ${visibleStages.has(stage) ? "visible" : "hidden"}`}
+                >
+                  {trackerStageLabel(stage)}
+                </span>
               </label>
             ))}
           </div>
         </div>
-        <label>
-          <span className="tracker-filter-label">Run:</span>
+        <label className="filter-group run-filter-group">
+          <span className="tracker-filter-label filter-label">Run:</span>
           <select
+            className="workflow-run-select"
             aria-label="Filter by agent run"
             value={runFilter}
             onChange={(event) => setRunFilter(event.target.value)}
@@ -2213,7 +2220,7 @@ function Tracker({ state, reload, setTab }) {
           </select>
         </label>
         <button
-          className="text-button"
+          className="filter-action-button"
           onClick={() => {
             setVisibleStages(new Set(stages));
             setRunFilter("all");
