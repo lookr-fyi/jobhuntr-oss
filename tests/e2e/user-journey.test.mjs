@@ -1210,6 +1210,7 @@ test(
       await page.getByRole("button", { name: "Select Modern" }).click();
       await page.getByRole("button", { name: "Continue" }).click();
       assert.equal(new URL(page.url()).hash, "#/cover-letter?step=2");
+      await assertNamedFormControls(page, "Cover Letter template editor");
       await page
         .getByLabel("Template content")
         .fill(
@@ -1231,11 +1232,13 @@ test(
       await page.getByText("Prompt applied locally").waitFor();
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("button", { name: /E2E tailored resume/ }).click();
+      await assertNamedFormControls(page, "Cover Letter resume selection");
       await page
         .getByLabel("Cover Letter Instructions")
         .fill("Emphasize accessible product delivery and measurable outcomes.");
       await page.getByRole("button", { name: "Continue" }).click();
       await page.getByRole("heading", { name: "Job Information" }).waitFor();
+      await assertNamedFormControls(page, "Cover Letter job information");
       await page
         .getByLabel("Job Description")
         .fill(
@@ -1259,7 +1262,13 @@ test(
         generatedCoverLetter.emphasis,
         "Emphasize accessible product delivery and measurable outcomes.",
       );
+      assert.doesNotMatch(
+        generatedCoverLetter.body,
+        /\.\.(?:\s|$)/,
+        "generated cover letters should not introduce duplicate sentence punctuation",
+      );
       await page.getByRole("heading", { name: "Your Cover Letter" }).waitFor();
+      await assertNamedFormControls(page, "Generated Cover Letter");
       await page.getByTitle("Generated Cover Letter Preview").waitFor();
       await page.getByRole("link", { name: "Preview PDF" }).waitFor();
       await page.getByLabel("Cover letter title").fill("E2E product letter");
@@ -1291,6 +1300,7 @@ test(
         .getByRole("button", { name: "Edit E2E product letter" })
         .click();
       await page.getByRole("heading", { name: "Edit Cover Letter" }).waitFor();
+      await assertNamedFormControls(page, "Cover Letter editor");
       assert.equal(
         await page.locator(".v2-letter-card-preview").count(),
         0,

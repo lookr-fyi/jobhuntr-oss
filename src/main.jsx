@@ -6161,6 +6161,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <label>
                     <span>HTML Source</span>
                     <textarea
+                      name="cover-letter-template-content"
                       className="v2-cover-template-editor"
                       aria-label="Template content"
                       value={letterWizard.templateContent}
@@ -6200,6 +6201,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 </div>
                 <div className="v2-cover-prompt-bar">
                   <input
+                    name="cover-letter-optimization-prompt"
                     aria-label="Prompt to optimize cover letter"
                     value={letterWizard.promptInstructions || ""}
                     onChange={(event) =>
@@ -6349,6 +6351,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 <label className="v2-cover-instructions">
                   Cover Letter Instructions
                   <textarea
+                    name="cover-letter-instructions"
                     value={letterWizard.coverLetterInstructions || ""}
                     onChange={(event) =>
                       setLetterWizard({
@@ -6379,6 +6382,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <label>
                     Use a tracked job
                     <select
+                      name="cover-letter-tracked-job"
                       value={letterWizard.jobId}
                       onChange={(event) => {
                         const job = state.jobs.find(
@@ -6405,6 +6409,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     <label>
                       Company
                       <input
+                        name="cover-letter-target-company"
                         aria-label="Target company"
                         value={letterWizard.jobCompany || ""}
                         onChange={(event) =>
@@ -6418,6 +6423,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     <label>
                       Role
                       <input
+                        name="cover-letter-target-role"
                         aria-label="Target role"
                         value={letterWizard.jobTitle || ""}
                         onChange={(event) =>
@@ -6448,6 +6454,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     </small>
                   </span>
                   <textarea
+                    name="cover-letter-job-description"
                     aria-label="Job Description"
                     maxLength={5000}
                     value={letterWizard.jobDescription || ""}
@@ -6508,6 +6515,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <label>
                     Cover letter title
                     <input
+                      name="generated-cover-letter-title"
                       value={letterWizard.result?.title || ""}
                       onChange={(event) =>
                         setLetterWizard({
@@ -6523,6 +6531,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <label>
                     Generated cover letter
                     <textarea
+                      name="generated-cover-letter-content"
                       value={letterWizard.result?.body || ""}
                       onChange={(event) =>
                         setLetterWizard({
@@ -6737,6 +6746,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   </a>
                 </div>
                 <input
+                  name="cover-letter-title"
                   aria-label="Cover letter title"
                   value={letter.title}
                   onChange={(e) =>
@@ -6744,6 +6754,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   }
                 />
                 <textarea
+                  name="cover-letter-content"
                   aria-label="Cover letter content"
                   className="letter"
                   value={letter.body}
