@@ -2210,6 +2210,10 @@ test(
         "Load more should reveal the remaining jobs in the same column",
       );
       await removedLoadMore.waitFor({ state: "hidden" });
+      const trackerApplicationCount = await page
+        .locator(".v2-tracker-header > div > span")
+        .first()
+        .innerText();
       const trackerSearch = page.getByLabel("Search tracked jobs");
       await trackerSearch.fill("no-such-job-e2e-9f3a");
       await page.getByText("No matches", { exact: true }).first().waitFor();
@@ -2227,6 +2231,19 @@ test(
         await appliedColumn.getByRole("button", { name: "Add Job" }).count(),
         1,
         "empty manual columns should keep Add Job inside the empty state",
+      );
+      assert.equal(
+        await page
+          .locator(".v2-tracker-header > div > span")
+          .first()
+          .innerText(),
+        trackerApplicationCount,
+        "v2 search should filter cards inside columns without changing the run-level application total",
+      );
+      assert.equal(
+        await page.locator(".tracker-page > .empty-state").count(),
+        0,
+        "v2 search should not append a duplicate page-level empty state below the board",
       );
       await trackerSearch.fill("");
       await removedColumn.locator(".job-card").first().waitFor();
