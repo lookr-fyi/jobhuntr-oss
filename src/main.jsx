@@ -2554,6 +2554,7 @@ function Actions({ job, reload }) {
     name: "",
     role: "Recruiter",
     email: "",
+    linkedIn: "",
   });
   return (
     <div className="job-actions">
@@ -2652,21 +2653,42 @@ function Actions({ job, reload }) {
       ))}
       <h3>Contacts</h3>
       <div className="contact-form">
-        <input
-          placeholder="Name"
-          value={contact.name}
-          onChange={(e) => setContact({ ...contact, name: e.target.value })}
-        />
-        <input
-          placeholder="Role"
-          value={contact.role}
-          onChange={(e) => setContact({ ...contact, role: e.target.value })}
-        />
-        <input
-          placeholder="Email"
-          value={contact.email}
-          onChange={(e) => setContact({ ...contact, email: e.target.value })}
-        />
+        <label>
+          Name
+          <input
+            placeholder="Alex Morgan"
+            value={contact.name}
+            onChange={(e) => setContact({ ...contact, name: e.target.value })}
+          />
+        </label>
+        <label>
+          Role
+          <input
+            placeholder="Recruiter"
+            value={contact.role}
+            onChange={(e) => setContact({ ...contact, role: e.target.value })}
+          />
+        </label>
+        <label>
+          Email
+          <input
+            type="email"
+            placeholder="alex@company.com"
+            value={contact.email}
+            onChange={(e) => setContact({ ...contact, email: e.target.value })}
+          />
+        </label>
+        <label>
+          LinkedIn profile
+          <input
+            type="url"
+            placeholder="https://www.linkedin.com/in/alex"
+            value={contact.linkedIn}
+            onChange={(e) =>
+              setContact({ ...contact, linkedIn: e.target.value })
+            }
+          />
+        </label>
       </div>
       <button
         disabled={!contact.name.trim()}
@@ -2675,7 +2697,12 @@ function Actions({ job, reload }) {
             method: "POST",
             body: JSON.stringify(contact),
           });
-          setContact({ name: "", role: "Recruiter", email: "" });
+          setContact({
+            name: "",
+            role: "Recruiter",
+            email: "",
+            linkedIn: "",
+          });
           reload();
         }}
       >
@@ -2684,7 +2711,12 @@ function Actions({ job, reload }) {
       {(job.contacts || []).map((c) => (
         <p className="contact" key={c.id}>
           <b>{c.name}</b> · {c.role}
-          <small>{c.email}</small>
+          {c.email && <small>{c.email}</small>}
+          {safeHttpUrl(c.linkedIn) && (
+            <a href={safeHttpUrl(c.linkedIn)} target="_blank" rel="noreferrer">
+              View LinkedIn profile
+            </a>
+          )}
         </p>
       ))}
     </div>

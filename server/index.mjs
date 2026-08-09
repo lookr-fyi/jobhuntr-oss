@@ -151,6 +151,21 @@ const JobPatchSchema = z.object({
     .max(50)
     .optional(),
 });
+const ContactSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  role: z.string().trim().max(100).optional().default(""),
+  email: z
+    .union([z.literal(""), z.string().trim().email().max(200)])
+    .optional()
+    .default(""),
+  linkedIn: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(isSafeHttpUrl, "LinkedIn URL must use HTTP or HTTPS")
+    .optional()
+    .default(""),
+});
 const TemplateSchema = z.object({
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(500).optional().default(""),
@@ -370,15 +385,13 @@ app.post("/api/jobs/:id/notes", async (req, res) => {
 });
 
 app.post("/api/jobs/:id/contacts", async (req, res) => {
+  const parsed = ContactSchema.parse(req.body || {});
   const contact = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.params.id);
     if (!job) return null;
     const item = {
       id: nanoid(),
-      name: safeText(req.body.name, 100),
-      role: safeText(req.body.role, 100),
-      email: safeText(req.body.email, 200),
-      linkedIn: safeText(req.body.linkedIn, 500),
+      ...parsed,
       createdAt: timestamp(),
     };
     job.contacts.unshift(item);

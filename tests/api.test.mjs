@@ -90,10 +90,23 @@ test("can add and update a tracked job", async () => {
       name: "Alex Recruiter",
       role: "Recruiter",
       email: "alex@example.test",
+      linkedIn: "https://www.linkedin.com/in/alex-recruiter",
     }),
   });
   assert.equal(contact.res.status, 201);
   assert.equal(contact.body.name, "Alex Recruiter");
+  assert.equal(
+    contact.body.linkedIn,
+    "https://www.linkedin.com/in/alex-recruiter",
+  );
+  const unsafeContact = await req(`/api/jobs/${create.body.id}/contacts`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Unsafe contact",
+      linkedIn: "javascript:alert(1)",
+    }),
+  });
+  assert.equal(unsafeContact.res.status, 400);
 });
 
 test("v2 personal profile details persist with bounded local input", async () => {

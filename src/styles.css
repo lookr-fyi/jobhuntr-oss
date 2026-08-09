@@ -1212,8 +1212,12 @@ button:disabled {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
 }
-.contact-form input:last-child {
-  grid-column: span 2;
+.contact-form label {
+  display: grid;
+  gap: 4px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
 }
 .contact {
   border-left: 3px solid #a5b4fc;
@@ -1318,9 +1322,6 @@ button:disabled {
   }
   .contact-form {
     grid-template-columns: 1fr;
-  }
-  .contact-form input:last-child {
-    grid-column: auto;
   }
 }
 .resume-studio {
