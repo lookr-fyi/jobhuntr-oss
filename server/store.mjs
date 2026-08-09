@@ -356,6 +356,20 @@ const GIG_STATUSES = new Set([
 ]);
 const boundedMoney = (value) =>
   Math.min(100000000, Math.max(0, Number(value) || 0));
+const safeStoredHttpUrl = (value, max = 2000) => {
+  const text = boundedText(value, max);
+  if (!text) return "";
+  try {
+    const url = new URL(text);
+    return ["http:", "https:"].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+      ? text
+      : "";
+  } catch {
+    return "";
+  }
+};
 
 function migrate(input) {
   const db = isRecord(input) ? input : {};
@@ -717,12 +731,36 @@ function migrate(input) {
     500,
   );
   db.activities = records(db.activities);
-  for (const job of db.jobs) {
-    job.status = normalizeJobStatus(job.status);
-    job.notes = records(job.notes);
-    job.tasks = records(job.tasks);
+  const jobIds = new Set();
+  db.jobs = db.jobs.slice(0, 10000).map((job, jobIndex) => {
+    const id = uniqueLegacyId(job.id, "legacy-job", jobIndex, jobIds);
+    const status = normalizeJobStatus(job.status);
+    const createdAt = boundedText(job.createdAt, 100);
+    const noteIds = new Set();
+    const notes = records(job.notes)
+      .map((note, index) => ({
+        id: uniqueLegacyId(note.id, `legacy-note-${id}`, index, noteIds),
+        at: boundedText(note.at, 100) || createdAt || now(),
+        text: boundedText(note.text, 4000),
+      }))
+      .filter((note) => note.text)
+      .slice(0, 1000);
+    const taskIds = new Set();
+    const tasks = records(job.tasks)
+      .map((task, index) => ({
+        id: uniqueLegacyId(task.id, `legacy-task-${id}`, index, taskIds),
+        text: boundedText(task.text, 500),
+        due: /^\d{4}-\d{2}-\d{2}$/.test(boundedText(task.due, 10))
+          ? boundedText(task.due, 10)
+          : "",
+        done: task.done === true,
+        createdAt: boundedText(task.createdAt, 100),
+        updatedAt: boundedText(task.updatedAt, 100),
+      }))
+      .filter((task) => task.text)
+      .slice(0, 1000);
     const contactIds = new Set();
-    job.contacts = records(job.contacts)
+    const contacts = records(job.contacts)
       .slice(0, 1000)
       .map((contact, index) => ({
         id: uniqueLegacyId(
@@ -738,17 +776,73 @@ function migrate(input) {
         createdAt: boundedText(contact.createdAt, 100),
         updatedAt: boundedText(contact.updatedAt, 100),
       }));
-    job.tags = strings(job.tags);
-    job.matchReasons = strings(job.matchReasons);
-    job.interviewRounds = records(job.interviewRounds);
-    job.statusHistory = records(job.statusHistory);
-    for (const event of job.statusHistory)
-      event.status = normalizeJobStatus(event.status, job.status);
-    if (!job.statusHistory.length)
-      job.statusHistory = [
-        { status: job.status || "interested", at: job.createdAt || now() },
-      ];
-  }
+    const roundIds = new Set();
+    const interviewRounds = records(job.interviewRounds)
+      .slice(0, 50)
+      .map((round, index) => ({
+        id: uniqueLegacyId(round.id, `legacy-round-${id}`, index, roundIds),
+        roundType:
+          boundedText(round.roundType, 200) || `Interview Round ${index + 1}`,
+        number: boundedText(round.number, 50),
+        date: boundedText(round.date, 50),
+        notes: boundedText(round.notes, 10000),
+        status: boundedText(round.status, 50) || "scheduled",
+        outcome: boundedText(round.outcome, 50) || "pending",
+        createdAt: boundedText(round.createdAt, 100),
+        updatedAt: boundedText(round.updatedAt, 100),
+      }));
+    const statusHistory = records(job.statusHistory)
+      .map((event) => ({
+        status: normalizeJobStatus(event.status, status),
+        at: boundedText(event.at, 100) || createdAt || now(),
+        source: boundedText(event.source, 100),
+      }))
+      .slice(0, 500);
+    if (statusHistory[0]?.status !== status)
+      statusHistory.unshift({ status, at: createdAt || now(), source: "" });
+    return {
+      id,
+      company: boundedText(job.company, 300) || `Company ${jobIndex + 1}`,
+      title: boundedText(job.title, 500) || `Job opportunity ${jobIndex + 1}`,
+      location: boundedText(job.location, 500),
+      url: safeStoredHttpUrl(job.url),
+      source: boundedText(job.source, 200) || "Manual",
+      salary: boundedText(job.salary, 300),
+      description: boundedText(job.description, 100000),
+      tags: [
+        ...new Set(
+          strings(job.tags)
+            .map((tag) => boundedText(tag, 200))
+            .filter(Boolean),
+        ),
+      ].slice(0, 100),
+      status,
+      statusHistory,
+      fitScore: Math.min(100, Math.max(0, Number(job.fitScore) || 0)),
+      optimizedAtsScore: Math.min(
+        100,
+        Math.max(0, Number(job.optimizedAtsScore) || 0),
+      ),
+      numApplicants: Math.max(0, Number(job.numApplicants) || 0),
+      postedAt: boundedText(job.postedAt, 100),
+      collectedAt: boundedText(job.collectedAt, 100),
+      applicationDatetime: boundedText(job.applicationDatetime, 100),
+      workflowRunId: boundedText(job.workflowRunId, 200),
+      hiringContactName: boundedText(job.hiringContactName, 200),
+      statusInsight: boundedText(job.statusInsight, 1000),
+      rejectedBecause: boundedText(job.rejectedBecause, 2000),
+      matchReasons: strings(job.matchReasons)
+        .map((reason) => boundedText(reason, 500))
+        .filter(Boolean)
+        .slice(0, 100),
+      notes,
+      tasks,
+      contacts,
+      interviewRounds,
+      createdAt,
+      updatedAt: boundedText(job.updatedAt, 100),
+    };
+  });
   const jobsById = new Map(db.jobs.map((job) => [job.id, job]));
   for (const submission of db.submissions) {
     if (!["draft", "ready"].includes(submission.status)) continue;

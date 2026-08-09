@@ -3996,6 +3996,42 @@ test(
               index === 0
                 ? {
                     ...job,
+                    company: { unsafe: true },
+                    title: { unsafe: true },
+                    location: { unsafe: true },
+                    url: "javascript:alert(1)",
+                    source: { unsafe: true },
+                    salary: { unsafe: true },
+                    description: { unsafe: true },
+                    status: "interview",
+                    tags: ["Restored tag", { unsafe: true }],
+                    matchReasons: ["Restored match reason", { unsafe: true }],
+                    fitScore: 400,
+                    numApplicants: -20,
+                    notes: [
+                      {
+                        id: "duplicate-browser-note",
+                        text: { unsafe: true },
+                      },
+                      {
+                        id: "duplicate-browser-note",
+                        text: "Restored private note",
+                      },
+                    ],
+                    tasks: [
+                      {
+                        id: "duplicate-browser-task",
+                        text: { unsafe: true },
+                        due: "tomorrow",
+                        done: true,
+                      },
+                      {
+                        id: "duplicate-browser-task",
+                        text: "Restored follow-up task",
+                        due: "2030-04-05",
+                        done: false,
+                      },
+                    ],
                     contacts: [
                       {
                         id: "duplicate-browser-contact",
@@ -4009,6 +4045,21 @@ test(
                         name: "Restored Contact",
                         role: "Recruiter",
                       },
+                    ],
+                    interviewRounds: [
+                      {
+                        id: "duplicate-browser-round",
+                        roundType: { unsafe: true },
+                        notes: { unsafe: true },
+                      },
+                      {
+                        id: "duplicate-browser-round",
+                        roundType: "Interview Round 2",
+                        notes: "Restored interview notes",
+                      },
+                    ],
+                    statusHistory: [
+                      { status: "interview", at: { unsafe: true } },
                     ],
                   }
                 : job,
@@ -4234,6 +4285,37 @@ test(
       );
       await assertAccessible(page, "Restored Gigs");
       await page.keyboard.press("Escape");
+      await page.goto(
+        `${baseUrl}/#/tracker?job=${documentRestorePoint.jobs[0].id}`,
+      );
+      const restoredJobDrawer = page.getByRole("dialog", {
+        name: "Job opportunity 1 at Company 1 details",
+      });
+      await restoredJobDrawer.waitFor();
+      await restoredJobDrawer
+        .locator(".note", { hasText: "Restored private note" })
+        .waitFor();
+      await restoredJobDrawer
+        .locator(".task-row", { hasText: "Restored follow-up task" })
+        .waitFor();
+      await restoredJobDrawer
+        .locator(".interview-round-list article", {
+          hasText: "Restored interview notes",
+        })
+        .waitFor();
+      assert.equal(
+        await restoredJobDrawer
+          .getByText("Invalid Date", { exact: true })
+          .count(),
+        0,
+      );
+      assert.equal(
+        await restoredJobDrawer
+          .getByRole("link", { name: /Open job listing/ })
+          .count(),
+        0,
+      );
+      await assertAccessible(page, "Restored Job Tracker");
       const restoredDocumentWorkspace = await page.request.post(
         `${baseUrl}/api/import`,
         { data: documentRestorePoint },

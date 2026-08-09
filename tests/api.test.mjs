@@ -2039,9 +2039,45 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
       jobs: [
         {
           ...after.jobs[0],
+          company: { malformed: true },
+          title: { malformed: true },
+          location: { malformed: true },
+          url: "javascript:alert(1)",
+          source: { malformed: true },
+          salary: { malformed: true },
+          description: { malformed: true },
           status: "queued",
           tags: "not-an-array",
-          notes: "not-an-array",
+          matchReasons: ["  Strong role match  ", 42, ""],
+          fitScore: 400,
+          optimizedAtsScore: -20,
+          numApplicants: -12,
+          notes: [
+            {
+              id: "duplicate-note-id",
+              text: { malformed: true },
+              at: { malformed: true },
+            },
+            {
+              id: "duplicate-note-id",
+              text: "  Preserved private note  ",
+              at: "2029-02-01T00:00:00.000Z",
+            },
+          ],
+          tasks: [
+            {
+              id: "duplicate-task-id",
+              text: { malformed: true },
+              due: "tomorrow",
+              done: true,
+            },
+            {
+              id: "duplicate-task-id",
+              text: "  Preserved follow-up task  ",
+              due: "2030-04-05",
+              done: "yes",
+            },
+          ],
           contacts: [
             null,
             {
@@ -2059,8 +2095,22 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
               linkedIn: "  https://www.linkedin.com/in/alex  ",
             },
           ],
-          statusHistory: [
-            { status: "interviewing", at: new Date().toISOString() },
+          statusHistory: [{ status: "interviewing", at: { malformed: true } }],
+          interviewRounds: [
+            {
+              id: "duplicate-round-id",
+              roundType: { malformed: true },
+              notes: { malformed: true },
+              status: { malformed: true },
+              outcome: { malformed: true },
+            },
+            {
+              id: "duplicate-round-id",
+              roundType: "  Interview Round 2  ",
+              notes: "  Preserved round notes  ",
+              status: "  scheduled  ",
+              outcome: "  pending  ",
+            },
           ],
         },
         {
@@ -2265,8 +2315,24 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(normalized.coverLetters[1].title, "Imported Letter");
   assert.equal(normalized.coverLetters[1].body, "Preserved letter body");
   assert.notEqual(normalized.coverLetters[0].id, normalized.coverLetters[1].id);
+  assert.equal(normalized.jobs[0].company, "Company 1");
+  assert.equal(normalized.jobs[0].title, "Job opportunity 1");
+  assert.equal(normalized.jobs[0].location, "");
+  assert.equal(normalized.jobs[0].url, "");
+  assert.equal(normalized.jobs[0].source, "Manual");
+  assert.equal(normalized.jobs[0].salary, "");
+  assert.equal(normalized.jobs[0].description, "");
   assert.deepEqual(normalized.jobs[0].tags, []);
-  assert.deepEqual(normalized.jobs[0].notes, []);
+  assert.deepEqual(normalized.jobs[0].matchReasons, ["Strong role match"]);
+  assert.equal(normalized.jobs[0].fitScore, 100);
+  assert.equal(normalized.jobs[0].optimizedAtsScore, 0);
+  assert.equal(normalized.jobs[0].numApplicants, 0);
+  assert.equal(normalized.jobs[0].notes.length, 1);
+  assert.equal(normalized.jobs[0].notes[0].text, "Preserved private note");
+  assert.equal(normalized.jobs[0].tasks.length, 1);
+  assert.equal(normalized.jobs[0].tasks[0].text, "Preserved follow-up task");
+  assert.equal(normalized.jobs[0].tasks[0].due, "2030-04-05");
+  assert.equal(normalized.jobs[0].tasks[0].done, false);
   assert.equal(normalized.jobs[0].contacts.length, 2);
   assert.equal(normalized.jobs[0].contacts[0].name, "Contact 1");
   assert.equal(normalized.jobs[0].contacts[0].role, "");
@@ -2283,9 +2349,30 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
     normalized.jobs[0].contacts[0].id,
     normalized.jobs[0].contacts[1].id,
   );
+  assert.equal(normalized.jobs[0].interviewRounds.length, 2);
+  assert.equal(
+    normalized.jobs[0].interviewRounds[0].roundType,
+    "Interview Round 1",
+  );
+  assert.equal(normalized.jobs[0].interviewRounds[0].notes, "");
+  assert.equal(normalized.jobs[0].interviewRounds[0].status, "scheduled");
+  assert.equal(normalized.jobs[0].interviewRounds[0].outcome, "pending");
+  assert.equal(
+    normalized.jobs[0].interviewRounds[1].roundType,
+    "Interview Round 2",
+  );
+  assert.equal(
+    normalized.jobs[0].interviewRounds[1].notes,
+    "Preserved round notes",
+  );
+  assert.notEqual(
+    normalized.jobs[0].interviewRounds[0].id,
+    normalized.jobs[0].interviewRounds[1].id,
+  );
   assert.equal(normalized.jobs[0].status, "interested");
-  assert.equal(normalized.jobs[0].statusHistory.length, 1);
-  assert.equal(normalized.jobs[0].statusHistory[0].status, "interview");
+  assert.equal(normalized.jobs[0].statusHistory.length, 2);
+  assert.equal(normalized.jobs[0].statusHistory[0].status, "interested");
+  assert.equal(normalized.jobs[0].statusHistory[1].status, "interview");
   assert.equal(normalized.submissions[0].status, "submitted");
   assert.equal(normalized.submissions[0].checklist.length, 3);
   assert.equal(
