@@ -1050,10 +1050,14 @@ test("submission queue enforces review before local submission", async () => {
     method: "PATCH",
     body: JSON.stringify({ checklist: [], status: "submitted" }),
   });
-  assert.equal(bypassAttempt.body.status, "draft");
-  assert.equal(bypassAttempt.body.checklist.length, 3);
+  assert.equal(bypassAttempt.res.status, 400);
+  const packetAfterBypass = (await req("/api/state")).body.submissions.find(
+    (submission) => submission.id === packet.body.id,
+  );
+  assert.equal(packetAfterBypass.status, "draft");
+  assert.equal(packetAfterBypass.checklist.length, 3);
   assert.equal(
-    bypassAttempt.body.checklist.every((item) => item.done === false),
+    packetAfterBypass.checklist.every((item) => item.done === false),
     true,
   );
   const bypassSubmit = await req(`/api/submissions/${packet.body.id}/submit`, {
@@ -1176,20 +1180,36 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(unconfirmed.res.status, 409);
   assert.match(unconfirmed.body.error, /explicit user confirmation/i);
-  await req(`/api/submissions/${packet.body.id}`, {
+  const rejectedMissingLetter = await req(
+    `/api/submissions/${packet.body.id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        coverLetterId: "missing-cover-letter",
+        checklist,
+        status: "ready",
+      }),
+    },
+  );
+  assert.equal(rejectedMissingLetter.res.status, 400);
+  assert.match(rejectedMissingLetter.body.error, /no longer exists/i);
+  const packetLetter = await req("/api/cover-letters", {
+    method: "POST",
+    body: JSON.stringify({
+      jobId: state.jobs[0].id,
+      resumeId: "profile-resume",
+    }),
+  });
+  assert.equal(packetLetter.res.status, 201);
+  const attachedLetter = await req(`/api/submissions/${packet.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({
-      coverLetterId: "missing-cover-letter",
+      coverLetterId: packetLetter.body.id,
       checklist,
       status: "ready",
     }),
   });
-  const missingLetter = await req(`/api/submissions/${packet.body.id}/submit`, {
-    method: "POST",
-    body: JSON.stringify({ confirmedByUser: true }),
-  });
-  assert.equal(missingLetter.res.status, 409);
-  assert.match(missingLetter.body.error, /missing or empty cover letter/i);
+  assert.equal(attachedLetter.body.status, "ready");
   const attachmentChanged = await req(`/api/submissions/${packet.body.id}`, {
     method: "PATCH",
     body: JSON.stringify({ coverLetterId: "" }),
@@ -1524,6 +1544,59 @@ test("rapid application review edits cannot overwrite each other", async () => {
       .every((item) => item.done),
     true,
   );
+});
+
+test("malformed Easy Apply updates are rejected without mutating the packet", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Atomic Packet Co",
+      title: "Application Safety Engineer",
+      url: "https://atomic-packet.example/apply",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+  });
+  const original = (await req("/api/state")).body.submissions.find(
+    (submission) => submission.id === packet.body.id,
+  );
+  const [question] = original.applicationQuestions;
+  const [checklistItem] = original.checklist;
+  const invalidUpdates = [
+    { checklist: [] },
+    { checklistItem: { id: "stale-checklist-id", done: true } },
+    { checklistItem: { id: checklistItem.id, done: "yes" } },
+    {
+      applicationQuestions: [
+        { id: question.id, answer: "First answer" },
+        { id: question.id, answer: "Conflicting answer" },
+      ],
+    },
+    { applicationQuestion: { id: "stale-question-id", verified: true } },
+    { applicationQuestion: { id: question.id } },
+    { applicationQuestions: [] },
+    { applicationQuestion: { id: question.id, answer: { unsafe: true } } },
+    { applicationQuestion: { id: question.id, verified: "true" } },
+    { resumeId: "deleted-resume-id" },
+    { coverLetterId: "deleted-cover-letter-id" },
+  ];
+  for (const update of invalidUpdates) {
+    const rejected = await req(`/api/submissions/${packet.body.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(update),
+    });
+    assert.equal(rejected.res.status, 400, JSON.stringify(update));
+    const persisted = (await req("/api/state")).body.submissions.find(
+      (submission) => submission.id === packet.body.id,
+    );
+    assert.deepEqual(
+      persisted,
+      original,
+      `invalid update mutated the packet: ${JSON.stringify(update)}`,
+    );
+  }
 });
 
 test("editing attached source documents invalidates pending packet reviews", async () => {

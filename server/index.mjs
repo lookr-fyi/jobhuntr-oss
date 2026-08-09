@@ -1311,6 +1311,67 @@ app.patch("/api/submissions/:id", async (req, res) => {
       : req.body.checklistItem && typeof req.body.checklistItem === "object"
         ? [req.body.checklistItem]
         : null;
+    const questionUpdates = Array.isArray(req.body.applicationQuestions)
+      ? req.body.applicationQuestions
+      : req.body.applicationQuestion &&
+          typeof req.body.applicationQuestion === "object"
+        ? [req.body.applicationQuestion]
+        : null;
+    const hasUniqueKnownIds = (updates, records) => {
+      if (!updates) return true;
+      const knownIds = new Set(records.map((record) => record.id));
+      const ids = updates.map((candidate) => safeText(candidate?.id, 80));
+      return (
+        ids.every((id) => id && knownIds.has(id)) &&
+        new Set(ids).size === ids.length
+      );
+    };
+    if (
+      (checklistUpdates && checklistUpdates.length === 0) ||
+      !hasUniqueKnownIds(checklistUpdates, item.checklist) ||
+      checklistUpdates?.some(
+        (candidate) =>
+          !candidate ||
+          typeof candidate !== "object" ||
+          typeof candidate.id !== "string" ||
+          typeof candidate.done !== "boolean",
+      )
+    )
+      return { validationError: "Invalid submission checklist update" };
+    if (
+      (questionUpdates && questionUpdates.length === 0) ||
+      !hasUniqueKnownIds(questionUpdates, item.applicationQuestions) ||
+      questionUpdates?.some(
+        (candidate) =>
+          !candidate ||
+          typeof candidate !== "object" ||
+          typeof candidate.id !== "string" ||
+          (!Object.hasOwn(candidate, "answer") &&
+            !Object.hasOwn(candidate, "verified")) ||
+          (Object.hasOwn(candidate, "answer") &&
+            typeof candidate.answer !== "string") ||
+          (Object.hasOwn(candidate, "verified") &&
+            typeof candidate.verified !== "boolean"),
+      )
+    )
+      return { validationError: "Invalid application question update" };
+    if (req.body.resumeId !== undefined) {
+      const resumeId = safeText(req.body.resumeId, 50);
+      if (
+        resumeId &&
+        resumeId !== "profile-resume" &&
+        !db.resumes.some((resume) => resume.id === resumeId)
+      )
+        return { validationError: "Selected resume no longer exists" };
+    }
+    if (req.body.coverLetterId !== undefined) {
+      const coverLetterId = safeText(req.body.coverLetterId, 50);
+      if (
+        coverLetterId &&
+        !db.coverLetters.some((letter) => letter.id === coverLetterId)
+      )
+        return { validationError: "Selected cover letter no longer exists" };
+    }
     const explicitlyReviewedChecklistIds = new Set(
       (checklistUpdates || [])
         .filter((candidate) => candidate?.done === true)
@@ -1352,12 +1413,6 @@ app.patch("/api/submissions/:id", async (req, res) => {
         ]);
       item.coverLetterId = coverLetterId;
     }
-    const questionUpdates = Array.isArray(req.body.applicationQuestions)
-      ? req.body.applicationQuestions
-      : req.body.applicationQuestion &&
-          typeof req.body.applicationQuestion === "object"
-        ? [req.body.applicationQuestion]
-        : null;
     if (questionUpdates) {
       invalidateChecklist(["Confirm application details"]);
       item.applicationQuestions = item.applicationQuestions.map((existing) => {
@@ -1424,6 +1479,8 @@ app.patch("/api/submissions/:id", async (req, res) => {
       error:
         "A submitted application packet is immutable to preserve its verified history",
     });
+  if (submission.validationError)
+    return res.status(400).json({ error: submission.validationError });
   res.json(submission);
 });
 app.post("/api/submissions/:id/submit", async (req, res) => {
