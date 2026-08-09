@@ -182,6 +182,14 @@ test(
       );
       await page.goto(baseUrl);
 
+      assert.equal(
+        await page
+          .locator('button[title="Submission Queue"]')
+          .getAttribute("aria-label"),
+        "Submission Queue",
+        "a collapsed navigation badge must not replace the Submission Queue accessible name",
+      );
+
       assert.match(
         await page.locator('meta[name="description"]').getAttribute("content"),
         /private, local-first desktop workspace/,

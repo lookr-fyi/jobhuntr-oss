@@ -927,6 +927,7 @@ function App() {
               )}
               <button
                 title={tooltip || label}
+                aria-label={tooltip || label}
                 aria-current={tab === name ? "page" : undefined}
                 className={tab === name ? "active" : ""}
                 onPointerDown={(event) => {
