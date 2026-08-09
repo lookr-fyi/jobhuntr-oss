@@ -2189,11 +2189,21 @@ test(
         .waitFor({ state: "hidden" });
 
       await page.getByRole("button", { name: "Gigs" }).click();
+      await assertNamedFormControls(page, "Gigs");
+      assert.equal(
+        await page.getByText("Invalid Date", { exact: true }).count(),
+        0,
+        "Gigs should never render invalid dates",
+      );
+      await page.getByRole("button", { name: "Add gig" }).click();
+      await assertNamedFormControls(page, "Add gig form");
+      await page.getByRole("button", { name: "Close", exact: true }).click();
       await page.getByRole("button", { name: "Apply Now" }).first().click();
       const campaignDialog = page.getByRole("dialog", {
         name: "Review an AI resume workflow",
       });
       await campaignDialog.waitFor();
+      await assertNamedFormControls(campaignDialog, "Gig application review");
       assert.equal(
         await campaignDialog
           .getByRole("button", { name: "Cancel" })
@@ -2226,6 +2236,7 @@ test(
         name: "Review an AI resume workflow",
       });
       await gigDialog.waitFor();
+      await assertNamedFormControls(gigDialog, "Gig details");
       await Promise.all([
         page.waitForResponse(
           (response) =>

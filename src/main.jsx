@@ -9053,6 +9053,7 @@ function Gigs({ state, reload }) {
         <div className="searchbox v2-gig-search">
           <Search size={16} />
           <input
+            name="available-gigs-search"
             aria-label="Search available gigs"
             value={gigQuery}
             onChange={(event) => setGigQuery(event.target.value)}
@@ -9124,6 +9125,7 @@ function Gigs({ state, reload }) {
             <label>
               Why are you a good fit? <span>Optional</span>
               <textarea
+                name="gig-application-pitch"
                 aria-label="Gig application pitch"
                 value={campaignProposal}
                 onChange={(event) => setCampaignProposal(event.target.value)}
@@ -9219,6 +9221,7 @@ function Gigs({ state, reload }) {
               <label key={key}>
                 {label}
                 <input
+                  name={`new-gig-${key}`}
                   type={
                     key === "budget"
                       ? "number"
@@ -9235,6 +9238,7 @@ function Gigs({ state, reload }) {
           <label>
             Description
             <textarea
+              name="new-gig-description"
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
@@ -9252,6 +9256,7 @@ function Gigs({ state, reload }) {
       <div className="searchbox v2-my-gig-search">
         <Search size={16} />
         <input
+          name="my-gigs-search"
           aria-label="Search my gigs"
           value={myGigQuery}
           onChange={(event) => setMyGigQuery(event.target.value)}
@@ -9364,6 +9369,7 @@ function Gigs({ state, reload }) {
                 {gig.client} · {gig.source}
               </p>
               <select
+                name="gig-stage"
                 aria-label="Gig stage"
                 value={gig.status}
                 onChange={(e) => patch(gig.id, { status: e.target.value })}
@@ -9381,6 +9387,7 @@ function Gigs({ state, reload }) {
                 <label>
                   Budget
                   <input
+                    name="gig-budget"
                     type="number"
                     defaultValue={gig.budget}
                     onBlur={(e) =>
@@ -9391,6 +9398,7 @@ function Gigs({ state, reload }) {
                 <label>
                   Earned
                   <input
+                    name="gig-earned"
                     type="number"
                     defaultValue={gig.earned}
                     onBlur={(e) =>
@@ -9402,6 +9410,7 @@ function Gigs({ state, reload }) {
               <label>
                 Deadline
                 <input
+                  name="gig-deadline"
                   type="date"
                   defaultValue={gig.dueDate || ""}
                   onBlur={(e) => patch(gig.id, { dueDate: e.target.value })}
@@ -9410,6 +9419,7 @@ function Gigs({ state, reload }) {
               <label>
                 Description
                 <textarea
+                  name="gig-description"
                   defaultValue={gig.description}
                   onBlur={(e) => patch(gig.id, { description: e.target.value })}
                 />
@@ -9417,6 +9427,7 @@ function Gigs({ state, reload }) {
               <label>
                 Proposal / pitch
                 <textarea
+                  name="gig-proposal"
                   className="gig-proposal"
                   defaultValue={gig.proposal}
                   onBlur={(e) => patch(gig.id, { proposal: e.target.value })}
@@ -9477,6 +9488,7 @@ function Gigs({ state, reload }) {
             <label>
               Application status
               <select
+                name="gig-application-status"
                 aria-label="Gig application status"
                 value={gig.status}
                 onChange={(event) =>
@@ -9555,6 +9567,7 @@ function Gigs({ state, reload }) {
               <label>
                 Potential earning
                 <input
+                  name="gig-potential-earning"
                   type="number"
                   defaultValue={gig.budget}
                   onBlur={(event) =>
@@ -9565,6 +9578,7 @@ function Gigs({ state, reload }) {
               <label>
                 Actual earning
                 <input
+                  name="gig-actual-earning"
                   type="number"
                   defaultValue={gig.earned}
                   onBlur={(event) =>
@@ -9576,6 +9590,7 @@ function Gigs({ state, reload }) {
             <label>
               Deadline
               <input
+                name="gig-application-deadline"
                 type="date"
                 defaultValue={gig.dueDate || ""}
                 onBlur={(event) =>
@@ -9586,6 +9601,7 @@ function Gigs({ state, reload }) {
             <label>
               Proposal / delivery notes
               <textarea
+                name="gig-delivery-notes"
                 className="gig-proposal"
                 defaultValue={gig.proposal}
                 onBlur={(event) =>
