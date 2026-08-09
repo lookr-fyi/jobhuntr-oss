@@ -6084,17 +6084,23 @@ function SubmissionCard({ submission: s, state, reload }) {
         typeof saved.answers !== "object"
       )
         return {};
-      const validIds = new Set(
-        (s.applicationQuestions || [])
-          .filter(
-            (question) =>
-              !["dropdown", "multiple_choice"].includes(question.questionType),
-          )
-          .map((question) => question.id),
+      const questionsById = new Map(
+        (s.applicationQuestions || []).map((question) => [
+          question.id,
+          question,
+        ]),
       );
       return Object.fromEntries(
         Object.entries(saved.answers)
-          .filter(([id]) => validIds.has(id))
+          .filter(([id, answer]) => {
+            const question = questionsById.get(id);
+            if (!question) return false;
+            if (
+              !["dropdown", "multiple_choice"].includes(question.questionType)
+            )
+              return true;
+            return !answer || (question.options || []).includes(String(answer));
+          })
           .slice(0, 100)
           .map(([id, answer]) => [id, String(answer || "").slice(0, 10_000)]),
       );
@@ -6105,15 +6111,10 @@ function SubmissionCard({ submission: s, state, reload }) {
   });
   const [draftAnswers, setDraftAnswers] = useState(() =>
     Object.fromEntries(
-      (s.applicationQuestions || [])
-        .filter(
-          (question) =>
-            !["dropdown", "multiple_choice"].includes(question.questionType),
-        )
-        .map((question) => [
-          question.id,
-          initialAnswerDraft[question.id] ?? question.answer ?? "",
-        ]),
+      (s.applicationQuestions || []).map((question) => [
+        question.id,
+        initialAnswerDraft[question.id] ?? question.answer ?? "",
+      ]),
     ),
   );
   const [dirtyAnswerIds, setDirtyAnswerIds] = useState(
@@ -6149,12 +6150,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       ? profileResumeReady
       : isUsableResumeText(attachedResume?.content);
   const reviewedQuestions = (s.applicationQuestions || []).map((question) => {
-    const isTextQuestion = !["dropdown", "multiple_choice"].includes(
-      question.questionType,
-    );
-    const answer = isTextQuestion
-      ? (draftAnswers[question.id] ?? question.answer ?? "")
-      : question.answer || "";
+    const answer = draftAnswers[question.id] ?? question.answer ?? "";
     return {
       ...question,
       answer,
@@ -6198,7 +6194,13 @@ function SubmissionCard({ submission: s, state, reload }) {
       status: "ready",
     });
   };
-  const updateQuestion = async (id, answer) => {
+  const updateQuestion = async (id, answer, trackDraft = false) => {
+    if (trackDraft) {
+      answerRevisionRef.current[id] = (answerRevisionRef.current[id] || 0) + 1;
+      setDraftAnswers((answers) => ({ ...answers, [id]: answer }));
+      setDirtyAnswerIds((current) => new Set(current).add(id));
+      setAnswerDraftRestored(false);
+    }
     const savingRevision = answerRevisionRef.current[id] || 0;
     const saved = await updatePacket({
       applicationQuestion: { id, answer, verified: false },
@@ -6214,16 +6216,11 @@ function SubmissionCard({ submission: s, state, reload }) {
     const question = (s.applicationQuestions || []).find(
       (candidate) => candidate.id === id,
     );
-    const isTextQuestion = !["dropdown", "multiple_choice"].includes(
-      question?.questionType,
-    );
     const savingRevision = answerRevisionRef.current[id] || 0;
     const saved = await updatePacket({
       applicationQuestion: {
         id,
-        answer: isTextQuestion
-          ? (draftAnswers[id] ?? question?.answer ?? "")
-          : question?.answer || "",
+        answer: draftAnswers[id] ?? question?.answer ?? "",
         verified,
       },
     });
@@ -6394,8 +6391,13 @@ function SubmissionCard({ submission: s, state, reload }) {
                             type="radio"
                             name={`question-${question.id}`}
                             value={option}
-                            checked={question.answer === option}
-                            onChange={() => updateQuestion(question.id, option)}
+                            checked={
+                              (draftAnswers[question.id] ?? question.answer) ===
+                              option
+                            }
+                            onChange={() =>
+                              updateQuestion(question.id, option, true)
+                            }
                           />
                           {option}
                         </label>
@@ -6403,7 +6405,11 @@ function SubmissionCard({ submission: s, state, reload }) {
                     </div>
                   </fieldset>
                   <QuestionVerification
-                    question={question}
+                    question={
+                      reviewedQuestions.find(
+                        (candidate) => candidate.id === question.id,
+                      ) || question
+                    }
                     onChange={verifyQuestion}
                   />
                 </div>
@@ -6416,9 +6422,9 @@ function SubmissionCard({ submission: s, state, reload }) {
                     {prompt}
                     <select
                       name={`question-${question.id}`}
-                      value={question.answer || ""}
+                      value={draftAnswers[question.id] ?? question.answer ?? ""}
                       onChange={(event) =>
-                        updateQuestion(question.id, event.target.value)
+                        updateQuestion(question.id, event.target.value, true)
                       }
                     >
                       <option value="">Select an answer…</option>
@@ -6428,7 +6434,11 @@ function SubmissionCard({ submission: s, state, reload }) {
                     </select>
                   </label>
                   <QuestionVerification
-                    question={question}
+                    question={
+                      reviewedQuestions.find(
+                        (candidate) => candidate.id === question.id,
+                      ) || question
+                    }
                     onChange={verifyQuestion}
                   />
                 </div>

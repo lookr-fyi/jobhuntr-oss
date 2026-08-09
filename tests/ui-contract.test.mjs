@@ -1514,6 +1514,10 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /jobhuntr-application-answer-draft:/);
   assert.match(card, /localStorage\.getItem\(answerDraftKey\)/);
   assert.match(card, /String\(answer \|\| ""\)\.slice\(0, 10_000\)/);
+  assert.match(
+    card,
+    /\(question\.options \|\| \[\]\)\.includes\(String\(answer\)\)/,
+  );
   assert.match(card, /const \[dirtyAnswerIds, setDirtyAnswerIds\]/);
   assert.match(card, /const answerRevisionRef = useRef\(\{\}\)/);
   assert.match(
@@ -1523,6 +1527,19 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(
     card,
     /saved && \(answerRevisionRef\.current\[id\] \|\| 0\) === savingRevision/,
+  );
+  assert.match(
+    card,
+    /const updateQuestion = async \(id, answer, trackDraft = false\)/,
+  );
+  assert.match(card, /updateQuestion\(question\.id, option, true\)/);
+  assert.match(
+    card,
+    /updateQuestion\(question\.id, event\.target\.value, true\)/,
+  );
+  assert.match(
+    card,
+    /value=\{draftAnswers\[question\.id\] \?\? question\.answer \?\? ""\}/,
   );
   assert.match(card, /if \(!dirtyAnswerIds\.size\)/);
   assert.match(

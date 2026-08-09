@@ -2169,17 +2169,36 @@ test(
         ),
         salaryAnswer.press("Tab"),
       ]);
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().includes("/api/submissions/") &&
-            response.request().method() === "PATCH" &&
-            response.ok(),
-        ),
-        queueQuestions
-          .getByLabel(/When are you available to start/)
-          .selectOption("Within 2 weeks"),
-      ]);
+      await page.route("**/api/submissions/*", async (route) => {
+        if (route.request().method() === "PATCH")
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        await route.continue();
+      });
+      const availabilityQuestion = queueQuestions
+        .locator(".v2-question-card")
+        .filter({ hasText: "When are you available to start?" });
+      const availabilitySelect = availabilityQuestion.getByLabel(
+        /When are you available to start/,
+      );
+      const availabilityResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/submissions/") &&
+          response.request().method() === "PATCH" &&
+          response.ok(),
+      );
+      await availabilitySelect.selectOption("Within 2 weeks");
+      assert.equal(
+        await availabilitySelect.inputValue(),
+        "Within 2 weeks",
+        "Easy Apply choice answers should remain visible while persistence is pending",
+      );
+      assert.equal(
+        await availabilityQuestion.getByRole("checkbox").isDisabled(),
+        false,
+        "a selected choice should be immediately available for explicit review",
+      );
+      await availabilityResponse;
+      await page.unroute("**/api/submissions/*");
       await Promise.all([
         page.waitForResponse(
           (response) =>
