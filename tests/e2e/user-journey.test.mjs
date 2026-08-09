@@ -2105,18 +2105,30 @@ test(
         .locator(".v2-question-card")
         .filter({ hasText: "Why are you interested in this role?" })
         .getByRole("checkbox");
-      await immediateVerification.click();
-      await page.waitForFunction(
-        () =>
-          document.querySelector(
-            ".v2-application-questions .v2-question-card input[type=checkbox]",
-          )?.checked === true,
+      await page.route("**/api/submissions/*", async (route) => {
+        if (route.request().method() === "PATCH")
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        await route.continue();
+      });
+      const immediateVerificationResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/submissions/") &&
+          response.request().method() === "PATCH" &&
+          response.ok(),
       );
+      await immediateVerification.click();
       assert.equal(
         await immediateVerification.isChecked(),
         true,
         "a user must be able to type and verify an answer with one click, without waiting for a reload",
       );
+      assert.equal(
+        await immediateVerification.isDisabled(),
+        true,
+        "a pending answer verification should reject duplicate toggles",
+      );
+      await immediateVerificationResponse;
+      await page.unroute("**/api/submissions/*");
       const salaryAnswer = queueQuestions.getByLabel(
         /What are your salary expectations/,
       );
@@ -2246,18 +2258,36 @@ test(
       await page.getByText(/3\/4 verified/).waitFor();
       await editedVerification.click();
       await page.getByText(/4\/4 verified/).waitFor();
+      await page.waitForFunction(
+        (checkbox) =>
+          checkbox.disabled === false &&
+          checkbox.getAttribute("aria-busy") === "false",
+        await editedVerification.elementHandle(),
+      );
+      await page.waitForFunction(async (expectedAnswer) => {
+        const state = await fetch(`/api/state?verify=${Date.now()}`, {
+          cache: "no-store",
+        }).then((response) => response.json());
+        return state.submissions
+          .flatMap((submission) => submission.applicationQuestions || [])
+          .some(
+            (question) =>
+              question.answer === expectedAnswer && question.verified === true,
+          );
+      }, "The product mission and customer impact match my experience.");
       const verifiedPacketState = await (
         await page.request.get(`${baseUrl}/api/state`)
       ).json();
       const rapidlyVerifiedQuestion = verifiedPacketState.submissions
         .flatMap((submission) => submission.applicationQuestions || [])
-        .find(
+        .some(
           (question) =>
             question.answer ===
-            "The product mission and customer impact match my experience.",
+              "The product mission and customer impact match my experience." &&
+            question.verified === true,
         );
       assert.equal(
-        rapidlyVerifiedQuestion?.verified,
+        rapidlyVerifiedQuestion,
         true,
         "typing, blurring, and immediately verifying must persist the final verified state in request order",
       );

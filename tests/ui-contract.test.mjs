@@ -1520,9 +1520,10 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   );
   assert.match(card, /const \[dirtyAnswerIds, setDirtyAnswerIds\]/);
   assert.match(card, /const answerRevisionRef = useRef\(\{\}\)/);
+  assert.match(card, /const \[answerRevisions, setAnswerRevisions\]/);
   assert.match(
     card,
-    /answerRevisionRef\.current\[question\.id\] =\s*\(answerRevisionRef\.current\[question\.id\] \|\| 0\) \+ 1/,
+    /answerRevisionRef\.current\[question\.id\] = nextRevision;[\s\S]*?setAnswerRevisions/,
   );
   assert.match(
     card,
@@ -1576,6 +1577,34 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
     /disabled=\{pendingAttachmentFields\.has\("coverLetterId"\)\}/,
   );
   assert.match(card, /pendingAttachmentFields\.size > 0/);
+  assert.match(card, /const \[verificationDraft, setVerificationDraft\]/);
+  assert.match(
+    card,
+    /const \[pendingVerificationIds, setPendingVerificationIds\]/,
+  );
+  assert.match(card, /const verificationRevisionRef = useRef\(\{\}\)/);
+  assert.match(card, /const verificationIntentIdsRef = useRef\(new Set\(\)\)/);
+  assert.match(card, /pendingVerification\?\.answerRevision/);
+  assert.match(
+    card,
+    /setPendingVerificationIds\(\(current\) => new Set\(current\)\.add\(id\)\)/,
+  );
+  assert.match(
+    card,
+    /await new Promise\(\(resolve\) => setTimeout\(resolve, 0\)\);[\s\S]*?const saved = await updatePacket/,
+  );
+  assert.match(card, /pending=\{pendingVerificationIds\.has\(question\.id\)\}/);
+  assert.match(card, /pendingVerificationIds\.size > 0/);
+  assert.match(
+    card,
+    /!verificationIntentIdsRef\.current\.has\(question\.id\)[\s\S]*?updateQuestion\(question\.id, event\.target\.value\)/,
+  );
+  assert.match(
+    source,
+    /onPointerDown=\{\(\) => onIntent\?\.\(question\.id\)\}/,
+  );
+  assert.match(source, /disabled=\{pending \|\| !valid\}/);
+  assert.match(source, /aria-busy=\{pending\}/);
 });
 
 test("FAQ deletion persists before mutating the form and cannot bless newer edits", async () => {

@@ -6036,7 +6036,12 @@ function ClipboardListIcon() {
 function InboxIcon() {
   return <Download size={24} />;
 }
-function QuestionVerification({ question, onChange }) {
+function QuestionVerification({
+  question,
+  onChange,
+  onIntent,
+  pending = false,
+}) {
   const skipped =
     question.required === false && !String(question.answer || "").trim();
   if (skipped)
@@ -6056,7 +6061,9 @@ function QuestionVerification({ question, onChange }) {
         name={`verify-question-${question.id}`}
         aria-label={`Verification checkbox ${question.id}`}
         checked={Boolean(question.verified)}
-        disabled={!valid}
+        disabled={pending || !valid}
+        aria-busy={pending}
+        onPointerDown={() => onIntent?.(question.id)}
         onChange={(event) => onChange(question.id, event.target.checked)}
       />
       <span>
@@ -6121,6 +6128,13 @@ function SubmissionCard({ submission: s, state, reload }) {
     () => new Set(Object.keys(initialAnswerDraft)),
   );
   const answerRevisionRef = useRef({});
+  const [answerRevisions, setAnswerRevisions] = useState({});
+  const [verificationDraft, setVerificationDraft] = useState({});
+  const [pendingVerificationIds, setPendingVerificationIds] = useState(
+    () => new Set(),
+  );
+  const verificationRevisionRef = useRef({});
+  const verificationIntentIdsRef = useRef(new Set());
   const [checklistAnswers, setChecklistAnswers] = useState(() =>
     Object.fromEntries((s.checklist || []).map((item) => [item.id, item.done])),
   );
@@ -6174,11 +6188,17 @@ function SubmissionCard({ submission: s, state, reload }) {
       : isUsableResumeText(attachedResume?.content);
   const reviewedQuestions = (s.applicationQuestions || []).map((question) => {
     const answer = draftAnswers[question.id] ?? question.answer ?? "";
+    const pendingVerification = verificationDraft[question.id];
+    const verificationIsCurrent =
+      pendingVerificationIds.has(question.id) &&
+      pendingVerification?.answerRevision ===
+        (answerRevisions[question.id] || 0);
     return {
       ...question,
       answer,
-      verified:
-        question.verified === true && answer === (question.answer || ""),
+      verified: verificationIsCurrent
+        ? pendingVerification.verified
+        : question.verified === true && answer === (question.answer || ""),
     };
   });
   const requiredQuestions = reviewedQuestions.filter(
@@ -6252,7 +6272,9 @@ function SubmissionCard({ submission: s, state, reload }) {
   };
   const updateQuestion = async (id, answer, trackDraft = false) => {
     if (trackDraft) {
-      answerRevisionRef.current[id] = (answerRevisionRef.current[id] || 0) + 1;
+      const nextRevision = (answerRevisionRef.current[id] || 0) + 1;
+      answerRevisionRef.current[id] = nextRevision;
+      setAnswerRevisions((current) => ({ ...current, [id]: nextRevision }));
       setDraftAnswers((answers) => ({ ...answers, [id]: answer }));
       setDirtyAnswerIds((current) => new Set(current).add(id));
       setAnswerDraftRestored(false);
@@ -6273,6 +6295,16 @@ function SubmissionCard({ submission: s, state, reload }) {
       (candidate) => candidate.id === id,
     );
     const savingRevision = answerRevisionRef.current[id] || 0;
+    const verificationRevision = (verificationRevisionRef.current[id] || 0) + 1;
+    verificationRevisionRef.current[id] = verificationRevision;
+    setVerificationDraft((current) => ({
+      ...current,
+      [id]: { verified, answerRevision: savingRevision },
+    }));
+    setPendingVerificationIds((current) => new Set(current).add(id));
+    // A checkbox click can blur its answer field in the same browser gesture.
+    // Let that blur enqueue first so verification is always the final write.
+    await new Promise((resolve) => setTimeout(resolve, 0));
     const saved = await updatePacket({
       applicationQuestion: {
         id,
@@ -6286,6 +6318,13 @@ function SubmissionCard({ submission: s, state, reload }) {
         next.delete(id);
         return next;
       });
+    if (verificationRevisionRef.current[id] === verificationRevision)
+      setPendingVerificationIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    verificationIntentIdsRef.current.delete(id);
   };
   const recordExternalSubmission = async () => {
     if (
@@ -6293,6 +6332,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       !checklistReady ||
       pendingChecklistIds.size > 0 ||
       pendingAttachmentFields.size > 0 ||
+      pendingVerificationIds.size > 0 ||
       !externalSubmissionVerified ||
       !selectedResumeReady ||
       !questionsReady
@@ -6469,6 +6509,8 @@ function SubmissionCard({ submission: s, state, reload }) {
                       ) || question
                     }
                     onChange={verifyQuestion}
+                    onIntent={(id) => verificationIntentIdsRef.current.add(id)}
+                    pending={pendingVerificationIds.has(question.id)}
                   />
                 </div>
               );
@@ -6498,6 +6540,8 @@ function SubmissionCard({ submission: s, state, reload }) {
                       ) || question
                     }
                     onChange={verifyQuestion}
+                    onIntent={(id) => verificationIntentIdsRef.current.add(id)}
+                    pending={pendingVerificationIds.has(question.id)}
                   />
                 </div>
               );
@@ -6513,8 +6557,13 @@ function SubmissionCard({ submission: s, state, reload }) {
                     value={draftAnswers[question.id] ?? question.answer ?? ""}
                     placeholder="Enter your answer…"
                     onChange={(event) => {
-                      answerRevisionRef.current[question.id] =
+                      const nextRevision =
                         (answerRevisionRef.current[question.id] || 0) + 1;
+                      answerRevisionRef.current[question.id] = nextRevision;
+                      setAnswerRevisions((current) => ({
+                        ...current,
+                        [question.id]: nextRevision,
+                      }));
                       setDraftAnswers((answers) => ({
                         ...answers,
                         [question.id]: event.target.value,
@@ -6525,7 +6574,10 @@ function SubmissionCard({ submission: s, state, reload }) {
                       setAnswerDraftRestored(false);
                     }}
                     onBlur={(event) => {
-                      if (event.target.value !== (question.answer || ""))
+                      if (
+                        !verificationIntentIdsRef.current.has(question.id) &&
+                        event.target.value !== (question.answer || "")
+                      )
                         updateQuestion(question.id, event.target.value);
                     }}
                   />
@@ -6537,6 +6589,8 @@ function SubmissionCard({ submission: s, state, reload }) {
                     ) || question
                   }
                   onChange={verifyQuestion}
+                  onIntent={(id) => verificationIntentIdsRef.current.add(id)}
+                  pending={pendingVerificationIds.has(question.id)}
                 />
               </div>
             );
@@ -6665,6 +6719,7 @@ function SubmissionCard({ submission: s, state, reload }) {
             !checklistReady ||
             pendingChecklistIds.size > 0 ||
             pendingAttachmentFields.size > 0 ||
+            pendingVerificationIds.size > 0 ||
             !externalSubmissionVerified ||
             !selectedResumeReady ||
             !questionsReady
