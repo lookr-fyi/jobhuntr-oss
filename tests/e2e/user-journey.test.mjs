@@ -3587,6 +3587,22 @@ test(
         .fill(
           "Target product engineering roles focused on conversion experiments and React.",
         );
+      await page.locator('button[title="Job Tracker"]').click();
+      await page.getByRole("button", { name: "LinkedIn Audit" }).click();
+      await page
+        .getByText("Private LinkedIn audit draft restored.", { exact: true })
+        .waitFor();
+      assert.equal(
+        await page.getByLabel("About section").inputValue(),
+        "I build customer-facing products and improved conversion by 42% through measurable experiments.",
+        "pasted LinkedIn content should recover after navigation",
+      );
+      assert.equal(
+        await page
+          .getByLabel(/How would you like to improve your LinkedIn profile/)
+          .inputValue(),
+        "Target product engineering roles focused on conversion experiments and React.",
+      );
       await assertNamedFormControls(page, "LinkedIn Audit");
       await page.getByRole("button", { name: "Analyze Profile" }).click();
       await page.locator(".audit-score").waitFor();

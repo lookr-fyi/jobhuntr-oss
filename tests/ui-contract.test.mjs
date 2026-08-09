@@ -991,7 +991,7 @@ test("LinkedIn audits cannot duplicate or publish stale results", async () => {
   assert.match(audit, /const auditRevision = profileRevision\.current/);
   assert.match(
     audit,
-    /if \(profileRevision\.current === auditRevision\) setAudit\(result\)/,
+    /if \(profileRevision\.current === auditRevision\) \{\s*setAudit\(result\)/,
   );
   assert.match(audit, /const editProfileUrl = \(value\) => \{/);
   assert.match(audit, /const editAuditForm = \(next\) => \{/);
@@ -1000,6 +1000,28 @@ test("LinkedIn audits cannot duplicate or publish stale results", async () => {
     "URL edits, form edits, and history selection must invalidate pending audits",
   );
   assert.match(audit, /aria-busy=\{running\}/);
+});
+
+test("LinkedIn Audit recovers bounded private profile drafts", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const audit = source.slice(
+    source.indexOf("function ProfileAudit"),
+    source.indexOf("function Agent"),
+  );
+
+  assert.match(audit, /jobhuntr-profile-audit-draft/);
+  assert.match(audit, /localStorage\.getItem\(auditDraftKey\)/);
+  assert.match(audit, /localStorage\.setItem\(/);
+  assert.match(audit, /localStorage\.removeItem\(auditDraftKey\)/);
+  assert.match(audit, /Private LinkedIn audit draft restored\./);
+  assert.match(
+    audit,
+    /String\(saved\.experience \|\| ""\)\.slice\(0, 50_000\)/,
+  );
+  assert.match(audit, /persistAuditDraft\(profileUrl, next\)/);
 });
 
 test("Interview round persistence is single-flight and retryable", async () => {

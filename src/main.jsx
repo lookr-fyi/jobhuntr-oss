@@ -12134,30 +12134,72 @@ function Gigs({ state, reload }) {
   );
 }
 function ProfileAudit({ state, reload }) {
-  const [profileUrl, setProfileUrl] = useState("");
-  const [expanded, setExpanded] = useState(false);
-  const [contextExpanded, setContextExpanded] = useState(false);
-  const [form, setForm] = useState({
+  const auditDraftKey = "jobhuntr-profile-audit-draft";
+  const auditDefaults = {
     profileUrl: "",
     targetContext: "",
     headline: state.profile.headline || "",
     about: "",
     experience: state.profile.resumeText || "",
     skills: (state.profile.skills || []).join(", "),
+  };
+  const [initialAuditDraft] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(auditDraftKey) || "null");
+      if (!saved) return null;
+      return {
+        profileUrl: String(saved.profileUrl || "").slice(0, 2_000),
+        targetContext: String(saved.targetContext || "").slice(0, 20_000),
+        headline: String(saved.headline || "").slice(0, 1_000),
+        about: String(saved.about || "").slice(0, 20_000),
+        experience: String(saved.experience || "").slice(0, 50_000),
+        skills: String(saved.skills || "").slice(0, 5_000),
+      };
+    } catch {
+      localStorage.removeItem(auditDraftKey);
+      return null;
+    }
   });
+  const [profileUrl, setProfileUrl] = useState(
+    initialAuditDraft?.profileUrl || "",
+  );
+  const [expanded, setExpanded] = useState(() =>
+    Boolean(
+      initialAuditDraft?.about ||
+      initialAuditDraft?.experience ||
+      initialAuditDraft?.skills,
+    ),
+  );
+  const [contextExpanded, setContextExpanded] = useState(
+    Boolean(initialAuditDraft?.targetContext),
+  );
+  const [form, setForm] = useState(initialAuditDraft || auditDefaults);
+  const [auditDraftRestored, setAuditDraftRestored] = useState(
+    Boolean(initialAuditDraft),
+  );
   const [audit, setAudit] = useState(state.profileAudits[0] || null);
   const [deleteAudit, setDeleteAudit] = useState(null);
   const [running, setRunning] = useState(false);
   const runningAuditRef = useRef(false);
   const profileRevision = useRef(0);
+  const persistAuditDraft = (nextProfileUrl, nextForm) => {
+    localStorage.setItem(
+      auditDraftKey,
+      JSON.stringify({ ...nextForm, profileUrl: nextProfileUrl }),
+    );
+  };
   const editProfileUrl = (value) => {
     profileRevision.current += 1;
     setProfileUrl(value);
+    setAuditDraftRestored(false);
+    persistAuditDraft(value, form);
     setAudit(null);
   };
   const editAuditForm = (next) => {
     profileRevision.current += 1;
     setForm(next);
+    setAuditDraftRestored(false);
+    persistAuditDraft(profileUrl, next);
     setAudit(null);
   };
   const profileUrlValid =
@@ -12175,7 +12217,11 @@ function ProfileAudit({ state, reload }) {
         method: "POST",
         body: JSON.stringify({ ...form, profileUrl }),
       });
-      if (profileRevision.current === auditRevision) setAudit(result);
+      if (profileRevision.current === auditRevision) {
+        setAudit(result);
+        setAuditDraftRestored(false);
+        localStorage.removeItem(auditDraftKey);
+      }
       await reload();
     } catch {
       // Preserve the pasted profile content so the audit can be retried.
@@ -12283,6 +12329,11 @@ function ProfileAudit({ state, reload }) {
           reviewed below.
         </span>
       </div>
+      {auditDraftRestored && (
+        <p className="v2-draft-restored" role="status">
+          Private LinkedIn audit draft restored.
+        </p>
+      )}
       <button
         className="v2-audit-toggle"
         onClick={() => setExpanded(!expanded)}
@@ -12460,6 +12511,8 @@ function ProfileAudit({ state, reload }) {
                   <button
                     onClick={() => {
                       profileRevision.current += 1;
+                      localStorage.removeItem(auditDraftKey);
+                      setAuditDraftRestored(false);
                       setAudit(item);
                       setProfileUrl(item.input.profileUrl || "");
                       setContextExpanded(Boolean(item.input.targetContext));
