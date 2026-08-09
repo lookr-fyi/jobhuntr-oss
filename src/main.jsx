@@ -372,7 +372,9 @@ const boardSponsorship = (job) => {
   return "unknown";
 };
 const formatRelativeTime = (value) => {
-  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "recently";
+  const elapsed = Math.max(0, Date.now() - timestamp);
   const minutes = Math.floor(elapsed / 60000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes} min${minutes === 1 ? "" : "s"} ago`;
@@ -381,6 +383,10 @@ const formatRelativeTime = (value) => {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
   return new Date(value).toLocaleDateString();
+};
+const formatCalendarDate = (value, fallback = "Recently") => {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString() : fallback;
 };
 const coverLetterPreviewDocument = (content, templateId = "minimal") => {
   const escaped = String(content || "")
@@ -3904,6 +3910,7 @@ function Board({ state, reload }) {
         <div className="v2-board-search">
           <Search size={17} />
           <input
+            name="board-search"
             aria-label="Search jobs"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -3938,6 +3945,7 @@ function Board({ state, reload }) {
           <label>
             Location
             <input
+              name="board-location"
               value={location}
               onChange={(event) => setLocation(event.target.value)}
               placeholder="Remote, city, or state"
@@ -3946,6 +3954,7 @@ function Board({ state, reload }) {
           <label>
             Minimum match
             <select
+              name="board-minimum-match"
               value={minimumFit}
               onChange={(event) => setMinimumFit(Number(event.target.value))}
             >
@@ -3958,6 +3967,7 @@ function Board({ state, reload }) {
           <label>
             Minimum salary
             <select
+              name="board-minimum-salary"
               aria-label="Minimum board salary"
               value={minimumSalary}
               onChange={(event) => setMinimumSalary(Number(event.target.value))}
@@ -3973,6 +3983,7 @@ function Board({ state, reload }) {
           <label>
             Work arrangement
             <select
+              name="board-work-arrangement"
               aria-label="Board work arrangement"
               value={remoteType}
               onChange={(event) => setRemoteType(event.target.value)}
@@ -3985,6 +3996,7 @@ function Board({ state, reload }) {
           <label>
             Source
             <select
+              name="board-source"
               aria-label="Board source"
               value={source}
               onChange={(event) => setSource(event.target.value)}
@@ -4002,6 +4014,7 @@ function Board({ state, reload }) {
           <label>
             Job type
             <select
+              name="board-job-type"
               aria-label="Board job type"
               value={jobType}
               onChange={(event) => setJobType(event.target.value)}
@@ -4015,6 +4028,7 @@ function Board({ state, reload }) {
           <label>
             Seniority
             <select
+              name="board-seniority"
               aria-label="Board seniority"
               value={seniority}
               onChange={(event) => setSeniority(event.target.value)}
@@ -4029,6 +4043,7 @@ function Board({ state, reload }) {
           <label>
             Visa sponsorship
             <select
+              name="board-sponsorship"
               aria-label="Board visa sponsorship"
               value={sponsorship}
               onChange={(event) => setSponsorship(event.target.value)}
@@ -4042,6 +4057,7 @@ function Board({ state, reload }) {
           <label>
             Sort by
             <select
+              name="board-sort"
               value={sort}
               onChange={(event) => setSort(event.target.value)}
             >
@@ -4155,9 +4171,9 @@ function Board({ state, reload }) {
                 <div className="v2-board-post-meta">
                   <span>
                     <Calendar size={13} /> Posted{" "}
-                    {new Date(
+                    {formatCalendarDate(
                       selected.postedAt || selected.collectedAt,
-                    ).toLocaleDateString()}
+                    )}
                   </span>
                   <span>
                     <Users size={13} /> {selected.numApplicants || 0} applicants

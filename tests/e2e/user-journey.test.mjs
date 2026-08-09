@@ -606,6 +606,7 @@ test(
       await page.getByLabel("Board visa sponsorship").selectOption("unknown");
       await page.getByLabel("Board source").selectOption("Seed Board");
       await page.getByLabel("Sort by").selectOption("salary");
+      await assertNamedFormControls(page, "Job Board filters");
       await page
         .getByRole("button", { name: /Filters/ })
         .getByText("8")
@@ -655,6 +656,12 @@ test(
       await page
         .getByRole("heading", { name: "Frontend Platform Engineer" })
         .waitFor();
+      assert.equal(
+        await page.getByText("Invalid Date", { exact: true }).count(),
+        0,
+        "jobs without source timestamps must never render a broken date",
+      );
+      await assertNamedFormControls(page, "Job Board");
       await assertAccessible(page, "Job Board");
 
       await page.locator('button[title="ATS Templates"]').click();
