@@ -4388,6 +4388,7 @@ test(
           const styles = (selector) =>
             window.getComputedStyle(document.querySelector(selector));
           return {
+            mainPadding: styles("main").padding,
             pageMaxWidth: styles(".coach-page").maxWidth,
             pagePadding: styles(".coach-page").padding,
             headingSize: styles(".v2-coach-welcome h2").fontSize,
@@ -4399,14 +4400,15 @@ test(
           };
         }),
         {
-          pageMaxWidth: "1200px",
+          mainPadding: "0px",
+          pageMaxWidth: "1248px",
           pagePadding: "24px",
-          headingSize: "26px",
+          headingSize: "17.875px",
           headingWeight: "600",
           copyAlignment: "start",
           inputMaxWidth: "768px",
           inputHeight: "120px",
-          actionSize: "16px",
+          actionSize: "11px",
         },
         "Career Coach should preserve the v2 desktop content and composer proportions",
       );

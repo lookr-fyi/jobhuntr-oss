@@ -2608,19 +2608,19 @@ section.gigs-page .v2-gigs-intro p {
 }
 .v2-coach-welcome h2 {
   margin-bottom: 36px;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   text-align: center;
 }
 .v2-coach-welcome p {
   margin: 0 0 18px;
   color: #475569;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
 }
 .v2-coach-welcome > strong {
   display: block;
-  font-size: 16px;
+  font-size: 1rem;
 }
 .v2-coach-prompts {
   display: flex;
@@ -2705,7 +2705,7 @@ section.gigs-page .v2-gigs-intro p {
   bottom: 12px;
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-coach-input .v2-draft-restored {
@@ -5190,7 +5190,7 @@ button.v2-workflow-card.selected {
   gap: 18px;
   box-sizing: border-box;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1248px;
   margin: 0 auto;
   padding: 24px;
 }
@@ -6249,6 +6249,9 @@ main:has(> .v2-outreach-page) {
   padding: 0;
 }
 main:has(> .gigs-page) {
+  padding: 0;
+}
+main:has(> .coach-page) {
   padding: 0;
 }
 main > header {
