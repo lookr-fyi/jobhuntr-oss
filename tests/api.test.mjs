@@ -1360,6 +1360,31 @@ test("deleting a job cascades its private workflow records", async () => {
 
 test("full restore accepts only bounded JobHuntr backup keys", async () => {
   const state = (await req("/api/state")).body;
+  const largePreview = await req("/api/import/preview", {
+    method: "POST",
+    body: JSON.stringify({
+      jobs: [
+        {
+          id: "large-backup-job",
+          company: "Large Backup",
+          title: "Restorable role",
+          description: "x".repeat(3 * 1024 * 1024),
+        },
+      ],
+    }),
+  });
+  assert.equal(largePreview.res.status, 200);
+  assert.equal(largePreview.body.jobs, 1);
+  const oversizedStandardRequest = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Oversized",
+      title: "Request",
+      description: "x".repeat(3 * 1024 * 1024),
+    }),
+  });
+  assert.equal(oversizedStandardRequest.res.status, 413);
+  assert.match(oversizedStandardRequest.body.error, /2 MB or smaller/);
   const preview = await req("/api/import/preview", {
     method: "POST",
     body: JSON.stringify(state),

@@ -11246,6 +11246,10 @@ function Privacy({ state }) {
     setBackupPreview(null);
     setResult(null);
     if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      setResult({ error: "JobHuntr backups must be 50 MB or smaller." });
+      return;
+    }
     try {
       const preview = await api("/api/import/preview", {
         method: "POST",
@@ -11355,7 +11359,7 @@ function Privacy({ state }) {
             <Upload size={20} />
             <span>
               <strong>{backupFile?.name || "Choose JSON backup"}</strong>
-              <small>JobHuntr export · up to 5,000 jobs</small>
+              <small>JobHuntr export · up to 5,000 jobs or 50 MB</small>
             </span>
             <input
               type="file"

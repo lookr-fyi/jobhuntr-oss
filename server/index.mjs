@@ -62,7 +62,12 @@ app.use((_req, res, next) => {
   );
   next();
 });
-app.use(express.json({ limit: "2mb" }));
+const standardJson = express.json({ limit: "2mb" });
+const backupJson = express.json({ limit: "50mb" });
+const largeBackupPaths = new Set(["/api/import", "/api/import/preview"]);
+app.use((req, res, next) =>
+  (largeBackupPaths.has(req.path) ? backupJson : standardJson)(req, res, next),
+);
 
 const timestamp = () => new Date().toISOString();
 const safeText = (value, max = 10000) =>
@@ -2193,7 +2198,13 @@ app.post("/api/import", async (req, res) => {
   res.json({ ok: true });
 });
 
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
+  if (err?.type === "entity.too.large")
+    return res.status(413).json({
+      error: largeBackupPaths.has(req.path)
+        ? "JobHuntr backups must be 50 MB or smaller"
+        : "Request body must be 2 MB or smaller",
+    });
   if (err instanceof z.ZodError)
     return res
       .status(400)
