@@ -13062,18 +13062,26 @@ function SettingsPage({ state, reload, setTab }) {
         confirmLabel="Delete question"
         onClose={() => setFaqDeleteTarget(null)}
         onConfirm={async () => {
-          const faqAnswers = form.faqAnswers.filter(
-            (_, index) => index !== faqDeleteTarget.index,
+          const deletionRevision = formRevision.current;
+          const targetId = faqDeleteTarget.id;
+          const faqAnswers = form.faqAnswers.filter((answer, index) =>
+            targetId ? answer.id !== targetId : index !== faqDeleteTarget.index,
           );
-          setForm((current) => ({ ...current, faqAnswers }));
-          setFaqDeleteTarget(null);
           setSaved(false);
           await api("/api/profile", {
             method: "PUT",
             body: JSON.stringify({ ...p, faqAnswers }),
           });
           await reload();
-          setSaved(true);
+          setForm((current) => ({
+            ...current,
+            faqAnswers: current.faqAnswers.filter((answer, index) =>
+              targetId
+                ? answer.id !== targetId
+                : index !== faqDeleteTarget.index,
+            ),
+          }));
+          if (formRevision.current === deletionRevision) setSaved(true);
         }}
       />
       <div className="v2-page-intro">

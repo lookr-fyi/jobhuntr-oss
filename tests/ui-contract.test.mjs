@@ -847,3 +847,36 @@ test("external submission recording is single-flight and retryable", async () =>
     /catch \{\s*\/\/ Preserve the user's explicit verification/,
   );
 });
+
+test("FAQ deletion persists before mutating the form and cannot bless newer edits", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const settings = source.slice(
+    source.indexOf("function SettingsPage"),
+    source.indexOf("function Privacy"),
+  );
+  const deletion = settings.slice(
+    settings.indexOf('title="Delete FAQ question?"'),
+    settings.indexOf('<div className="v2-page-intro">'),
+  );
+
+  const request = deletion.indexOf('await api("/api/profile"');
+  const localMutation = deletion.indexOf("setForm((current)");
+  assert.ok(request >= 0, "FAQ deletion must persist the profile");
+  assert.ok(
+    localMutation > request,
+    "FAQ deletion must not disappear locally before persistence succeeds",
+  );
+  assert.doesNotMatch(
+    deletion.slice(deletion.indexOf("onConfirm={async"), request),
+    /setFaqDeleteTarget\(null\)/,
+  );
+  assert.match(deletion, /const deletionRevision = formRevision\.current/);
+  assert.match(deletion, /const targetId = faqDeleteTarget\.id/);
+  assert.match(
+    deletion,
+    /if \(formRevision\.current === deletionRevision\) setSaved\(true\)/,
+  );
+});
