@@ -453,6 +453,47 @@ test("Resume Studio document writes are single-flight and keep editors retryable
   );
 });
 
+test("all authoritative cover-letter templates retain distinct visual themes", async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL("../src/main.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+  const themeSource = source.slice(
+    source.indexOf("const COVER_LETTER_PREVIEW_THEMES"),
+    source.indexOf("const coverLetterPreviewDocument"),
+  );
+  const templateIds = [
+    "blank",
+    "minimal",
+    "professional",
+    "modern",
+    "creative",
+    "tech-startup",
+    "finance",
+    "healthcare",
+    "marketing",
+    "education",
+    "legal",
+    "engineering",
+    "sales",
+    "nonprofit",
+    "consulting",
+    "startup",
+  ];
+
+  for (const id of templateIds) {
+    const key = id.includes("-") ? `"${id}":` : `${id}:`;
+    assert.match(themeSource, new RegExp(key.replace("-", "\\-")));
+    assert.match(
+      styles,
+      new RegExp(`v2-cover-template-(?:sheet|strip)[\\s\\S]*?\\.${id}`),
+    );
+  }
+  assert.match(source, /background:\$\{theme\.surface\}/);
+  assert.match(source, /font:15px\/1\.7 \$\{theme\.font\}/);
+  assert.match(source, /border-left:\$\{theme\.edge\}/);
+});
+
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

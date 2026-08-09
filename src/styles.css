@@ -8950,7 +8950,80 @@ main > header.integrated-page-header {
 .v2-cover-template-sheet.tech-startup,
 .v2-cover-template-strip .modern,
 .v2-cover-template-strip .tech-startup {
-  border-top: 18px solid #2563eb;
+  border-top: 18px solid #667eea;
+}
+.v2-cover-template-sheet.blank,
+.v2-cover-template-strip .blank {
+  border-color: #333;
+  font-family: Arial, sans-serif;
+}
+.v2-cover-template-sheet.minimal,
+.v2-cover-template-strip .minimal {
+  border-color: #e5e7eb;
+  font-family: Arial, sans-serif;
+}
+.v2-cover-template-sheet.finance,
+.v2-cover-template-strip .finance {
+  border-top: 18px solid #2c5aa0;
+  font-family: "Times New Roman", serif;
+}
+.v2-cover-template-sheet.healthcare,
+.v2-cover-template-strip .healthcare {
+  border-left: 14px solid #27ae60;
+  background: #f8fff8;
+}
+.v2-cover-template-sheet.marketing,
+.v2-cover-template-strip .marketing {
+  border-top: 18px solid #ff6b6b;
+  background: #fff8f8;
+}
+.v2-cover-template-sheet.education,
+.v2-cover-template-strip .education {
+  border-left: 14px solid #3498db;
+  background: #f0f8ff;
+  font-family: Georgia, serif;
+}
+.v2-cover-template-sheet.legal,
+.v2-cover-template-strip .legal {
+  border: 6px double #8b4513;
+  font-family: "Times New Roman", serif;
+}
+.v2-cover-template-sheet.engineering,
+.v2-cover-template-strip .engineering {
+  border-left: 14px solid #34495e;
+  background: #f8f9fa;
+}
+.v2-cover-template-sheet.sales,
+.v2-cover-template-strip .sales {
+  border-left: 14px solid #e74c3c;
+  background: #fff5f5;
+}
+.v2-cover-template-sheet.nonprofit,
+.v2-cover-template-strip .nonprofit {
+  border-left: 14px solid #8e44ad;
+  background: #f8f5ff;
+  font-family: Georgia, serif;
+}
+.v2-cover-template-sheet.consulting,
+.v2-cover-template-strip .consulting {
+  border-left: 14px solid #1abc9c;
+  background: #f4fcfa;
+}
+.v2-cover-template-sheet.startup,
+.v2-cover-template-strip .startup {
+  border-left: 14px solid #667eea;
+  background: #f7f8ff;
+}
+.v2-cover-template-sheet.creative,
+.v2-cover-template-strip .creative {
+  border-left: 14px solid #f39c12;
+  background: #fffaf2;
+  font-family: Georgia, serif;
+}
+.v2-cover-template-sheet.professional,
+.v2-cover-template-strip .professional {
+  border: 6px double #34495e;
+  font-family: "Times New Roman", serif;
 }
 .v2-cover-template-letterhead {
   margin-bottom: 35px;

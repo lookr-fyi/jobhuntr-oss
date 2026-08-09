@@ -2224,6 +2224,15 @@ test(
         "global hunt controls must not cover or enter the tab order of the full-route wizard",
       );
       await assertAccessible(page, "Cover Letter wizard");
+      await page.getByRole("button", { name: "Select Finance" }).click();
+      assert.deepEqual(
+        await page.locator(".v2-cover-template-sheet").evaluate((sheet) => {
+          const style = getComputedStyle(sheet);
+          return [style.fontFamily, style.borderTopColor];
+        }),
+        ['"Times New Roman", serif', "rgb(44, 90, 160)"],
+        "Finance should use its authoritative serif and blue document treatment",
+      );
       await page.getByRole("button", { name: "Select Modern" }).click();
       await page.getByRole("button", { name: "Next", exact: true }).click();
       assert.equal(new URL(page.url()).hash, "#/cover-letter?step=2");
@@ -2238,6 +2247,18 @@ test(
         .getByRole("heading", { name: "Edit Your Cover Letter Template" })
         .waitFor();
       await page.getByTitle("Cover Letter Preview").waitFor();
+      assert.deepEqual(
+        await page
+          .frameLocator('iframe[title="Cover Letter Preview"]')
+          .locator("body")
+          .evaluate((body) => {
+            const style = getComputedStyle(body);
+            const header = getComputedStyle(body.querySelector("header"));
+            return [style.backgroundColor, header.color];
+          }),
+        ["rgb(248, 249, 250)", "rgb(102, 126, 234)"],
+        "the selected Modern template should carry through to the safe live preview",
+      );
       assert.match(
         await page.getByLabel("Template content").inputValue(),
         /Hello \{\{company\}\}/,

@@ -435,6 +435,120 @@ const formatDateTime = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
 };
+const COVER_LETTER_PREVIEW_THEMES = {
+  blank: {
+    name: "Blank Template",
+    accent: "#333333",
+    surface: "#ffffff",
+    font: "Arial, sans-serif",
+    edge: "none",
+  },
+  minimal: {
+    name: "Minimal",
+    accent: "#333333",
+    surface: "#ffffff",
+    font: "Arial, sans-serif",
+    edge: "1px solid #e5e7eb",
+  },
+  professional: {
+    name: "Professional",
+    accent: "#34495e",
+    surface: "#ffffff",
+    font: "'Times New Roman', serif",
+    edge: "6px double #34495e",
+  },
+  modern: {
+    name: "Modern",
+    accent: "#667eea",
+    surface: "#f8f9fa",
+    font: "'Helvetica Neue', Arial, sans-serif",
+    edge: "5px solid #667eea",
+  },
+  creative: {
+    name: "Creative",
+    accent: "#e74c3c",
+    surface: "#fffaf2",
+    font: "Georgia, serif",
+    edge: "5px solid #f39c12",
+  },
+  "tech-startup": {
+    name: "Tech Startup",
+    accent: "#667eea",
+    surface: "#f8f9ff",
+    font: "-apple-system, BlinkMacSystemFont, sans-serif",
+    edge: "5px solid #0066cc",
+  },
+  finance: {
+    name: "Finance",
+    accent: "#2c5aa0",
+    surface: "#ffffff",
+    font: "'Times New Roman', serif",
+    edge: "4px solid #2c5aa0",
+  },
+  healthcare: {
+    name: "Healthcare",
+    accent: "#27ae60",
+    surface: "#f8fff8",
+    font: "Arial, sans-serif",
+    edge: "5px solid #27ae60",
+  },
+  marketing: {
+    name: "Marketing",
+    accent: "#ff6b6b",
+    surface: "#fff8f8",
+    font: "'Helvetica Neue', Arial, sans-serif",
+    edge: "8px solid #ff6b6b",
+  },
+  education: {
+    name: "Education",
+    accent: "#1976d2",
+    surface: "#f0f8ff",
+    font: "Georgia, serif",
+    edge: "5px solid #3498db",
+  },
+  legal: {
+    name: "Legal",
+    accent: "#8b4513",
+    surface: "#fffdf8",
+    font: "'Times New Roman', serif",
+    edge: "6px double #8b4513",
+  },
+  engineering: {
+    name: "Engineering",
+    accent: "#34495e",
+    surface: "#f8f9fa",
+    font: "Calibri, Arial, sans-serif",
+    edge: "5px solid #34495e",
+  },
+  sales: {
+    name: "Sales",
+    accent: "#e74c3c",
+    surface: "#fff5f5",
+    font: "Arial, sans-serif",
+    edge: "6px solid #e74c3c",
+  },
+  nonprofit: {
+    name: "Nonprofit",
+    accent: "#8e44ad",
+    surface: "#f8f5ff",
+    font: "Georgia, serif",
+    edge: "5px solid #8e44ad",
+  },
+  consulting: {
+    name: "Consulting",
+    accent: "#16a085",
+    surface: "#f4fcfa",
+    font: "'Helvetica Neue', Arial, sans-serif",
+    edge: "5px solid #1abc9c",
+  },
+  startup: {
+    name: "Startup",
+    accent: "#667eea",
+    surface: "#f7f8ff",
+    font: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+    edge: "5px solid #667eea",
+  },
+};
 const coverLetterPreviewDocument = (content, templateId = "minimal") => {
   const escaped = String(content || "")
     .replaceAll("&", "&amp;")
@@ -442,16 +556,14 @@ const coverLetterPreviewDocument = (content, templateId = "minimal") => {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
-  const accent = ["modern", "tech-startup", "creative", "marketing"].includes(
-    templateId,
-  )
-    ? "#2563eb"
-    : "#0f172a";
+  const theme =
+    COVER_LETTER_PREVIEW_THEMES[templateId] ||
+    COVER_LETTER_PREVIEW_THEMES.minimal;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
-    *{box-sizing:border-box}body{margin:0;padding:58px 54px;background:#fff;color:#27364a;font:15px/1.7 Georgia,serif;border-top:12px solid ${accent}}
-    header{margin-bottom:34px;color:${accent};font:700 21px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    *{box-sizing:border-box}body{min-height:100vh;margin:0;padding:54px;background:${theme.surface};color:#27364a;font:15px/1.7 ${theme.font};border-left:${theme.edge}}
+    header{margin-bottom:32px;padding-bottom:13px;border-bottom:2px solid ${theme.accent};color:${theme.accent};font:700 20px/1.2 ${theme.font};letter-spacing:.04em}
     pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}
-  </style></head><body><header>Cover Letter</header><pre>${escaped}</pre></body></html>`;
+  </style></head><body><header>${theme.name}</header><pre>${escaped}</pre></body></html>`;
 };
 const resumeEditorPreviewDocument = (content) => {
   const escaped = String(content || "")
