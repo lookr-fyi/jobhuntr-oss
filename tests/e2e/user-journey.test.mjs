@@ -223,6 +223,15 @@ test(
       await page
         .getByRole("heading", { level: 1, name: /Welcome back/ })
         .waitFor();
+      await page
+        .getByRole("heading", { level: 2, name: "Pipeline over time" })
+        .waitFor();
+      await page
+        .getByRole("heading", {
+          level: 2,
+          name: /Top Contributors of/,
+        })
+        .waitFor();
       assert.equal(
         await page.locator("main").getAttribute("aria-hidden"),
         null,

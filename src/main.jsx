@@ -1659,7 +1659,7 @@ function Overview({ state, setTab, reload }) {
         <div className="v2-overview-card v2-chart-card">
           <div className="v2-card-head">
             <div>
-              <h3>Pipeline over time</h3>
+              <h2>Pipeline over time</h2>
               <p>From your first signup to today.</p>
             </div>
             <div
@@ -1803,8 +1803,8 @@ function Overview({ state, setTab, reload }) {
         <div className="v2-overview-card v2-contributors-card">
           <div className="v2-card-head">
             <div>
-              <h3>Top Contributors of {monthLabel}</h3>
-              <p>Your private monthly job-search momentum snapshot</p>
+              <h2>Top Contributors of {monthLabel}</h2>
+              <p>Top 1 winner will get one month free max plan</p>
               {daysLeft > 0 && (
                 <small>
                   {daysLeft} {daysLeft === 1 ? "day" : "days"} left

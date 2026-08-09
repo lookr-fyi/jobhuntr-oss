@@ -6880,14 +6880,16 @@ select:focus {
   justify-content: space-between;
   gap: 16px;
 }
-.v2-card-head h3 {
+.v2-card-head h2 {
   margin: 0 0 4px;
-  font-size: 17px;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.25;
 }
 .v2-card-head p {
   margin: 0;
   color: var(--v2-secondary);
-  font-size: 12px;
+  font-size: 15px;
 }
 .v2-chart-toggles {
   display: flex;
