@@ -3345,8 +3345,8 @@ test(
       await Promise.all([
         page.waitForResponse(
           (response) =>
-            response.url().includes("/api/outreach/") &&
-            response.request().method() === "PATCH" &&
+            response.url().endsWith("/api/outreach/bulk-status") &&
+            response.request().method() === "POST" &&
             response.ok(),
         ),
         connectDialog
@@ -3921,10 +3921,16 @@ test(
           .getByRole("button", { name: "Delete question" })
           .click(),
       ]);
-      await page.getByLabel(removableQuestion).waitFor({ state: "detached" });
+      const removableAnswer = page.getByRole("textbox", {
+        name: removableQuestion,
+        exact: true,
+      });
+      await removableAnswer.waitFor({ state: "detached" });
       await page.reload();
       assert.equal(
-        await page.getByLabel(removableQuestion).count(),
+        await page
+          .getByRole("textbox", { name: removableQuestion, exact: true })
+          .count(),
         0,
         "deleted FAQ questions should remain deleted after reload",
       );
@@ -4672,14 +4678,19 @@ test(
         };
         return {
           farewell: bounds(".v2-farewell-button"),
+          farewellPosition: getComputedStyle(
+            document.querySelector(".v2-farewell-button"),
+          ).position,
           hunt: bounds(".v2-hunt-float > button"),
           navigation: bounds(".v2-sidebar"),
         };
       });
       assert.ok(
-        floatingActions.farewell.bottom < floatingActions.navigation.top &&
-          floatingActions.farewell.right < floatingActions.hunt.left,
-        "mobile Overview actions must remain above the bottom navigation without overlapping each other",
+        floatingActions.farewellPosition === "static" &&
+          floatingActions.farewell.left >= 16 &&
+          floatingActions.farewell.right <= 374 &&
+          floatingActions.hunt.bottom < floatingActions.navigation.top,
+        "mobile Overview actions must stay in-flow or above navigation without covering dashboard content",
       );
       await assertAccessible(mobile, "Mobile Overview");
       await mobile
@@ -4861,20 +4872,40 @@ test(
             4,
             "mobile User Center should expose every v2 tab",
           );
-          assert.equal(
-            await userTabs.getByRole("tab").evaluateAll((tabs) =>
-              tabs.every((tab) => {
-                const bounds = tab.getBoundingClientRect();
-                return bounds.left >= 0 && bounds.right <= innerWidth;
-              }),
-            ),
-            true,
-            "every User Center tab, including Settings, must be immediately visible on mobile",
+          const userTabGeometry = await userTabs.evaluate((tablist) => {
+            const tabs = [...tablist.querySelectorAll('[role="tab"]')];
+            const bounds = tabs.map((tab) => tab.getBoundingClientRect());
+            return {
+              scrollable: tablist.scrollWidth > tablist.clientWidth,
+              separated: bounds.every(
+                (box, index) =>
+                  !bounds[index + 1] || box.right <= bounds[index + 1].left,
+              ),
+            };
+          });
+          assert.deepEqual(
+            userTabGeometry,
+            { scrollable: true, separated: true },
+            "mobile User Center tabs should remain readable in a scrollable strip",
           );
           await userTabs.getByRole("tab", { name: "Settings" }).click();
           await mobile
             .getByRole("heading", { name: "Career preferences" })
             .waitFor();
+          assert.equal(
+            await userTabs
+              .getByRole("tab", { name: "Settings" })
+              .evaluate((tab) => {
+                const tabBounds = tab.getBoundingClientRect();
+                const listBounds = tab.parentElement.getBoundingClientRect();
+                return (
+                  tabBounds.left >= listBounds.left &&
+                  tabBounds.right <= listBounds.right
+                );
+              }),
+            true,
+            "the active User Center tab should scroll fully into view",
+          );
         }
         if (navigation === "Job Tracker") {
           assert.equal(
@@ -4885,12 +4916,21 @@ test(
             "a new user should inherit v2's six active tracker columns while terminal columns stay hidden",
           );
           const mobileTrackerColumn = mobile.locator(".status-column").first();
-          assert.equal(
-            await mobileTrackerColumn.evaluate(
-              (column) => getComputedStyle(column).width,
-            ),
-            "280px",
-            "v2 tracker columns should use their compact mobile width",
+          const trackerGeometry = await mobileTrackerColumn.evaluate(
+            (column) => ({
+              columnWidth: column.getBoundingClientRect().width,
+              cardWidths: [...column.querySelectorAll(".job-card")].map(
+                (card) => card.getBoundingClientRect().width,
+              ),
+            }),
+          );
+          assert.ok(
+            trackerGeometry.columnWidth >= 356 &&
+              trackerGeometry.columnWidth <= 360 &&
+              trackerGeometry.cardWidths.every(
+                (width) => width >= trackerGeometry.columnWidth - 28,
+              ),
+            "v2 tracker columns and stacked cards should use the readable mobile viewport width",
           );
           await mobile.locator(".kanban-card").first().click();
           const mobileJobDrawer = mobile.locator(".job-drawer");
