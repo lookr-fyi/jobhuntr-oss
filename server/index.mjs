@@ -1126,6 +1126,38 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     if (!isUsableResumeText(attachedResume))
       return { blockedResume: true, item };
     const job = db.jobs.find((j) => j.id === item.jobId);
+    if (!job) return { blockedJob: true, item };
+    const attachedResumeRecord = db.resumes.find(
+      (resume) => resume.id === item.resumeId,
+    );
+    const attachedCoverLetter = item.coverLetterId
+      ? db.coverLetters.find((letter) => letter.id === item.coverLetterId)
+      : null;
+    if (item.coverLetterId && !safeText(attachedCoverLetter?.body, 100000))
+      return { blockedCoverLetter: true, item };
+    item.resumeSnapshot = {
+      id: item.resumeId,
+      name:
+        item.resumeId === "profile-resume"
+          ? "Original profile resume"
+          : attachedResumeRecord?.name || "Attached resume",
+      content: attachedResume,
+    };
+    item.coverLetterSnapshot = attachedCoverLetter
+      ? {
+          id: attachedCoverLetter.id,
+          title: attachedCoverLetter.title,
+          body: attachedCoverLetter.body,
+        }
+      : null;
+    item.jobSnapshot = {
+      id: job.id,
+      company: job.company,
+      title: job.title,
+      location: job.location,
+      url: job.url,
+      description: job.description,
+    };
     item.status = "submitted";
     item.submittedAt = timestamp();
     item.updatedAt = timestamp();
@@ -1157,6 +1189,15 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
   if (submission.blockedResume)
     return res.status(409).json({
       error: "Attach a valid resume before recording this submission",
+    });
+  if (submission.blockedCoverLetter)
+    return res.status(409).json({
+      error:
+        "Remove the missing or empty cover letter before recording this submission",
+    });
+  if (submission.blockedJob)
+    return res.status(409).json({
+      error: "The tracked job is missing from this application packet",
     });
   if (submission.blockedQuestions)
     return res.status(409).json({

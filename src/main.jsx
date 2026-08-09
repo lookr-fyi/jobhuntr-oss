@@ -1814,9 +1814,16 @@ function Tracker({ state, reload, setTab }) {
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
   const job = state.jobs.find((item) => item.id === selected);
-  const jobSubmission = state.submissions.find(
-    (item) => item.jobId === selected,
-  );
+  const jobSubmission = state.submissions
+    .filter((item) => item.jobId === selected)
+    .sort((a, b) => {
+      if (a.status === "submitted" && b.status !== "submitted") return -1;
+      if (b.status === "submitted" && a.status !== "submitted") return 1;
+      return (
+        new Date(b.updatedAt || b.createdAt || 0) -
+        new Date(a.updatedAt || a.createdAt || 0)
+      );
+    })[0];
   const filtered = state.jobs.filter((item) => {
     const matchesStatus = visibleStages.has(item.status);
     const matchesRun =
@@ -1845,6 +1852,30 @@ function Tracker({ state, reload, setTab }) {
     if (window.location.hash !== hash)
       window.history.replaceState({ tab: "tracker" }, "", hash);
   }, [visibleStages, runFilter, selected]);
+  useEffect(() => {
+    const followTrackerLink = () => {
+      if (!window.location.hash.startsWith("#/tracker")) return;
+      const params = new URLSearchParams(
+        window.location.hash.split("?")[1] || "",
+      );
+      const linkedJob = params.get("job");
+      if (linkedJob && state.jobs.some((item) => item.id === linkedJob))
+        setSelected(linkedJob);
+      const linkedStages = params
+        .get("statuses")
+        ?.split(",")
+        .filter((stage) => TRACKER_STAGES.includes(stage));
+      if (linkedStages?.length) setVisibleStages(new Set(linkedStages));
+      const linkedRun = params.get("run");
+      if (linkedRun) setRunFilter(linkedRun);
+    };
+    window.addEventListener("hashchange", followTrackerLink);
+    window.addEventListener("popstate", followTrackerLink);
+    return () => {
+      window.removeEventListener("hashchange", followTrackerLink);
+      window.removeEventListener("popstate", followTrackerLink);
+    };
+  }, [state.jobs]);
   const toggleStage = (stage) => {
     setVisibleStages((current) => {
       const next = new Set(current);
@@ -2568,6 +2599,44 @@ function TrackerApplicationInsights({ job, submission, profile }) {
   const questions = submission?.applicationQuestions || [];
   return (
     <div className="v2-tracker-insights">
+      {submission?.status === "submitted" && (
+        <section
+          className="v2-tracker-info-section v2-submission-evidence"
+          aria-label="Submitted application evidence"
+        >
+          <div className="v2-tracker-info-head">
+            <h3>
+              <ShieldCheck size={16} /> Submitted application
+            </h3>
+            <span className="v2-evidence-locked">Locked</span>
+          </div>
+          <p>
+            {submission.submittedAt
+              ? `Verified externally on ${new Date(submission.submittedAt).toLocaleString()}. `
+              : "Recorded as externally submitted. "}
+            This snapshot cannot be changed by later profile or document edits.
+          </p>
+          <dl>
+            <div>
+              <dt>Job</dt>
+              <dd>
+                {submission.jobSnapshot?.title || job.title} ·{" "}
+                {submission.jobSnapshot?.company || job.company}
+              </dd>
+            </div>
+            <div>
+              <dt>Resume</dt>
+              <dd>
+                {submission.resumeSnapshot?.name || "Captured at submission"}
+              </dd>
+            </div>
+            <div>
+              <dt>Cover letter</dt>
+              <dd>{submission.coverLetterSnapshot?.title || "Not attached"}</dd>
+            </div>
+          </dl>
+        </section>
+      )}
       <section className="v2-tracker-info-section" aria-label="ATS Analysis">
         <div className="v2-tracker-info-head">
           <h3>ATS Analysis</h3>

@@ -251,7 +251,7 @@ test(
         .getByRole("status")
         .filter({ hasText: /Jobs queued/ })
         .waitFor();
-      await Promise.all([
+      const [recordedSubmissionResponse] = await Promise.all([
         page.waitForResponse(
           (response) => response.url().endsWith("/api/state") && response.ok(),
         ),
@@ -968,6 +968,14 @@ test(
         ),
         submitDialog.getByRole("button", { name: "Record submitted" }).click(),
       ]);
+      assert.equal(recordedSubmissionResponse.ok(), true);
+      const recordedSubmission = (
+        await (await page.request.get(`${baseUrl}/api/state`)).json()
+      ).submissions
+        .filter((submission) => submission.status === "submitted")
+        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))[0];
+      assert.equal(recordedSubmission.status, "submitted");
+      assert.ok(recordedSubmission.resumeSnapshot.name);
       await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
       await page.getByRole("button", { name: "About Me" }).click();
       await page
@@ -1074,6 +1082,15 @@ test(
 
       await page.getByRole("button", { name: "Job Tracker" }).click();
       await page.getByText("Show Columns:", { exact: true }).waitFor();
+      await page.goto(`${baseUrl}/#/tracker?job=${recordedSubmission.jobId}`);
+      await page
+        .getByRole("region", { name: "Submitted application evidence" })
+        .waitFor();
+      await page
+        .getByText(recordedSubmission.resumeSnapshot.name, { exact: true })
+        .waitFor();
+      await page.getByText(/This snapshot cannot be changed/).waitFor();
+      await assertAccessible(page, "Submitted application evidence");
       for (const status of ["Submitting", "Failed", "Skipped", "Removed"]) {
         assert.equal(
           await page.getByLabel(status, { exact: true }).isChecked(),

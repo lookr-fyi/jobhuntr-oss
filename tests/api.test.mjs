@@ -800,13 +800,33 @@ test("submission queue enforces review before local submission", async () => {
   });
   assert.equal(unconfirmed.res.status, 409);
   assert.match(unconfirmed.body.error, /explicit user confirmation/i);
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ coverLetterId: "missing-cover-letter" }),
+  });
+  const missingLetter = await req(`/api/submissions/${packet.body.id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedByUser: true }),
+  });
+  assert.equal(missingLetter.res.status, 409);
+  assert.match(missingLetter.body.error, /missing or empty cover letter/i);
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ coverLetterId: "" }),
+  });
   const submitted = await req(`/api/submissions/${packet.body.id}/submit`, {
     method: "POST",
     body: JSON.stringify({ confirmedByUser: true }),
   });
   assert.equal(submitted.res.status, 200);
   assert.equal(submitted.body.status, "submitted");
+  assert.equal(submitted.body.resumeSnapshot.id, "profile-resume");
+  assert.match(submitted.body.resumeSnapshot.content, /product engineer/i);
+  assert.equal(submitted.body.coverLetterSnapshot, null);
+  assert.equal(submitted.body.jobSnapshot.id, state.jobs[0].id);
+  assert.equal(submitted.body.jobSnapshot.title, state.jobs[0].title);
   const submittedAt = submitted.body.submittedAt;
+  const submittedResumeContent = submitted.body.resumeSnapshot.content;
   const submittedHistoryLength = (await req("/api/state")).body.jobs
     .find((job) => job.id === state.jobs[0].id)
     .statusHistory.filter((entry) => entry.status === "applied").length;
@@ -845,6 +865,20 @@ test("submission queue enforces review before local submission", async () => {
       .statusHistory.filter((entry) => entry.status === "applied").length,
     submittedHistoryLength,
     "repeated confirmation must not duplicate application history",
+  );
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      resumeText:
+        "Updated product leader with ten years of experience delivering accessible platforms. Increased retention by 51%, mentored eight engineers, and led reliable TypeScript launches.",
+    }),
+  });
+  assert.equal(
+    (await req("/api/state")).body.submissions.find(
+      (submission) => submission.id === packet.body.id,
+    ).resumeSnapshot.content,
+    submittedResumeContent,
+    "later profile edits must not rewrite submitted resume evidence",
   );
   const regressed = await req(`/api/jobs/${state.jobs[0].id}`, {
     method: "PATCH",
