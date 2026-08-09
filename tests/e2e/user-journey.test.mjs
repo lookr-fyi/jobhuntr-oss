@@ -2316,7 +2316,12 @@ test(
           currentResumeId,
         );
       assert.ok(alternateResumeId, "a second reviewed resume should exist");
-      await Promise.all([
+      await page.route("**/api/submissions/*", async (route) => {
+        if (route.request().method() === "PATCH")
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        await route.continue();
+      });
+      const delayedResumeAttachment = Promise.all([
         page.waitForResponse(
           (response) =>
             response.url().includes("/api/submissions/") &&
@@ -2329,8 +2334,20 @@ test(
             response.request().method() === "GET" &&
             response.ok(),
         ),
-        resumeAttachment.selectOption(alternateResumeId),
       ]);
+      await resumeAttachment.selectOption(alternateResumeId);
+      assert.equal(
+        await resumeAttachment.inputValue(),
+        alternateResumeId,
+        "a reviewed resume selection should remain visible while persistence is pending",
+      );
+      assert.equal(
+        await resumeAttachment.isDisabled(),
+        true,
+        "a pending resume attachment write should reject duplicate changes",
+      );
+      await delayedResumeAttachment;
+      await page.unroute("**/api/submissions/*");
       await page.waitForFunction(
         () => {
           const controls = [

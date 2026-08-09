@@ -1562,6 +1562,20 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /if \(!saved\) \{[\s\S]*?Boolean\(persisted\?\.done\)/);
   assert.match(card, /disabled=\{pendingChecklistIds\.has\(item\.id\)\}/);
   assert.match(card, /pendingChecklistIds\.size > 0/);
+  assert.match(card, /const \[attachmentDraft, setAttachmentDraft\]/);
+  assert.match(
+    card,
+    /const \[pendingAttachmentFields, setPendingAttachmentFields\]/,
+  );
+  assert.match(card, /const attachmentRevisionRef = useRef\(\{\}\)/);
+  assert.match(card, /const updateAttachment = async \(field, value\) =>/);
+  assert.match(card, /await updatePacket\(\{ \[field\]: value \}\)/);
+  assert.match(card, /disabled=\{pendingAttachmentFields\.has\("resumeId"\)\}/);
+  assert.match(
+    card,
+    /disabled=\{pendingAttachmentFields\.has\("coverLetterId"\)\}/,
+  );
+  assert.match(card, /pendingAttachmentFields\.size > 0/);
 });
 
 test("FAQ deletion persists before mutating the form and cannot bless newer edits", async () => {

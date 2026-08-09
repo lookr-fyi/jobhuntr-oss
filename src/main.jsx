@@ -6128,6 +6128,14 @@ function SubmissionCard({ submission: s, state, reload }) {
     () => new Set(),
   );
   const checklistRevisionRef = useRef({});
+  const [attachmentDraft, setAttachmentDraft] = useState(() => ({
+    resumeId: s.resumeId || "",
+    coverLetterId: s.coverLetterId || "",
+  }));
+  const [pendingAttachmentFields, setPendingAttachmentFields] = useState(
+    () => new Set(),
+  );
+  const attachmentRevisionRef = useRef({});
   const [answerDraftRestored, setAnswerDraftRestored] = useState(
     Boolean(Object.keys(initialAnswerDraft).length),
   );
@@ -6147,13 +6155,21 @@ function SubmissionCard({ submission: s, state, reload }) {
     );
   }, [answerDraftKey, dirtyAnswerIds, draftAnswers, s.id]);
   const job = state.jobs.find((j) => j.id === s.jobId);
-  const attachedResume = state.resumes.find((item) => item.id === s.resumeId);
+  const effectiveResumeId = pendingAttachmentFields.has("resumeId")
+    ? attachmentDraft.resumeId
+    : s.resumeId || "";
+  const effectiveCoverLetterId = pendingAttachmentFields.has("coverLetterId")
+    ? attachmentDraft.coverLetterId
+    : s.coverLetterId || "";
+  const attachedResume = state.resumes.find(
+    (item) => item.id === effectiveResumeId,
+  );
   const attachedLetter = state.coverLetters.find(
-    (item) => item.id === s.coverLetterId,
+    (item) => item.id === effectiveCoverLetterId,
   );
   const profileResumeReady = isUsableResumeText(state.profile.resumeText);
   const selectedResumeReady =
-    s.resumeId === "profile-resume"
+    effectiveResumeId === "profile-resume"
       ? profileResumeReady
       : isUsableResumeText(attachedResume?.content);
   const reviewedQuestions = (s.applicationQuestions || []).map((question) => {
@@ -6180,7 +6196,7 @@ function SubmissionCard({ submission: s, state, reload }) {
   );
   const resumeLabel = attachedResume?.name
     ? attachedResume.name
-    : s.resumeId === "profile-resume"
+    : effectiveResumeId === "profile-resume"
       ? "Original profile resume"
       : "No resume attached";
   const updatePacket = async (body) => {
@@ -6218,6 +6234,19 @@ function SubmissionCard({ submission: s, state, reload }) {
     setPendingChecklistIds((current) => {
       const next = new Set(current);
       next.delete(id);
+      return next;
+    });
+  };
+  const updateAttachment = async (field, value) => {
+    const revision = (attachmentRevisionRef.current[field] || 0) + 1;
+    attachmentRevisionRef.current[field] = revision;
+    setAttachmentDraft((current) => ({ ...current, [field]: value }));
+    setPendingAttachmentFields((current) => new Set(current).add(field));
+    await updatePacket({ [field]: value });
+    if (attachmentRevisionRef.current[field] !== revision) return;
+    setPendingAttachmentFields((current) => {
+      const next = new Set(current);
+      next.delete(field);
       return next;
     });
   };
@@ -6263,6 +6292,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       recordingSubmissionRef.current ||
       !checklistReady ||
       pendingChecklistIds.size > 0 ||
+      pendingAttachmentFields.size > 0 ||
       !externalSubmissionVerified ||
       !selectedResumeReady ||
       !questionsReady
@@ -6569,8 +6599,11 @@ function SubmissionCard({ submission: s, state, reload }) {
           Resume attachment
           <select
             name={`resume-attachment-${s.id}`}
-            value={s.resumeId || ""}
-            onChange={(event) => updatePacket({ resumeId: event.target.value })}
+            value={effectiveResumeId}
+            disabled={pendingAttachmentFields.has("resumeId")}
+            onChange={(event) =>
+              updateAttachment("resumeId", event.target.value)
+            }
           >
             <option value="">No resume attached</option>
             <option value="profile-resume" disabled={!profileResumeReady}>
@@ -6593,9 +6626,10 @@ function SubmissionCard({ submission: s, state, reload }) {
           Cover letter attachment
           <select
             name={`cover-letter-attachment-${s.id}`}
-            value={s.coverLetterId || ""}
+            value={effectiveCoverLetterId}
+            disabled={pendingAttachmentFields.has("coverLetterId")}
             onChange={(event) =>
-              updatePacket({ coverLetterId: event.target.value })
+              updateAttachment("coverLetterId", event.target.value)
             }
           >
             <option value="">No cover letter attached</option>
@@ -6630,6 +6664,7 @@ function SubmissionCard({ submission: s, state, reload }) {
             recordingSubmission ||
             !checklistReady ||
             pendingChecklistIds.size > 0 ||
+            pendingAttachmentFields.size > 0 ||
             !externalSubmissionVerified ||
             !selectedResumeReady ||
             !questionsReady
