@@ -2839,6 +2839,13 @@ section.gigs-page .v2-gigs-intro p {
   padding-bottom: 16px;
   border-bottom: 1px solid #e2e8f0;
 }
+.v2-settings-page > .v2-page-intro h2 {
+  font-size: 2rem;
+  font-weight: 700;
+}
+.v2-settings-page > .v2-page-intro p {
+  font-size: 14px;
+}
 .v2-user-tabs button {
   flex: 0 0 auto;
   padding: 12px 24px;
@@ -2847,7 +2854,7 @@ section.gigs-page .v2-gigs-intro p {
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: transparent;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 .v2-user-tabs button[aria-selected="true"] {

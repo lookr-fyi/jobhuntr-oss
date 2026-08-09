@@ -551,6 +551,8 @@ test(
             mainPadding: mainStyle.padding,
             pagePadding: style.padding,
             pageWidth: style.width,
+            pageMaxWidth: style.maxWidth,
+            parentWidth: mainStyle.width,
             searchRadius: searchStyle.borderRadius,
             searchPadding: searchStyle.padding,
             columns,
@@ -565,12 +567,16 @@ test(
         {
           ...boardGeometry,
           pageWidth: undefined,
+          pageMaxWidth: undefined,
+          parentWidth: undefined,
           columns: undefined,
         },
         {
           mainPadding: "0px",
           pagePadding: "22px 27.5px",
           pageWidth: undefined,
+          pageMaxWidth: undefined,
+          parentWidth: undefined,
           searchRadius: "9999px",
           searchPadding: "8.25px 11px",
           columns: undefined,
@@ -583,7 +589,11 @@ test(
         "Job Board should retain the authoritative v2 full-width split-pane geometry",
       );
       assert.ok(
-        Number.parseFloat(boardGeometry.pageWidth) > 1200,
+        boardGeometry.pageMaxWidth === "none" &&
+          Math.abs(
+            Number.parseFloat(boardGeometry.pageWidth) -
+              Number.parseFloat(boardGeometry.parentWidth),
+          ) < 1,
         "the Job Board should use the available desktop workspace instead of the legacy 1180px cap",
       );
       assert.ok(
@@ -4868,6 +4878,11 @@ test(
               styles(".v2-user-tabs button").fontSize,
               styles(".v2-user-tabs button").fontWeight,
             ],
+            intro: [
+              styles(".v2-page-intro h2").fontSize,
+              styles(".v2-page-intro h2").fontWeight,
+              styles(".v2-page-intro p").fontSize,
+            ],
             avatar: [
               styles(".v2-user-avatar-large").width,
               styles(".v2-user-avatar-large").backgroundColor,
@@ -4877,7 +4892,8 @@ test(
         }),
         {
           page: ["1200px", "24px"],
-          tabs: ["14px", "600"],
+          tabs: ["9.625px", "600"],
+          intro: ["22px", "700", "14px"],
           avatar: ["80px", "rgb(248, 250, 252)"],
           identity: "center",
         },
