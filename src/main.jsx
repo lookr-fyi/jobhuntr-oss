@@ -365,6 +365,7 @@ function ConfirmDialog({
   title,
   description,
   confirmLabel = "Delete",
+  confirmDisabled = false,
   onClose,
   onConfirm,
 }) {
@@ -429,7 +430,11 @@ function ConfirmDialog({
           >
             Cancel
           </button>
-          <button className="danger" disabled={busy} onClick={confirm}>
+          <button
+            className="danger"
+            disabled={busy || confirmDisabled}
+            onClick={confirm}
+          >
             {busy ? "Deleting…" : confirmLabel}
           </button>
         </div>
@@ -4997,6 +5002,8 @@ function Resume({ state, reload, mode = "resume" }) {
   const [historyQuery, setHistoryQuery] = useState("");
   const [historyTemplate, setHistoryTemplate] = useState("all");
   const [showAllResumes, setShowAllResumes] = useState(false);
+  const attachedPacketCount = (field, id) =>
+    state.submissions.filter((submission) => submission[field] === id).length;
   const resumeReady = isUsableResumeText(resume);
   const templateDialogCloseRef = useRef(null);
   useEffect(() => {
@@ -5840,9 +5847,21 @@ function Resume({ state, reload, mode = "resume" }) {
           title="Delete cover letter?"
           description={
             deleteTarget
-              ? `“${deleteTarget.item.title}” will be permanently removed from your local workspace.`
+              ? attachedPacketCount("coverLetterId", deleteTarget.item.id)
+                ? `“${deleteTarget.item.title}” is attached to ${attachedPacketCount("coverLetterId", deleteTarget.item.id)} application packet${attachedPacketCount("coverLetterId", deleteTarget.item.id) === 1 ? "" : "s"}. Remove it from every packet before deleting it.`
+                : `“${deleteTarget.item.title}” will be permanently removed from your local workspace.`
               : "This cover letter will be permanently removed."
           }
+          confirmLabel={
+            deleteTarget &&
+            attachedPacketCount("coverLetterId", deleteTarget.item.id)
+              ? "In use"
+              : "Delete"
+          }
+          confirmDisabled={Boolean(
+            deleteTarget &&
+            attachedPacketCount("coverLetterId", deleteTarget.item.id),
+          )}
           onClose={() => setDeleteTarget(null)}
           onConfirm={async () => {
             await api(`/api/cover-letters/${deleteTarget.item.id}`, {
@@ -6012,9 +6031,19 @@ function Resume({ state, reload, mode = "resume" }) {
         title="Delete resume version?"
         description={
           deleteTarget
-            ? `“${deleteTarget.item.name}” will be permanently removed. Your base profile resume and template will remain available.`
+            ? attachedPacketCount("resumeId", deleteTarget.item.id)
+              ? `“${deleteTarget.item.name}” is attached to ${attachedPacketCount("resumeId", deleteTarget.item.id)} application packet${attachedPacketCount("resumeId", deleteTarget.item.id) === 1 ? "" : "s"}. Select another resume in every packet before deleting it.`
+              : `“${deleteTarget.item.name}” will be permanently removed. Your base profile resume and template will remain available.`
             : "This generated resume will be permanently removed."
         }
+        confirmLabel={
+          deleteTarget && attachedPacketCount("resumeId", deleteTarget.item.id)
+            ? "In use"
+            : "Delete"
+        }
+        confirmDisabled={Boolean(
+          deleteTarget && attachedPacketCount("resumeId", deleteTarget.item.id),
+        )}
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
           await api(`/api/resumes/${deleteTarget.item.id}`, {

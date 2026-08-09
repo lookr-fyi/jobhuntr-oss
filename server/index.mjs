@@ -638,14 +638,24 @@ app.patch("/api/resumes/:id", async (req, res) => {
 });
 
 app.delete("/api/resumes/:id", async (req, res) => {
-  const ok = await mutate((db) => {
-    const before = db.resumes.length;
-    db.resumes = db.resumes.filter((r) => r.id !== req.params.id);
-    for (const submission of db.submissions)
-      if (submission.resumeId === req.params.id) submission.resumeId = "";
-    return before !== db.resumes.length;
+  const result = await mutate((db) => {
+    const resume = db.resumes.find((item) => item.id === req.params.id);
+    if (!resume) return "missing";
+    const references = db.submissions.filter(
+      (submission) => submission.resumeId === req.params.id,
+    ).length;
+    if (references) return { references };
+    db.resumes = db.resumes.filter((item) => item.id !== req.params.id);
+    auditEvent(db, "resume", `Deleted resume version “${resume.name}”.`);
+    return "deleted";
   });
-  res.status(ok ? 204 : 404).end();
+  if (result === "missing")
+    return res.status(404).json({ error: "Resume not found" });
+  if (result?.references)
+    return res.status(409).json({
+      error: `This resume is attached to ${result.references} application packet${result.references === 1 ? "" : "s"}. Select another resume before deleting it.`,
+    });
+  res.status(204).end();
 });
 
 const downloadName = (name) =>
@@ -868,15 +878,26 @@ app.patch("/api/cover-letters/:id", async (req, res) => {
   res.json(letter);
 });
 app.delete("/api/cover-letters/:id", async (req, res) => {
-  const removed = await mutate((db) => {
-    const before = db.coverLetters.length;
-    db.coverLetters = db.coverLetters.filter((x) => x.id !== req.params.id);
-    for (const submission of db.submissions)
-      if (submission.coverLetterId === req.params.id)
-        submission.coverLetterId = "";
-    return before !== db.coverLetters.length;
+  const result = await mutate((db) => {
+    const letter = db.coverLetters.find((item) => item.id === req.params.id);
+    if (!letter) return "missing";
+    const references = db.submissions.filter(
+      (submission) => submission.coverLetterId === req.params.id,
+    ).length;
+    if (references) return { references };
+    db.coverLetters = db.coverLetters.filter(
+      (item) => item.id !== req.params.id,
+    );
+    auditEvent(db, "cover-letter", `Deleted cover letter “${letter.title}”.`);
+    return "deleted";
   });
-  res.status(removed ? 204 : 404).end();
+  if (result === "missing")
+    return res.status(404).json({ error: "Cover letter not found" });
+  if (result?.references)
+    return res.status(409).json({
+      error: `This cover letter is attached to ${result.references} application packet${result.references === 1 ? "" : "s"}. Remove it from the packet before deleting it.`,
+    });
+  res.status(204).end();
 });
 
 app.get("/api/submissions", async (_req, res) => {

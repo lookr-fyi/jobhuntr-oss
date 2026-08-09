@@ -722,6 +722,41 @@ test(
       await page.reload();
       await page.getByText("Application documents", { exact: true }).waitFor();
       assert.match(page.url(), new RegExp(`packet=${linkedPacketId}`));
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        page
+          .getByLabel("Resume attachment")
+          .selectOption({ label: "E2E tailored resume" }),
+      ]);
+      await page.locator('button[title="ATS Templates"]').click();
+      await page
+        .getByRole("heading", { name: "ATS Resume Templates" })
+        .waitFor();
+      await page.getByLabel("Delete E2E tailored resume").click();
+      const protectedResumeDialog = page.getByRole("alertdialog", {
+        name: "Delete resume version?",
+      });
+      await protectedResumeDialog
+        .getByText(/attached to 1 application packet/)
+        .waitFor();
+      assert.equal(
+        await protectedResumeDialog
+          .getByRole("button", { name: "In use" })
+          .isDisabled(),
+        true,
+        "an application attachment cannot be deleted from the document library",
+      );
+      await assertAccessible(page, "Protected resume deletion");
+      await protectedResumeDialog
+        .getByRole("button", { name: "Cancel" })
+        .click();
+      await page.goto(`${baseUrl}/#/queue?packet=${linkedPacketId}`);
+      await page.getByText("Application documents", { exact: true }).waitFor();
       const interestAnswer = page.getByLabel(
         "Why are you interested in this role?",
       );

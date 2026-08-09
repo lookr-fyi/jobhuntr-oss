@@ -527,6 +527,39 @@ test("submission queue enforces review before local submission", async () => {
     packet.body.applicationQuestions[3].questionType,
     "multiple_choice",
   );
+  const packetResume = await req("/api/resumes", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Packet-protected resume",
+      content:
+        "Product engineer with eight years of experience delivering reliable React and TypeScript products. Improved conversion by 42% and led accessible cross-functional launches.",
+    }),
+  });
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ resumeId: packetResume.body.id }),
+  });
+  const blockedResumeDeletion = await req(
+    `/api/resumes/${packetResume.body.id}`,
+    { method: "DELETE" },
+  );
+  assert.equal(blockedResumeDeletion.res.status, 409);
+  assert.match(blockedResumeDeletion.body.error, /attached to 1 application/i);
+  assert.ok(
+    (await req("/api/state")).body.resumes.some(
+      (resume) => resume.id === packetResume.body.id,
+    ),
+    "a packet attachment must survive a direct deletion attempt",
+  );
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ resumeId: "profile-resume" }),
+  });
+  assert.equal(
+    (await req(`/api/resumes/${packetResume.body.id}`, { method: "DELETE" }))
+      .res.status,
+    204,
+  );
   const questions = packet.body.applicationQuestions.map((question, index) =>
     index === 0
       ? {
@@ -1088,6 +1121,23 @@ test("cover letters can be edited, printed safely, and removed", async () => {
   assert.equal(printable.status, 200);
   assert.doesNotMatch(html, /<script>alert/);
   assert.match(html, /&lt;script&gt;/);
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.id }),
+  });
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ coverLetterId: created.body.id }),
+  });
+  const blockedDeletion = await req(`/api/cover-letters/${created.body.id}`, {
+    method: "DELETE",
+  });
+  assert.equal(blockedDeletion.res.status, 409);
+  assert.match(blockedDeletion.body.error, /attached to 1 application/i);
+  await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ coverLetterId: "" }),
+  });
   const removed = await req(`/api/cover-letters/${created.body.id}`, {
     method: "DELETE",
   });
