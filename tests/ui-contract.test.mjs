@@ -91,6 +91,22 @@ test("the app shell retains the authoritative v2 global density and sizing reset
   );
 });
 
+test("workspace startup retains the authoritative v2 branded loading screen", async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL("../src/main.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/styles.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(source, /className="v2-app-loading" role="status"/);
+  assert.match(source, /AI-Powered Job Application Assistant/);
+  assert.match(source, /Initializing Application\.\.\./);
+  assert.match(
+    styles,
+    /\.v2-loading-rings i:first-child[\s\S]*?v2-loading-spin/,
+  );
+  assert.match(styles, /@keyframes v2-loading-spin-reverse/);
+});
+
 test("user-triggered API actions contain rejected requests", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

@@ -85,7 +85,11 @@ const assertNamedFormControls = async (page, surface) => {
 
 test(
   "a user can onboard, hunt, inspect runs, and persist outreach through the real UI",
-  { timeout: 120_000 },
+  // This suite intentionally drives every primary surface. It also runs beside
+  // two packaged Electron suites under `npm run verify`, where Chromium startup
+  // and PDF work contend for the same CI host. Keep the timeout above that
+  // verified worst case rather than making the complete regression flaky.
+  { timeout: 180_000 },
   async () => {
     const port = await freePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -120,10 +124,19 @@ test(
       const recoveryPage = await recoveryContext.newPage();
       let blockInitialState = true;
       await recoveryPage.route("**/api/state", async (route) => {
-        if (blockInitialState) await route.abort("failed");
-        else await route.continue();
+        if (blockInitialState) {
+          await new Promise((resolve) => setTimeout(resolve, 350));
+          await route.abort("failed");
+        } else await route.continue();
       });
       await recoveryPage.goto(baseUrl);
+      const loadingScreen = recoveryPage.getByRole("status");
+      await loadingScreen.getByRole("heading", { name: "JobHuntr" }).waitFor();
+      assert.equal(
+        await loadingScreen.getByText("Initializing Application...").count(),
+        1,
+        "startup should show the authoritative v2 loading experience while the local workspace opens",
+      );
       await recoveryPage
         .getByRole("heading", {
           name: "JobHuntr couldn't open your workspace",

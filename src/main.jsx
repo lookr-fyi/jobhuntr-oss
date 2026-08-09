@@ -1139,8 +1139,26 @@ function App() {
     );
   if (!state)
     return (
-      <div className="splash" role="status" aria-live="polite">
-        <Sparkles aria-hidden="true" /> Loading local JobHuntr…
+      <div className="v2-app-loading" role="status" aria-live="polite">
+        <div className="v2-loading-brand">
+          <div>
+            <img src={jobHuntrLogo} alt="" aria-hidden="true" />
+            <h1>JobHuntr</h1>
+          </div>
+          <p>AI-Powered Job Application Assistant</p>
+        </div>
+        <div className="v2-loading-rings" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </div>
+        <strong>Initializing Application...</strong>
+        <span className="v2-loading-dots" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+        <span className="sr-only">Loading your private local workspace.</span>
       </div>
     );
   const onboardingOpen = state.profile.onboarded === false;
