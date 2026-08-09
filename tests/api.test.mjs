@@ -2347,6 +2347,19 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           search: { q: "  Restored role  " },
         },
       ],
+      infiniteHunt: {
+        enabled: "true",
+        generation: { malformed: true },
+        intervalMinutes: 99999,
+        options: {
+          q: { malformed: true },
+          workflows: ["linkedin", "unsafe", 42],
+        },
+        startedAt: { malformed: true },
+        nextRunAt: "not-a-date",
+        lastRunAt: "also-not-a-date",
+        lastError: { malformed: true },
+      },
       activities: [
         {
           id: "duplicate-activity-id",
@@ -2455,6 +2468,27 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.deepEqual(normalized.agentRuns[0].matches[0].reasons, [
     "Restored reason",
   ]);
+  assert.deepEqual(normalized.infiniteHunt, {
+    enabled: false,
+    generation: null,
+    intervalMinutes: 1440,
+    options: {
+      runName: "Software Engineer",
+      origin: "infinite",
+      q: "Software Engineer",
+      location: "",
+      minFit: 60,
+      maxResults: 25,
+      requiredKeywords: [],
+      excludeKeywords: [],
+      workflows: ["linkedin"],
+      optimizeResume: false,
+    },
+    startedAt: null,
+    nextRunAt: null,
+    lastRunAt: null,
+    lastError: "",
+  });
   assert.deepEqual(
     normalized.activities.find(
       (activity) => activity.message === "Restored activity",

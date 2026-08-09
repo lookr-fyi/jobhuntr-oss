@@ -1916,6 +1916,23 @@ test(
         ),
         resumeAttachment.selectOption(alternateResumeId),
       ]);
+      await page.waitForFunction(
+        () => {
+          const controls = [
+            ...document.querySelectorAll('input[type="checkbox"]'),
+          ];
+          const byLabel = (text) =>
+            controls.find((control) =>
+              control.closest("label")?.textContent?.includes(text),
+            );
+          return (
+            byLabel("Review resume alignment")?.checked === false &&
+            byLabel("Confirm application details")?.checked === false
+          );
+        },
+        undefined,
+        { timeout: 5000 },
+      );
       assert.equal(
         await page.getByLabel("Review resume alignment").isChecked(),
         false,
@@ -4075,6 +4092,19 @@ test(
                 steps: [{ name: { unsafe: true }, detail: { unsafe: true } }],
               },
             ],
+            infiniteHunt: {
+              enabled: "true",
+              generation: { unsafe: true },
+              intervalMinutes: 99999,
+              options: {
+                q: { unsafe: true },
+                workflows: ["linkedin", { unsafe: true }],
+              },
+              startedAt: { unsafe: true },
+              nextRunAt: "not-a-date",
+              lastRunAt: "not-a-date",
+              lastError: { unsafe: true },
+            },
             jobs: documentRestorePoint.jobs.map((job, index) =>
               index === 0
                 ? {
@@ -4422,6 +4452,17 @@ test(
           exact: true,
         })
         .waitFor();
+      assert.equal(
+        await page.getByText(/Infinite Hunt is active every/).count(),
+        0,
+        "a malformed restored schedule must fail closed instead of running autonomously",
+      );
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Start infinite hunt", exact: true })
+          .isEnabled(),
+        true,
+      );
       await assertAccessible(page, "Restored Infinite Hunting");
       await page.getByRole("button", { name: "LinkedIn Audit" }).click();
       await page

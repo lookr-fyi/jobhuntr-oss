@@ -274,9 +274,10 @@ const HUNT_WORKFLOWS = new Set([
 ]);
 const normalizeHuntOptions = (value, fallbackName = "Software Engineer") => {
   const source = isRecord(value) ? value : {};
-  const q = String(source.q || fallbackName || "Software Engineer")
-    .trim()
-    .slice(0, 200);
+  const q =
+    boundedText(source.q, 200) ||
+    boundedText(fallbackName, 200) ||
+    "Software Engineer";
   const workflows = [
     ...new Set(
       strings(source.workflows)
@@ -285,12 +286,10 @@ const normalizeHuntOptions = (value, fallbackName = "Software Engineer") => {
     ),
   ].slice(0, 10);
   return {
-    runName: String(source.runName || q || "Software Engineer")
-      .trim()
-      .slice(0, 200),
+    runName: boundedText(source.runName, 200) || q || "Software Engineer",
     origin: source.origin === "manual" ? "manual" : "infinite",
     q: q || "Software Engineer",
-    location: String(source.location || "").slice(0, 200),
+    location: boundedText(source.location, 200),
     minFit: Math.min(100, Math.max(0, Number(source.minFit ?? 60) || 0)),
     maxResults: Math.min(100, Math.max(1, Number(source.maxResults) || 25)),
     requiredKeywords: strings(source.requiredKeywords)
@@ -369,6 +368,10 @@ const safeStoredHttpUrl = (value, max = 2000) => {
   } catch {
     return "";
   }
+};
+const safeStoredTimestamp = (value) => {
+  const text = boundedText(value, 100);
+  return text && Number.isFinite(Date.parse(text)) ? text : "";
 };
 
 function migrate(input) {
@@ -841,24 +844,33 @@ function migrate(input) {
     run.createdAt = boundedText(run.createdAt, 100);
     run.completedAt = boundedText(run.completedAt, 100);
   }
-  db.infiniteHunt = isRecord(db.infiniteHunt)
-    ? db.infiniteHunt
-    : emptyDb().infiniteHunt;
-  db.infiniteHunt.enabled = Boolean(db.infiniteHunt.enabled);
-  db.infiniteHunt.generation = String(
-    db.infiniteHunt.generation || db.infiniteHunt.startedAt || "",
-  ).slice(0, 200);
-  db.infiniteHunt.intervalMinutes = Math.min(
-    1440,
-    Math.max(1, Number(db.infiniteHunt.intervalMinutes) || 60),
-  );
-  db.infiniteHunt.options = isRecord(db.infiniteHunt.options)
-    ? normalizeHuntOptions(db.infiniteHunt.options)
+  const restoredInfiniteHunt = isRecord(db.infiniteHunt) ? db.infiniteHunt : {};
+  const infiniteOptions = isRecord(restoredInfiniteHunt.options)
+    ? normalizeHuntOptions(restoredInfiniteHunt.options)
     : null;
-  db.infiniteHunt.lastError = String(db.infiniteHunt.lastError || "").slice(
-    0,
-    500,
-  );
+  const startedAt = safeStoredTimestamp(restoredInfiniteHunt.startedAt);
+  const nextRunAt = safeStoredTimestamp(restoredInfiniteHunt.nextRunAt);
+  const generation =
+    boundedText(restoredInfiniteHunt.generation, 200) || startedAt;
+  const enabled =
+    restoredInfiniteHunt.enabled === true &&
+    Boolean(infiniteOptions && generation && startedAt && nextRunAt);
+  db.infiniteHunt = {
+    enabled,
+    generation: generation || null,
+    intervalMinutes: numericPreference(
+      restoredInfiniteHunt.intervalMinutes,
+      60,
+      1,
+      1440,
+      true,
+    ),
+    options: infiniteOptions,
+    startedAt: startedAt || null,
+    nextRunAt: enabled ? nextRunAt : null,
+    lastRunAt: safeStoredTimestamp(restoredInfiniteHunt.lastRunAt) || null,
+    lastError: boundedText(restoredInfiniteHunt.lastError, 500),
+  };
   const activityIds = new Set();
   db.activities = records(db.activities)
     .slice(0, 500)
