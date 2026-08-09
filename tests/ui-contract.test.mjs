@@ -1591,6 +1591,14 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /pendingVerification\?\.answerRevision/);
   assert.match(
     card,
+    /const canonicalAnswer = canonicalApplicationAnswer\(answer\)[\s\S]*?applicationQuestion: \{ id, answer: canonicalAnswer, verified: false \}/,
+  );
+  assert.match(
+    card,
+    /const canonicalAnswer = canonicalApplicationAnswer\([\s\S]*?setDraftAnswers\(\(answers\) => \(\{ \.\.\.answers, \[id\]: canonicalAnswer \}\)\)[\s\S]*?answer: canonicalAnswer/,
+  );
+  assert.match(
+    card,
     /setPendingVerificationIds\(\(current\) => new Set\(current\)\.add\(id\)\)/,
   );
   assert.match(

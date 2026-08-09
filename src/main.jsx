@@ -379,6 +379,7 @@ const isValidApplicationAnswer = (question) => {
     return (question.options || []).includes(answer);
   return true;
 };
+const canonicalApplicationAnswer = (value) => String(value ?? "").trim();
 const isApplicationQuestionReady = (question) => {
   const answer = String(question?.answer || "").trim();
   if (question?.required === false && !answer) return true;
@@ -6280,17 +6281,22 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateQuestion = async (id, answer, trackDraft = false) => {
+    const canonicalAnswer = canonicalApplicationAnswer(answer);
     if (trackDraft) {
       const nextRevision = (answerRevisionRef.current[id] || 0) + 1;
       answerRevisionRef.current[id] = nextRevision;
       setAnswerRevisions((current) => ({ ...current, [id]: nextRevision }));
-      setDraftAnswers((answers) => ({ ...answers, [id]: answer }));
+      setDraftAnswers((answers) => ({ ...answers, [id]: canonicalAnswer }));
       setDirtyAnswerIds((current) => new Set(current).add(id));
       setAnswerDraftRestored(false);
-    }
+    } else
+      setDraftAnswers((answers) => ({
+        ...answers,
+        [id]: canonicalAnswer,
+      }));
     const savingRevision = answerRevisionRef.current[id] || 0;
     const saved = await updatePacket({
-      applicationQuestion: { id, answer, verified: false },
+      applicationQuestion: { id, answer: canonicalAnswer, verified: false },
     });
     if (saved && (answerRevisionRef.current[id] || 0) === savingRevision)
       setDirtyAnswerIds((current) => {
@@ -6304,6 +6310,10 @@ function SubmissionCard({ submission: s, state, reload }) {
       (candidate) => candidate.id === id,
     );
     const savingRevision = answerRevisionRef.current[id] || 0;
+    const canonicalAnswer = canonicalApplicationAnswer(
+      draftAnswers[id] ?? question?.answer ?? "",
+    );
+    setDraftAnswers((answers) => ({ ...answers, [id]: canonicalAnswer }));
     const verificationRevision = (verificationRevisionRef.current[id] || 0) + 1;
     verificationRevisionRef.current[id] = verificationRevision;
     setVerificationDraft((current) => ({
@@ -6317,7 +6327,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     const saved = await updatePacket({
       applicationQuestion: {
         id,
-        answer: draftAnswers[id] ?? question?.answer ?? "",
+        answer: canonicalAnswer,
         verified,
       },
     });

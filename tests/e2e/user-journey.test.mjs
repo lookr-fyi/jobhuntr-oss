@@ -2294,7 +2294,7 @@ test(
       await editedVerification.dispatchEvent("pointerdown", { button: 2 });
       await page.waitForTimeout(10);
       await whyAnswer.fill(
-        "The product mission, customer impact, and role scope match my experience.",
+        "  The product mission, customer impact, and role scope match my experience.  \n",
       );
       await Promise.all([
         page.waitForResponse(
@@ -2319,6 +2319,11 @@ test(
         ),
         editedVerification.click(),
       ]);
+      assert.equal(
+        await whyAnswer.inputValue(),
+        "The product mission, customer impact, and role scope match my experience.",
+        "verification should display the exact canonical answer persisted by the backend",
+      );
       await page.route("**/api/submissions/*", async (route) => {
         if (route.request().method() === "PATCH")
           await new Promise((resolve) => setTimeout(resolve, 250));
