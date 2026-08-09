@@ -12975,9 +12975,13 @@ function Agent({ state, reload, setTab }) {
       setDraggedRunId(null);
       return;
     }
+    const targetIndex = selectedRuns.indexOf(targetId);
     const next = selectedRuns.filter((id) => id !== sourceId);
-    const targetIndex = next.indexOf(targetId);
-    next.splice(targetIndex < 0 ? next.length : targetIndex, 0, sourceId);
+    next.splice(
+      targetIndex < 0 ? next.length : Math.min(targetIndex, next.length),
+      0,
+      sourceId,
+    );
     saveRunOrder(next);
     const workflow = workflows.find((item) => item[0] === sourceId);
     setRunOrderAnnouncement(
@@ -13175,9 +13179,7 @@ function Agent({ state, reload, setTab }) {
                     <span
                       className="v2-loop-drag-handle"
                       draggable
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Drag ${workflow[2]} to reorder`}
+                      aria-hidden="true"
                       title="Drag to reorder"
                       onDragStart={(event) => {
                         draggedRunIdRef.current = id;

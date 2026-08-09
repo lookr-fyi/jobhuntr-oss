@@ -366,13 +366,18 @@ test("Infinite Hunt recovers a bounded complete configuration draft", async () =
   assert.match(agent, /if \(!huntDraftTouched\) return/);
   assert.match(agent, /setHuntDraftTouched\(false\)/);
   assert.match(agent, /draggable/);
-  assert.match(agent, /aria-label=\{`Drag \$\{workflow\[2\]\} to reorder`\}/);
+  assert.match(
+    agent,
+    /className="v2-loop-drag-handle"[\s\S]*?aria-hidden="true"/,
+  );
   assert.match(agent, /onDragStart=\{\(event\) =>/);
   assert.match(agent, /onDrop=\{\(event\) =>/);
   assert.match(
     agent,
     /const dropRunBefore = \(targetId, transferredId = ""\) =>/,
   );
+  assert.match(agent, /const targetIndex = selectedRuns\.indexOf\(targetId\)/);
+  assert.match(agent, /Math\.min\(targetIndex, next\.length\)/);
   assert.match(agent, /role="status" aria-live="polite"/);
 });
 

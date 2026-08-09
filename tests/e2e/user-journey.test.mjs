@@ -707,10 +707,12 @@ test(
         () => new DataTransfer(),
       );
       await page
-        .getByRole("button", { name: "Drag LinkedIn Jobs to reorder" })
+        .locator(".v2-loop-row", { hasText: "Indeed" })
+        .locator(".v2-loop-drag-handle")
         .dispatchEvent("dragstart", { dataTransfer: workflowDragData });
       await page
-        .getByRole("button", { name: "Drag Indeed to reorder" })
+        .locator(".v2-loop-row", { hasText: "LinkedIn Jobs" })
+        .locator(".v2-loop-drag-handle")
         .dispatchEvent("drop", { dataTransfer: workflowDragData });
       assert.deepEqual(
         await page.locator(".v2-loop-row strong").allTextContents(),
@@ -721,14 +723,16 @@ test(
         await page
           .locator(".v2-loop-box .sr-only[role='status']")
           .textContent(),
-        "LinkedIn Jobs moved to position 1.",
+        "Indeed moved to position 2.",
       );
       workflowDragData = await page.evaluateHandle(() => new DataTransfer());
       await page
-        .getByRole("button", { name: "Drag Indeed to reorder" })
+        .locator(".v2-loop-row", { hasText: "Indeed" })
+        .locator(".v2-loop-drag-handle")
         .dispatchEvent("dragstart", { dataTransfer: workflowDragData });
       await page
-        .getByRole("button", { name: "Drag LinkedIn Jobs to reorder" })
+        .locator(".v2-loop-row", { hasText: "LinkedIn Jobs" })
+        .locator(".v2-loop-drag-handle")
         .dispatchEvent("drop", { dataTransfer: workflowDragData });
       assert.deepEqual(
         await page.locator(".v2-loop-row strong").allTextContents(),
