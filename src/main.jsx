@@ -12118,20 +12118,12 @@ function Agent({ state, reload, setTab }) {
     if (runningRef.current || stoppingInfiniteRef.current) return;
     runningRef.current = true;
     setRunning(true);
-    let schedule = null;
     try {
-      schedule = await api("/api/infinite-hunt/start", {
+      const { run: result } = await api("/api/infinite-hunt/start-run", {
         method: "POST",
         body: JSON.stringify({
           intervalMinutes: Number(intervalMinutes),
           options: payload(),
-        }),
-      });
-      const result = await api("/api/agent-runs/start", {
-        method: "POST",
-        body: JSON.stringify({
-          ...payload(),
-          scheduleGeneration: schedule.generation,
         }),
       });
       setPreview({
@@ -12144,11 +12136,8 @@ function Agent({ state, reload, setTab }) {
       localStorage.removeItem("jobhuntr-new-run-draft");
       await reload();
     } catch {
-      if (schedule?.generation)
-        await api("/api/infinite-hunt/stop", {
-          method: "POST",
-          body: JSON.stringify({ generation: schedule.generation }),
-        }).catch(() => {});
+      // One local transaction creates both schedule and initial run, so a
+      // failure cannot leave a phantom Infinite Hunt schedule behind.
     } finally {
       runningRef.current = false;
       setRunning(false);

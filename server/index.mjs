@@ -2084,6 +2084,25 @@ const InfiniteHuntSchema = z.object({
   intervalMinutes: z.coerce.number().int().min(1).max(1440),
   options: HuntSchema,
 });
+const createInfiniteSchedule = (db, intervalMinutes, options) => {
+  const startedAt = timestamp();
+  db.infiniteHunt = {
+    enabled: true,
+    generation: nanoid(),
+    intervalMinutes,
+    options,
+    startedAt,
+    nextRunAt: new Date(Date.now() + intervalMinutes * 60_000).toISOString(),
+    lastRunAt: db.infiniteHunt?.lastRunAt || null,
+    lastError: "",
+  };
+  auditEvent(
+    db,
+    "agent",
+    `Started infinite hunt every ${intervalMinutes} minute${intervalMinutes === 1 ? "" : "s"}.`,
+  );
+  return db.infiniteHunt;
+};
 
 app.post("/api/infinite-hunt/start", async (req, res) => {
   const parsed = InfiniteHuntSchema.safeParse(req.body);
@@ -2096,25 +2115,7 @@ app.post("/api/infinite-hunt/start", async (req, res) => {
       error: "Add a real profile resume before generating tailored resumes",
     });
   const schedule = await mutate((db) => {
-    const startedAt = timestamp();
-    db.infiniteHunt = {
-      enabled: true,
-      generation: nanoid(),
-      intervalMinutes: parsed.data.intervalMinutes,
-      options,
-      startedAt,
-      nextRunAt: new Date(
-        Date.now() + parsed.data.intervalMinutes * 60_000,
-      ).toISOString(),
-      lastRunAt: db.infiniteHunt?.lastRunAt || null,
-      lastError: "",
-    };
-    auditEvent(
-      db,
-      "agent",
-      `Started infinite hunt every ${parsed.data.intervalMinutes} minute${parsed.data.intervalMinutes === 1 ? "" : "s"}.`,
-    );
-    return db.infiniteHunt;
+    return createInfiniteSchedule(db, parsed.data.intervalMinutes, options);
   });
   res.status(201).json(schedule);
 });
@@ -2149,6 +2150,195 @@ app.post("/api/agent-runs/preview", async (req, res) => {
     ).length,
   });
 });
+const createAgentRunRecord = (db, input) => {
+  const scheduleGeneration = safeText(input?.scheduleGeneration, 200);
+  if (
+    scheduleGeneration &&
+    (!db.infiniteHunt?.enabled ||
+      db.infiniteHunt.generation !== scheduleGeneration)
+  )
+    return { staleSchedule: true };
+  const runId = nanoid();
+  const options = huntOptions(input, db.profile);
+  const matches = findLocalMatches(seedJobs, db.profile, options);
+  let added = 0;
+  let duplicates = 0;
+  let optimizedResumes = 0;
+  let originalResumes = 0;
+  let queued = 0;
+  for (const match of matches) {
+    if (db.jobs.some((job) => job.url && job.url === match.url)) {
+      duplicates++;
+      continue;
+    }
+    const job = { ...match };
+    delete job.eligible;
+    delete job.rejectedBecause;
+    const savedJob = {
+      ...job,
+      id: nanoid(),
+      workflowRunId: runId,
+      status: "interested",
+      matchReasons: match.reasons,
+      createdAt: timestamp(),
+      updatedAt: timestamp(),
+      notes: [],
+      tasks: [],
+      contacts: [],
+      statusHistory: [
+        { status: "interested", at: timestamp(), source: "local-hunt" },
+      ],
+    };
+    db.jobs.unshift(savedJob);
+    added++;
+    if (options.optimizeResume) {
+      const original = scoreResumeAgainstJob(
+        db.profile.resumeText,
+        savedJob,
+        db.profile,
+      );
+      const threshold = Number(db.profile.preferences?.atsThreshold ?? 80);
+      let resumeId = "profile-resume";
+      let decision = "original";
+      if (original.score < threshold) {
+        const truthfulKeywords = original.missingKeywords
+          .filter((word) =>
+            (db.profile.skills || []).some(
+              (skill) => String(skill).toLowerCase() === word,
+            ),
+          )
+          .slice(0, 5);
+        const tailored = {
+          id: nanoid(),
+          name: `${savedJob.company} — ${savedJob.title}`,
+          templateId: db.templates[0]?.id || "clean-ats",
+          jobId: savedJob.id,
+          content: [
+            db.profile.resumeText,
+            truthfulKeywords.length
+              ? `\n\nRELEVANT SKILLS\n${truthfulKeywords.join(" · ")}`
+              : "",
+          ].join(""),
+          sourceAtsScore: original.score,
+          generatedBy: "infinite-hunt",
+          createdAt: timestamp(),
+          updatedAt: timestamp(),
+        };
+        db.resumes.unshift(tailored);
+        resumeId = tailored.id;
+        decision = "optimized";
+        optimizedResumes++;
+      } else {
+        originalResumes++;
+      }
+      db.submissions.unshift({
+        id: nanoid(),
+        jobId: savedJob.id,
+        resumeId,
+        coverLetterId: "",
+        status: "draft",
+        atsScore: original.score,
+        atsThreshold: threshold,
+        atsDecision: decision,
+        applicationQuestions: applicationQuestionsFor(db),
+        checklist: [
+          { id: nanoid(), text: "Review resume alignment", done: false },
+          { id: nanoid(), text: "Review cover letter", done: false },
+          {
+            id: nanoid(),
+            text: "Confirm application details",
+            done: false,
+          },
+        ],
+        createdAt: timestamp(),
+        updatedAt: timestamp(),
+      });
+      savedJob.status = "interested";
+      savedJob.updatedAt = timestamp();
+      savedJob.statusHistory.unshift({
+        status: "interested",
+        at: timestamp(),
+        source: "infinite-hunt",
+      });
+      queued++;
+    }
+  }
+  const steps = [
+    {
+      name: "Read local profile",
+      status: "completed",
+      detail: `${db.profile.skills.length} skills and ${db.profile.targetRoles.length} target roles loaded`,
+    },
+    {
+      name: "Apply search rules",
+      status: "completed",
+      detail: `Query “${options.q}”, location “${options.location || "any"}”, ${options.requiredKeywords.length} required and ${options.excludeKeywords.length} excluded keywords`,
+    },
+    {
+      name: "Run selected workflows",
+      status: "completed",
+      detail: `${options.workflows.join(", ")} executed in the configured order`,
+    },
+    {
+      name: "Score local catalog",
+      status: "completed",
+      detail: `${matches.length} of ${seedJobs.length} roles met every rule and the ${options.minFit}% threshold`,
+    },
+    {
+      name: "Save and deduplicate",
+      status: "completed",
+      detail: `${added} saved, ${duplicates} already tracked`,
+    },
+  ];
+  if (options.optimizeResume) {
+    steps.push({
+      name: "Prepare application packets",
+      status: "completed",
+      detail: `${queued} queued · ${optimizedResumes} ATS resumes generated · ${originalResumes} original resumes already met the threshold`,
+    });
+  }
+  const item = {
+    id: runId,
+    runName: options.runName,
+    origin: options.origin,
+    status: "completed",
+    createdAt: timestamp(),
+    completedAt: timestamp(),
+    search: { q: options.q, location: options.location },
+    options,
+    workflows: options.workflows,
+    optimizeResume: options.optimizeResume,
+    inspected: seedJobs.length,
+    found: matches.length,
+    added,
+    duplicates,
+    queued,
+    optimizedResumes,
+    originalResumes,
+    minFit: options.minFit,
+    matches: matches.map((m) => ({
+      company: m.company,
+      title: m.title,
+      location: m.location,
+      url: m.url,
+      fitScore: m.fitScore,
+      reasons: m.reasons,
+    })),
+    steps,
+    actions: matches.map(
+      (m) => `Matched ${m.title} at ${m.company} (${m.fitScore}% fit)`,
+    ),
+  };
+  db.agentRuns.unshift(item);
+  db.agentRuns = db.agentRuns.slice(0, 100);
+  auditEvent(
+    db,
+    "agent",
+    `Local hunt inspected ${seedJobs.length} roles, matched ${matches.length}, and saved ${added}.`,
+    { runId: item.id },
+  );
+  return item;
+};
 app.post("/api/agent-runs/start", async (req, res) => {
   const current = await readDb();
   const requestedOptions = huntOptions(req.body, current.profile);
@@ -2159,200 +2349,36 @@ app.post("/api/agent-runs/start", async (req, res) => {
     return res.status(409).json({
       error: "Add a real profile resume before generating tailored resumes",
     });
-  const run = await mutate((db) => {
-    const scheduleGeneration = safeText(req.body?.scheduleGeneration, 200);
-    if (
-      scheduleGeneration &&
-      (!db.infiniteHunt?.enabled ||
-        db.infiniteHunt.generation !== scheduleGeneration)
-    )
-      return { staleSchedule: true };
-    const runId = nanoid();
-    const options = huntOptions(req.body, db.profile);
-    const matches = findLocalMatches(seedJobs, db.profile, options);
-    let added = 0;
-    let duplicates = 0;
-    let optimizedResumes = 0;
-    let originalResumes = 0;
-    let queued = 0;
-    for (const match of matches) {
-      if (db.jobs.some((job) => job.url && job.url === match.url)) {
-        duplicates++;
-        continue;
-      }
-      const job = { ...match };
-      delete job.eligible;
-      delete job.rejectedBecause;
-      const savedJob = {
-        ...job,
-        id: nanoid(),
-        workflowRunId: runId,
-        status: "interested",
-        matchReasons: match.reasons,
-        createdAt: timestamp(),
-        updatedAt: timestamp(),
-        notes: [],
-        tasks: [],
-        contacts: [],
-        statusHistory: [
-          { status: "interested", at: timestamp(), source: "local-hunt" },
-        ],
-      };
-      db.jobs.unshift(savedJob);
-      added++;
-      if (options.optimizeResume) {
-        const original = scoreResumeAgainstJob(
-          db.profile.resumeText,
-          savedJob,
-          db.profile,
-        );
-        const threshold = Number(db.profile.preferences?.atsThreshold ?? 80);
-        let resumeId = "profile-resume";
-        let decision = "original";
-        if (original.score < threshold) {
-          const truthfulKeywords = original.missingKeywords
-            .filter((word) =>
-              (db.profile.skills || []).some(
-                (skill) => String(skill).toLowerCase() === word,
-              ),
-            )
-            .slice(0, 5);
-          const tailored = {
-            id: nanoid(),
-            name: `${savedJob.company} — ${savedJob.title}`,
-            templateId: db.templates[0]?.id || "clean-ats",
-            jobId: savedJob.id,
-            content: [
-              db.profile.resumeText,
-              truthfulKeywords.length
-                ? `\n\nRELEVANT SKILLS\n${truthfulKeywords.join(" · ")}`
-                : "",
-            ].join(""),
-            sourceAtsScore: original.score,
-            generatedBy: "infinite-hunt",
-            createdAt: timestamp(),
-            updatedAt: timestamp(),
-          };
-          db.resumes.unshift(tailored);
-          resumeId = tailored.id;
-          decision = "optimized";
-          optimizedResumes++;
-        } else {
-          originalResumes++;
-        }
-        db.submissions.unshift({
-          id: nanoid(),
-          jobId: savedJob.id,
-          resumeId,
-          coverLetterId: "",
-          status: "draft",
-          atsScore: original.score,
-          atsThreshold: threshold,
-          atsDecision: decision,
-          applicationQuestions: applicationQuestionsFor(db),
-          checklist: [
-            { id: nanoid(), text: "Review resume alignment", done: false },
-            { id: nanoid(), text: "Review cover letter", done: false },
-            {
-              id: nanoid(),
-              text: "Confirm application details",
-              done: false,
-            },
-          ],
-          createdAt: timestamp(),
-          updatedAt: timestamp(),
-        });
-        savedJob.status = "interested";
-        savedJob.updatedAt = timestamp();
-        savedJob.statusHistory.unshift({
-          status: "interested",
-          at: timestamp(),
-          source: "infinite-hunt",
-        });
-        queued++;
-      }
-    }
-    const steps = [
-      {
-        name: "Read local profile",
-        status: "completed",
-        detail: `${db.profile.skills.length} skills and ${db.profile.targetRoles.length} target roles loaded`,
-      },
-      {
-        name: "Apply search rules",
-        status: "completed",
-        detail: `Query “${options.q}”, location “${options.location || "any"}”, ${options.requiredKeywords.length} required and ${options.excludeKeywords.length} excluded keywords`,
-      },
-      {
-        name: "Run selected workflows",
-        status: "completed",
-        detail: `${options.workflows.join(", ")} executed in the configured order`,
-      },
-      {
-        name: "Score local catalog",
-        status: "completed",
-        detail: `${matches.length} of ${seedJobs.length} roles met every rule and the ${options.minFit}% threshold`,
-      },
-      {
-        name: "Save and deduplicate",
-        status: "completed",
-        detail: `${added} saved, ${duplicates} already tracked`,
-      },
-    ];
-    if (options.optimizeResume) {
-      steps.push({
-        name: "Prepare application packets",
-        status: "completed",
-        detail: `${queued} queued · ${optimizedResumes} ATS resumes generated · ${originalResumes} original resumes already met the threshold`,
-      });
-    }
-    const item = {
-      id: runId,
-      runName: options.runName,
-      origin: options.origin,
-      status: "completed",
-      createdAt: timestamp(),
-      completedAt: timestamp(),
-      search: { q: options.q, location: options.location },
-      options,
-      workflows: options.workflows,
-      optimizeResume: options.optimizeResume,
-      inspected: seedJobs.length,
-      found: matches.length,
-      added,
-      duplicates,
-      queued,
-      optimizedResumes,
-      originalResumes,
-      minFit: options.minFit,
-      matches: matches.map((m) => ({
-        company: m.company,
-        title: m.title,
-        location: m.location,
-        url: m.url,
-        fitScore: m.fitScore,
-        reasons: m.reasons,
-      })),
-      steps,
-      actions: matches.map(
-        (m) => `Matched ${m.title} at ${m.company} (${m.fitScore}% fit)`,
-      ),
-    };
-    db.agentRuns.unshift(item);
-    db.agentRuns = db.agentRuns.slice(0, 100);
-    auditEvent(
-      db,
-      "agent",
-      `Local hunt inspected ${seedJobs.length} roles, matched ${matches.length}, and saved ${added}.`,
-      { runId: item.id },
-    );
-    return item;
-  });
+  const run = await mutate((db) => createAgentRunRecord(db, req.body));
   if (run.staleSchedule)
     return res.status(409).json({
       error: "This Infinite Hunt schedule was stopped or restarted",
     });
   res.status(201).json(run);
+});
+app.post("/api/infinite-hunt/start-run", async (req, res) => {
+  const parsed = InfiniteHuntSchema.safeParse(req.body);
+  if (!parsed.success)
+    return res.status(400).json({ error: "Invalid infinite hunt schedule" });
+  const current = await readDb();
+  const options = huntOptions(parsed.data.options, current.profile);
+  if (options.optimizeResume && !isUsableResumeText(current.profile.resumeText))
+    return res.status(409).json({
+      error: "Add a real profile resume before generating tailored resumes",
+    });
+  const result = await mutate((db) => {
+    const schedule = createInfiniteSchedule(
+      db,
+      parsed.data.intervalMinutes,
+      options,
+    );
+    const run = createAgentRunRecord(db, {
+      ...options,
+      scheduleGeneration: schedule.generation,
+    });
+    return { schedule, run };
+  });
+  res.status(201).json(result);
 });
 app.delete("/api/agent-runs/:id", async (req, res) => {
   const deleted = await mutate((db) => {

@@ -276,6 +276,9 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   );
   assert.match(oneOff, /runningRef\.current/);
   assert.match(recurring, /runningRef\.current/);
+  assert.match(recurring, /api\("\/api\/infinite-hunt\/start-run"/);
+  assert.doesNotMatch(recurring, /api\("\/api\/infinite-hunt\/start"/);
+  assert.doesNotMatch(recurring, /schedule\?\.generation/);
   assert.match(agent, /const stoppingInfiniteRef = useRef\(false\)/);
   const stopping = agent.slice(
     agent.indexOf("const stopInfiniteHunt = async"),

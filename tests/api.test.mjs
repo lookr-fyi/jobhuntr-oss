@@ -577,6 +577,44 @@ test("infinite hunt schedule persists and can be stopped safely", async () => {
   assert.equal(stopped.body.nextRunAt, null);
 });
 
+test("Infinite Hunt startup atomically persists its schedule and initial run", async () => {
+  const before = (await req("/api/state")).body;
+  const invalid = await req("/api/infinite-hunt/start-run", {
+    method: "POST",
+    body: JSON.stringify({ intervalMinutes: 0, options: { q: "engineer" } }),
+  });
+  assert.equal(invalid.res.status, 400);
+  const afterInvalid = (await req("/api/state")).body;
+  assert.equal(afterInvalid.agentRuns.length, before.agentRuns.length);
+  assert.equal(
+    afterInvalid.infiniteHunt.generation,
+    before.infiniteHunt.generation,
+    "invalid startup must not replace the existing schedule",
+  );
+
+  const started = await req("/api/infinite-hunt/start-run", {
+    method: "POST",
+    body: JSON.stringify({
+      intervalMinutes: 25,
+      options: {
+        q: "atomic product engineer",
+        minFit: 55,
+        workflows: ["linkedin", "indeed"],
+      },
+    }),
+  });
+  assert.equal(started.res.status, 201);
+  assert.equal(started.body.schedule.enabled, true);
+  assert.equal(started.body.schedule.intervalMinutes, 25);
+  assert.equal(started.body.run.status, "completed");
+  const persisted = (await req("/api/state")).body;
+  assert.equal(
+    persisted.infiniteHunt.generation,
+    started.body.schedule.generation,
+  );
+  assert.equal(persisted.agentRuns[0].id, started.body.run.id);
+});
+
 test("agent run history can be permanently deleted without deleting saved jobs", async () => {
   await mutate((db) => {
     db.agentRuns.unshift({
