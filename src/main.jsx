@@ -1898,6 +1898,7 @@ function Tracker({ state, reload, setTab }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteJobId, setDeleteJobId] = useState("");
   const [draggingJobId, setDraggingJobId] = useState("");
+  const [dragOverStage, setDragOverStage] = useState("");
   const [copiedTrackerUrl, setCopiedTrackerUrl] = useState("");
   const [pendingAppliedJobId, setPendingAppliedJobId] = useState("");
   const funnelCloseRef = useRef(null);
@@ -2316,18 +2317,28 @@ function Tracker({ state, reload, setTab }) {
               const remainingCount = stageJobs.length - visibleJobs.length;
               return (
                 <div
-                  className="kanban-column status-column"
+                  className={`kanban-column status-column ${dragOverStage === stage ? "drag-over" : ""}`}
                   key={stage}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) =>
-                    requestStatusChange(e.dataTransfer.getData("jobId"), stage)
-                  }
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (dragOverStage !== stage) setDragOverStage(stage);
+                  }}
+                  onDragLeave={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget))
+                      setDragOverStage("");
+                  }}
+                  onDrop={(e) => {
+                    setDragOverStage("");
+                    requestStatusChange(e.dataTransfer.getData("jobId"), stage);
+                  }}
                 >
                   <div className="column-title status-column-header">
                     <b className="status-title">{trackerStageLabel(stage)}</b>
                     <span className="status-count">{stageJobs.length}</span>
                   </div>
-                  <div className="status-column-content">
+                  <div
+                    className={`status-column-content ${dragOverStage === stage ? "drag-over" : ""}`}
+                  >
                     <div className="jobs-list">
                       {stageJobs.length === 0 && (
                         <div className="empty-column">
@@ -2377,7 +2388,10 @@ function Tracker({ state, reload, setTab }) {
                                 e.dataTransfer.effectAllowed = "move";
                                 setDraggingJobId(item.id);
                               }}
-                              onDragEnd={() => setDraggingJobId("")}
+                              onDragEnd={() => {
+                                setDraggingJobId("");
+                                setDragOverStage("");
+                              }}
                               onContextMenu={(event) => {
                                 event.preventDefault();
                                 copyTrackerUrl(

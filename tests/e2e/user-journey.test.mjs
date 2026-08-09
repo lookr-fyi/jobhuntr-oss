@@ -1426,15 +1426,44 @@ test(
       const queuedCardAction = queuedColumn
         .getByRole("button", { name: "Go to Submission Queue" })
         .first();
-      if ((await queuedCardAction.count()) === 0) {
-        const automatedTrackerCard = page
-          .locator(".job-card", { has: page.locator(".ats-score") })
-          .first()
-          .locator(".kanban-card");
-        await automatedTrackerCard.dragTo(
-          queuedColumn.locator(".status-column-content"),
-        );
-      }
+      const automatedTrackerCard = page
+        .locator(".job-card", { has: page.locator(".ats-score") })
+        .first()
+        .locator(".kanban-card");
+      const queuedDropContent = queuedColumn.locator(".status-column-content");
+      const columnDragData = await page.evaluateHandle(
+        () => new DataTransfer(),
+      );
+      await automatedTrackerCard.dispatchEvent("dragstart", {
+        dataTransfer: columnDragData,
+      });
+      await queuedDropContent.dispatchEvent("dragover", {
+        dataTransfer: columnDragData,
+      });
+      await page.waitForFunction(() =>
+        Boolean(document.querySelector(".status-column.drag-over")),
+      );
+      assert.equal(
+        await queuedColumn.evaluate((column) =>
+          column.classList.contains("drag-over"),
+        ),
+        true,
+        "v2 should highlight the active status column before drop",
+      );
+      assert.equal(
+        await queuedDropContent.evaluate(
+          (content) => getComputedStyle(content, "::after").content,
+        ),
+        '"Drop here to change status"',
+        "v2 should explain the pending status drop before release",
+      );
+      await queuedDropContent.dispatchEvent("drop", {
+        dataTransfer: columnDragData,
+      });
+      await automatedTrackerCard.dispatchEvent("dragend", {
+        dataTransfer: columnDragData,
+      });
+      await columnDragData.dispose();
       await queuedCardAction.waitFor();
       await queuedCardAction.click();
       await page.getByRole("heading", { name: "Submission Queue" }).waitFor();
