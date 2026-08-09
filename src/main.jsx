@@ -42,6 +42,29 @@ import {
 import "./styles.css";
 import { parseCsv } from "./csv.js";
 import jobHuntrLogo from "./jobhuntr-logo.png";
+import diceLogo from "./platform-logos/Dice.png";
+import glassdoorLogo from "./platform-logos/Glassdoor.png";
+import hiringCafeLogo from "./platform-logos/HiringCafe.png";
+import indeedLogo from "./platform-logos/Indeed.png";
+import jobrightLogo from "./platform-logos/Jobright.png";
+import simplifyLogo from "./platform-logos/Simplify.png";
+import startupLogo from "./platform-logos/WorkAtAStartup.png";
+import zipRecruiterLogo from "./platform-logos/Ziprecruiter.png";
+import companyLogo from "./platform-logos/internet.png";
+import linkedInLogo from "./platform-logos/linkedin.png";
+
+const PLATFORM_LOGOS = {
+  company: companyLogo,
+  dice: diceLogo,
+  glassdoor: glassdoorLogo,
+  hiringcafe: hiringCafeLogo,
+  indeed: indeedLogo,
+  jobright: jobrightLogo,
+  linkedin: linkedInLogo,
+  simplify: simplifyLogo,
+  workatastartup: startupLogo,
+  ziprecruiter: zipRecruiterLogo,
+};
 
 const APP_ROUTES = [
   "overview",
@@ -130,6 +153,14 @@ const OVERVIEW_MOTIVATION = [
   "Clarity follows action, not the other way around.",
   "Momentum beats motivation—press send.",
 ];
+function PlatformMark({ id, fallback }) {
+  const logo = PLATFORM_LOGOS[id];
+  return (
+    <span className={`v2-platform-mark ${id}`} aria-hidden="true">
+      {logo ? <img src={logo} alt="" /> : fallback}
+    </span>
+  );
+}
 const TRACKER_STAGES = [
   "saved",
   "interested",
@@ -9241,7 +9272,7 @@ function Agent({ state, reload, setTab }) {
                   key={id}
                   onClick={() => toggleRun(id)}
                 >
-                  <span className={`v2-platform-mark ${id}`}>{mark}</span>
+                  <PlatformMark id={id} fallback={mark} />
                   <span className="v2-workflow-copy">
                     <strong>{title}</strong>
                     <small>{description}</small>
@@ -9264,9 +9295,7 @@ function Agent({ state, reload, setTab }) {
                 return (
                   <div className="v2-loop-row" key={id}>
                     <b>{index + 1}</b>
-                    <span className={`v2-platform-mark ${id}`}>
-                      {workflow[1]}
-                    </span>
+                    <PlatformMark id={id} fallback={workflow[1]} />
                     <div>
                       <strong>{workflow[2]}</strong>
                       <small>Ready for local preview</small>

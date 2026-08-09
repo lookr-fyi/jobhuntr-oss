@@ -294,6 +294,15 @@ test(
         .getByRole("button", { name: "Infinite Hunting", exact: true })
         .click();
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      const platformLogos = page.locator(".v2-workflow-grid img");
+      assert.equal(await platformLogos.count(), 10);
+      assert.equal(
+        await platformLogos.evaluateAll((images) =>
+          images.every((image) => image.complete && image.naturalWidth > 0),
+        ),
+        true,
+        "Infinite Hunt should render every authoritative platform logo",
+      );
       await assertAccessible(page, "Infinite Hunting");
       await page
         .getByLabel("Generate an optimized resume for each job")

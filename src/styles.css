@@ -3908,6 +3908,12 @@ button.v2-workflow-card.selected {
   background: #eff6ff;
   color: #2563eb;
 }
+.v2-platform-mark img {
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+}
 .v2-platform-mark.indeed {
   color: #2557a7;
 }
