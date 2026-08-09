@@ -597,6 +597,25 @@ test("Job Board queueing uses one atomic backend operation", async () => {
   assert.match(board, /submittedJobIds\.has\(job\.id\)/);
 });
 
+test("Gig details cannot close while their serialized mutation queue is active", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const gigs = source.slice(
+    source.indexOf("function Gigs("),
+    source.indexOf("function ProfileAudit"),
+  );
+  assert.match(gigs, /const gigDetailsBusyRef = useRef/);
+  assert.match(gigs, /if \(gigDetailsBusyRef\.current\) return/);
+  assert.match(
+    gigs,
+    /disabled=\{gigDetailsBusy\}[\s\S]*?onClick=\{closeGigDetails\}/,
+  );
+  assert.match(gigs, /event\.key === "Escape"[\s\S]*?closeGigDetails\(\)/);
+  assert.match(gigs, /returnFocus\?\.focus\?\.\(\)/);
+});
+
 test("Outreach collection and recording cannot duplicate or dismiss in-flight work", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

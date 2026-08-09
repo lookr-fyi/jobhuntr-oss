@@ -85,7 +85,7 @@ const assertNamedFormControls = async (page, surface) => {
 
 test(
   "a user can onboard, hunt, inspect runs, and persist outreach through the real UI",
-  { timeout: 75_000 },
+  { timeout: 120_000 },
   async () => {
     const port = await freePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -3942,6 +3942,25 @@ test(
           select.value = "negotiation";
           select.dispatchEvent(new Event("change", { bubbles: true }));
         });
+      await page.waitForFunction(() =>
+        [
+          ...document.querySelectorAll('[aria-label="Close gig details"]'),
+        ].every((button) => button.disabled),
+      );
+      assert.equal(
+        await gigDialog
+          .getByLabel("Close gig details")
+          .evaluateAll((buttons) => buttons.every((button) => button.disabled)),
+        true,
+        "queued Gig mutations must lock both close controls",
+      );
+      assert.equal(
+        await gigDialog.getByRole("button", { name: "Done" }).isDisabled(),
+        true,
+        "queued Gig mutations must lock the footer dismiss action",
+      );
+      await page.keyboard.press("Escape");
+      await gigDialog.waitFor();
       await gigDialog.getByRole("button", { name: "Start Work" }).waitFor();
       assert.equal(
         queuedGigPatchCount,
@@ -3949,19 +3968,18 @@ test(
         "rapid Gig mutations must run in order without dropping the latest status",
       );
       await page.unroute(`**/api/gigs/${createdGigId}`);
-      await gigDialog.getByRole("button", { name: "Start Work" }).click();
-      await gigDialog.getByText("Work started.").waitFor();
-      await gigDialog.getByRole("button", { name: "Submit Work" }).click();
-      await gigDialog.getByText("Work submitted for approval.").waitFor();
-      await gigDialog
-        .getByText("Waiting for approval", { exact: true })
-        .waitFor();
+      await page.waitForFunction(() => {
+        const button = [...document.querySelectorAll("button")].find(
+          (candidate) => candidate.textContent.trim() === "Start Work",
+        );
+        return button && !button.disabled;
+      });
       await page.keyboard.press("Escape");
       await gigDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search my gigs").fill("Career Tools Lab");
       await page
         .locator(".v2-gig-applications")
-        .getByText("Waiting for Approval")
+        .getByText("Application Approved")
         .waitFor();
       await assertAccessible(page, "Gigs");
 

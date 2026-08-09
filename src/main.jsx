@@ -10770,6 +10770,15 @@ function Gigs({ state, reload }) {
   const gigCloseRef = useRef(null);
   const campaignCloseRef = useRef(null);
   const gig = state.gigs.find((item) => item.id === selected);
+  const gigDetailsBusy = Boolean(gig && patchingGigIds.has(gig.id));
+  const gigDetailsBusyRef = useRef(gigDetailsBusy);
+  useEffect(() => {
+    gigDetailsBusyRef.current = gigDetailsBusy;
+  }, [gigDetailsBusy]);
+  const closeGigDetails = useCallback(() => {
+    if (gigDetailsBusyRef.current) return;
+    setSelected(null);
+  }, []);
   const money = (value) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -10799,6 +10808,7 @@ function Gigs({ state, reload }) {
   const patch = (id, body) => {
     if (!id) return Promise.resolve(false);
     const previous = gigMutationQueuesRef.current.get(id) || Promise.resolve();
+    if (selected === id) gigDetailsBusyRef.current = true;
     setPatchingGigIds((current) => new Set(current).add(id));
     const operation = previous
       .catch(() => false)
@@ -10818,6 +10828,7 @@ function Gigs({ state, reload }) {
     return operation.finally(() => {
       if (gigMutationQueuesRef.current.get(id) !== operation) return;
       gigMutationQueuesRef.current.delete(id);
+      if (selected === id) gigDetailsBusyRef.current = false;
       setPatchingGigIds((current) => {
         const next = new Set(current);
         next.delete(id);
@@ -10914,14 +10925,18 @@ function Gigs({ state, reload }) {
     }
   };
   useEffect(() => {
-    if (!gig || myView !== "table") return undefined;
+    if (!selected || myView !== "table") return undefined;
+    const returnFocus = document.activeElement;
     gigCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape" && !deleteTarget) setSelected(null);
+      if (event.key === "Escape" && !deleteTarget) closeGigDetails();
     };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [gig, myView, deleteTarget]);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocus?.focus?.();
+    };
+  }, [closeGigDetails, selected, myView, deleteTarget]);
   useEffect(() => {
     if (!campaignPreview) return undefined;
     const returnFocus = document.activeElement;
@@ -11318,7 +11333,8 @@ function Gigs({ state, reload }) {
                 <button
                   className="drawer-close"
                   aria-label="Close gig details"
-                  onClick={() => setSelected(null)}
+                  disabled={gigDetailsBusy}
+                  onClick={closeGigDetails}
                 >
                   ×
                 </button>
@@ -11427,7 +11443,8 @@ function Gigs({ state, reload }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Close gig details"
-            onClick={() => setSelected(null)}
+            disabled={gigDetailsBusy}
+            onClick={closeGigDetails}
           />
           <div className="v2-template-modal-content v2-gig-detail-modal">
             <div className="row">
@@ -11436,7 +11453,8 @@ function Gigs({ state, reload }) {
                 ref={gigCloseRef}
                 className="drawer-close"
                 aria-label="Close gig details"
-                onClick={() => setSelected(null)}
+                disabled={gigDetailsBusy}
+                onClick={closeGigDetails}
               >
                 ×
               </button>
@@ -11588,7 +11606,11 @@ function Gigs({ state, reload }) {
               >
                 Close application
               </button>
-              <button className="secondary" onClick={() => setSelected(null)}>
+              <button
+                className="secondary"
+                disabled={gigDetailsBusy}
+                onClick={closeGigDetails}
+              >
                 Done
               </button>
             </div>
