@@ -11251,9 +11251,9 @@ function RunsPage({ state, setTab, reload }) {
             <div className="v2-session-head">
               <div>
                 <span>AGENT RUN</span>
-                <h3 id="run-detail-title">
+                <h2 id="run-detail-title">
                   {selectedRun.runName || selectedRun.search?.q || "Local hunt"}
-                </h3>
+                </h2>
               </div>
               <span className="pill submitted">Completed</span>
             </div>
@@ -11295,7 +11295,7 @@ function RunsPage({ state, setTab, reload }) {
             </div>
             <div className="v2-run-detail-columns">
               <div>
-                <h4>Workflow progress</h4>
+                <h3>Workflow progress</h3>
                 <div className="v2-session-steps">
                   {(selectedRun.steps || []).map((step) => (
                     <div key={step.name}>
@@ -11309,7 +11309,7 @@ function RunsPage({ state, setTab, reload }) {
                 </div>
               </div>
               <div>
-                <h4>Matched jobs</h4>
+                <h3>Matched jobs</h3>
                 <div className="v2-run-matches">
                   {(selectedRun.matches || []).map((match) => (
                     <div key={match.url || `${match.company}-${match.title}`}>

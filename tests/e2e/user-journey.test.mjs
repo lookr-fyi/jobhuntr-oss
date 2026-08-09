@@ -655,6 +655,9 @@ test(
         name: "Product Engineer",
       });
       await runDialog.waitFor();
+      await runDialog
+        .getByRole("heading", { name: "Product Engineer", level: 2 })
+        .waitFor();
       assert.equal(
         await runDialog
           .getByRole("button", { name: "Close", exact: true })
@@ -671,8 +674,12 @@ test(
         true,
         "Tab should wrap to the first visible action within run details",
       );
-      await runDialog.getByText("Workflow progress").waitFor();
-      await runDialog.getByText("Matched jobs").waitFor();
+      await runDialog
+        .getByRole("heading", { name: "Workflow progress", level: 3 })
+        .waitFor();
+      await runDialog
+        .getByRole("heading", { name: "Matched jobs", level: 3 })
+        .waitFor();
       await page.keyboard.press("Escape");
       await runDialog.waitFor({ state: "hidden" });
       assert.equal(

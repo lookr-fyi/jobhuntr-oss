@@ -4839,7 +4839,7 @@ button.v2-workflow-card.selected {
   font-weight: 700;
   letter-spacing: 0.08em;
 }
-.v2-session-head h3 {
+.v2-session-head h2 {
   margin: 0;
   font-size: 22px;
 }
@@ -6603,7 +6603,7 @@ select:focus {
   max-height: 340px;
   overflow: auto;
 }
-.v2-run-detail-columns h4 {
+.v2-run-detail-columns h3 {
   margin: 10px 0;
 }
 .v2-run-matches {
