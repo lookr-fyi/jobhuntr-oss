@@ -372,6 +372,21 @@ test("submission queue enforces review before local submission", async () => {
     body: JSON.stringify({ confirmedByUser: true }),
   });
   assert.equal(blocked.res.status, 409);
+  const bypassAttempt = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ checklist: [], status: "submitted" }),
+  });
+  assert.equal(bypassAttempt.body.status, "draft");
+  assert.equal(bypassAttempt.body.checklist.length, 3);
+  assert.equal(
+    bypassAttempt.body.checklist.every((item) => item.done === false),
+    true,
+  );
+  const bypassSubmit = await req(`/api/submissions/${packet.body.id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedByUser: true }),
+  });
+  assert.equal(bypassSubmit.res.status, 409);
   const checklist = packet.body.checklist.map((item) => ({
     ...item,
     done: true,

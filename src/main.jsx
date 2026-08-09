@@ -4186,7 +4186,9 @@ function SubmissionCard({ submission: s, state, reload }) {
             <div>
               <h4>Application Questions</h4>
               <p>
-                Answers are remembered in About Me for your next application.
+                Reference answers are remembered in About Me. External forms may
+                phrase or constrain questions differently, so verify every
+                answer on the employer&apos;s site.
               </p>
             </div>
             <span>

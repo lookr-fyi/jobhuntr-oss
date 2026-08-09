@@ -753,12 +753,12 @@ app.post("/api/submissions", async (req, res) => {
         {
           id: nanoid(),
           text: "Review resume alignment",
-          done: Boolean(req.body.resumeId),
+          done: false,
         },
         {
           id: nanoid(),
           text: "Review cover letter",
-          done: Boolean(req.body.coverLetterId),
+          done: false,
         },
         { id: nanoid(), text: "Confirm application details", done: false },
       ],
@@ -791,7 +791,15 @@ app.patch("/api/submissions/:id", async (req, res) => {
   const submission = await mutate((db) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
-    if (req.body.checklist) item.checklist = req.body.checklist;
+    if (Array.isArray(req.body.checklist)) {
+      item.checklist = item.checklist.map((existing) => ({
+        ...existing,
+        done: Boolean(
+          req.body.checklist.find((candidate) => candidate?.id === existing.id)
+            ?.done,
+        ),
+      }));
+    }
     if (req.body.resumeId !== undefined)
       item.resumeId = safeText(req.body.resumeId, 50);
     if (req.body.coverLetterId !== undefined)
@@ -828,11 +836,11 @@ app.patch("/api/submissions/:id", async (req, res) => {
         { submissionId: item.id },
       );
     }
-    if (
-      req.body.status &&
-      ["draft", "ready", "submitted", "archived"].includes(req.body.status)
-    )
-      item.status = req.body.status;
+    if (req.body.status === "archived") item.status = "archived";
+    else if (["draft", "ready"].includes(req.body.status))
+      item.status = item.checklist.every((entry) => entry.done)
+        ? "ready"
+        : "draft";
     item.updatedAt = timestamp();
     return item;
   });
@@ -849,7 +857,12 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
   const submission = await mutate((db) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
-    if (!item.checklist.every((x) => x.done)) return { blocked: true, item };
+    if (
+      !Array.isArray(item.checklist) ||
+      item.checklist.length < 3 ||
+      !item.checklist.every((x) => x.done)
+    )
+      return { blocked: true, item };
     const job = db.jobs.find((j) => j.id === item.jobId);
     item.status = "submitted";
     item.submittedAt = timestamp();
