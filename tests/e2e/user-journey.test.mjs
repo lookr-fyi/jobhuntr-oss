@@ -746,6 +746,18 @@ test(
 
       await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
+      const manualRunSwitch = page.getByRole("switch", {
+        name: "Manual Only",
+      });
+      await manualRunSwitch.click();
+      assert.equal(
+        await manualRunSwitch.evaluate(
+          (element) => getComputedStyle(element).backgroundColor,
+        ),
+        "rgb(24, 24, 26)",
+        "enabled v2 switches must use the authoritative black accent instead of becoming transparent",
+      );
+      await manualRunSwitch.click();
       await page
         .locator(".v2-run-row", { hasText: "Search" })
         .first()

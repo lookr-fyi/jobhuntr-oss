@@ -44,3 +44,25 @@ test("persisted timestamps cannot bypass safe date formatters", async () => {
     "persisted dates must use formatCalendarDate or formatDateTime so corrupt records cannot render Invalid Date",
   );
 });
+
+test("every JobHuntr CSS custom property is defined", async () => {
+  const source = await readFile(
+    new URL("../src/styles.css", import.meta.url),
+    "utf8",
+  );
+  const definitions = new Set(
+    [...source.matchAll(/(--[a-zA-Z0-9-]+)\s*:/g)].map((match) => match[1]),
+  );
+  const usages = new Set(
+    [...source.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)].map((match) => match[1]),
+  );
+  const undefinedProperties = [...usages]
+    .filter((property) => !definitions.has(property))
+    .sort();
+
+  assert.deepEqual(
+    undefinedProperties,
+    [],
+    "undefined CSS variables silently make v2 controls transparent or drop their styling",
+  );
+});

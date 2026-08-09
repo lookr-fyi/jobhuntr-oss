@@ -5644,6 +5644,7 @@ button.v2-workflow-card.selected {
 :root {
   color-scheme: light;
   --v2-primary: #18181a;
+  --v2-accent: #18181a;
   --v2-primary-hover: #374151;
   --v2-bg: #ffffff;
   --v2-sidebar: #f8fafc;
