@@ -3847,6 +3847,33 @@ test(
       await page.getByRole("button", { name: "Save story" }).click();
       await page.getByText("Recovered a critical launch").waitFor();
       await page
+        .locator(".story-card button")
+        .filter({ hasText: "Recovered a critical launch" })
+        .click();
+      await page
+        .getByLabel("Story title")
+        .fill("Unsaved critical launch evidence");
+      await page.getByRole("button", { name: "New", exact: true }).click();
+      const discardStoryDialog = page.getByRole("alertdialog", {
+        name: "Discard STAR story changes?",
+      });
+      await discardStoryDialog.waitFor();
+      await assertAccessible(page, "Discard STAR story changes confirmation");
+      await discardStoryDialog.getByRole("button", { name: "Cancel" }).click();
+      await discardStoryDialog.waitFor({ state: "hidden" });
+      assert.equal(
+        await page.getByLabel("Story title").inputValue(),
+        "Unsaved critical launch evidence",
+        "canceling New should preserve unsaved STAR evidence",
+      );
+      await page.getByRole("button", { name: "New", exact: true }).click();
+      await discardStoryDialog.waitFor();
+      await discardStoryDialog
+        .getByRole("button", { name: "Discard Changes" })
+        .click();
+      await discardStoryDialog.waitFor({ state: "hidden" });
+      assert.equal(await page.getByLabel("Story title").inputValue(), "");
+      await page
         .getByRole("button", {
           name: "Delete STAR story Recovered a critical launch",
         })

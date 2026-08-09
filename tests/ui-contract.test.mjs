@@ -763,6 +763,33 @@ test("Career Coach evidence saves are single-flight and preserve retry context",
   assert.match(stories, /savingStory\s*\? "Saving…"/);
 });
 
+test("Career Coach protects unsaved STAR evidence during navigation", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const stories = source.slice(
+    source.indexOf("function StoryVault"),
+    source.indexOf("function OutreachEditor"),
+  );
+
+  assert.match(stories, /const \[storyBaseline, setStoryBaseline\]/);
+  assert.match(
+    stories,
+    /const hasUnsavedStory = storyDigest\(form\) !== storyBaseline/,
+  );
+  assert.match(stories, /title="Discard STAR story changes\?"/);
+  assert.match(
+    stories,
+    /onConfirm=\{\(\) => finishStoryNavigation\(pendingStoryId\)\}/,
+  );
+  assert.match(
+    stories,
+    /onClick=\{\(\) => requestStoryNavigation\(story\.id\)\}/,
+  );
+  assert.match(stories, /onClick=\{\(\) => requestStoryNavigation\(\)\}/);
+});
+
 test("Outreach draft edits cannot race an in-flight save", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),

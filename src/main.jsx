@@ -10607,12 +10607,40 @@ function StoryVault({ stories, reload }) {
   };
   const [form, setForm] = useState(empty);
   const [selected, setSelected] = useState(null);
+  const [storyBaseline, setStoryBaseline] = useState(() =>
+    JSON.stringify(empty),
+  );
+  const [pendingStoryId, setPendingStoryId] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [savingStory, setSavingStory] = useState(false);
   const savingStoryRef = useRef(false);
-  const edit = (story) => {
-    setSelected(story.id);
-    setForm({ ...story, skills: (story.skills || []).join(", ") });
+  const storyDigest = (value) =>
+    JSON.stringify({
+      title: value.title || "",
+      situation: value.situation || "",
+      task: value.task || "",
+      action: value.action || "",
+      result: value.result || "",
+      skills: value.skills || "",
+    });
+  const hasUnsavedStory = storyDigest(form) !== storyBaseline;
+  const finishStoryNavigation = (id) => {
+    const story = stories.find((item) => item.id === id);
+    const next = story
+      ? { ...story, skills: (story.skills || []).join(", ") }
+      : empty;
+    setSelected(story?.id || null);
+    setForm(next);
+    setStoryBaseline(storyDigest(next));
+    setPendingStoryId("");
+  };
+  const requestStoryNavigation = (id = "new") => {
+    if (savingStoryRef.current || id === selected) return;
+    if (hasUnsavedStory) {
+      setPendingStoryId(id);
+      return;
+    }
+    finishStoryNavigation(id);
   };
   const save = async () => {
     if (savingStoryRef.current) return;
@@ -10638,6 +10666,7 @@ function StoryVault({ stories, reload }) {
         });
       setSelected(null);
       setForm(empty);
+      setStoryBaseline(storyDigest(empty));
       await reload();
     } catch {
       // Keep the STAR evidence in the form so saving can be retried.
@@ -10648,6 +10677,15 @@ function StoryVault({ stories, reload }) {
   };
   return (
     <div className="story-layout">
+      <ConfirmDialog
+        open={Boolean(pendingStoryId)}
+        title="Discard STAR story changes?"
+        description="Your latest evidence edits have not been saved. Discard them and continue?"
+        confirmLabel="Discard Changes"
+        busyLabel="Discarding…"
+        onClose={() => setPendingStoryId("")}
+        onConfirm={() => finishStoryNavigation(pendingStoryId)}
+      />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete STAR story?"
@@ -10660,6 +10698,7 @@ function StoryVault({ stories, reload }) {
           if (selected === deleteTarget.id) {
             setSelected(null);
             setForm(empty);
+            setStoryBaseline(storyDigest(empty));
           }
           setDeleteTarget(null);
           await reload();
@@ -10672,10 +10711,7 @@ function StoryVault({ stories, reload }) {
             <button
               className="text-button"
               disabled={savingStory}
-              onClick={() => {
-                setSelected(null);
-                setForm(empty);
-              }}
+              onClick={() => requestStoryNavigation()}
             >
               New
             </button>
@@ -10727,7 +10763,10 @@ function StoryVault({ stories, reload }) {
         {stories.length ? (
           stories.map((story) => (
             <div className="story-card" key={story.id}>
-              <button disabled={savingStory} onClick={() => edit(story)}>
+              <button
+                disabled={savingStory}
+                onClick={() => requestStoryNavigation(story.id)}
+              >
                 <b>{story.title}</b>
                 <span>{(story.skills || []).join(" · ")}</span>
                 <p>
