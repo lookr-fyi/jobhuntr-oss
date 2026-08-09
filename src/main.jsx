@@ -10887,13 +10887,16 @@ function RunsPage({ state, setTab, reload }) {
         </div>
         <div className="inline">
           <button
-            className="secondary"
+            className="secondary v2-open-latest-run"
             disabled={!runs.length}
             onClick={() => setSelectedRun(runs[0])}
           >
             Open Latest Run
           </button>
-          <button onClick={() => setNewRunOpen(true)}>
+          <button
+            className="v2-new-run-button"
+            onClick={() => setNewRunOpen(true)}
+          >
             <Plus size={16} /> New Run
           </button>
         </div>

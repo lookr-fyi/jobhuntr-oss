@@ -5977,6 +5977,38 @@ select:focus {
   max-width: 1440px;
   margin: 0 auto;
 }
+.v2-runs-page > .v2-page-intro {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--v2-border);
+}
+.v2-runs-page > .v2-page-intro h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.v2-runs-page > .v2-page-intro p {
+  margin-top: 4px;
+  font-size: 14px;
+}
+.v2-runs-page .v2-open-latest-run {
+  padding: 12px 20px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff !important;
+  color: var(--v2-text);
+  font-size: 16px;
+  font-weight: 500;
+}
+.v2-runs-page .v2-new-run-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+}
 .v2-run-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -5994,11 +6026,31 @@ select:focus {
   display: block;
 }
 .v2-runs-toolbar {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto auto;
-  gap: 18px;
+  display: flex;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 24px;
+}
+.v2-runs-toolbar .searchbox {
+  position: relative;
+  max-width: 400px;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+}
+.v2-runs-toolbar .searchbox > svg {
+  position: absolute;
+  z-index: 1;
+  left: 12px;
+  color: #9ca3af;
+}
+.v2-runs-toolbar .searchbox input {
+  margin: 0;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 16px;
 }
 .v2-switch-control {
   display: flex;
@@ -6034,7 +6086,7 @@ select:focus {
   transform: translateX(20px);
 }
 .v2-runs-filter-caption {
-  margin: -6px 0 16px;
+  margin: -12px 0 16px;
   color: #64748b;
   font-size: 11px;
 }
@@ -6372,8 +6424,13 @@ select:focus {
 }
 @media (max-width: 760px) {
   .v2-runs-toolbar {
-    grid-template-columns: 1fr;
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 10px;
+  }
+  .v2-runs-toolbar .searchbox {
+    max-width: none;
+    flex-basis: 100%;
   }
   .v2-run-detail-modal .v2-session-stats,
   .v2-run-config,

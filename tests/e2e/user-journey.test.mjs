@@ -677,6 +677,37 @@ test(
       );
       await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-runs-page").evaluate((runsPage) => {
+          const style = (selector) =>
+            getComputedStyle(runsPage.querySelector(selector));
+          return {
+            titleFontSize: style(".v2-page-intro h1").fontSize,
+            titleFontWeight: style(".v2-page-intro h1").fontWeight,
+            introPaddingBottom: style(".v2-page-intro").paddingBottom,
+            searchWidth: style(".v2-runs-toolbar .searchbox").width,
+            searchPadding: style(".v2-runs-toolbar input").padding,
+            searchRadius: style(".v2-runs-toolbar input").borderRadius,
+            latestPadding: style(".v2-open-latest-run").padding,
+            latestBackground: style(".v2-open-latest-run").backgroundColor,
+            newRunPadding: style(".v2-new-run-button").padding,
+            newRunBackground: style(".v2-new-run-button").backgroundColor,
+          };
+        }),
+        {
+          titleFontSize: "32px",
+          titleFontWeight: "700",
+          introPaddingBottom: "16px",
+          searchWidth: "400px",
+          searchPadding: "8px 12px 8px 36px",
+          searchRadius: "6px",
+          latestPadding: "12px 20px",
+          latestBackground: "rgb(255, 255, 255)",
+          newRunPadding: "8px 16px",
+          newRunBackground: "rgb(37, 99, 235)",
+        },
+        "Agent Runs should retain the authoritative v2 header and control dimensions",
+      );
       await assertNamedFormControls(page, "Agent Runs");
       await assertAccessible(page, "Agent Runs");
       const huntStatus = page.getByRole("button", {
