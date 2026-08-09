@@ -113,3 +113,43 @@ test("one-command desktop launcher bootstraps and opens Electron", async () => {
   assert.equal(pkg.scripts["server:start"], "node server/index.mjs");
   assert.match(pkg.scripts["desktop:launch"], /electron electron\/main\.mjs/);
 });
+
+test(
+  "npm start reaches a loaded Electron renderer through the public one-command path",
+  { timeout: 30000 },
+  async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "jobhuntr-desktop-"));
+    const child = spawn(process.execPath, ["scripts/one-line-desktop.mjs"], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        JOBHUNTR_DESKTOP_SMOKE: "1",
+        JOBHUNTR_USER_DATA_DIR: path.join(root, "user-data"),
+        JOBHUNTR_DATA_DIR: path.join(root, "data"),
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let output = "";
+    child.stdout.on("data", (chunk) => (output += chunk));
+    child.stderr.on("data", (chunk) => (output += chunk));
+    try {
+      const result = await new Promise((resolve, reject) => {
+        child.once("error", reject);
+        child.once("exit", (code, signal) => resolve({ code, signal }));
+      });
+      assert.equal(
+        result.code,
+        0,
+        `npm start did not exit cleanly after its renderer became ready (${result.signal || "no signal"}):\n${output}`,
+      );
+      assert.match(
+        output,
+        /JOBHUNTR_DESKTOP_READY/,
+        `npm start never loaded the Electron renderer:\n${output}`,
+      );
+    } finally {
+      if (child.exitCode === null) child.kill("SIGTERM");
+      await fs.rm(root, { recursive: true, force: true });
+    }
+  },
+);

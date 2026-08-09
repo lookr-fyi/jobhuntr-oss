@@ -279,6 +279,11 @@ const createWindow = async () => {
   if (windowState.maximized) mainWindow.maximize();
   mainWindow.once("ready-to-show", () => mainWindow.show());
   await mainWindow.loadURL(url);
+  if (process.env.JOBHUNTR_DESKTOP_SMOKE === "1") {
+    console.log("JOBHUNTR_DESKTOP_READY");
+    forceQuit = true;
+    app.quit();
+  }
 };
 
 app.whenReady().then(async () => {
