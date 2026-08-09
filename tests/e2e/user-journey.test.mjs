@@ -1532,7 +1532,19 @@ test(
           const activeSort = style(
             '.v2-template-toolbar button.secondary[aria-pressed="true"]',
           );
+          const main = getComputedStyle(root.parentElement);
+          const rootStyle = getComputedStyle(root);
+          const templates = style(".v2-resume-templates");
+          const card = style(".v2-resume-templates > div");
+          const select = style(".v2-template-select");
+          const preview = style(".v2-template-preview");
           return {
+            page: [
+              main.padding,
+              rootStyle.padding,
+              rootStyle.backgroundColor,
+              rootStyle.maxWidth,
+            ],
             heading: [heading.fontSize, heading.fontWeight],
             create: [
               create.paddingTop,
@@ -1548,14 +1560,19 @@ test(
               activeSort.backgroundColor,
               activeSort.fontSize,
             ],
+            templates: [templates.gap, card.borderRadius],
+            template: [select.padding, preview.borderRadius],
           };
         }),
         {
-          heading: ["26px", "600"],
-          create: ["12px", "20px", "6px", "16px", "500"],
+          page: ["0px", "20px", "rgb(249, 250, 251)", "none"],
+          heading: ["17.875px", "600"],
+          create: ["12px", "20px", "6px", "11px", "500"],
           searchboxWidth: "400px",
-          search: ["8px 8px 8px 40px", "6px", "14px"],
-          activeSort: ["4px 8px", "rgb(243, 244, 246)", "14px"],
+          search: ["8px 8px 8px 40px", "6px", "10.3125px"],
+          activeSort: ["4px 8px", "rgb(243, 244, 246)", "10.3125px"],
+          templates: ["16px", "8px"],
+          template: ["16px 16px 48px", "6px"],
         },
         "ATS template controls should retain the authoritative v2 dimensions",
       );
@@ -5947,7 +5964,7 @@ test(
                 ).flexDirection,
               };
             }),
-            { left: 16, right: 374, headerDirection: "column" },
+            { left: 20, right: 370, headerDirection: "column" },
             "ATS resume history should remain fully visible at 390px",
           );
         }

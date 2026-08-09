@@ -6210,6 +6210,9 @@ main:has(> .v2-queue-page) {
 main:has(> .v2-runs-page) {
   padding: 0;
 }
+main:has(> .resume-studio) {
+  padding: 0;
+}
 main > header {
   max-width: 1440px;
   margin: 0 auto 24px;
@@ -10035,6 +10038,16 @@ main > header.integrated-page-header {
     flex-direction: column;
   }
 }
+.resume-studio {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  margin: 0;
+  padding: 20px;
+  gap: 16px;
+  background: #f9fafb;
+}
 .v2-ats-header {
   grid-column: 1/-1;
   display: flex;
@@ -10044,7 +10057,7 @@ main > header.integrated-page-header {
 }
 .v2-ats-header h2 {
   margin: 0 0 5px;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1.25;
 }
@@ -10055,7 +10068,7 @@ main > header.integrated-page-header {
 .v2-ats-header .v2-ats-create-button {
   padding: 12px 20px;
   border-radius: 6px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
 }
 .v2-template-toolbar {
@@ -10089,7 +10102,7 @@ main > header.integrated-page-header {
   padding: 8px 8px 8px 40px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 0.9375rem;
 }
 .v2-template-toolbar .text-button {
   margin-left: auto;
@@ -10098,7 +10111,7 @@ main > header.integrated-page-header {
   border-radius: 6px;
   background: transparent !important;
   color: #4b5563 !important;
-  font-size: 14px;
+  font-size: 0.9375rem;
   font-weight: 500;
 }
 .v2-template-toolbar button.secondary {
@@ -10107,7 +10120,7 @@ main > header.integrated-page-header {
   border-radius: 6px;
   background: transparent !important;
   color: #4b5563 !important;
-  font-size: 14px;
+  font-size: 0.9375rem;
   font-weight: 500;
 }
 .v2-template-toolbar button.secondary.active {
@@ -10119,13 +10132,13 @@ main > header.integrated-page-header {
   grid-column: 1/-1;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  gap: 16px;
   margin-bottom: 4px;
 }
 .v2-resume-templates > div {
   position: relative;
   border: 1px solid var(--v2-border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
   overflow: hidden;
   box-shadow: none;
@@ -10145,7 +10158,7 @@ main > header.integrated-page-header {
   gap: 0;
   width: 100%;
   min-height: 320px;
-  padding: 18px 18px 48px;
+  padding: 16px 16px 48px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -10281,7 +10294,7 @@ main > header.integrated-page-header {
   gap: 10px;
   flex: none;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #f8fafc;
   color: #475569;
 }
