@@ -2513,7 +2513,9 @@ function Tracker({ state, reload, setTab }) {
       if (selected === deleteTarget.id) setSelected(null);
       setDeleteJobId("");
       await reload();
-    } catch {}
+    } catch (error) {
+      throw error;
+    }
   };
   return (
     <section className="tracker-page">
@@ -9350,7 +9352,9 @@ function Coach({ state, reload }) {
       selectConversationState(next, nextActive);
       setDeleteConversationTarget(null);
       await reload();
-    } catch {}
+    } catch (error) {
+      throw error;
+    }
   };
   useEffect(() => {
     if (view !== "chat") return;
@@ -10334,7 +10338,9 @@ function Gigs({ state, reload }) {
       await api(`/api/gigs/${deleteTarget.id}`, { method: "DELETE" });
       setSelected(null);
       await reload();
-    } catch {}
+    } catch (error) {
+      throw error;
+    }
   };
   useEffect(() => {
     if (!gig || myView !== "table") return undefined;

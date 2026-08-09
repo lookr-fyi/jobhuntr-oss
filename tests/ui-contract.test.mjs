@@ -701,6 +701,31 @@ test("clipboard actions fail closed when desktop permission is unavailable", asy
   );
 });
 
+test("destructive workflows reject so confirmation dialogs remain retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const workflows = [
+    "const remove = async",
+    "const deleteConversation = async",
+    "const deleteGig = async",
+  ];
+
+  for (const startNeedle of workflows) {
+    const start = source.indexOf(startNeedle);
+    assert.notEqual(start, -1, `${startNeedle} must exist`);
+    const end = source.indexOf("\n  };", start);
+    const body = source.slice(start, end);
+    assert.match(body, /await api\(/);
+    assert.doesNotMatch(
+      body,
+      /catch\s*\{\s*\}/,
+      `${startNeedle} must propagate failure to ConfirmDialog`,
+    );
+  }
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
