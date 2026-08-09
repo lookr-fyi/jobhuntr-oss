@@ -2902,6 +2902,13 @@ test(
         0,
         "pasted profile content should start collapsed like v2",
       );
+      assert.equal(
+        await page
+          .getByRole("button", { name: "Analyze Profile" })
+          .isDisabled(),
+        true,
+        "v2 LinkedIn Audit should require a profile URL before analysis",
+      );
       await page
         .getByRole("button", { name: /Show pasted profile content/ })
         .click();

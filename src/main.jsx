@@ -10388,6 +10388,7 @@ function ProfileAudit({ state, reload }) {
             if (
               event.key === "Enter" &&
               !running &&
+              profileUrl.trim() &&
               form.headline.trim() &&
               profileUrlValid
             )
@@ -10398,7 +10399,12 @@ function ProfileAudit({ state, reload }) {
           aria-invalid={!profileUrlValid}
         />
         <button
-          disabled={running || !form.headline.trim() || !profileUrlValid}
+          disabled={
+            running ||
+            !profileUrl.trim() ||
+            !form.headline.trim() ||
+            !profileUrlValid
+          }
           onClick={run}
         >
           {running ? "Analyzing…" : "Analyze Profile"}
