@@ -92,3 +92,16 @@ test("user-triggered API actions contain rejected requests", async () => {
     "async UI actions must preserve their form state and let the shared error surface handle failed API requests",
   );
 });
+
+test("modal dialogs receive focus and return it to their trigger", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /const useDialogFocusManagement = \(\) =>/);
+  assert.match(source, /document\.querySelectorAll\('\[role="dialog"\]'\)/);
+  assert.match(source, /returnFocus = document\.activeElement/);
+  assert.match(source, /returnFocus\.focus\(\)/);
+  assert.match(source, /function App\(\) \{\s+useDialogFocusManagement\(\);/);
+});

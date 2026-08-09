@@ -484,6 +484,53 @@ const containDialogFocus = (event) => {
     first.focus();
   }
 };
+
+const useDialogFocusManagement = () => {
+  useEffect(() => {
+    let activeDialog = null;
+    let returnFocus = null;
+    let pendingFocus = 0;
+    const focusableSelector =
+      'button:not([disabled]):not([tabindex="-1"]), a[href]:not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+    const syncDialogFocus = () => {
+      const dialogs = [...document.querySelectorAll('[role="dialog"]')].filter(
+        (dialog) => dialog.getAttribute("aria-hidden") !== "true",
+      );
+      const nextDialog = dialogs.at(-1) || null;
+      if (nextDialog === activeDialog) return;
+      if (!activeDialog && nextDialog) returnFocus = document.activeElement;
+      activeDialog = nextDialog;
+      window.cancelAnimationFrame(pendingFocus);
+      if (nextDialog) {
+        pendingFocus = window.requestAnimationFrame(() => {
+          if (
+            !nextDialog.isConnected ||
+            nextDialog.contains(document.activeElement)
+          )
+            return;
+          const firstControl = [
+            ...nextDialog.querySelectorAll(focusableSelector),
+          ].find((element) => !element.hidden && element.offsetParent !== null);
+          if (firstControl) firstControl.focus();
+          else {
+            nextDialog.tabIndex = -1;
+            nextDialog.focus();
+          }
+        });
+      } else if (returnFocus?.isConnected) {
+        returnFocus.focus();
+        returnFocus = null;
+      }
+    };
+    const observer = new MutationObserver(syncDialogFocus);
+    observer.observe(document.body, { childList: true, subtree: true });
+    syncDialogFocus();
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(pendingFocus);
+    };
+  }, []);
+};
 function ConfirmDialog({
   open,
   title,
@@ -722,6 +769,7 @@ function GettingStarted({ state, onNavigate }) {
   );
 }
 function App() {
+  useDialogFocusManagement();
   const [state, setState] = useState(null);
   const initialRoute = window.location.hash.replace(/^#\/?/, "").split("?")[0];
   const [tab, setTab] = useState(() =>
