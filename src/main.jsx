@@ -6169,6 +6169,10 @@ function Resume({ state, reload, mode = "resume" }) {
     return () => window.removeEventListener("keydown", closePreview);
   }, [coverSourcePreview]);
   const [preview, setPreview] = useState(state.resumes[0] || null);
+  const [savingResume, setSavingResume] = useState(false);
+  const [scoringResume, setScoringResume] = useState(false);
+  const savingResumeRef = useRef(false);
+  const scoringResumeRef = useRef(false);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
   const [templateSortOrder, setTemplateSortOrder] = useState("asc");
@@ -6414,6 +6418,9 @@ function Resume({ state, reload, mode = "resume" }) {
     }
   };
   const saveResume = async () => {
+    if (savingResumeRef.current) return;
+    savingResumeRef.current = true;
+    setSavingResume(true);
     const content = resumeRef.current?.value ?? resume;
     setResume(content);
     try {
@@ -6427,7 +6434,30 @@ function Resume({ state, reload, mode = "resume" }) {
       });
       setPreview(saved);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the editor intact so the user can retry without losing work.
+    } finally {
+      savingResumeRef.current = false;
+      setSavingResume(false);
+    }
+  };
+  const scoreResume = async () => {
+    if (scoringResumeRef.current) return;
+    scoringResumeRef.current = true;
+    setScoringResume(true);
+    try {
+      setScore(
+        await api("/api/resume/score", {
+          method: "POST",
+          body: JSON.stringify({ resumeText: resume, jobId }),
+        }),
+      );
+    } catch {
+      // Preserve the previous result and allow a deliberate retry.
+    } finally {
+      scoringResumeRef.current = false;
+      setScoringResume(false);
+    }
   };
   const openLetterWizard = () =>
     setLetterWizard({
@@ -7658,24 +7688,20 @@ function Resume({ state, reload, mode = "resume" }) {
             }
           />
           <div className="inline">
-            <button disabled={!resumeReady} onClick={saveResume}>
-              <Save size={16} /> Save version
+            <button
+              disabled={!resumeReady || savingResume}
+              aria-busy={savingResume}
+              onClick={saveResume}
+            >
+              <Save size={16} /> {savingResume ? "Saving…" : "Save version"}
             </button>
             <button
               className="secondary"
-              disabled={!resumeReady}
-              onClick={async () => {
-                try {
-                  setScore(
-                    await api("/api/resume/score", {
-                      method: "POST",
-                      body: JSON.stringify({ resumeText: resume, jobId }),
-                    }),
-                  );
-                } catch {}
-              }}
+              disabled={!resumeReady || scoringResume}
+              aria-busy={scoringResume}
+              onClick={scoreResume}
             >
-              Analyze ATS fit
+              {scoringResume ? "Analyzing…" : "Analyze ATS fit"}
             </button>
           </div>
           {!resumeReady && (

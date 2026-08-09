@@ -176,6 +176,37 @@ test("ATS template scoring is single-flight and retryable", async () => {
   assert.match(source, /"Scoring…"/);
 });
 
+test("Resume Studio save and scoring actions are single-flight and retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const resumeStudio = source.slice(
+    source.indexOf("function Resume("),
+    source.indexOf("function SettingsPage"),
+  );
+
+  for (const action of ["savingResume", "scoringResume"]) {
+    assert.match(resumeStudio, new RegExp(`const \\[${action}, set`));
+    assert.match(
+      resumeStudio,
+      new RegExp(`const ${action}Ref = useRef\\(false\\)`),
+    );
+    assert.match(
+      resumeStudio,
+      new RegExp(`if \\(${action}Ref\\.current\\) return`),
+    );
+    assert.match(resumeStudio, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(resumeStudio, new RegExp(`${action}Ref\\.current = false`));
+  }
+  assert.match(resumeStudio, /finally \{[\s\S]*?setSavingResume\(false\)/);
+  assert.match(resumeStudio, /finally \{[\s\S]*?setScoringResume\(false\)/);
+  assert.match(resumeStudio, /aria-busy=\{savingResume\}/);
+  assert.match(resumeStudio, /aria-busy=\{scoringResume\}/);
+  assert.match(resumeStudio, /"Saving…" : "Save version"/);
+  assert.match(resumeStudio, /"Analyzing…" : "Analyze ATS fit"/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
