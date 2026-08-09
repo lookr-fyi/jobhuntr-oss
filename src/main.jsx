@@ -57,6 +57,7 @@ import {
   MoreHorizontal,
   Pencil,
   Eye,
+  GripVertical,
   X,
   createLucideIcon,
 } from "lucide-react";
@@ -12714,6 +12715,9 @@ function Agent({ state, reload, setTab }) {
   const huntConfigurationRevisionRef = useRef(0);
   const [presetSaved, setPresetSaved] = useState(false);
   const [deletePreset, setDeletePreset] = useState(null);
+  const [draggedRunId, setDraggedRunId] = useState(null);
+  const draggedRunIdRef = useRef(null);
+  const [runOrderAnnouncement, setRunOrderAnnouncement] = useState("");
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
   const latestRun = state.agentRuns[0] || null;
@@ -12964,6 +12968,24 @@ function Agent({ state, reload, setTab }) {
     [next[index], next[destination]] = [next[destination], next[index]];
     saveRunOrder(next);
   };
+  const dropRunBefore = (targetId, transferredId = "") => {
+    const sourceId = transferredId || draggedRunIdRef.current;
+    if (!sourceId || sourceId === targetId) {
+      draggedRunIdRef.current = null;
+      setDraggedRunId(null);
+      return;
+    }
+    const next = selectedRuns.filter((id) => id !== sourceId);
+    const targetIndex = next.indexOf(targetId);
+    next.splice(targetIndex < 0 ? next.length : targetIndex, 0, sourceId);
+    saveRunOrder(next);
+    const workflow = workflows.find((item) => item[0] === sourceId);
+    setRunOrderAnnouncement(
+      `${workflow?.[2] || "Workflow"} moved to position ${next.indexOf(sourceId) + 1}.`,
+    );
+    draggedRunIdRef.current = null;
+    setDraggedRunId(null);
+  };
   return (
     <section className="v2-hunt-page">
       <ConfirmDialog
@@ -13137,8 +13159,39 @@ function Agent({ state, reload, setTab }) {
               selectedRuns.map((id, index) => {
                 const workflow = workflows.find((item) => item[0] === id);
                 return (
-                  <div className="v2-loop-row" key={id}>
+                  <div
+                    className={`v2-loop-row ${draggedRunId === id ? "dragging" : ""}`}
+                    key={id}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      dropRunBefore(
+                        id,
+                        event.dataTransfer.getData("text/plain"),
+                      );
+                    }}
+                  >
                     <b>{index + 1}</b>
+                    <span
+                      className="v2-loop-drag-handle"
+                      draggable
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Drag ${workflow[2]} to reorder`}
+                      title="Drag to reorder"
+                      onDragStart={(event) => {
+                        draggedRunIdRef.current = id;
+                        setDraggedRunId(id);
+                        event.dataTransfer.effectAllowed = "move";
+                        event.dataTransfer.setData("text/plain", id);
+                      }}
+                      onDragEnd={() => {
+                        draggedRunIdRef.current = null;
+                        setDraggedRunId(null);
+                      }}
+                    >
+                      <GripVertical size={17} />
+                    </span>
                     <PlatformMark id={id} fallback={workflow[1]} />
                     <div>
                       <strong>{workflow[2]}</strong>
@@ -13176,6 +13229,9 @@ function Agent({ state, reload, setTab }) {
                 Please select from available runs
               </div>
             )}
+            <span className="sr-only" role="status" aria-live="polite">
+              {runOrderAnnouncement}
+            </span>
           </div>
         </div>
         <details className="v2-hunt-filters">

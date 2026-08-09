@@ -365,6 +365,15 @@ test("Infinite Hunt recovers a bounded complete configuration draft", async () =
   assert.match(agent, /Unsaved Infinite Hunt configuration restored\./);
   assert.match(agent, /if \(!huntDraftTouched\) return/);
   assert.match(agent, /setHuntDraftTouched\(false\)/);
+  assert.match(agent, /draggable/);
+  assert.match(agent, /aria-label=\{`Drag \$\{workflow\[2\]\} to reorder`\}/);
+  assert.match(agent, /onDragStart=\{\(event\) =>/);
+  assert.match(agent, /onDrop=\{\(event\) =>/);
+  assert.match(
+    agent,
+    /const dropRunBefore = \(targetId, transferredId = ""\) =>/,
+  );
+  assert.match(agent, /role="status" aria-live="polite"/);
 });
 
 test("application packet actions are single-flight with truthful progress", async () => {

@@ -703,6 +703,37 @@ test(
         ["Indeed", "LinkedIn Jobs"],
         "the recovered hunt draft should retain workflow order",
       );
+      let workflowDragData = await page.evaluateHandle(
+        () => new DataTransfer(),
+      );
+      await page
+        .getByRole("button", { name: "Drag LinkedIn Jobs to reorder" })
+        .dispatchEvent("dragstart", { dataTransfer: workflowDragData });
+      await page
+        .getByRole("button", { name: "Drag Indeed to reorder" })
+        .dispatchEvent("drop", { dataTransfer: workflowDragData });
+      assert.deepEqual(
+        await page.locator(".v2-loop-row strong").allTextContents(),
+        ["LinkedIn Jobs", "Indeed"],
+        "Infinite Hunt workflows should support the authoritative drag ordering interaction",
+      );
+      assert.equal(
+        await page
+          .locator(".v2-loop-box .sr-only[role='status']")
+          .textContent(),
+        "LinkedIn Jobs moved to position 1.",
+      );
+      workflowDragData = await page.evaluateHandle(() => new DataTransfer());
+      await page
+        .getByRole("button", { name: "Drag Indeed to reorder" })
+        .dispatchEvent("dragstart", { dataTransfer: workflowDragData });
+      await page
+        .getByRole("button", { name: "Drag LinkedIn Jobs to reorder" })
+        .dispatchEvent("drop", { dataTransfer: workflowDragData });
+      assert.deepEqual(
+        await page.locator(".v2-loop-row strong").allTextContents(),
+        ["Indeed", "LinkedIn Jobs"],
+      );
       assert.equal(
         await page
           .getByLabel("Generate an optimized resume for each job")

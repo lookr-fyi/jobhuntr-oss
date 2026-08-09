@@ -13,6 +13,17 @@
 body {
   margin: 0;
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .app {
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -4766,13 +4777,35 @@ button.v2-workflow-card.selected {
 }
 .v2-loop-row {
   display: grid;
-  grid-template-columns: 28px 36px 1fr auto auto;
+  grid-template-columns: 28px 24px 36px 1fr auto auto;
   gap: 10px;
   align-items: center;
   padding: 12px;
   background: #fff;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
+}
+.v2-loop-row.dragging {
+  opacity: 0.55;
+  border-color: #94a3b8;
+}
+.v2-loop-drag-handle {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 32px;
+  border-radius: 6px;
+  color: #94a3b8;
+  cursor: grab;
+}
+.v2-loop-drag-handle:hover,
+.v2-loop-drag-handle:focus-visible {
+  background: #f1f5f9;
+  color: #475569;
+  outline: none;
+}
+.v2-loop-drag-handle:active {
+  cursor: grabbing;
 }
 .v2-loop-row + .v2-loop-row {
   margin-top: 10px;
@@ -4978,18 +5011,17 @@ button.v2-workflow-card.selected {
     grid-template-columns: 1fr;
   }
   .v2-loop-row {
-    grid-template-columns: 28px 36px 1fr auto;
+    grid-template-columns: 28px 24px 36px 1fr auto;
   }
   .v2-loop-row button {
-    grid-column: 3;
     justify-self: start;
   }
   .v2-loop-order-actions {
-    grid-column: 4;
+    grid-column: 5;
     grid-row: 1;
   }
   .v2-loop-row > button:last-child {
-    grid-column: 3;
+    grid-column: 4;
   }
   .v2-hunt-actions {
     display: grid;
