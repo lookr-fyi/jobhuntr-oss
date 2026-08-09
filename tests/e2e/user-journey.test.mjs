@@ -131,10 +131,25 @@ test(
       const page = await desktopContext.newPage();
       await page.goto(baseUrl);
 
+      assert.equal(
+        await page.locator("main").getAttribute("aria-hidden"),
+        "true",
+        "the workspace behind onboarding must be hidden from assistive technology",
+      );
+      assert.equal(
+        await page.locator("aside.v2-sidebar").getAttribute("inert"),
+        "",
+        "background navigation must be inert during onboarding",
+      );
+
       await page.getByRole("button", { name: "Use demo profile" }).click();
       await page
         .getByRole("button", { name: "Use demo profile" })
         .waitFor({ state: "hidden" });
+      assert.equal(
+        await page.locator("main").getAttribute("aria-hidden"),
+        null,
+      );
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
       await page
         .getByRole("heading", { name: /Top Contributors of/ })

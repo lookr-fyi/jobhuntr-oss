@@ -64,56 +64,56 @@ const HUNT_WORKFLOWS = [
     "linkedin",
     "in",
     "LinkedIn Jobs",
-    "Search jobs and prepare applications from LinkedIn.",
+    "Apply LinkedIn-style matching to your private local catalog.",
   ],
-  ["indeed", "i", "Indeed", "Find matching roles across Indeed listings."],
+  ["indeed", "i", "Indeed", "Apply Indeed-style matching locally."],
   [
     "glassdoor",
     "g",
     "Glassdoor",
-    "Discover roles using company and salary context.",
+    "Evaluate local roles using company and salary context.",
   ],
   [
     "hiringcafe",
     "hc",
     "HiringCafe",
-    "Search curated roles from company career pages.",
+    "Model curated career-page matching against local roles.",
   ],
   [
     "jobright",
     "jr",
     "Jobright",
-    "Find AI-matched roles across public listings.",
+    "Evaluate local roles with transparent profile matching.",
   ],
   [
     "simplify",
     "s",
     "Simplify",
-    "Search application-ready roles from Simplify.",
+    "Apply Simplify-style criteria to local roles.",
   ],
   [
     "workatastartup",
     "w",
     "Work at a Startup",
-    "Discover startup roles and founding-team opportunities.",
+    "Prioritize startup and founding-team roles locally.",
   ],
   [
     "ziprecruiter",
     "z",
     "ZipRecruiter",
-    "Search broad job listings using your saved criteria.",
+    "Apply broad-market criteria to your local catalog.",
   ],
   [
     "dice",
     "d",
     "Dice",
-    "Find technology roles using skill and location filters.",
+    "Prioritize local technology roles by skill and location.",
   ],
   [
     "company",
     "↗",
     "Company Career Page Search",
-    "Search verified company career pages directly.",
+    "Evaluate imported company-career-page roles locally.",
   ],
 ];
 const OVERVIEW_MOTIVATION = [
@@ -614,12 +614,13 @@ function App() {
         <Sparkles aria-hidden="true" /> Loading local JobHuntr…
       </div>
     );
+  const onboardingOpen = state.profile.onboarded === false;
   return (
     <div className={sidebarHovered ? "app sidebar-open" : "app"}>
-      {state.profile.onboarded === false && (
-        <Onboarding profile={state.profile} reload={load} />
-      )}
+      {onboardingOpen && <Onboarding profile={state.profile} reload={load} />}
       <aside
+        aria-hidden={onboardingOpen ? "true" : undefined}
+        inert={onboardingOpen}
         aria-label="JobHuntr navigation"
         className={
           sidebarHovered ? "v2-sidebar expanded" : "v2-sidebar collapsed"
@@ -742,7 +743,10 @@ function App() {
           </button>
         </div>
       </aside>
-      <main>
+      <main
+        aria-hidden={onboardingOpen ? "true" : undefined}
+        inert={onboardingOpen}
+      >
         <header
           className={
             [
@@ -814,7 +818,7 @@ function App() {
         )}{" "}
         {tab === "privacy" && <Privacy state={state} />}
       </main>
-      {tab !== "agent" && (
+      {!onboardingOpen && tab !== "agent" && (
         <InfiniteHuntStatus
           runs={state.agentRuns}
           onOpen={() => setTab("agent")}
@@ -1481,7 +1485,7 @@ function Overview({ state, setTab, reload }) {
           <div className="v2-card-head">
             <div>
               <h3>Top Contributors of {monthLabel}</h3>
-              <p>Top 1 winner will get one month free max plan</p>
+              <p>Your private monthly job-search momentum snapshot</p>
               {daysLeft > 0 && (
                 <small>
                   {daysLeft} {daysLeft === 1 ? "day" : "days"} left
@@ -1791,7 +1795,7 @@ function Tracker({ state, reload, setTab }) {
       <div className="v2-tracker-header">
         <h2>Job Tracker</h2>
         <div>
-          <span>{filtered.length} applications</span>
+          <span>{filtered.length} tracked jobs</span>
           <button className="secondary" onClick={() => setFunnelOpen(true)}>
             Funnel Analysis
           </button>
@@ -8767,8 +8771,8 @@ function Agent({ state, reload, setTab }) {
         <div>
           <h2>Infinite Hunting</h2>
           <p>
-            Automatically create new runs to search and apply to jobs around the
-            clock.
+            Combine repeatable local search workflows, inspect every match, and
+            prepare application packets for human review.
           </p>
         </div>
         {latestRun && (
