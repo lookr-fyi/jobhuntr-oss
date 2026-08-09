@@ -643,6 +643,33 @@ test("Job Tracker notes, tasks, and contacts save as isolated units", async () =
   );
 });
 
+test("task completion toggles serialize independently per task", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const actions = source.slice(
+    source.indexOf("function Actions"),
+    source.indexOf("function Board"),
+  );
+
+  assert.match(actions, /const \[pendingTaskIds, setPendingTaskIds\]/);
+  assert.match(actions, /const pendingTaskIdsRef = useRef\(new Set\(\)\)/);
+  assert.match(
+    actions,
+    /if \(pendingTaskIdsRef\.current\.has\(taskId\)\) return/,
+  );
+  assert.match(actions, /pendingTaskIdsRef\.current\.add\(taskId\)/);
+  assert.match(actions, /pendingTaskIdsRef\.current\.delete\(taskId\)/);
+  assert.match(actions, /const toggleTask = async \(taskId, done\)/);
+  assert.match(actions, /disabled=\{pendingTaskIds\.has\(t\.id\)\}/);
+  assert.match(actions, /aria-busy=\{pendingTaskIds\.has\(t\.id\)\}/);
+  assert.match(
+    actions,
+    /onChange=\{\(e\) => toggleTask\(t\.id, e\.target\.checked\)\}/,
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

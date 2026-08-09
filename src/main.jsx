@@ -3750,6 +3750,8 @@ function Actions({ job, reload }) {
   const savingNoteRef = useRef(false);
   const savingTaskRef = useRef(false);
   const savingContactRef = useRef(false);
+  const [pendingTaskIds, setPendingTaskIds] = useState(new Set());
+  const pendingTaskIdsRef = useRef(new Set());
   const [contact, setContact] = useState({
     name: "",
     role: "Recruiter",
@@ -3828,6 +3830,23 @@ function Actions({ job, reload }) {
     } finally {
       savingContactRef.current = false;
       setSavingContact(false);
+    }
+  };
+  const toggleTask = async (taskId, done) => {
+    if (pendingTaskIdsRef.current.has(taskId)) return;
+    pendingTaskIdsRef.current.add(taskId);
+    setPendingTaskIds(new Set(pendingTaskIdsRef.current));
+    try {
+      await api(`/api/jobs/${job.id}/tasks/${taskId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ done }),
+      });
+      await reload();
+    } catch {
+      // Keep the existing completion state visible so toggling can be retried.
+    } finally {
+      pendingTaskIdsRef.current.delete(taskId);
+      setPendingTaskIds(new Set(pendingTaskIdsRef.current));
     }
   };
   return (
@@ -3922,15 +3941,9 @@ function Actions({ job, reload }) {
               type="checkbox"
               name={`task-${t.id}`}
               checked={t.done}
-              onChange={async (e) => {
-                try {
-                  await api(`/api/jobs/${job.id}/tasks/${t.id}`, {
-                    method: "PATCH",
-                    body: JSON.stringify({ done: e.target.checked }),
-                  });
-                  await reload();
-                } catch {}
-              }}
+              disabled={pendingTaskIds.has(t.id)}
+              aria-busy={pendingTaskIds.has(t.id)}
+              onChange={(e) => toggleTask(t.id, e.target.checked)}
             />
             <span>
               {t.text}
