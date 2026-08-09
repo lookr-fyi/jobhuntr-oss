@@ -969,6 +969,21 @@ test(
         ]);
       }
       await page.getByText(/4\/4 verified/).waitFor();
+      const editedVerification = queueQuestions
+        .locator(".v2-question-card")
+        .filter({ hasText: "Why are you interested in this role?" })
+        .getByRole("checkbox");
+      await whyAnswer.fill(
+        "The product mission and customer impact match my experience.",
+      );
+      assert.equal(
+        await editedVerification.isChecked(),
+        false,
+        "editing a verified answer must invalidate verification immediately, before blur or reload",
+      );
+      await page.getByText(/3\/4 verified/).waitFor();
+      await editedVerification.click();
+      await page.getByText(/4\/4 verified/).waitFor();
       for (const item of [
         "Review resume alignment",
         "Review cover letter",
@@ -1761,7 +1776,7 @@ test(
         await page
           .getByLabel("Why are you interested in this role?")
           .inputValue(),
-        "The product mission matches my experience.",
+        "The product mission and customer impact match my experience.",
       );
       const faqPanel = page.locator(".v2-faq-panel");
       assert.equal(
@@ -1783,7 +1798,7 @@ test(
         await page
           .getByLabel("Why are you interested in this role?")
           .inputValue(),
-        "The product mission matches my experience.",
+        "The product mission and customer impact match my experience.",
         "FAQ refresh should restore the persisted answer",
       );
       await faqPanel.locator("button", { hasText: "Delete" }).click();

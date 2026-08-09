@@ -4560,10 +4560,12 @@ function SubmissionCard({ submission: s, state, reload }) {
     useState(false);
   const [draftAnswers, setDraftAnswers] = useState(() =>
     Object.fromEntries(
-      (s.applicationQuestions || []).map((question) => [
-        question.id,
-        question.answer || "",
-      ]),
+      (s.applicationQuestions || [])
+        .filter(
+          (question) =>
+            !["dropdown", "multiple_choice"].includes(question.questionType),
+        )
+        .map((question) => [question.id, question.answer || ""]),
     ),
   );
   const job = state.jobs.find((j) => j.id === s.jobId);
@@ -4576,10 +4578,24 @@ function SubmissionCard({ submission: s, state, reload }) {
     s.resumeId === "profile-resume"
       ? profileResumeReady
       : isUsableResumeText(attachedResume?.content);
-  const answeredQuestionCount = (s.applicationQuestions || []).filter(
+  const reviewedQuestions = (s.applicationQuestions || []).map((question) => {
+    const isTextQuestion = !["dropdown", "multiple_choice"].includes(
+      question.questionType,
+    );
+    const answer = isTextQuestion
+      ? (draftAnswers[question.id] ?? question.answer ?? "")
+      : question.answer || "";
+    return {
+      ...question,
+      answer,
+      verified:
+        question.verified === true && answer === (question.answer || ""),
+    };
+  });
+  const answeredQuestionCount = reviewedQuestions.filter(
     isValidApplicationAnswer,
   ).length;
-  const verifiedQuestionCount = (s.applicationQuestions || []).filter(
+  const verifiedQuestionCount = reviewedQuestions.filter(
     (question) => isValidApplicationAnswer(question) && question.verified,
   ).length;
   const questionsReady =
@@ -4603,7 +4619,6 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateQuestion = async (id, answer) => {
-    setDraftAnswers((answers) => ({ ...answers, [id]: answer }));
     await updatePacket({
       applicationQuestion: { id, answer, verified: false },
     });
@@ -4612,10 +4627,15 @@ function SubmissionCard({ submission: s, state, reload }) {
     const question = (s.applicationQuestions || []).find(
       (candidate) => candidate.id === id,
     );
+    const isTextQuestion = !["dropdown", "multiple_choice"].includes(
+      question?.questionType,
+    );
     await updatePacket({
       applicationQuestion: {
         id,
-        answer: draftAnswers[id] ?? question?.answer ?? "",
+        answer: isTextQuestion
+          ? (draftAnswers[id] ?? question?.answer ?? "")
+          : question?.answer || "",
         verified,
       },
     });
@@ -4810,10 +4830,11 @@ function SubmissionCard({ submission: s, state, reload }) {
                   />
                 </label>
                 <QuestionVerification
-                  question={{
-                    ...question,
-                    answer: draftAnswers[question.id] ?? question.answer ?? "",
-                  }}
+                  question={
+                    reviewedQuestions.find(
+                      (candidate) => candidate.id === question.id,
+                    ) || question
+                  }
                   onChange={verifyQuestion}
                 />
               </div>
