@@ -321,6 +321,37 @@ test("Job Tracker saves cannot duplicate or dismiss in-flight work", async () =>
   assert.match(tracker, /disabled=\{addBusy\}/);
 });
 
+test("Resume Studio document writes are single-flight and keep editors retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const studio = source.slice(
+    source.indexOf("function Resume("),
+    source.indexOf("function OutreachPage"),
+  );
+
+  for (const action of [
+    "savingTemplate",
+    "generatingLetter",
+    "finishingLetter",
+    "savingLetter",
+  ]) {
+    assert.match(studio, new RegExp(`const ${action}Ref = useRef\\(false\\)`));
+    assert.match(studio, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(studio, new RegExp(`${action}Ref\\.current = false`));
+    assert.match(studio, new RegExp(`aria-busy=\\{${action}\\}`));
+  }
+  assert.match(studio, /if \(savingTemplateRef\.current\) return/);
+  assert.match(studio, /if \(generatingLetterRef\.current\) return/);
+  assert.match(studio, /finishingLetterRef\.current\) return/);
+  assert.match(studio, /savingLetterRef\.current\) return/);
+  assert.match(studio, /"Generating…" : "Generate Cover Letter"/);
+  assert.match(studio, /"Saving template…" : "Complete Template"/);
+  assert.match(studio, /Escape" && !savingTemplateRef\.current/);
+  assert.match(studio, /disabled=\{savingTemplate\}/);
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),

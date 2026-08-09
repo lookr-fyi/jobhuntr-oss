@@ -6247,8 +6247,16 @@ function Resume({ state, reload, mode = "resume" }) {
   const [preview, setPreview] = useState(state.resumes[0] || null);
   const [savingResume, setSavingResume] = useState(false);
   const [scoringResume, setScoringResume] = useState(false);
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [generatingLetter, setGeneratingLetter] = useState(false);
+  const [finishingLetter, setFinishingLetter] = useState(false);
+  const [savingLetter, setSavingLetter] = useState(false);
   const savingResumeRef = useRef(false);
   const scoringResumeRef = useRef(false);
+  const savingTemplateRef = useRef(false);
+  const generatingLetterRef = useRef(false);
+  const finishingLetterRef = useRef(false);
+  const savingLetterRef = useRef(false);
   const [templateQuery, setTemplateQuery] = useState("");
   const [templateSort, setTemplateSort] = useState("name");
   const [templateSortOrder, setTemplateSortOrder] = useState("asc");
@@ -6339,7 +6347,8 @@ function Resume({ state, reload, mode = "resume" }) {
     const returnFocus = document.activeElement;
     templateDialogCloseRef.current?.focus();
     const closeOnEscape = (event) => {
-      if (event.key === "Escape") setTemplateDialog(null);
+      if (event.key === "Escape" && !savingTemplateRef.current)
+        setTemplateDialog(null);
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -6407,6 +6416,9 @@ function Resume({ state, reload, mode = "resume" }) {
     }
   };
   const saveTemplate = async () => {
+    if (savingTemplateRef.current) return;
+    savingTemplateRef.current = true;
+    setSavingTemplate(true);
     const payload = {
       name: templateDialog.name,
       description: templateDialog.description,
@@ -6433,7 +6445,12 @@ function Resume({ state, reload, mode = "resume" }) {
       setTemplateId(saved.id);
       setTemplateDialog(null);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the completed template wizard available for retry.
+    } finally {
+      savingTemplateRef.current = false;
+      setSavingTemplate(false);
+    }
   };
   const advanceTemplateWizard = async () => {
     if (templateDialog.step !== 4) {
@@ -6551,6 +6568,9 @@ function Resume({ state, reload, mode = "resume" }) {
           ?.description || "",
     });
   const generateLetter = async (wizard = null, keepWizard = false) => {
+    if (generatingLetterRef.current) return;
+    generatingLetterRef.current = true;
+    setGeneratingLetter(true);
     const options = wizard
       ? {
           ...wizard,
@@ -6573,10 +6593,17 @@ function Resume({ state, reload, mode = "resume" }) {
         keepWizard ? { ...wizard, step: 5, result: created } : null,
       );
       await reload();
-    } catch {}
+    } catch {
+      // Keep the wizard inputs intact so generation can be retried.
+    } finally {
+      generatingLetterRef.current = false;
+      setGeneratingLetter(false);
+    }
   };
   const finishLetterWizard = async () => {
-    if (!letterWizard?.result) return;
+    if (!letterWizard?.result || finishingLetterRef.current) return;
+    finishingLetterRef.current = true;
+    setFinishingLetter(true);
     try {
       await api(`/api/cover-letters/${letterWizard.result.id}`, {
         method: "PATCH",
@@ -6588,10 +6615,17 @@ function Resume({ state, reload, mode = "resume" }) {
       setLetter(null);
       setLetterWizard(null);
       await reload();
-    } catch {}
+    } catch {
+      // Keep the generated letter open so saving can be retried.
+    } finally {
+      finishingLetterRef.current = false;
+      setFinishingLetter(false);
+    }
   };
   const saveLetter = async () => {
-    if (!letter) return;
+    if (!letter || savingLetterRef.current) return;
+    savingLetterRef.current = true;
+    setSavingLetter(true);
     try {
       const saved = await api(`/api/cover-letters/${letter.id}`, {
         method: "PATCH",
@@ -6599,7 +6633,12 @@ function Resume({ state, reload, mode = "resume" }) {
       });
       setLetter(saved);
       await reload();
-    } catch {}
+    } catch {
+      // Keep unsaved edits in place so the user can retry.
+    } finally {
+      savingLetterRef.current = false;
+      setSavingLetter(false);
+    }
   };
   if (mode === "cover-letter") {
     if (letterWizard) {
@@ -7264,6 +7303,7 @@ function Resume({ state, reload, mode = "resume" }) {
               ) : (
                 <button
                   className="secondary"
+                  disabled={generatingLetter || finishingLetter}
                   onClick={() =>
                     setLetterWizard({
                       ...letterWizard,
@@ -7289,19 +7329,27 @@ function Resume({ state, reload, mode = "resume" }) {
               ) : letterWizard.step === 4 ? (
                 <button
                   disabled={
+                    generatingLetter ||
                     !coverSourceReady ||
                     (!letterWizard.jobId &&
                       (!letterWizard.jobCompany?.trim() ||
                         !letterWizard.jobTitle?.trim() ||
                         !letterWizard.jobDescription?.trim()))
                   }
+                  aria-busy={generatingLetter}
                   onClick={() => generateLetter(letterWizard, true)}
                 >
-                  <Sparkles size={16} /> Generate Cover Letter
+                  <Sparkles size={16} />{" "}
+                  {generatingLetter ? "Generating…" : "Generate Cover Letter"}
                 </button>
               ) : (
-                <button onClick={finishLetterWizard}>
-                  <Save size={16} /> Save and Finish
+                <button
+                  disabled={finishingLetter}
+                  aria-busy={finishingLetter}
+                  onClick={finishLetterWizard}
+                >
+                  <Save size={16} />{" "}
+                  {finishingLetter ? "Saving…" : "Save and Finish"}
                 </button>
               )}
             </div>
@@ -7504,8 +7552,13 @@ function Resume({ state, reload, mode = "resume" }) {
                   }
                 />
                 <div className="inline">
-                  <button onClick={saveLetter}>
-                    <Save size={16} /> Save changes
+                  <button
+                    disabled={savingLetter}
+                    aria-busy={savingLetter}
+                    onClick={saveLetter}
+                  >
+                    <Save size={16} />{" "}
+                    {savingLetter ? "Saving…" : "Save changes"}
                   </button>
                   <button
                     className="danger"
@@ -7964,7 +8017,8 @@ function Resume({ state, reload, mode = "resume" }) {
             templateDialog.id ? "Edit Template" : "Create New Template"
           }
           onKeyDown={(event) => {
-            if (event.key === "Escape") setTemplateDialog(null);
+            if (event.key === "Escape" && !savingTemplateRef.current)
+              setTemplateDialog(null);
             containDialogFocus(event);
           }}
         >
@@ -7972,7 +8026,9 @@ function Resume({ state, reload, mode = "resume" }) {
             className="v2-template-backdrop"
             tabIndex={-1}
             aria-label="Dismiss template editor"
-            onClick={() => setTemplateDialog(null)}
+            onClick={() => {
+              if (!savingTemplateRef.current) setTemplateDialog(null);
+            }}
           />
           <div className="v2-template-modal-content">
             <div className="v2-template-wizard-head">
@@ -7980,6 +8036,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 ref={templateDialogCloseRef}
                 className="v2-template-wizard-back"
                 aria-label="Close template editor"
+                disabled={savingTemplate}
                 onClick={() => setTemplateDialog(null)}
               >
                 <ChevronLeft size={20} />
@@ -8392,6 +8449,7 @@ function Resume({ state, reload, mode = "resume" }) {
             <div className="v2-template-modal-actions">
               <button
                 className="secondary"
+                disabled={savingTemplate}
                 onClick={() =>
                   templateDialog.step === 1
                     ? setTemplateDialog(null)
@@ -8434,10 +8492,11 @@ function Resume({ state, reload, mode = "resume" }) {
                 </button>
               ) : (
                 <button
-                  disabled={!templateDialog.name.trim()}
+                  disabled={savingTemplate || !templateDialog.name.trim()}
+                  aria-busy={savingTemplate}
                   onClick={saveTemplate}
                 >
-                  Complete Template
+                  {savingTemplate ? "Saving template…" : "Complete Template"}
                 </button>
               )}
             </div>
