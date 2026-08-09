@@ -6764,8 +6764,10 @@ function Resume({ state, reload, mode = "resume" }) {
                     aria-label={`Edit ${item.title}`}
                     onClick={() => setLetter(item)}
                   >
-                    <span className="v2-letter-status">Ready</span>
-                    <span className="v2-letter-paper">
+                    <span className="v2-letter-status" aria-hidden="true">
+                      Ready
+                    </span>
+                    <span className="v2-letter-paper" aria-hidden="true">
                       <b>{state.profile.name}</b>
                       <i />
                       <i />
@@ -6793,11 +6795,14 @@ function Resume({ state, reload, mode = "resume" }) {
               ))}
               {!state.coverLetters.length && (
                 <div className="v2-document-empty">
-                  <FileText />
-                  <h3>No cover letters yet</h3>
+                  <h2>No Cover Letters Yet</h2>
                   <p>
-                    Select a tracked job and create your first reusable letter.
+                    Create your first cover letter using professional templates
+                    and local assistance.
                   </p>
+                  <button onClick={openLetterWizard}>
+                    <Plus size={16} /> Create Your First Cover Letter
+                  </button>
                 </div>
               )}
             </div>

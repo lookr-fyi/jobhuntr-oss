@@ -1465,6 +1465,42 @@ test(
       await page
         .getByRole("heading", { name: "Cover Letters", exact: true })
         .waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-document-page").evaluate((root) => {
+          const style = (selector) =>
+            getComputedStyle(root.querySelector(selector));
+          const heading = style(".v2-document-page-head h2");
+          const subtitle = style(".v2-document-page-head p");
+          const create = style(".v2-document-actions button");
+          const empty = style(".v2-document-empty");
+          const emptyHeading = style(".v2-document-empty h2");
+          return {
+            heading: [heading.fontSize, heading.fontWeight],
+            subtitle: [subtitle.fontSize, subtitle.color],
+            create: [
+              create.padding,
+              create.fontSize,
+              create.fontWeight,
+              create.borderRadius,
+            ],
+            empty: [
+              empty.padding,
+              empty.borderWidth,
+              empty.borderRadius,
+              empty.backgroundColor,
+            ],
+            emptyHeading: [emptyHeading.fontSize, emptyHeading.fontWeight],
+          };
+        }),
+        {
+          heading: ["26px", "600"],
+          subtitle: ["15px", "rgb(100, 116, 139)"],
+          create: ["12px 20px", "16px", "500", "6px"],
+          empty: ["20px", "2px", "8px", "rgb(255, 255, 255)"],
+          emptyHeading: ["26px", "600"],
+        },
+        "cover letter library should retain the authoritative v2 header and empty-state geometry",
+      );
       assert.equal(
         await page.evaluate(() =>
           sessionStorage.getItem("jobhuntr-cover-letter-wizard"),
@@ -1562,6 +1598,30 @@ test(
         await page.locator(".v2-letter-card-preview").count(),
         1,
         "saved cover letters should render as v2 document preview cards",
+      );
+      assert.deepEqual(
+        await page.locator(".v2-template-grid article").evaluate((card) => {
+          const style = (selector) =>
+            getComputedStyle(card.querySelector(selector));
+          const preview = style(".v2-letter-card-preview");
+          const badge = style(".v2-letter-status");
+          const footer = style("footer");
+          const title = style("footer b");
+          const date = style("footer small");
+          return {
+            cardRadius: getComputedStyle(card).borderRadius,
+            preview: [preview.aspectRatio, preview.padding],
+            badge: [badge.top, badge.right, badge.padding, badge.fontSize],
+            footer: [footer.padding, title.fontSize, date.fontSize],
+          };
+        }),
+        {
+          cardRadius: "8px",
+          preview: ["210 / 297", "0px"],
+          badge: ["8px", "8px", "4px 8px", "14px"],
+          footer: ["12px", "16px", "14px"],
+        },
+        "saved cover letter cards should retain the authoritative v2 A4 proportions and metadata scale",
       );
       await assertAccessible(page, "Cover Letters");
       await page
