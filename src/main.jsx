@@ -3744,6 +3744,12 @@ function Actions({ job, reload }) {
   const [editingTaskId, setEditingTaskId] = useState("");
   const [editingContactId, setEditingContactId] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [savingNote, setSavingNote] = useState(false);
+  const [savingTask, setSavingTask] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+  const savingNoteRef = useRef(false);
+  const savingTaskRef = useRef(false);
+  const savingContactRef = useRef(false);
   const [contact, setContact] = useState({
     name: "",
     role: "Recruiter",
@@ -3763,6 +3769,66 @@ function Actions({ job, reload }) {
     setTask("");
     setTaskDue("");
     setEditingTaskId("");
+  };
+  const saveNote = async () => {
+    if (!note.trim() || savingNoteRef.current) return;
+    savingNoteRef.current = true;
+    setSavingNote(true);
+    try {
+      await api(`/api/jobs/${job.id}/notes`, {
+        method: "POST",
+        body: JSON.stringify({ text: note }),
+      });
+      setNote("");
+      await reload();
+    } catch {
+      // Preserve the note so saving can be retried.
+    } finally {
+      savingNoteRef.current = false;
+      setSavingNote(false);
+    }
+  };
+  const saveTask = async () => {
+    if (!task.trim() || savingTaskRef.current) return;
+    savingTaskRef.current = true;
+    setSavingTask(true);
+    try {
+      await api(
+        `/api/jobs/${job.id}/tasks${editingTaskId ? `/${editingTaskId}` : ""}`,
+        {
+          method: editingTaskId ? "PATCH" : "POST",
+          body: JSON.stringify({ text: task, due: taskDue }),
+        },
+      );
+      resetTask();
+      await reload();
+    } catch {
+      // Preserve the task fields so saving can be retried.
+    } finally {
+      savingTaskRef.current = false;
+      setSavingTask(false);
+    }
+  };
+  const saveContact = async () => {
+    if (!contact.name.trim() || savingContactRef.current) return;
+    savingContactRef.current = true;
+    setSavingContact(true);
+    try {
+      await api(
+        `/api/jobs/${job.id}/contacts${editingContactId ? `/${editingContactId}` : ""}`,
+        {
+          method: editingContactId ? "PATCH" : "POST",
+          body: JSON.stringify(contact),
+        },
+      );
+      resetContact();
+      await reload();
+    } catch {
+      // Preserve the contact fields so saving can be retried.
+    } finally {
+      savingContactRef.current = false;
+      setSavingContact(false);
+    }
   };
   return (
     <div className="job-actions">
@@ -3785,24 +3851,17 @@ function Actions({ job, reload }) {
         <input
           name="private-job-note"
           aria-label="Private job note"
+          disabled={savingNote}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a private note"
         />
         <button
-          disabled={!note.trim()}
-          onClick={async () => {
-            try {
-              await api(`/api/jobs/${job.id}/notes`, {
-                method: "POST",
-                body: JSON.stringify({ text: note }),
-              });
-              setNote("");
-              await reload();
-            } catch {}
-          }}
+          disabled={savingNote || !note.trim()}
+          aria-busy={savingNote}
+          onClick={saveNote}
         >
-          Save
+          {savingNote ? "Saving…" : "Save"}
         </button>
       </div>
       {(job.notes || []).map((n) => (
@@ -3827,6 +3886,7 @@ function Actions({ job, reload }) {
         <input
           name="job-task-description"
           aria-label="Task description"
+          disabled={savingTask}
           value={task}
           onChange={(e) => setTask(e.target.value)}
         />
@@ -3834,29 +3894,23 @@ function Actions({ job, reload }) {
           name="job-task-due-date"
           type="date"
           aria-label="Task due date"
+          disabled={savingTask}
           value={taskDue}
           onChange={(e) => setTaskDue(e.target.value)}
         />
         <button
-          disabled={!task.trim()}
-          onClick={async () => {
-            try {
-              await api(
-                `/api/jobs/${job.id}/tasks${editingTaskId ? `/${editingTaskId}` : ""}`,
-                {
-                  method: editingTaskId ? "PATCH" : "POST",
-                  body: JSON.stringify({ text: task, due: taskDue }),
-                },
-              );
-              resetTask();
-              await reload();
-            } catch {}
-          }}
+          disabled={savingTask || !task.trim()}
+          aria-busy={savingTask}
+          onClick={saveTask}
         >
-          {editingTaskId ? "Save task" : "Add"}
+          {savingTask ? "Saving…" : editingTaskId ? "Save task" : "Add"}
         </button>
         {editingTaskId && (
-          <button className="secondary" onClick={() => resetTask()}>
+          <button
+            className="secondary"
+            disabled={savingTask}
+            onClick={() => resetTask()}
+          >
             Cancel task edit
           </button>
         )}
@@ -3890,6 +3944,7 @@ function Actions({ job, reload }) {
           <span className="inline">
             <button
               className="text-button"
+              disabled={savingTask}
               onClick={() => {
                 setTask(t.text);
                 setTaskDue(t.due || "");
@@ -3900,6 +3955,7 @@ function Actions({ job, reload }) {
             </button>
             <button
               className="icon danger"
+              disabled={savingTask}
               aria-label={`Delete task ${t.text}`}
               onClick={() =>
                 setDeleteTarget({ type: "task", id: t.id, label: t.text })
@@ -3916,6 +3972,7 @@ function Actions({ job, reload }) {
           Name
           <input
             name="job-contact-name"
+            disabled={savingContact}
             placeholder="Alex Morgan"
             value={contact.name}
             onChange={(e) => setContact({ ...contact, name: e.target.value })}
@@ -3925,6 +3982,7 @@ function Actions({ job, reload }) {
           Role
           <input
             name="job-contact-role"
+            disabled={savingContact}
             placeholder="Recruiter"
             value={contact.role}
             onChange={(e) => setContact({ ...contact, role: e.target.value })}
@@ -3935,6 +3993,7 @@ function Actions({ job, reload }) {
           <input
             name="job-contact-email"
             type="email"
+            disabled={savingContact}
             placeholder="alex@company.com"
             value={contact.email}
             onChange={(e) => setContact({ ...contact, email: e.target.value })}
@@ -3945,6 +4004,7 @@ function Actions({ job, reload }) {
           <input
             name="job-contact-linkedin"
             type="url"
+            disabled={savingContact}
             placeholder="https://www.linkedin.com/in/alex"
             value={contact.linkedIn}
             onChange={(e) =>
@@ -3954,25 +4014,22 @@ function Actions({ job, reload }) {
         </label>
       </div>
       <button
-        disabled={!contact.name.trim()}
-        onClick={async () => {
-          try {
-            await api(
-              `/api/jobs/${job.id}/contacts${editingContactId ? `/${editingContactId}` : ""}`,
-              {
-                method: editingContactId ? "PATCH" : "POST",
-                body: JSON.stringify(contact),
-              },
-            );
-            resetContact();
-            await reload();
-          } catch {}
-        }}
+        disabled={savingContact || !contact.name.trim()}
+        aria-busy={savingContact}
+        onClick={saveContact}
       >
-        {editingContactId ? "Save contact" : "Add contact"}
+        {savingContact
+          ? "Saving…"
+          : editingContactId
+            ? "Save contact"
+            : "Add contact"}
       </button>
       {editingContactId && (
-        <button className="secondary" onClick={resetContact}>
+        <button
+          className="secondary"
+          disabled={savingContact}
+          onClick={resetContact}
+        >
           Cancel contact edit
         </button>
       )}
@@ -3994,6 +4051,7 @@ function Actions({ job, reload }) {
           <span className="inline">
             <button
               className="text-button"
+              disabled={savingContact}
               onClick={() => {
                 setContact({
                   name: c.name || "",
@@ -4008,6 +4066,7 @@ function Actions({ job, reload }) {
             </button>
             <button
               className="icon danger"
+              disabled={savingContact}
               aria-label={`Delete contact ${c.name}`}
               onClick={() =>
                 setDeleteTarget({

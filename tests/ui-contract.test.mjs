@@ -605,6 +605,44 @@ test("backup restore and CSV imports reject duplicate or stale work", async () =
   );
 });
 
+test("Job Tracker notes, tasks, and contacts save as isolated units", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const actions = source.slice(
+    source.indexOf("function Actions"),
+    source.indexOf("function Board"),
+  );
+
+  for (const record of ["Note", "Task", "Contact"]) {
+    const lower = record.toLowerCase();
+    assert.match(
+      actions,
+      new RegExp(`const saving${record}Ref = useRef\\(false\\)`),
+    );
+    assert.match(
+      actions,
+      new RegExp(
+        `if \\([\\s\\S]{0,120}?saving${record}Ref\\.current\\) return`,
+      ),
+    );
+    assert.match(actions, new RegExp(`saving${record}Ref\\.current = true`));
+    assert.match(actions, new RegExp(`saving${record}Ref\\.current = false`));
+    assert.match(actions, new RegExp(`aria-busy=\\{saving${record}\\}`));
+    assert.match(actions, new RegExp(`const save${record} = async`));
+    assert.match(actions, new RegExp(`Preserve the ${lower}`));
+  }
+  assert.ok(
+    (actions.match(/disabled=\{savingTask\}/g) || []).length >= 4,
+    "task cancel/edit/delete controls must lock with the task form",
+  );
+  assert.ok(
+    (actions.match(/disabled=\{savingContact\}/g) || []).length >= 7,
+    "contact fields and conflicting controls must lock together",
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
