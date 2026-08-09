@@ -6838,6 +6838,7 @@ function Resume({ state, reload, mode = "resume" }) {
         <div className="searchbox">
           <Search size={16} />
           <input
+            name="resume-template-search"
             aria-label="Search resume templates"
             value={templateQuery}
             onChange={(event) => setTemplateQuery(event.target.value)}
@@ -6882,7 +6883,7 @@ function Resume({ state, reload, mode = "resume" }) {
           >
             <button
               className="v2-template-select"
-              aria-label={`Edit ${template.name} template`}
+              title={`Edit ${template.name} template`}
               onClick={() => openTemplateDialog(template)}
             >
               <span className="v2-template-preview">
@@ -6902,9 +6903,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 <small>{template.description}</small>
                 <small className="v2-template-metadata">
                   <Calendar size={12} /> Updated{" "}
-                  {new Date(
-                    template.updatedAt || template.createdAt || 0,
-                  ).toLocaleDateString()}
+                  {formatCalendarDate(template.updatedAt || template.createdAt)}
                   <span>•</span> Local template
                 </small>
                 {template.additionalExperience && (
@@ -6961,12 +6960,14 @@ function Resume({ state, reload, mode = "resume" }) {
           </div>
           <div className="triple">
             <input
+              name="resume-version-name"
               aria-label="Resume version name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Version name"
             />
             <select
+              name="resume-template"
               aria-label="Resume template"
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
@@ -6978,6 +6979,7 @@ function Resume({ state, reload, mode = "resume" }) {
               ))}
             </select>
             <select
+              name="resume-target-job"
               aria-label="Target job"
               value={jobId}
               onChange={(e) => setJobId(e.target.value)}
@@ -6990,6 +6992,7 @@ function Resume({ state, reload, mode = "resume" }) {
             </select>
           </div>
           <textarea
+            name="resume-content"
             aria-label="Resume content"
             ref={resumeRef}
             className="resume"
@@ -7059,6 +7062,7 @@ function Resume({ state, reload, mode = "resume" }) {
           <div className="searchbox">
             <Search size={16} />
             <input
+              name="resume-history-search"
               aria-label="Search resume history"
               value={historyQuery}
               onChange={(event) => setHistoryQuery(event.target.value)}
@@ -7066,6 +7070,7 @@ function Resume({ state, reload, mode = "resume" }) {
             />
           </div>
           <select
+            name="resume-history-template"
             aria-label="Filter resume history by template"
             value={historyTemplate}
             onChange={(event) => setHistoryTemplate(event.target.value)}
@@ -7259,6 +7264,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 <label>
                   Template name
                   <input
+                    name="ats-template-name"
                     autoFocus
                     value={templateDialog.name}
                     onChange={(event) =>
@@ -7278,6 +7284,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     PDF, HTML, or text · processed only on this device
                   </span>
                   <input
+                    name="ats-template-resume-file"
                     aria-label="Upload resume for ATS template"
                     type="file"
                     accept=".pdf,.html,.htm,.txt,text/plain,text/html,application/pdf"
@@ -7344,6 +7351,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   </p>
                 </div>
                 <textarea
+                  name="ats-template-cloned-resume"
                   aria-label="Cloned resume content"
                   value={templateDialog.editedResume}
                   onChange={(event) =>
@@ -7369,6 +7377,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   </p>
                 </div>
                 <textarea
+                  name="ats-template-additional-experience"
                   aria-label="Additional experience and skills"
                   maxLength={10000}
                   value={templateDialog.additionalExperience}
@@ -7398,6 +7407,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 <label>
                   Test job
                   <select
+                    name="ats-template-test-job"
                     aria-label="ATS template test job"
                     value={templateDialog.testJobId}
                     onChange={(event) =>

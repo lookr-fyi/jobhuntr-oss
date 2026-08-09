@@ -674,6 +674,7 @@ test(
       const templateDialog = page.getByRole("dialog", {
         name: "Create New Template",
       });
+      await assertNamedFormControls(page, "ATS Resume template wizard");
       await templateDialog.getByLabel("Template name").fill("E2E Leadership");
       const pdfBuilder = await page.context().newPage();
       await pdfBuilder.setContent(
@@ -817,6 +818,12 @@ test(
         .getByText("No generated resumes yet.", { exact: true })
         .waitFor();
       await page.getByLabel("Search resume history").fill("");
+      assert.equal(
+        await page.getByText(/Invalid Date|12\/31\/1969/).count(),
+        0,
+        "templates without migration timestamps must never render broken or epoch dates",
+      );
+      await assertNamedFormControls(page, "ATS Resume");
       await assertAccessible(page, "ATS Resume");
 
       await page.locator('button[title="Submission Queue"]').click();
