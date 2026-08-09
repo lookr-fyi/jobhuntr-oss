@@ -220,11 +220,34 @@ test(
         .getByRole("button", { name: "Open my command center" })
         .click();
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await page
+        .getByRole("heading", { level: 1, name: /Welcome back/ })
+        .waitFor();
       assert.equal(
         await page.locator("main").getAttribute("aria-hidden"),
         null,
       );
       await assertNamedFormControls(page, "Overview");
+      assert.deepEqual(
+        await page
+          .getByRole("button", { name: "Start Infinite Hunt" })
+          .evaluate((button) => {
+            const style = getComputedStyle(button);
+            return {
+              borderRadius: style.borderRadius,
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+              padding: `${style.paddingTop} ${style.paddingRight}`,
+            };
+          }),
+        {
+          borderRadius: "8px",
+          fontSize: "16px",
+          fontWeight: "500",
+          padding: "12px 20px",
+        },
+        "the command-center primary action should retain the authoritative v2 Button sizing",
+      );
       await page
         .getByRole("heading", { name: /Top Contributors of/ })
         .waitFor();

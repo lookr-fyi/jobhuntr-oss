@@ -6779,7 +6779,7 @@ select:focus {
   font-size: 12px;
   letter-spacing: 0.08em;
 }
-.v2-overview-hero h2 {
+.v2-overview-hero h1 {
   margin: 0 0 8px;
   font-size: 28px;
 }
@@ -6791,6 +6791,13 @@ select:focus {
   display: flex;
   align-items: flex-start;
   gap: 12px;
+}
+.v2-hero-actions button,
+.v2-farewell-actions button {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
 }
 .v2-overview-hero-meta {
   display: flex;

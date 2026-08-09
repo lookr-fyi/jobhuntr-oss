@@ -1603,7 +1603,7 @@ function Overview({ state, setTab, reload }) {
         <div className="v2-overview-hero-content">
           <div>
             <p className="v2-eyebrow">THIS WEEK&apos;S DASHBOARD</p>
-            <h2>Welcome back, {firstName}</h2>
+            <h1>Welcome back, {firstName}</h1>
             <p>
               Track your pipeline, pick up where you left off, and keep momentum
               without hopping between tabs.
