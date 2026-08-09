@@ -528,8 +528,24 @@ test("coach and outreach create private role-specific drafts", async () => {
   assert.match(outreach.body.body, new RegExp(job.company));
 });
 
-test("AI Coach conversations persist in portable local storage", async () => {
+test("Career Coach conversations persist in portable local storage", async () => {
   const state = (await req("/api/state")).body;
+  const interviewAdvice = await req("/api/coach/respond", {
+    method: "POST",
+    body: JSON.stringify({
+      prompt: "Help me prepare for my behavioral interview",
+      jobId: state.jobs[0].id,
+    }),
+  });
+  assert.equal(interviewAdvice.res.status, 200);
+  assert.equal(interviewAdvice.body.mode, "local-rules");
+  assert.match(interviewAdvice.body.response, /interview/i);
+  assert.match(interviewAdvice.body.response, /measurable result/i);
+  const resumeAdvice = await req("/api/coach/respond", {
+    method: "POST",
+    body: JSON.stringify({ prompt: "Improve my resume bullets" }),
+  });
+  assert.match(resumeAdvice.body.response, /ATS analysis/i);
   const created = await req("/api/coach/conversations", {
     method: "POST",
     body: JSON.stringify({

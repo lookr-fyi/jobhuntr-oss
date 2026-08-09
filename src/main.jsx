@@ -584,7 +584,7 @@ function App() {
     ["outreach", Users, "Outreach", "career"],
     ["audit", Search, "LinkedIn Audit", "career"],
     ["gigs", CircleDollarSign, "Gigs", "career"],
-    ["coach", MessageSquare, "AI Coach", "career"],
+    ["coach", MessageSquare, "Career Coach", "career"],
   ];
   if (!state && err)
     return (
@@ -6729,6 +6729,7 @@ function OutreachPage({ state, reload }) {
 function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
   const [chatInput, setChatInput] = useState("");
+  const [coachResponding, setCoachResponding] = useState(false);
   const [copiedMessage, setCopiedMessage] = useState(null);
   const [deleteConversationTarget, setDeleteConversationTarget] =
     useState(null);
@@ -6883,43 +6884,46 @@ function Coach({ state, reload }) {
   };
   const sendCoachMessage = async (message = chatInput) => {
     const prompt = message.trim();
-    if (!prompt) return;
-    const role =
-      state.jobs.find((job) => job.id === jobId)?.title ||
-      state.profile.targetRoles?.[0] ||
-      "your target role";
-    const skills = (state.profile.skills || []).slice(0, 3).join(", ");
-    const answer = `For ${role}, start by grounding your answer in one specific outcome. Use a short situation-action-result structure${skills ? ` and connect it to ${skills}` : ""}. Next, quantify the result and finish by explaining how that experience applies to this opportunity.`;
-    const nextMessages = [
-      ...messages,
-      { role: "user", content: prompt },
-      { role: "assistant", content: answer },
-    ];
-    const payload = {
-      jobId,
-      title:
-        activeConversation?.title ||
-        (prompt.length > 42 ? `${prompt.slice(0, 42)}…` : prompt),
-      messages: nextMessages,
-    };
-    const updated = await api(
-      activeConversation
-        ? `/api/coach/conversations/${activeConversation.id}`
-        : "/api/coach/conversations",
-      {
-        method: activeConversation ? "PATCH" : "POST",
-        body: JSON.stringify(payload),
-      },
-    );
-    const id = updated.id;
-    const nextConversations = activeConversation
-      ? conversations.map((conversation) =>
-          conversation.id === id ? updated : conversation,
-        )
-      : [updated, ...conversations];
-    selectConversationState(nextConversations, id);
-    setChatInput("");
-    await reload();
+    if (!prompt || coachResponding) return;
+    setCoachResponding(true);
+    try {
+      const { response: answer } = await api("/api/coach/respond", {
+        method: "POST",
+        body: JSON.stringify({ prompt, jobId }),
+      });
+      const nextMessages = [
+        ...messages,
+        { role: "user", content: prompt },
+        { role: "assistant", content: answer },
+      ];
+      const payload = {
+        jobId,
+        title:
+          activeConversation?.title ||
+          (prompt.length > 42 ? `${prompt.slice(0, 42)}…` : prompt),
+        messages: nextMessages,
+      };
+      const updated = await api(
+        activeConversation
+          ? `/api/coach/conversations/${activeConversation.id}`
+          : "/api/coach/conversations",
+        {
+          method: activeConversation ? "PATCH" : "POST",
+          body: JSON.stringify(payload),
+        },
+      );
+      const id = updated.id;
+      const nextConversations = activeConversation
+        ? conversations.map((conversation) =>
+            conversation.id === id ? updated : conversation,
+          )
+        : [updated, ...conversations];
+      selectConversationState(nextConversations, id);
+      setChatInput("");
+      await reload();
+    } finally {
+      setCoachResponding(false);
+    }
   };
   return (
     <section className="coach-page">
@@ -6937,7 +6941,7 @@ function Coach({ state, reload }) {
             className={view === "chat" ? "active" : ""}
             onClick={() => setView("chat")}
           >
-            AI Career Coach
+            Local Career Coach
           </button>
           <button
             className={view === "practice" ? "active" : ""}
@@ -7067,10 +7071,11 @@ function Coach({ state, reload }) {
                   <div className="v2-coach-avatar">
                     <Sparkles size={24} />
                   </div>
-                  <h2>Hi, I'm AI Coach!</h2>
+                  <h2>Hi, I'm your Career Coach!</h2>
                   <p>
-                    I'm your private and personal AI career coach. My service is
-                    fast and free. I can help sharpen your story, prepare for
+                    I&apos;m your private, on-device career planning assistant.
+                    I use transparent, profile-based coaching prompts—not a
+                    hosted AI service—to help sharpen your story, prepare for
                     interviews, and decide what to do next.
                   </p>
                   <strong>How can I help you today?</strong>
@@ -7122,7 +7127,7 @@ function Coach({ state, reload }) {
             </div>
             <div className="v2-coach-input">
               <textarea
-                aria-label="Message AI Coach"
+                aria-label="Message Career Coach"
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
                 onKeyDown={(event) => {
@@ -7134,15 +7139,17 @@ function Coach({ state, reload }) {
                 placeholder="Ask about your job search, interviews, or next career move…"
               />
               <button
-                disabled={!chatInput.trim()}
+                disabled={!chatInput.trim() || coachResponding}
                 onClick={() => sendCoachMessage()}
               >
-                Get Started <ChevronRight size={17} />
+                {coachResponding ? "Thinking locally…" : "Get Started"}{" "}
+                <ChevronRight size={17} />
               </button>
             </div>
             <small className="v2-coach-disclaimer">
-              JobHuntr is an AI coach, not a licensed career counselor. Review
-              important decisions with a professional.
+              Suggestions are generated locally from your saved profile and
+              role. This is not generative AI or licensed career counseling;
+              review important decisions with a professional.
             </small>
           </div>
         </div>
@@ -9883,7 +9890,7 @@ function SettingsPage({ state, reload, setTab }) {
     form.name ||
     "Job Hunter";
   const usage = [
-    ["AI Resumes", state.resumes.length, "versions created"],
+    ["Generated Resumes", state.resumes.length, "versions created"],
     ["Cover Letters", state.coverLetters.length, "letters created"],
     ["Infinite Hunts", state.agentRuns.length, "runs completed"],
     ["Tracked Jobs", state.jobs.length, "opportunities saved"],
@@ -10078,7 +10085,7 @@ function SettingsPage({ state, reload, setTab }) {
             </div>
             <div>
               <span className="eyebrow">PRIVATE COACHING WORKSPACE</span>
-              <h3>JobHuntr AI Coach</h3>
+              <h3>JobHuntr Career Coach</h3>
               <p>
                 Practice interviews, organize career evidence, and turn your
                 experience into stronger answers—all inside your local
@@ -10092,7 +10099,7 @@ function SettingsPage({ state, reload, setTab }) {
             </div>
             <div className="v2-coach-access-actions">
               <span className="pill completed">Active</span>
-              <button onClick={() => setTab("coach")}>Open AI Coach</button>
+              <button onClick={() => setTab("coach")}>Open Career Coach</button>
             </div>
           </div>
           <div className="card v2-my-coaches-card">
@@ -10133,7 +10140,7 @@ function SettingsPage({ state, reload, setTab }) {
                 <MessageSquare size={25} />
                 <h4>No coaching sessions yet</h4>
                 <p>
-                  Open AI Coach to prepare for a role or practice an answer.
+                  Open Career Coach to prepare for a role or practice an answer.
                 </p>
                 <button onClick={() => setTab("coach")}>Start coaching</button>
               </div>

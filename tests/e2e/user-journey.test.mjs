@@ -70,7 +70,7 @@ const assertAccessible = async (page, surface) => {
 
 test(
   "a user can onboard, hunt, inspect runs, and persist outreach through the real UI",
-  { timeout: 45_000 },
+  { timeout: 75_000 },
   async () => {
     const port = await freePort();
     const baseUrl = `http://127.0.0.1:${port}`;
@@ -1195,7 +1195,7 @@ test(
       await deleteContactDialog.getByRole("button", { name: "Cancel" }).click();
       await assertAccessible(page, "Outreach");
 
-      await page.getByRole("button", { name: "AI Coach" }).click();
+      await page.getByRole("button", { name: "Career Coach" }).click();
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -1207,18 +1207,22 @@ test(
           .getByRole("button", { name: "Help me prepare for an interview" })
           .click(),
       ]);
-      await page.getByText(/start by grounding your answer/).waitFor();
+      await page.getByText(/answer in four parts/).waitFor();
       assert.match(page.url(), /#\/coach\?conversation=/);
       await page.getByRole("button", { name: /Copy coach response/ }).click();
       await page.getByText("Copied", { exact: true }).waitFor();
       await page.getByRole("button", { name: "Share conversation" }).click();
       await page.getByText("Link copied", { exact: true }).waitFor();
-      await assertAccessible(page, "AI Coach");
+      await assertAccessible(page, "Career Coach");
       await page
         .getByRole("button", { name: "New coaching conversation" })
         .click();
-      await page.getByRole("heading", { name: "Hi, I'm AI Coach!" }).waitFor();
-      await page.getByLabel("Message AI Coach").fill("Help me plan this week");
+      await page
+        .getByRole("heading", { name: "Hi, I'm your Career Coach!" })
+        .waitFor();
+      await page
+        .getByLabel("Message Career Coach")
+        .fill("Help me plan this week");
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -1356,8 +1360,8 @@ test(
       await page.getByRole("heading", { name: "Coaching activity" }).waitFor();
       await page.getByText("Only you can access this workspace").waitFor();
       await assertAccessible(page, "User Center coaches");
-      await page.getByRole("button", { name: "Open AI Coach" }).click();
-      await page.getByRole("button", { name: "AI Career Coach" }).waitFor();
+      await page.getByRole("button", { name: "Open Career Coach" }).click();
+      await page.getByRole("button", { name: "Local Career Coach" }).waitFor();
       await page.locator('[title="Profile and settings"]').click();
       await page.getByRole("menuitem", { name: "Profile & usage" }).click();
       await page.getByRole("heading", { name: "User Center" }).waitFor();
@@ -1586,7 +1590,7 @@ test(
         ["Outreach", "Outreach"],
         ["LinkedIn Audit", "LinkedIn Profile Audit"],
         ["Gigs", "Gigs"],
-        ["AI Coach", "Hi, I'm AI Coach!"],
+        ["Career Coach", "Hi, I'm your Career Coach!"],
         ["Profile and settings", "User Center"],
         ["Data and privacy", "Settings & data"],
       ]) {

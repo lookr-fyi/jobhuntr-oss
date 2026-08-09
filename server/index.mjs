@@ -1019,6 +1019,39 @@ const CoachConversationSchema = z.object({
     )
     .max(200),
 });
+const CoachPromptSchema = z.object({
+  prompt: z.string().trim().min(1).max(5000),
+  jobId: z.string().max(200).optional().default(""),
+});
+const localCoachResponse = (prompt, job, profile) => {
+  const lower = prompt.toLowerCase();
+  const role = job?.title || profile.targetRoles?.[0] || "your target role";
+  const company = job?.company || "the employer";
+  const skills = (profile.skills || []).slice(0, 3).join(", ");
+  const evidence = skills
+    ? `Connect your evidence to ${skills}`
+    : "Name the two skills that mattered most";
+  if (/interview|question|tell me about|behavioral/.test(lower))
+    return `For your ${role} interview at ${company}, choose one relevant example and answer in four parts: context, your specific decision, the action you personally took, and the measurable result. ${evidence}. Rehearse it once in under two minutes, then prepare one thoughtful question about how success is measured in the role.`;
+  if (/story|star|experience|accomplish|achievement/.test(lower))
+    return `Build one reusable STAR story for ${role}. Write one sentence each for the situation and task, spend most of the answer on your actions, and end with a number or observable outcome. ${evidence}. Keep the final story under 200 words so you can adapt it during an interview.`;
+  if (/week|priorit|plan|next|today/.test(lower))
+    return `Use a focused plan for ${role}: first review your highest-fit queued applications, then tailor one resume using only truthful evidence, and finally send one personalized follow-up. Reserve a final 20-minute block to update your tracker and capture what you learned. Favor one complete, reviewed application over several rushed ones.`;
+  if (/resume|ats|cv|bullet/.test(lower))
+    return `For a ${role} resume, mirror the role language only where it truthfully matches your experience. Start bullets with the action you owned, include scope and a measurable outcome, and remove generic claims that lack evidence. ${evidence}. Run the local ATS analysis afterward and manually review every suggested keyword.`;
+  if (/outreach|message|recruiter|network|follow.?up/.test(lower))
+    return `Draft a short note for ${company}: mention the specific ${role} opening, connect one relevant result from your experience, and ask one easy-to-answer question. Keep it under 100 words, avoid invented familiarity, and verify the recipient and company before sending it yourself.`;
+  return `For ${role}, turn this into one concrete next step. Choose a specific example, state the action you personally took, quantify the outcome where possible, and explain why it matters for ${company}. ${evidence}. Then review the result for accuracy before using it in an application or conversation.`;
+};
+app.post("/api/coach/respond", async (req, res) => {
+  const parsed = CoachPromptSchema.parse(req.body || {});
+  const db = await readDb();
+  const job = db.jobs.find((item) => item.id === parsed.jobId);
+  res.json({
+    response: localCoachResponse(parsed.prompt, job, db.profile),
+    mode: "local-rules",
+  });
+});
 app.post("/api/coach/conversations", async (req, res) => {
   const parsed = CoachConversationSchema.parse(req.body);
   const conversation = await mutate((db) => {
@@ -1032,7 +1065,7 @@ app.post("/api/coach/conversations", async (req, res) => {
       updatedAt: timestamp(),
     };
     db.coachConversations.unshift(item);
-    auditEvent(db, "coach", "Saved a private AI Coach conversation.", {
+    auditEvent(db, "coach", "Saved a private Career Coach conversation.", {
       conversationId: id,
     });
     return item;
@@ -1064,7 +1097,7 @@ app.delete("/api/coach/conversations/:id", async (req, res) => {
       (item) => item.id !== req.params.id,
     );
     if (db.coachConversations.length !== before)
-      auditEvent(db, "coach", "Deleted a private AI Coach conversation.", {
+      auditEvent(db, "coach", "Deleted a private Career Coach conversation.", {
         conversationId: req.params.id,
       });
     return db.coachConversations.length !== before;
