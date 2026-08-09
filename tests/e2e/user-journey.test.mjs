@@ -2945,6 +2945,21 @@ test(
         },
         "User Center should retain the authoritative v2 profile proportions",
       );
+      const profileTab = page.getByRole("tab", { name: "Profile & Usage" });
+      await profileTab.focus();
+      await page.keyboard.press("ArrowRight");
+      const coachesTab = page.getByRole("tab", { name: "Coaches" });
+      assert.equal(await coachesTab.getAttribute("aria-selected"), "true");
+      assert.equal(
+        await coachesTab.evaluate((tab) => tab === document.activeElement),
+        true,
+      );
+      await page.keyboard.press("ArrowLeft");
+      assert.equal(await profileTab.getAttribute("aria-selected"), "true");
+      assert.equal(
+        await profileTab.evaluate((tab) => tab === document.activeElement),
+        true,
+      );
       await assertNamedFormControls(page, "User Center profile");
       await page.getByLabel("First name").fill("E2E");
       await page.getByLabel("Last name").fill("Hunter");

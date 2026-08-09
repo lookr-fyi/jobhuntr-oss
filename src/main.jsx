@@ -11580,6 +11580,29 @@ function SettingsPage({ state, reload, setTab }) {
         nextHash,
       );
   };
+  const userTabs = [
+    ["profile", "Profile & Usage"],
+    ["coaches", "Coaches"],
+    ["about", "About Me"],
+    ["settings", "Settings"],
+  ];
+  const handleUserTabKeyDown = (event, value) => {
+    const currentIndex = userTabs.findIndex(([tab]) => tab === value);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight")
+      nextIndex = (currentIndex + 1) % userTabs.length;
+    else if (event.key === "ArrowLeft")
+      nextIndex = (currentIndex - 1 + userTabs.length) % userTabs.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = userTabs.length - 1;
+    else return;
+    event.preventDefault();
+    const nextTab = userTabs[nextIndex][0];
+    selectTab(nextTab);
+    requestAnimationFrame(() =>
+      document.getElementById(`user-tab-${nextTab}`)?.focus(),
+    );
+  };
   return (
     <section className="v2-settings-page">
       <ConfirmDialog
@@ -11617,17 +11640,16 @@ function SettingsPage({ state, reload, setTab }) {
         </div>
       </div>
       <div className="v2-user-tabs" role="tablist" aria-label="User Center">
-        {[
-          ["profile", "Profile & Usage"],
-          ["coaches", "Coaches"],
-          ["about", "About Me"],
-          ["settings", "Settings"],
-        ].map(([value, label]) => (
+        {userTabs.map(([value, label]) => (
           <button
             key={value}
+            id={`user-tab-${value}`}
             role="tab"
             aria-selected={activeTab === value}
+            aria-controls={`user-panel-${value}`}
+            tabIndex={activeTab === value ? 0 : -1}
             onClick={() => selectTab(value)}
+            onKeyDown={(event) => handleUserTabKeyDown(event, value)}
           >
             {label}
           </button>
@@ -11639,7 +11661,12 @@ function SettingsPage({ state, reload, setTab }) {
         </div>
       )}
       {activeTab === "profile" && (
-        <div className="card v2-user-profile-card" role="tabpanel">
+        <div
+          id="user-panel-profile"
+          className="card v2-user-profile-card"
+          role="tabpanel"
+          aria-labelledby="user-tab-profile"
+        >
           <h3>Profile Information</h3>
           <div className="v2-user-identity">
             <span className="v2-user-avatar-large">
@@ -11812,7 +11839,12 @@ function SettingsPage({ state, reload, setTab }) {
         </div>
       )}
       {activeTab === "coaches" && (
-        <div className="v2-user-coaches" role="tabpanel">
+        <div
+          id="user-panel-coaches"
+          className="v2-user-coaches"
+          role="tabpanel"
+          aria-labelledby="user-tab-coaches"
+        >
           <div className="card v2-coach-access-card">
             <div className="v2-coach-avatar">
               <Sparkles size={22} />
@@ -11893,7 +11925,12 @@ function SettingsPage({ state, reload, setTab }) {
         </div>
       )}
       {activeTab === "about" && (
-        <div className="v2-about-hub" role="tabpanel">
+        <div
+          id="user-panel-about"
+          className="v2-about-hub"
+          role="tabpanel"
+          aria-labelledby="user-tab-about"
+        >
           <div className="card v2-about-hero">
             <div>
               <span className="eyebrow">ABOUT ME HUB</span>
@@ -12020,7 +12057,12 @@ function SettingsPage({ state, reload, setTab }) {
         </div>
       )}
       {activeTab === "settings" && (
-        <div className="v2-settings-grid" role="tabpanel">
+        <div
+          id="user-panel-settings"
+          className="v2-settings-grid"
+          role="tabpanel"
+          aria-labelledby="user-tab-settings"
+        >
           <div className="card v2-settings-card">
             <div className="v2-settings-card-title">
               <span className="v2-settings-icon">
