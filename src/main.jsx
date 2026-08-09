@@ -6119,6 +6119,7 @@ function SubmissionCard({ submission: s, state, reload }) {
   const [dirtyAnswerIds, setDirtyAnswerIds] = useState(
     () => new Set(Object.keys(initialAnswerDraft)),
   );
+  const answerRevisionRef = useRef({});
   const [answerDraftRestored, setAnswerDraftRestored] = useState(
     Boolean(Object.keys(initialAnswerDraft).length),
   );
@@ -6198,10 +6199,11 @@ function SubmissionCard({ submission: s, state, reload }) {
     });
   };
   const updateQuestion = async (id, answer) => {
+    const savingRevision = answerRevisionRef.current[id] || 0;
     const saved = await updatePacket({
       applicationQuestion: { id, answer, verified: false },
     });
-    if (saved)
+    if (saved && (answerRevisionRef.current[id] || 0) === savingRevision)
       setDirtyAnswerIds((current) => {
         const next = new Set(current);
         next.delete(id);
@@ -6215,6 +6217,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     const isTextQuestion = !["dropdown", "multiple_choice"].includes(
       question?.questionType,
     );
+    const savingRevision = answerRevisionRef.current[id] || 0;
     const saved = await updatePacket({
       applicationQuestion: {
         id,
@@ -6224,7 +6227,7 @@ function SubmissionCard({ submission: s, state, reload }) {
         verified,
       },
     });
-    if (saved)
+    if (saved && (answerRevisionRef.current[id] || 0) === savingRevision)
       setDirtyAnswerIds((current) => {
         const next = new Set(current);
         next.delete(id);
@@ -6442,6 +6445,8 @@ function SubmissionCard({ submission: s, state, reload }) {
                     value={draftAnswers[question.id] ?? question.answer ?? ""}
                     placeholder="Enter your answer…"
                     onChange={(event) => {
+                      answerRevisionRef.current[question.id] =
+                        (answerRevisionRef.current[question.id] || 0) + 1;
                       setDraftAnswers((answers) => ({
                         ...answers,
                         [question.id]: event.target.value,

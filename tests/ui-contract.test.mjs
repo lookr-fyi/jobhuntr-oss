@@ -1515,6 +1515,15 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /localStorage\.getItem\(answerDraftKey\)/);
   assert.match(card, /String\(answer \|\| ""\)\.slice\(0, 10_000\)/);
   assert.match(card, /const \[dirtyAnswerIds, setDirtyAnswerIds\]/);
+  assert.match(card, /const answerRevisionRef = useRef\(\{\}\)/);
+  assert.match(
+    card,
+    /answerRevisionRef\.current\[question\.id\] =\s*\(answerRevisionRef\.current\[question\.id\] \|\| 0\) \+ 1/,
+  );
+  assert.match(
+    card,
+    /saved && \(answerRevisionRef\.current\[id\] \|\| 0\) === savingRevision/,
+  );
   assert.match(card, /if \(!dirtyAnswerIds\.size\)/);
   assert.match(
     card,

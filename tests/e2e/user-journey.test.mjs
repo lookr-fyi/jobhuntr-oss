@@ -2120,6 +2120,43 @@ test(
       const salaryAnswer = queueQuestions.getByLabel(
         /What are your salary expectations/,
       );
+      let delayedAnswerWriteCount = 0;
+      await page.route("**/api/submissions/*", async (route) => {
+        if (route.request().method() !== "PATCH") return route.continue();
+        delayedAnswerWriteCount += 1;
+        if (delayedAnswerWriteCount === 1)
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        await route.continue();
+      });
+      await salaryAnswer.fill("Older salary answer");
+      const olderAnswerResponse = page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/submissions/") &&
+          response.request().method() === "PATCH" &&
+          response.ok(),
+      );
+      await salaryAnswer.press("Tab");
+      await salaryAnswer.fill(
+        "$150,000 base, depending on the complete compensation package.",
+      );
+      await olderAnswerResponse;
+      assert.equal(
+        await page.evaluate(() => {
+          return Object.keys(localStorage)
+            .filter((item) =>
+              item.startsWith("jobhuntr-application-answer-draft:"),
+            )
+            .some((key) => {
+              const draft = JSON.parse(localStorage.getItem(key) || "{}");
+              return Object.values(draft.answers || {}).includes(
+                "$150,000 base, depending on the complete compensation package.",
+              );
+            });
+        }),
+        true,
+        "an older Easy Apply write must not clear a newer answer draft",
+      );
+      await page.unroute("**/api/submissions/*");
       await salaryAnswer.fill(
         "$150,000 base, depending on the complete compensation package.",
       );
