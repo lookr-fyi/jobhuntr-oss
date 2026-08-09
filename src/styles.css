@@ -9380,6 +9380,11 @@ main > header.integrated-page-header {
     border-top: 1px solid #e2e8f0;
     background: #fff;
   }
+  .v2-cover-template-sheet {
+    width: 600px;
+    height: 780px;
+    box-sizing: border-box;
+  }
 }
 @media (max-width: 1099px) {
   .v2-cover-wizard {

@@ -1904,6 +1904,14 @@ test(
         },
         "the cover-letter wizard should use v2's full route and always-visible navigation footer",
       );
+      assert.deepEqual(
+        await page.locator(".v2-cover-template-sheet").evaluate((sheet) => {
+          const bounds = sheet.getBoundingClientRect();
+          return [bounds.width, bounds.height];
+        }),
+        [600, 780],
+        "the primary cover-letter preview should retain v2's 600×780 document geometry",
+      );
       assert.equal(
         await page
           .getByRole("button", { name: "Open Infinite Hunting status" })
