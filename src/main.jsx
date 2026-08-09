@@ -34,6 +34,7 @@ import {
   ChevronRight,
   RefreshCcw,
   Medal,
+  Play,
   Trophy,
   Trash2,
   Calendar,
@@ -1560,6 +1561,7 @@ function Overview({ state, setTab, reload }) {
     };
   }, [farewellOpen]);
   const s = state.summary;
+  const latestRun = state.agentRuns[0] || null;
   const firstName = (state.profile.name || "there").split(" ")[0];
   const submitted = s.byStatus.applied || 0;
   const now = new Date();
@@ -1680,10 +1682,13 @@ function Overview({ state, setTab, reload }) {
           <div className="v2-hero-actions">
             <button
               className="secondary"
-              disabled={!state.agentRuns.length}
-              onClick={() => setTab("runs")}
+              disabled={!latestRun}
+              onClick={() => {
+                if (!latestRun) return;
+                window.location.hash = `#/runs?run=${encodeURIComponent(latestRun.id)}`;
+              }}
             >
-              <List size={16} /> Open latest run
+              <Play size={16} /> Open latest run
             </button>
             <button onClick={() => setTab("agent")}>
               <InfinityIcon size={16} /> Start Infinite Hunt

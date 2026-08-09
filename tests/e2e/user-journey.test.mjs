@@ -646,6 +646,21 @@ test(
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor({ state: "hidden" });
 
+      await page.locator('button[title="Overview"]').click();
+      await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      await page.getByRole("button", { name: "Open latest run" }).click();
+      const latestRunDialog = page.locator('.v2-session-modal[role="dialog"]');
+      await latestRunDialog.waitFor();
+      assert.match(
+        page.url(),
+        /#\/runs\?run=/,
+        "the v2 Overview action should deep-link directly to the latest run",
+      );
+      await latestRunDialog
+        .getByRole("button", { name: "Close", exact: true })
+        .click();
+      await latestRunDialog.waitFor({ state: "hidden" });
+
       await page.locator('button[title="Agent Runs"]').click();
       await page.getByRole("heading", { name: "Agent Runs" }).waitFor();
       await page
