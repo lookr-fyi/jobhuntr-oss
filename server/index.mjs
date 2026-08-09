@@ -1114,6 +1114,11 @@ const isValidApplicationAnswer = (question) => {
     return (question.options || []).includes(answer);
   return true;
 };
+export const isApplicationQuestionReady = (question) => {
+  const answer = safeText(question?.answer, 10000);
+  if (question?.required === false && !answer) return true;
+  return isValidApplicationAnswer(question) && question?.verified === true;
+};
 app.post("/api/submissions", async (req, res) => {
   const submission = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.body.jobId);
@@ -1277,10 +1282,7 @@ app.patch("/api/submissions/:id", async (req, res) => {
     else if (["draft", "ready"].includes(item.status))
       item.status =
         item.checklist.every((entry) => entry.done) &&
-        item.applicationQuestions.every(
-          (question) =>
-            isValidApplicationAnswer(question) && question.verified === true,
-        )
+        item.applicationQuestions.every(isApplicationQuestionReady)
           ? "ready"
           : "draft";
     item.updatedAt = timestamp();
@@ -1311,12 +1313,7 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
       !item.checklist.every((x) => x.done)
     )
       return { blocked: true, item };
-    if (
-      !item.applicationQuestions.every(
-        (question) =>
-          isValidApplicationAnswer(question) && question.verified === true,
-      )
-    )
+    if (!item.applicationQuestions.every(isApplicationQuestionReady))
       return { blockedQuestions: true, item };
     const attachedResume =
       item.resumeId === "profile-resume"

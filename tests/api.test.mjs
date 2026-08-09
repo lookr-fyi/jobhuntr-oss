@@ -10,7 +10,8 @@ process.env.NODE_ENV = "test";
 process.env.JOBHUNTR_DATA_DIR = dir;
 const serverModule = await import("../server/index.mjs");
 const app = serverModule.default;
-const { claimScheduledHunt, runScheduledHunt } = serverModule;
+const { claimScheduledHunt, isApplicationQuestionReady, runScheduledHunt } =
+  serverModule;
 const { mutate } = await import("../server/store.mjs");
 const server = app.listen(0);
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -64,6 +65,47 @@ test("health and initial state are local-only", async () => {
     assert.equal((await fs.stat(dir)).mode & 0o777, 0o700);
     assert.equal((await fs.stat(dbPath)).mode & 0o777, 0o600);
   }
+});
+
+test("optional application questions can be safely skipped but answered questions require verification", () => {
+  assert.equal(
+    isApplicationQuestionReady({
+      required: false,
+      answer: "",
+      verified: false,
+    }),
+    true,
+  );
+  assert.equal(
+    isApplicationQuestionReady({
+      required: false,
+      answer: "Prefer not to answer",
+      verified: false,
+    }),
+    false,
+  );
+  assert.equal(
+    isApplicationQuestionReady({
+      required: false,
+      answer: "Prefer not to answer",
+      verified: true,
+    }),
+    true,
+  );
+  assert.equal(
+    isApplicationQuestionReady({ required: true, answer: "", verified: true }),
+    false,
+  );
+  assert.equal(
+    isApplicationQuestionReady({
+      required: true,
+      questionType: "dropdown",
+      options: ["Yes", "No"],
+      answer: "Maybe",
+      verified: true,
+    }),
+    false,
+  );
 });
 
 test("serialized local writes do not lose concurrent jobs", async () => {
@@ -934,6 +976,55 @@ test("submission queue enforces review before local submission", async () => {
     refreshed.jobs.find((j) => j.id === state.jobs[0].id).status,
     "applied",
   );
+});
+
+test("a blank optional application question does not block a reviewed packet", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Optional Questions Co",
+      title: "Product Engineer",
+      url: "https://optional-questions.example/jobs/product-engineer",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id }),
+  });
+  await mutate((db) => {
+    const stored = db.submissions.find((item) => item.id === packet.body.id);
+    stored.applicationQuestions = [
+      {
+        id: "optional-demographic-question",
+        question: "Optional demographic response",
+        questionType: "dropdown",
+        options: ["Prefer not to answer"],
+        required: false,
+        answer: "",
+        verified: false,
+      },
+    ];
+  });
+  const ready = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      resumeId: "profile-resume",
+      checklist: packet.body.checklist.map((item) => ({
+        ...item,
+        done: true,
+      })),
+      status: "ready",
+    }),
+  });
+  assert.equal(ready.body.status, "ready");
+  const submitted = await req(`/api/submissions/${packet.body.id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedByUser: true }),
+  });
+  assert.equal(submitted.res.status, 200);
+  assert.equal(submitted.body.status, "submitted");
+  assert.equal(submitted.body.applicationQuestions[0].answer, "");
+  assert.equal(submitted.body.applicationQuestions[0].verified, false);
 });
 
 test("rapid application review edits cannot overwrite each other", async () => {

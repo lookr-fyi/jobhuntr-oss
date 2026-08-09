@@ -340,6 +340,11 @@ const isValidApplicationAnswer = (question) => {
     return (question.options || []).includes(answer);
   return true;
 };
+const isApplicationQuestionReady = (question) => {
+  const answer = String(question?.answer || "").trim();
+  if (question?.required === false && !answer) return true;
+  return isValidApplicationAnswer(question) && question?.verified === true;
+};
 const maximumListedSalary = (job) => {
   const values = String(job.salary || "")
     .match(/\d+(?:\.\d+)?\s*k?/gi)
@@ -5168,6 +5173,17 @@ function InboxIcon() {
   return <Download size={24} />;
 }
 function QuestionVerification({ question, onChange }) {
+  const skipped =
+    question.required === false && !String(question.answer || "").trim();
+  if (skipped)
+    return (
+      <div className="check v2-question-verification v2-question-skipped">
+        <span>
+          <strong>Optional question skipped</strong>
+          <small>No response will be recorded for this field.</small>
+        </span>
+      </div>
+    );
   const valid = isValidApplicationAnswer(question);
   return (
     <label className="check v2-question-verification">
@@ -5225,14 +5241,16 @@ function SubmissionCard({ submission: s, state, reload }) {
         question.verified === true && answer === (question.answer || ""),
     };
   });
-  const answeredQuestionCount = reviewedQuestions.filter(
+  const requiredQuestions = reviewedQuestions.filter(
+    (question) => question.required !== false,
+  );
+  const answeredQuestionCount = requiredQuestions.filter(
     isValidApplicationAnswer,
   ).length;
-  const verifiedQuestionCount = reviewedQuestions.filter(
-    (question) => isValidApplicationAnswer(question) && question.verified,
+  const verifiedQuestionCount = requiredQuestions.filter(
+    isApplicationQuestionReady,
   ).length;
-  const questionsReady =
-    verifiedQuestionCount === (s.applicationQuestions || []).length;
+  const questionsReady = reviewedQuestions.every(isApplicationQuestionReady);
   const resumeLabel = attachedResume?.name
     ? attachedResume.name
     : s.resumeId === "profile-resume"
@@ -5379,8 +5397,8 @@ function SubmissionCard({ submission: s, state, reload }) {
               </p>
             </div>
             <span>
-              {answeredQuestionCount}/{s.applicationQuestions.length} answered
-              {` · ${verifiedQuestionCount}/${s.applicationQuestions.length} verified`}
+              {answeredQuestionCount}/{requiredQuestions.length} answered
+              {` · ${verifiedQuestionCount}/${requiredQuestions.length} verified`}
             </span>
           </div>
           {s.applicationQuestions.map((question) => {
