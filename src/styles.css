@@ -2026,6 +2026,24 @@ section.gigs-page .v2-gigs-intro p {
   background: transparent;
   font-size: 16px;
 }
+.v2-gig-search .icon-btn {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  margin: -4px -8px -4px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  box-shadow: none;
+}
+.v2-gig-campaign-empty {
+  padding: 24px;
+  color: #6b7280;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: center;
+}
 .v2-gig-campaigns {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));

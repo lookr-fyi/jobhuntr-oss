@@ -3261,6 +3261,20 @@ test(
         0,
         "Gigs should never render invalid dates",
       );
+      const availableGigSearch = page.getByLabel("Search available gigs");
+      await availableGigSearch.fill("no-such-gig-e2e-7b1f");
+      await page
+        .getByText(/No gigs found matching.*Try a different search term\./)
+        .waitFor();
+      assert.equal(
+        await page.locator(".v2-gig-campaigns article").count(),
+        0,
+        "v2 Gigs search should replace unmatched campaign cards with an explicit empty state",
+      );
+      await page
+        .getByRole("button", { name: "Clear available gigs search" })
+        .click();
+      await page.getByRole("button", { name: "Apply Now" }).first().waitFor();
       await page.getByRole("button", { name: "Add gig" }).click();
       await assertNamedFormControls(page, "Add gig form");
       await page.getByRole("button", { name: "Close", exact: true }).click();

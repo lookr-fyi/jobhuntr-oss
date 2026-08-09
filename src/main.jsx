@@ -9725,34 +9725,51 @@ function Gigs({ state, reload }) {
             onChange={(event) => setGigQuery(event.target.value)}
             placeholder="Search gigs by title, description, or partner…"
           />
+          {gigQuery && (
+            <button
+              className="icon-btn"
+              type="button"
+              aria-label="Clear available gigs search"
+              onClick={() => setGigQuery("")}
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
-        <div className="v2-gig-campaigns">
-          {availableGigs.map((item) => (
-            <article className="card" key={item.title}>
-              <div className="v2-gig-campaign-head">
-                <div>
-                  <h3>{item.title}</h3>
-                  <small>by {item.client}</small>
+        {availableGigs.length ? (
+          <div className="v2-gig-campaigns">
+            {availableGigs.map((item) => (
+              <article className="card" key={item.title}>
+                <div className="v2-gig-campaign-head">
+                  <div>
+                    <h3>{item.title}</h3>
+                    <small>by {item.client}</small>
+                  </div>
+                  <strong>{money(item.budget)}+ Cash</strong>
                 </div>
-                <strong>{money(item.budget)}+ Cash</strong>
-              </div>
-              <p>{item.description}</p>
-              <div className="chips">
-                {item.skills.map((skill) => (
-                  <span key={skill}>{skill}</span>
-                ))}
-              </div>
-              <button
-                onClick={() => {
-                  setCampaignProposal("");
-                  setCampaignPreview(item);
-                }}
-              >
-                Apply Now
-              </button>
-            </article>
-          ))}
-        </div>
+                <p>{item.description}</p>
+                <div className="chips">
+                  {item.skills.map((skill) => (
+                    <span key={skill}>{skill}</span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    setCampaignProposal("");
+                    setCampaignPreview(item);
+                  }}
+                >
+                  Apply Now
+                </button>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="v2-gig-campaign-empty" role="status">
+            No gigs found matching “{gigQuery.trim()}”. Try a different search
+            term.
+          </div>
+        )}
       </div>
       {campaignPreview && (
         <div
