@@ -18,6 +18,7 @@ test(
       JOBHUNTR_DATA_DIR: "",
       JOBHUNTR_USER_DATA_DIR: userDataDir,
       JOBHUNTR_WINDOW_STATE_PATH: "",
+      JOBHUNTR_LOCAL_REQUEST_TIMEOUT_MS: "500",
     };
     try {
       electronApp = await electron.launch({
@@ -144,7 +145,7 @@ test(
       await electronApp.evaluate(({ app }) => {
         app.emit("activate");
       });
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, 750));
       assert.equal(
         await electronApp.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()[0].isVisible(),
@@ -152,6 +153,39 @@ test(
         true,
         "activating JobHuntr must reopen a window hidden by Infinite Hunt",
       );
+      await electronApp.evaluate(() => {
+        globalThis.__jobhuntrOriginalFetch = globalThis.fetch;
+        globalThis.fetch = (target, options = {}) => {
+          if (!String(target).endsWith("/api/state"))
+            return globalThis.__jobhuntrOriginalFetch(target, options);
+          return new Promise((_resolve, reject) => {
+            options.signal?.addEventListener(
+              "abort",
+              () => reject(options.signal.reason),
+              { once: true },
+            );
+          });
+        };
+      });
+      await electronApp.evaluate(({ BrowserWindow }) => {
+        const activeWindow = BrowserWindow.getAllWindows()[0];
+        activeWindow.close();
+        activeWindow.close();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 750));
+      assert.equal(
+        await electronApp.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0].isVisible(),
+        ),
+        false,
+        "a stalled lifecycle check must time out and preserve an existing Infinite Hunt tray session",
+      );
+      await electronApp.evaluate(() => {
+        globalThis.fetch = globalThis.__jobhuntrOriginalFetch;
+        delete globalThis.__jobhuntrOriginalFetch;
+      });
+      await electronApp.evaluate(({ app }) => app.emit("activate"));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       await electronApp.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()[0].setBounds({
           x: 80,

@@ -17,6 +17,15 @@ let tray;
 let forceQuit = false;
 let checkingClose = false;
 let allowWindowCloseOnce = false;
+let syncingTray = false;
+
+const LOCAL_REQUEST_TIMEOUT_MS = Math.max(
+  50,
+  Math.min(
+    Number(process.env.JOBHUNTR_LOCAL_REQUEST_TIMEOUT_MS) || 5_000,
+    30_000,
+  ),
+);
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const iconPath = path.join(projectRoot, "src", "jobhuntr-logo.png");
@@ -105,7 +114,10 @@ const showMainWindow = () => {
 };
 const stopInfiniteHunt = async () => {
   if (!localUrl) return;
-  await fetch(`${localUrl}/api/infinite-hunt/stop`, { method: "POST" });
+  await fetch(`${localUrl}/api/infinite-hunt/stop`, {
+    method: "POST",
+    signal: AbortSignal.timeout(LOCAL_REQUEST_TIMEOUT_MS),
+  });
 };
 const ensureTray = () => {
   if (tray) return tray;
@@ -141,15 +153,21 @@ const ensureTray = () => {
   return tray;
 };
 const syncTrayState = async () => {
-  if (!tray || !localUrl) return;
+  if (!tray || !localUrl || syncingTray) return;
+  syncingTray = true;
   try {
-    const response = await fetch(`${localUrl}/api/state`);
+    const response = await fetch(`${localUrl}/api/state`, {
+      signal: AbortSignal.timeout(LOCAL_REQUEST_TIMEOUT_MS),
+    });
     const state = response.ok ? await response.json() : null;
     if (!state?.infiniteHunt?.enabled) {
       tray.destroy();
       tray = undefined;
     }
-  } catch {}
+  } catch {
+  } finally {
+    syncingTray = false;
+  }
 };
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -259,7 +277,9 @@ const createWindow = async () => {
     if (checkingClose) return;
     checkingClose = true;
     try {
-      const response = await fetch(`${localUrl}/api/state`);
+      const response = await fetch(`${localUrl}/api/state`, {
+        signal: AbortSignal.timeout(LOCAL_REQUEST_TIMEOUT_MS),
+      });
       const state = response.ok ? await response.json() : null;
       if (state?.infiniteHunt?.enabled) {
         ensureTray();
@@ -270,6 +290,10 @@ const createWindow = async () => {
       mainWindow.close();
     } catch (error) {
       console.warn("Could not verify Infinite Hunt status:", error.message);
+      if (tray) {
+        mainWindow.hide();
+        return;
+      }
       allowWindowCloseOnce = true;
       mainWindow.close();
     } finally {

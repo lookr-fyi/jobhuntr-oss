@@ -60,6 +60,19 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
     /event\.preventDefault\(\);[\s\S]*?if \(checkingClose\) return;[\s\S]*?checkingClose = true/,
     "every repeated native close must remain cancelled during the asynchronous Infinite Hunt check",
   );
+  assert.match(
+    electronMain,
+    /if \(!tray \|\| !localUrl \|\| syncingTray\) return/,
+  );
+  assert.match(
+    electronMain,
+    /syncingTray = true[\s\S]*?finally \{\s*syncingTray = false/,
+  );
+  assert.ok(
+    electronMain.match(/AbortSignal\.timeout\(LOCAL_REQUEST_TIMEOUT_MS\)/g)
+      .length >= 3,
+    "tray stop, tray polling, and native close checks must all be bounded",
+  );
 });
 
 test("public Git index excludes personal data and private environment files", () => {
