@@ -2035,7 +2035,7 @@ function Tracker({ state, reload, setTab }) {
         title="Delete tracked job?"
         description={
           job
-            ? `${job.title} at ${job.company} and its related notes, tasks, and drafts will be permanently removed.`
+            ? `${job.title} at ${job.company} and its related notes, tasks, and drafts${jobSubmission?.status === "submitted" ? ", submitted application record, and locked document snapshots" : ""} will be permanently removed.`
             : "This tracked job will be permanently removed."
         }
         onClose={() => setDeleteOpen(false)}

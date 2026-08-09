@@ -1308,11 +1308,20 @@ test(
       await page
         .getByText("Prepare product portfolio")
         .waitFor({ state: "hidden" });
+      await page.goto(`${baseUrl}/#/tracker?job=${recordedSubmission.jobId}`);
+      await page
+        .getByRole("region", { name: "Submitted application evidence" })
+        .waitFor();
       await page.getByRole("button", { name: "Delete role" }).click();
       const deleteJobDialog = page.getByRole("alertdialog", {
         name: "Delete tracked job?",
       });
       await deleteJobDialog.waitFor();
+      await deleteJobDialog
+        .getByText(
+          /submitted application record, and locked document snapshots/i,
+        )
+        .waitFor();
       assert.equal(
         await deleteJobDialog
           .getByRole("button", { name: "Cancel" })
