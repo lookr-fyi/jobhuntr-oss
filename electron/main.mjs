@@ -114,10 +114,12 @@ const showMainWindow = () => {
 };
 const stopInfiniteHunt = async () => {
   if (!localUrl) return;
-  await fetch(`${localUrl}/api/infinite-hunt/stop`, {
+  const response = await fetch(`${localUrl}/api/infinite-hunt/stop`, {
     method: "POST",
     signal: AbortSignal.timeout(LOCAL_REQUEST_TIMEOUT_MS),
   });
+  if (!response.ok)
+    throw new Error(`Infinite Hunt stop failed with ${response.status}`);
 };
 const ensureTray = () => {
   if (tray) return tray;
@@ -131,12 +133,12 @@ const ensureTray = () => {
         click: async () => {
           try {
             await stopInfiniteHunt();
+            tray?.destroy();
+            tray = undefined;
           } catch (error) {
             console.warn("Could not stop Infinite Hunt:", error.message);
           }
           showMainWindow();
-          tray?.destroy();
-          tray = undefined;
         },
       },
       { type: "separator" },

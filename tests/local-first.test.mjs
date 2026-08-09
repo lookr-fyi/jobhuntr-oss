@@ -73,6 +73,24 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
       .length >= 3,
     "tray stop, tray polling, and native close checks must all be bounded",
   );
+  assert.match(
+    electronMain,
+    /if \(!response\.ok\)\s*throw new Error\(`Infinite Hunt stop failed with \$\{response\.status\}`\)/,
+  );
+  const trayStopAction = electronMain.slice(
+    electronMain.indexOf('label: "Stop Infinite Hunt"'),
+    electronMain.indexOf('{ type: "separator"'),
+  );
+  assert.ok(
+    trayStopAction.indexOf("await stopInfiniteHunt()") <
+      trayStopAction.indexOf("tray?.destroy()"),
+    "the native tray must only be removed after the stop request succeeds",
+  );
+  assert.ok(
+    trayStopAction.indexOf("tray?.destroy()") <
+      trayStopAction.indexOf("catch (error)"),
+    "a rejected stop must preserve the Infinite Hunt tray for retry",
+  );
 });
 
 test("public Git index excludes personal data and private environment files", () => {
