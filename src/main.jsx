@@ -5945,10 +5945,30 @@ function Resume({ state, reload, mode = "resume" }) {
   const [editingLetterName, setEditingLetterName] = useState(false);
   const [letterNameDraft, setLetterNameDraft] = useState("");
   const [coverSourcePreview, setCoverSourcePreview] = useState(null);
+  const coverSourcePreviewReturnRef = useRef(null);
+  const coverSourcePreviewWasOpenRef = useRef(false);
+  const openCoverSourcePreview = (preview) => {
+    coverSourcePreviewReturnRef.current = document.activeElement;
+    setCoverSourcePreview(preview);
+  };
+  const closeCoverSourcePreview = () => {
+    setCoverSourcePreview(null);
+  };
+  useEffect(() => {
+    if (coverSourcePreview) {
+      coverSourcePreviewWasOpenRef.current = true;
+      return;
+    }
+    if (!coverSourcePreviewWasOpenRef.current) return;
+    coverSourcePreviewWasOpenRef.current = false;
+    coverSourcePreviewReturnRef.current?.focus();
+  }, [coverSourcePreview]);
   useEffect(() => {
     if (!coverSourcePreview) return undefined;
     const closePreview = (event) => {
-      if (event.key === "Escape") setCoverSourcePreview(null);
+      if (event.key === "Escape") {
+        setCoverSourcePreview(null);
+      }
     };
     window.addEventListener("keydown", closePreview);
     return () => window.removeEventListener("keydown", closePreview);
@@ -6595,7 +6615,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         className="v2-cover-source-preview-button"
                         aria-label="Preview profile resume"
                         onClick={() =>
-                          setCoverSourcePreview({
+                          openCoverSourcePreview({
                             type: "resume",
                             name: "Profile resume",
                             content: state.profile.resumeText,
@@ -6635,7 +6655,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         className="v2-cover-source-preview-button"
                         aria-label={`Preview ${item.name}`}
                         onClick={() =>
-                          setCoverSourcePreview({
+                          openCoverSourcePreview({
                             type: "resume",
                             name: item.name,
                             content: item.content,
@@ -6680,7 +6700,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         className="v2-cover-source-preview-button"
                         aria-label={`Preview ${template.name} ATS template`}
                         onClick={() =>
-                          setCoverSourcePreview({
+                          openCoverSourcePreview({
                             type: "ats",
                             name: template.name,
                             content:
@@ -6972,7 +6992,7 @@ function Resume({ state, reload, mode = "resume" }) {
               <button
                 className="v2-cover-preview-backdrop"
                 aria-label="Close source preview"
-                onClick={() => setCoverSourcePreview(null)}
+                onClick={closeCoverSourcePreview}
               />
               <aside
                 className="v2-cover-preview-drawer"
@@ -7001,7 +7021,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     autoFocus
                     className="secondary"
                     aria-label="Close source preview"
-                    onClick={() => setCoverSourcePreview(null)}
+                    onClick={closeCoverSourcePreview}
                   >
                     <X size={20} />
                   </button>

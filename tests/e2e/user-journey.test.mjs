@@ -1929,9 +1929,10 @@ test(
       await page.getByRole("button", { name: "Apply Prompt" }).click();
       await page.getByText("Prompt applied locally").waitFor();
       await page.getByRole("button", { name: "Continue" }).click();
-      await page
-        .getByRole("button", { name: "Preview E2E tailored resume" })
-        .click();
+      const previewResumeButton = page.getByRole("button", {
+        name: "Preview E2E tailored resume",
+      });
+      await previewResumeButton.click();
       const sourcePreview = page.getByRole("dialog", {
         name: "Resume Preview",
       });
@@ -1943,6 +1944,13 @@ test(
       );
       await page.keyboard.press("Escape");
       await sourcePreview.waitFor({ state: "detached" });
+      assert.equal(
+        await previewResumeButton.evaluate(
+          (button) => document.activeElement === button,
+        ),
+        true,
+        "closing a source preview should return keyboard focus to its trigger",
+      );
       await page
         .locator(".v2-cover-source-select")
         .filter({ hasText: "E2E tailored resume" })
