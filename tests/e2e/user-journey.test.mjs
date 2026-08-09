@@ -490,16 +490,19 @@ test(
       assert.deepEqual(
         await page.locator(".v2-hunt-intro").evaluate((intro) => {
           const heading = getComputedStyle(intro.querySelector("h2"));
+          const pageStyle = getComputedStyle(intro.closest(".v2-hunt-page"));
           return {
             headingFontSize: heading.fontSize,
             headingFontWeight: heading.fontWeight,
             headingMarginBottom: heading.marginBottom,
+            pagePadding: pageStyle.padding,
           };
         }),
         {
           headingFontSize: "26px",
           headingFontWeight: "600",
           headingMarginBottom: "8px",
+          pagePadding: "32px 24px 48px",
         },
         "Infinite Hunting should retain the authoritative v2 heading dimensions",
       );
