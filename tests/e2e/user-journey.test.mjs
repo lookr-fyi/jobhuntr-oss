@@ -4351,6 +4351,23 @@ test(
         true,
       );
       await assertNamedFormControls(page, "User Center profile");
+      const originalHeadline = await page
+        .getByLabel("Professional headline")
+        .inputValue();
+      await page
+        .getByLabel("Professional headline")
+        .fill("Unsaved E2E profile draft");
+      await page.locator('[title="Data and privacy"]').click();
+      await page.getByRole("heading", { name: "Settings & data" }).waitFor();
+      await page.locator('[title="Profile and settings"]').click();
+      await page.getByRole("menuitem", { name: "Profile & usage" }).click();
+      await page.getByText("Private User Center draft restored.").waitFor();
+      assert.equal(
+        await page.getByLabel("Professional headline").inputValue(),
+        "Unsaved E2E profile draft",
+        "private User Center edits should survive navigation before save",
+      );
+      await page.getByLabel("Professional headline").fill(originalHeadline);
       await page.getByLabel("First name").fill("E2E");
       await page.getByLabel("Last name").fill("Hunter");
       await page.getByLabel("Nickname (for job cards)").fill("E2E Builder");

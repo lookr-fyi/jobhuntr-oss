@@ -1360,7 +1360,7 @@ test("User Center saves are single-flight and cannot bless newer edits", async (
   );
   assert.match(
     settings,
-    /if \(formRevision\.current === savingRevision\) setSaved\(true\)/,
+    /if \(formRevision\.current === savingRevision\) \{[\s\S]*?setSaved\(true\)/,
   );
   assert.match(
     settings,
@@ -1374,6 +1374,39 @@ test("User Center saves are single-flight and cannot bless newer edits", async (
     settings,
     /disabled=\{form\.extractingResume \|\| savingProfile\}/,
   );
+});
+
+test("private User Center edits recover until a profile save succeeds", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const settings = source.slice(
+    source.indexOf("const USER_CENTER_DRAFT_KEY"),
+    source.indexOf("function Privacy"),
+  );
+
+  assert.match(
+    settings,
+    /USER_CENTER_DRAFT_KEY = "jobhuntr-user-center-draft"/,
+  );
+  assert.match(settings, /function readUserCenterDraft\(profile\)/);
+  assert.match(
+    settings,
+    /draft\._profileRevision !== userCenterProfileRevision\(profile\)/,
+  );
+  assert.match(settings, /setFormDirty\(true\)/);
+  assert.match(
+    settings,
+    /if \(!formDirty\) return;[\s\S]*?localStorage\.setItem\(\s*USER_CENTER_DRAFT_KEY/,
+  );
+  assert.match(
+    settings,
+    /if \(formRevision\.current === savingRevision\) \{[\s\S]*?localStorage\.removeItem\(USER_CENTER_DRAFT_KEY\);[\s\S]*?setFormDirty\(false\)/,
+  );
+  assert.match(settings, /Private User Center draft restored\./);
+  assert.match(settings, /text\(key, 100000\)/);
+  assert.match(settings, /draft\.faqAnswers\.slice\(0, 100\)/);
 });
 
 test("external submission recording is single-flight and retryable", async () => {

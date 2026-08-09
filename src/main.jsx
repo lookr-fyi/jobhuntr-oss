@@ -14153,6 +14153,88 @@ function RunsPage({ state, setTab, reload }) {
     </section>
   );
 }
+const USER_CENTER_DRAFT_KEY = "jobhuntr-user-center-draft";
+
+function userCenterProfileRevision(profile) {
+  const source = JSON.stringify(profile || {});
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function readUserCenterDraft(profile) {
+  try {
+    const draft = JSON.parse(
+      localStorage.getItem(USER_CENTER_DRAFT_KEY) || "null",
+    );
+    if (!draft || typeof draft !== "object" || Array.isArray(draft))
+      return null;
+    if (draft._profileRevision !== userCenterProfileRevision(profile)) {
+      localStorage.removeItem(USER_CENTER_DRAFT_KEY);
+      return null;
+    }
+    const text = (key, limit = 10000) =>
+      typeof draft[key] === "string" ? draft[key].slice(0, limit) : undefined;
+    const number = (key, min, max) => {
+      const value = Number(draft[key]);
+      return Number.isFinite(value)
+        ? Math.min(max, Math.max(min, value))
+        : undefined;
+    };
+    const restored = {};
+    for (const key of [
+      "name",
+      "firstName",
+      "lastName",
+      "nickname",
+      "headline",
+      "location",
+      "skills",
+      "targetRoles",
+      "locations",
+    ]) {
+      const value = text(
+        key,
+        key === "skills" || key === "targetRoles" ? 5000 : 500,
+      );
+      if (value !== undefined) restored[key] = value;
+    }
+    for (const key of ["resumeText", "additionalInfo"]) {
+      const value = text(key, 100000);
+      if (value !== undefined) restored[key] = value;
+    }
+    if (typeof draft.remote === "boolean") restored.remote = draft.remote;
+    for (const [key, min, max] of [
+      ["minSalary", 0, 10000000],
+      ["atsThreshold", 1, 100],
+      ["weeklyApplicationGoal", 1, 1000],
+    ]) {
+      const value = number(key, min, max);
+      if (value !== undefined) restored[key] = value;
+    }
+    if (Array.isArray(draft.faqAnswers))
+      restored.faqAnswers = draft.faqAnswers.slice(0, 100).flatMap((answer) => {
+        if (!answer || typeof answer !== "object") return [];
+        const question = String(answer.question || "").slice(0, 1000);
+        if (!question) return [];
+        return [
+          {
+            id: String(answer.id || "").slice(0, 200),
+            question,
+            answer: String(answer.answer || "").slice(0, 10000),
+          },
+        ];
+      });
+    return Object.keys(restored).length ? restored : null;
+  } catch {
+    localStorage.removeItem(USER_CENTER_DRAFT_KEY);
+    return null;
+  }
+}
+
 function SettingsPage({ state, reload, setTab }) {
   const p = state.profile;
   const [activeTab, setActiveTab] = useState(() => {
@@ -14192,7 +14274,11 @@ function SettingsPage({ state, reload, setTab }) {
   const formRevision = useRef(0);
   const [faqDeleteMode, setFaqDeleteMode] = useState(false);
   const [faqDeleteTarget, setFaqDeleteTarget] = useState(null);
-  const [form, setForm] = useState({
+  const restoredDraftRef = useRef(undefined);
+  if (restoredDraftRef.current === undefined)
+    restoredDraftRef.current = readUserCenterDraft(p);
+  const [formDirty, setFormDirty] = useState(Boolean(restoredDraftRef.current));
+  const [form, setForm] = useState(() => ({
     ...p,
     firstName: p.firstName || (p.name || "").trim().split(/\s+/)[0] || "",
     lastName:
@@ -14209,12 +14295,14 @@ function SettingsPage({ state, reload, setTab }) {
     resumeText: p.resumeText || "",
     additionalInfo: p.additionalInfo || "",
     faqAnswers: p.faqAnswers || [],
+    ...restoredDraftRef.current,
     resumeFileName: "",
     resumeError: "",
     extractingResume: false,
-  });
+  }));
   const markFormDirty = () => {
     formRevision.current += 1;
+    setFormDirty(true);
     setSaved(false);
   };
   const editForm = (next) => {
@@ -14266,7 +14354,12 @@ function SettingsPage({ state, reload, setTab }) {
         }),
       });
       await reload();
-      if (formRevision.current === savingRevision) setSaved(true);
+      if (formRevision.current === savingRevision) {
+        localStorage.removeItem(USER_CENTER_DRAFT_KEY);
+        restoredDraftRef.current = null;
+        setFormDirty(false);
+        setSaved(true);
+      }
     } catch {
       // Preserve edits for retry while the shared error surface reports why.
     } finally {
@@ -14274,6 +14367,22 @@ function SettingsPage({ state, reload, setTab }) {
       setSavingProfile(false);
     }
   };
+  useEffect(() => {
+    if (!formDirty) return;
+    const {
+      resumeFileName: _resumeFileName,
+      resumeError: _resumeError,
+      extractingResume: _extractingResume,
+      ...draft
+    } = form;
+    localStorage.setItem(
+      USER_CENTER_DRAFT_KEY,
+      JSON.stringify({
+        ...draft,
+        _profileRevision: userCenterProfileRevision(p),
+      }),
+    );
+  }, [form, formDirty, p]);
   const loadProfileResume = async (event) => {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -14471,6 +14580,11 @@ function SettingsPage({ state, reload, setTab }) {
       {saved && (
         <div className="v2-save-notice" role="status">
           <CheckCircle2 size={16} /> Changes saved locally.
+        </div>
+      )}
+      {restoredDraftRef.current && formDirty && (
+        <div className="v2-save-notice" role="status">
+          <RefreshCcw size={16} /> Private User Center draft restored.
         </div>
       )}
       {activeTab === "profile" && (
