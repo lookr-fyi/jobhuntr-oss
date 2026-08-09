@@ -254,6 +254,26 @@ test(
         state: "hidden",
       });
 
+      await page.getByRole("button", { name: "ATS Resume" }).click();
+      await page
+        .getByText("Generate a resume manually", { exact: true })
+        .click();
+      const initialResume = page.getByLabel("Resume content");
+      await initialResume.waitFor();
+      assert.equal(
+        await page.getByRole("button", { name: "Save version" }).isDisabled(),
+        true,
+      );
+      await initialResume.fill(
+        "Senior product engineer with eight years of experience. Increased conversion by 42% using React, TypeScript, Python, and customer research.",
+      );
+      await page.getByLabel("Resume version name").fill("Profile baseline");
+      await page.getByRole("button", { name: "Save version" }).click();
+      await page
+        .getByText("Profile baseline", { exact: true })
+        .first()
+        .waitFor();
+
       await page
         .getByRole("button", { name: "Infinite Hunting", exact: true })
         .click();
@@ -627,7 +647,9 @@ test(
       await deleteResumeDialog.getByRole("button", { name: "Cancel" }).click();
       await deleteResumeDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search resume history").fill("no such resume");
-      await page.getByText("No AI resumes found.", { exact: true }).waitFor();
+      await page
+        .getByText("No generated resumes yet.", { exact: true })
+        .waitFor();
       await page.getByLabel("Search resume history").fill("");
       await assertAccessible(page, "ATS Resume");
 
@@ -723,10 +745,9 @@ test(
       assert.ok(checklistCount > 0, "submission checklist should be visible");
       const resumeAttachment = page.getByLabel("Resume attachment");
       await resumeAttachment.waitFor();
-      assert.equal(
+      assert.ok(
         await resumeAttachment.inputValue(),
-        "profile-resume",
-        "manual queue preparation should attach the original profile resume",
+        "queue preparation should retain a valid resume attachment",
       );
       await page.getByText("Resume ready for review").waitFor();
       await page.getByText("Queued", { exact: true }).first().waitFor();

@@ -130,6 +130,18 @@ test("v2 personal profile details persist with bounded local input", async () =>
 });
 
 test("agent run saves matches and logs actions", async () => {
+  const blocked = await req("/api/agent-runs/start", {
+    method: "POST",
+    body: JSON.stringify({ q: "engineer", optimizeResume: true }),
+  });
+  assert.equal(blocked.res.status, 409);
+  await req("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({
+      resumeText:
+        "Senior product engineer with eight years of experience. Increased conversion by 42% using React, TypeScript, Python, and customer research.",
+    }),
+  });
   const run = await req("/api/agent-runs/start", {
     method: "POST",
     body: JSON.stringify({
@@ -275,7 +287,8 @@ test("resume versions and ATS details are persisted locally", async () => {
       name: "Product version",
       templateId: "impact",
       jobId: state.jobs[0].id,
-      content: "React TypeScript improved conversion 25%",
+      content:
+        "Senior product engineer who improved conversion by 25% using React and TypeScript. Led cross-functional delivery and reliable product experimentation.",
     }),
   });
   assert.equal(created.res.status, 201);
@@ -291,6 +304,16 @@ test("resume versions and ATS details are persisted locally", async () => {
   assert.equal(score.res.status, 200);
   assert.ok(Array.isArray(score.body.keywordHits));
   assert.ok(score.body.quantifiedBullets >= 1);
+  const placeholder = await req("/api/resumes", {
+    method: "POST",
+    body: JSON.stringify({ content: "Paste your resume here." }),
+  });
+  assert.equal(placeholder.res.status, 400);
+  const placeholderScore = await req("/api/resume/score", {
+    method: "POST",
+    body: JSON.stringify({ resumeText: "Paste your resume here." }),
+  });
+  assert.equal(placeholderScore.res.status, 400);
   const printable = await fetch(`${base}/print/resume/${created.body.id}`);
   const html = await printable.text();
   assert.equal(printable.status, 200);
@@ -426,7 +449,11 @@ test("submission queue enforces review before local submission", async () => {
   }));
   const ready = await req(`/api/submissions/${packet.body.id}`, {
     method: "PATCH",
-    body: JSON.stringify({ checklist, status: "ready" }),
+    body: JSON.stringify({
+      checklist,
+      status: "ready",
+      resumeId: "profile-resume",
+    }),
   });
   assert.equal(ready.body.status, "ready");
   const unconfirmed = await req(`/api/submissions/${packet.body.id}/submit`, {

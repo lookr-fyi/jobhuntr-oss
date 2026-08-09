@@ -46,6 +46,13 @@ const safeText = (value, max = 10000) =>
   String(value ?? "")
     .trim()
     .slice(0, max);
+const isUsableResumeText = (value) => {
+  const text = String(value ?? "").trim();
+  return (
+    text.length >= 80 &&
+    !text.toLowerCase().startsWith("paste your resume here")
+  );
+};
 const safeDueDate = (value) =>
   /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
 const isSafeHttpUrl = (value) => {
@@ -469,13 +476,19 @@ app.delete("/api/templates/:id", async (req, res) => {
 });
 
 app.post("/api/resumes", async (req, res) => {
+  const db = await readDb();
+  const content = safeText(req.body.content || db.profile.resumeText, 100000);
+  if (!isUsableResumeText(content))
+    return res.status(400).json({
+      error: "Replace the placeholder with a real resume before saving",
+    });
   const resume = await mutate((db) => {
     const item = {
       id: nanoid(),
       name: safeText(req.body.name, 120) || `Resume ${db.resumes.length + 1}`,
       templateId: safeText(req.body.templateId, 50) || "clean-ats",
       jobId: safeText(req.body.jobId, 50),
-      content: safeText(req.body.content || db.profile.resumeText, 100000),
+      content,
       createdAt: timestamp(),
       updatedAt: timestamp(),
     };
@@ -487,6 +500,10 @@ app.post("/api/resumes", async (req, res) => {
 });
 
 app.patch("/api/resumes/:id", async (req, res) => {
+  if (req.body.content !== undefined && !isUsableResumeText(req.body.content))
+    return res.status(400).json({
+      error: "Replace the placeholder with a real resume before saving",
+    });
   const resume = await mutate((db) => {
     const item = db.resumes.find((r) => r.id === req.params.id);
     if (!item) return null;
@@ -888,6 +905,12 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
       !item.checklist.every((x) => x.done)
     )
       return { blocked: true, item };
+    const attachedResume =
+      item.resumeId === "profile-resume"
+        ? db.profile.resumeText
+        : db.resumes.find((resume) => resume.id === item.resumeId)?.content;
+    if (!isUsableResumeText(attachedResume))
+      return { blockedResume: true, item };
     const job = db.jobs.find((j) => j.id === item.jobId);
     item.status = "submitted";
     item.submittedAt = timestamp();
@@ -916,6 +939,10 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     return res
       .status(409)
       .json({ error: "Complete every checklist item before submitting" });
+  if (submission.blockedResume)
+    return res.status(409).json({
+      error: "Attach a valid resume before recording this submission",
+    });
   res.json(submission);
 });
 
@@ -1310,6 +1337,10 @@ const scoreResumeAgainstJob = (text, job, profile) => {
 app.post("/api/resume/score", async (req, res) => {
   const db = await readDb();
   const text = String(req.body.resumeText || db.profile.resumeText || "");
+  if (!isUsableResumeText(text))
+    return res.status(400).json({
+      error: "Replace the placeholder with a real resume before analysis",
+    });
   const job =
     req.body.job || db.jobs.find((j) => j.id === req.body.jobId) || {};
   const result = scoreResumeAgainstJob(text, job, db.profile);
@@ -1388,6 +1419,15 @@ app.post("/api/agent-runs/preview", async (req, res) => {
   });
 });
 app.post("/api/agent-runs/start", async (req, res) => {
+  const current = await readDb();
+  const requestedOptions = huntOptions(req.body, current.profile);
+  if (
+    requestedOptions.optimizeResume &&
+    !isUsableResumeText(current.profile.resumeText)
+  )
+    return res.status(409).json({
+      error: "Add a real profile resume before generating tailored resumes",
+    });
   const run = await mutate((db) => {
     const runId = nanoid();
     const options = huntOptions(req.body, db.profile);

@@ -163,6 +163,13 @@ const safeHttpUrl = (value) => {
     return "";
   }
 };
+const isUsableResumeText = (value) => {
+  const text = String(value || "").trim();
+  return (
+    text.length >= 80 &&
+    !text.toLowerCase().startsWith("paste your resume here")
+  );
+};
 const maximumListedSalary = (job) => {
   const values = String(job.salary || "")
     .match(/\d+(?:\.\d+)?\s*k?/gi)
@@ -4123,6 +4130,11 @@ function SubmissionCard({ submission: s, state, reload }) {
   const attachedLetter = state.coverLetters.find(
     (item) => item.id === s.coverLetterId,
   );
+  const profileResumeReady = isUsableResumeText(state.profile.resumeText);
+  const selectedResumeReady =
+    s.resumeId === "profile-resume"
+      ? profileResumeReady
+      : isUsableResumeText(attachedResume?.content);
   const resumeLabel = attachedResume?.name
     ? attachedResume.name
     : s.resumeId === "profile-resume"
@@ -4375,13 +4387,21 @@ function SubmissionCard({ submission: s, state, reload }) {
             onChange={(event) => updatePacket({ resumeId: event.target.value })}
           >
             <option value="">No resume attached</option>
-            <option value="profile-resume">Original profile resume</option>
+            <option value="profile-resume" disabled={!profileResumeReady}>
+              Original profile resume
+              {profileResumeReady ? "" : " — add resume first"}
+            </option>
             {state.resumes.map((resume) => (
               <option key={resume.id} value={resume.id}>
                 {resume.name}
               </option>
             ))}
           </select>
+          {!selectedResumeReady && (
+            <small className="error-text" role="alert">
+              Attach a real resume before recording this submission.
+            </small>
+          )}
         </label>
         <label>
           Cover letter attachment
@@ -4419,7 +4439,9 @@ function SubmissionCard({ submission: s, state, reload }) {
         <button
           className="success"
           disabled={
-            !s.checklist.every((x) => x.done) || !externalSubmissionVerified
+            !s.checklist.every((x) => x.done) ||
+            !externalSubmissionVerified ||
+            !selectedResumeReady
           }
           onClick={async () => {
             await api(`/api/submissions/${s.id}/submit`, {
@@ -4600,6 +4622,7 @@ function Resume({ state, reload, mode = "resume" }) {
   const [historyQuery, setHistoryQuery] = useState("");
   const [historyTemplate, setHistoryTemplate] = useState("all");
   const [showAllResumes, setShowAllResumes] = useState(false);
+  const resumeReady = isUsableResumeText(resume);
   const templateDialogCloseRef = useRef(null);
   useEffect(() => {
     if (mode !== "cover-letter") return;
@@ -5736,11 +5759,12 @@ function Resume({ state, reload, mode = "resume" }) {
             }
           />
           <div className="inline">
-            <button onClick={saveResume}>
+            <button disabled={!resumeReady} onClick={saveResume}>
               <Save size={16} /> Save version
             </button>
             <button
               className="secondary"
+              disabled={!resumeReady}
               onClick={async () =>
                 setScore(
                   await api("/api/resume/score", {
@@ -5753,6 +5777,12 @@ function Resume({ state, reload, mode = "resume" }) {
               Analyze ATS fit
             </button>
           </div>
+          {!resumeReady && (
+            <p className="error-text" role="alert">
+              Replace the placeholder with your real resume (at least 80
+              characters) before saving or analyzing it.
+            </p>
+          )}
           {score && (
             <div className="score">
               <b>{score.score}% ATS alignment</b>
@@ -5777,7 +5807,7 @@ function Resume({ state, reload, mode = "resume" }) {
       <div className="card document-library">
         <div className="v2-resume-history-head">
           <div>
-            <h3>AI Resumes</h3>
+            <h3>Generated Resumes</h3>
             <p>{state.resumes.length} locally generated resumes</p>
           </div>
           <button className="secondary" onClick={reload}>
@@ -5821,7 +5851,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   <div>
                     <h4>{template.name}</h4>
                     <span>
-                      {resumes.length} AI resume
+                      {resumes.length} generated resume
                       {resumes.length === 1 ? "" : "s"}
                     </span>
                   </div>
@@ -5849,7 +5879,7 @@ function Resume({ state, reload, mode = "resume" }) {
                         <b>
                           {job
                             ? `${job.title} @ ${job.company}`
-                            : item.name || "AI Resume"}
+                            : item.name || "Generated Resume"}
                         </b>
                         <span>
                           {job?.location || "Local resume"} · Created{" "}
@@ -5896,7 +5926,7 @@ function Resume({ state, reload, mode = "resume" }) {
         ) : (
           <div className="v2-resume-history-empty">
             <FileText size={28} />
-            <p>No AI resumes found.</p>
+            <p>No generated resumes yet.</p>
             <span>
               Generate a resume from one of your templates to see it here.
             </span>
@@ -8575,6 +8605,7 @@ function ProfileAudit({ state, reload }) {
   );
 }
 function Agent({ state, reload, setTab }) {
+  const profileResumeReady = isUsableResumeText(state.profile.resumeText);
   const [newRunDraft] = useState(() => {
     try {
       return JSON.parse(
@@ -8611,8 +8642,9 @@ function Agent({ state, reload, setTab }) {
   });
   const [optimizeResume, setOptimizeResume] = useState(
     () =>
-      newRunDraft?.optimizeResume ??
-      localStorage.getItem("jobhuntr-optimize-resume") === "true",
+      profileResumeReady &&
+      (newRunDraft?.optimizeResume ??
+        localStorage.getItem("jobhuntr-optimize-resume") === "true"),
   );
   const [running, setRunning] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -8662,7 +8694,7 @@ function Agent({ state, reload, setTab }) {
       .map((x) => x.trim())
       .filter(Boolean),
     workflows: selectedRuns,
-    optimizeResume,
+    optimizeResume: profileResumeReady && optimizeResume,
   });
   const loadPreset = (preset) => {
     setForm({
@@ -8823,6 +8855,7 @@ function Agent({ state, reload, setTab }) {
             <input
               type="checkbox"
               checked={optimizeResume}
+              disabled={!profileResumeReady}
               onChange={(e) => {
                 setOptimizeResume(e.target.checked);
                 localStorage.setItem(
@@ -8839,6 +8872,14 @@ function Agent({ state, reload, setTab }) {
               </small>
             </span>
           </label>
+          {!profileResumeReady && (
+            <div className="v2-submit-safety-note" role="alert">
+              Add your real resume before generating tailored versions.{" "}
+              <button className="text-button" onClick={() => setTab("resume")}>
+                Open ATS Resume
+              </button>
+            </div>
+          )}
         </div>
         <div className="v2-run-picker">
           <h3>Available runs</h3>
