@@ -1713,7 +1713,7 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(normalized.submissions[0].status, "submitted");
   assert.equal(normalized.gigs[0].statusHistory.length, 1);
   assert.deepEqual(normalized.coachConversations[0].messages, []);
-  assert.equal(normalized.meta.version, 10);
+  assert.equal(normalized.meta.version, 11);
 
   for (const invalidBackup of [
     { jobs: "not-an-array" },
@@ -1749,6 +1749,16 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.deepEqual(
     replaced.jobs.map((job) => job.id),
     ["restored-only-job"],
+  );
+  assert.equal(
+    replaced.jobs[0].status,
+    "interested",
+    "legacy saved jobs must migrate into the visible v2 Queued column",
+  );
+  assert.equal(
+    replaced.jobs[0].statusHistory[0].status,
+    "interested",
+    "generated migration history must use a current v2 tracker status",
   );
   for (const collection of [
     "resumes",

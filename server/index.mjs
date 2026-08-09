@@ -130,18 +130,22 @@ const invalidatePendingPacketReviews = (
   }
   return invalidated;
 };
-const JobStatusSchema = z.enum([
-  "saved",
-  "interested",
-  "submitting",
-  "applied",
-  "interview",
-  "offer",
-  "rejected",
-  "failed",
-  "skipped",
-  "removed",
-]);
+const JobStatusSchema = z
+  .enum([
+    "saved",
+    "interested",
+    "submitting",
+    "applied",
+    "interview",
+    "offer",
+    "rejected",
+    "failed",
+    "skipped",
+    "removed",
+  ])
+  // `saved` was the pre-v2 name for the first tracker stage. Continue to
+  // accept old clients and backups, but never persist an invisible stage.
+  .transform((status) => (status === "saved" ? "interested" : status));
 
 const ProfileSchema = z.object({
   onboarded: z.boolean().optional(),
@@ -191,7 +195,7 @@ const JobSchema = z.object({
   salary: z.string().max(300).optional().default(""),
   description: z.string().max(100000).optional().default(""),
   tags: z.array(z.string().max(200)).max(100).optional().default([]),
-  status: JobStatusSchema.optional().default("saved"),
+  status: JobStatusSchema.optional().default("interested"),
 });
 const JobPatchSchema = z.object({
   company: z.string().trim().min(1).max(300).optional(),
@@ -2000,7 +2004,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
         ...job,
         id: nanoid(),
         workflowRunId: runId,
-        status: "saved",
+        status: "interested",
         matchReasons: match.reasons,
         createdAt: timestamp(),
         updatedAt: timestamp(),
@@ -2008,7 +2012,7 @@ app.post("/api/agent-runs/start", async (req, res) => {
         tasks: [],
         contacts: [],
         statusHistory: [
-          { status: "saved", at: timestamp(), source: "local-hunt" },
+          { status: "interested", at: timestamp(), source: "local-hunt" },
         ],
       };
       db.jobs.unshift(savedJob);

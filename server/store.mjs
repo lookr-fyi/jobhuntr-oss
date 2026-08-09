@@ -90,12 +90,10 @@ export function emptyDb() {
         weeklyApplicationGoal: 5,
       },
     },
-    jobs: seedJobs.slice(0, 2).map((job, index) => ({
+    jobs: seedJobs.slice(0, 2).map((job) => ({
       id: nanoid(),
-      status: index === 0 ? "interested" : "saved",
-      statusHistory: [
-        { status: index === 0 ? "interested" : "saved", at: createdAt },
-      ],
+      status: "interested",
+      statusHistory: [{ status: "interested", at: createdAt }],
       fitScore: scoreJob(job, {
         skills: ["TypeScript", "React", "Python", "Automation"],
         targetRoles: ["Software Engineer", "Product Engineer"],
@@ -181,7 +179,6 @@ const records = (value) => (Array.isArray(value) ? value.filter(isRecord) : []);
 const strings = (value) =>
   Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
 const JOB_STATUSES = new Set([
-  "saved",
   "interested",
   "submitting",
   "applied",
@@ -192,12 +189,13 @@ const JOB_STATUSES = new Set([
   "skipped",
   "removed",
 ]);
-const normalizeJobStatus = (value, fallback = "saved") => {
+const normalizeJobStatus = (value, fallback = "interested") => {
   const status = String(value || "").toLowerCase();
   if (JOB_STATUSES.has(status)) return status;
   return (
     {
-      started: "saved",
+      saved: "interested",
+      started: "interested",
       queued: "interested",
       submitted: "applied",
       interviewing: "interview",
@@ -328,10 +326,10 @@ function migrate(input) {
       event.status = normalizeJobStatus(event.status, job.status);
     if (!job.statusHistory.length)
       job.statusHistory = [
-        { status: job.status || "saved", at: job.createdAt || now() },
+        { status: job.status || "interested", at: job.createdAt || now() },
       ];
   }
-  db.meta.version = 10;
+  db.meta.version = 11;
   return db;
 }
 
