@@ -143,6 +143,15 @@ test(
         viewport: { width: 1440, height: 1000 },
         permissions: ["clipboard-read", "clipboard-write"],
       });
+      const unexpectedNetworkRequests = [];
+      desktopContext.on("request", (request) => {
+        const url = new URL(request.url());
+        if (
+          url.origin !== baseUrl &&
+          !["data:", "blob:"].includes(url.protocol)
+        )
+          unexpectedNetworkRequests.push(request.url());
+      });
       const page = await desktopContext.newPage();
       await page.goto(baseUrl);
 
@@ -2863,6 +2872,11 @@ test(
         await page.getByLabel("Nickname (for job cards)").inputValue(),
         "Restored E2E Builder",
         "a backup restored through the real UI must survive the resulting reload",
+      );
+      assert.deepEqual(
+        unexpectedNetworkRequests,
+        [],
+        "a complete JobHuntr user journey must not transmit private workspace data to external hosts",
       );
     } finally {
       await browser?.close();
