@@ -7697,7 +7697,13 @@ function Resume({ state, reload, mode = "resume" }) {
                       })
                 }
               >
-                {templateDialog.step === 1 ? "Cancel" : "Previous"}
+                {templateDialog.step === 1 ? (
+                  "Cancel"
+                ) : (
+                  <>
+                    <ChevronLeft size={16} /> Previous
+                  </>
+                )}
               </button>
               {templateDialog.step < 5 ? (
                 <button
@@ -7712,15 +7718,14 @@ function Resume({ state, reload, mode = "resume" }) {
                   }
                   onClick={advanceTemplateWizard}
                 >
-                  {templateDialog.step === 4 ? "Run ATS Test" : "Next"}{" "}
-                  <ChevronRight size={15} />
+                  Next <ChevronRight size={16} />
                 </button>
               ) : (
                 <button
                   disabled={!templateDialog.name.trim()}
                   onClick={saveTemplate}
                 >
-                  <Save size={16} /> Save Template
+                  Complete Template
                 </button>
               )}
             </div>

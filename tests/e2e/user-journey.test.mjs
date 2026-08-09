@@ -1070,7 +1070,7 @@ test(
         .getByLabel("ATS template test job")
         .selectOption({ index: 1 });
       await templateDialog
-        .getByRole("button", { name: /Run ATS Test/ })
+        .getByRole("button", { name: "Next", exact: true })
         .click();
       await templateDialog.getByText("ATS Optimization Complete").waitFor();
       await templateDialog.getByText("ATS match score").waitFor();
@@ -1088,7 +1088,7 @@ test(
         .getByRole("button", { name: "Go to template step 4: Test" })
         .click();
       await templateDialog
-        .getByRole("button", { name: /Run ATS Test/ })
+        .getByRole("button", { name: "Next", exact: true })
         .click();
       await templateDialog.getByText("ATS Optimization Complete").waitFor();
       await Promise.all([
@@ -1098,7 +1098,9 @@ test(
             response.request().method() === "POST" &&
             response.ok(),
         ),
-        templateDialog.getByRole("button", { name: "Save Template" }).click(),
+        templateDialog
+          .getByRole("button", { name: "Complete Template" })
+          .click(),
       ]);
       await page
         .locator(".v2-resume-templates")
