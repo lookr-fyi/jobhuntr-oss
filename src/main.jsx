@@ -346,7 +346,7 @@ const containDialogFocus = (event) => {
   if (event.key !== "Tab") return;
   const focusable = [
     ...event.currentTarget.querySelectorAll(
-      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      'button:not([disabled]):not([tabindex="-1"]), a[href]:not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])',
     ),
   ].filter((element) => !element.hidden && element.offsetParent !== null);
   if (!focusable.length) return;
@@ -1737,6 +1737,7 @@ function Overview({ state, setTab, reload }) {
         >
           <button
             className="v2-farewell-backdrop"
+            tabIndex={-1}
             aria-label="Close congratulations dialog"
             onClick={() => setFarewellOpen(false)}
           />
@@ -2430,6 +2431,7 @@ function Tracker({ state, reload, setTab }) {
         >
           <button
             className="v2-funnel-backdrop"
+            tabIndex={-1}
             aria-label="Close funnel analysis"
             onClick={() => setFunnelOpen(false)}
           />
@@ -3695,6 +3697,7 @@ function Board({ state, reload }) {
         >
           <button
             className="v2-session-backdrop"
+            tabIndex={-1}
             aria-label="Close leaderboard"
             onClick={() => setLeaderboardOpen(false)}
           />
@@ -4439,6 +4442,7 @@ function Queue({ state, reload, setTab }) {
         >
           <button
             className="v2-template-backdrop"
+            tabIndex={-1}
             aria-label="Close start submitting dialog"
             onClick={closeSubmitAssist}
           />
@@ -6542,6 +6546,7 @@ function Resume({ state, reload, mode = "resume" }) {
         >
           <button
             className="v2-template-backdrop"
+            tabIndex={-1}
             aria-label="Dismiss template editor"
             onClick={() => setTemplateDialog(null)}
           />
@@ -7296,6 +7301,7 @@ function OutreachPage({ state, reload }) {
         >
           <button
             className="v2-template-backdrop"
+            tabIndex={-1}
             aria-label="Close connect contacts dialog"
             onClick={() => setConnectOpen(false)}
           />
@@ -8396,6 +8402,7 @@ function Gigs({ state, reload }) {
         >
           <button
             className="v2-template-backdrop"
+            tabIndex={-1}
             aria-label="Close gig application"
             onClick={() => setCampaignPreview(null)}
           />
@@ -8748,6 +8755,7 @@ function Gigs({ state, reload }) {
         >
           <button
             className="v2-template-backdrop"
+            tabIndex={-1}
             aria-label="Close gig details"
             onClick={() => setSelected(null)}
           />
@@ -9883,6 +9891,7 @@ function Agent({ state, reload, setTab }) {
         >
           <button
             className="v2-session-backdrop"
+            tabIndex={-1}
             aria-label="Close infinite session details"
             onClick={() => setStatusOpen(false)}
           />
@@ -10282,6 +10291,7 @@ function RunsPage({ state, setTab, reload }) {
         >
           <button
             className="v2-session-backdrop"
+            tabIndex={-1}
             aria-label="Close run details"
             onClick={() => setSelectedRun(null)}
           />
@@ -10405,6 +10415,7 @@ function RunsPage({ state, setTab, reload }) {
         >
           <button
             className="v2-session-backdrop"
+            tabIndex={-1}
             aria-label="Close new agent run"
             onClick={() => setNewRunOpen(false)}
           />

@@ -399,10 +399,10 @@ test(
       await page.keyboard.press("Tab");
       assert.equal(
         await runDialog
-          .getByRole("button", { name: "Close run details" })
+          .getByRole("button", { name: "Delete run" })
           .evaluate((button) => button === document.activeElement),
         true,
-        "Tab should wrap within run details",
+        "Tab should wrap to the first visible action within run details",
       );
       await runDialog.getByText("Workflow progress").waitFor();
       await runDialog.getByText("Matched jobs").waitFor();
@@ -1167,6 +1167,20 @@ test(
         .waitFor();
       await funnelDialog.getByText("Interview rate", { exact: true }).waitFor();
       await funnelDialog.getByText("Offer rate", { exact: true }).waitFor();
+      await page.keyboard.press("Shift+Tab");
+      assert.equal(
+        await funnelDialog.evaluate((dialog) =>
+          dialog.contains(document.activeElement),
+        ),
+        true,
+        "reverse keyboard navigation must not move focus onto an invisible modal backdrop",
+      );
+      assert.equal(
+        await funnelDialog
+          .locator(".v2-funnel-backdrop")
+          .evaluate((backdrop) => backdrop === document.activeElement),
+        false,
+      );
       await page.keyboard.press("Escape");
       await funnelDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Job status").selectOption("interview");
