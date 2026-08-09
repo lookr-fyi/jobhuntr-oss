@@ -1167,6 +1167,8 @@ function Onboarding({ profile, reload }) {
         }),
       });
       await reload();
+    } catch {
+      // Keep onboarding data and the current step available for retry.
     } finally {
       setSaving(false);
     }
@@ -1986,7 +1988,9 @@ function Tracker({ state, reload, setTab }) {
         ? saved.filter((stage) => TRACKER_STAGES.includes(stage))
         : [];
       if (validSaved.length) return new Set(validSaved);
-    } catch {}
+    } catch {
+      // Preserve the selected role so preparation can be retried.
+    }
     // A malformed or obsolete preference should remain recoverable rather
     // than leaving a returning user with an apparently empty tracker.
     return new Set(stages);
@@ -3437,6 +3441,8 @@ function InterviewRounds({ job, reload }) {
       });
       await reload();
       reset();
+    } catch {
+      // The shared API error surface keeps the editor open for retry.
     } finally {
       setBusy(false);
     }
@@ -3976,6 +3982,8 @@ function Board({ state, reload }) {
       setNewlyQueuedUrls((current) => new Set(current).add(job.url));
       setNotice(`${job.title} was added to your submission queue.`);
       reload();
+    } catch {
+      // The shared API error surface preserves the unqueued card for retry.
     } finally {
       setQueueing("");
     }
@@ -4698,6 +4706,8 @@ function Queue({ state, reload, setTab }) {
         closeSubmitAssist();
         setSelectedId("");
       }
+    } catch {
+      // Keep the reviewed packet open when recording fails.
     } finally {
       setSubmittingReady(false);
     }
@@ -8237,6 +8247,8 @@ function OutreachPage({ state, reload }) {
           : "All contacts for this role are already collected.",
       );
       await reload();
+    } catch {
+      // The shared API error surface leaves contact collection retryable.
     } finally {
       setCollecting(false);
     }
@@ -8877,20 +8889,26 @@ function Coach({ state, reload }) {
     window.setTimeout(() => setCopiedMessage(null), 1800);
   };
   const prepare = async () => {
-    const created = await api("/api/coach/prepare", {
-      method: "POST",
-      body: JSON.stringify({ jobId }),
-    });
-    setSession(created);
-    await reload();
+    try {
+      const created = await api("/api/coach/prepare", {
+        method: "POST",
+        body: JSON.stringify({ jobId }),
+      });
+      setSession(created);
+      await reload();
+    } catch {
+      // Preserve the selected role so outreach can be retried.
+    }
   };
   const generateOutreach = async () => {
-    const created = await api("/api/outreach/draft", {
-      method: "POST",
-      body: JSON.stringify({ jobId }),
-    });
-    setDraft(created);
-    await reload();
+    try {
+      const created = await api("/api/outreach/draft", {
+        method: "POST",
+        body: JSON.stringify({ jobId }),
+      });
+      setDraft(created);
+      await reload();
+    } catch {}
   };
   const sendCoachMessage = async (message = chatInput) => {
     const prompt = message.trim();
@@ -8931,6 +8949,8 @@ function Coach({ state, reload }) {
       selectConversationState(nextConversations, id);
       setChatInput("");
       await reload();
+    } catch {
+      // Keep the unsent prompt in the composer for a safe retry.
     } finally {
       setCoachResponding(false);
     }
@@ -10391,6 +10411,8 @@ function ProfileAudit({ state, reload }) {
       });
       setAudit(result);
       await reload();
+    } catch {
+      // Preserve the pasted profile content so the audit can be retried.
     } finally {
       setRunning(false);
     }
@@ -10831,6 +10853,8 @@ function Agent({ state, reload, setTab }) {
       });
       localStorage.removeItem("jobhuntr-new-run-draft");
       await reload();
+    } catch {
+      // Keep the configured run available after the shared error is shown.
     } finally {
       setRunning(false);
     }
@@ -10862,13 +10886,12 @@ function Agent({ state, reload, setTab }) {
       });
       localStorage.removeItem("jobhuntr-new-run-draft");
       await reload();
-    } catch (error) {
+    } catch {
       if (schedule?.generation)
         await api("/api/infinite-hunt/stop", {
           method: "POST",
           body: JSON.stringify({ generation: schedule.generation }),
         }).catch(() => {});
-      throw error;
     } finally {
       setRunning(false);
     }
@@ -10901,6 +10924,8 @@ function Agent({ state, reload, setTab }) {
       });
       await reload();
       setPresetSaved(true);
+    } catch {
+      // Keep the current hunt form available after the shared error is shown.
     } finally {
       setSavingPreset(false);
     }
