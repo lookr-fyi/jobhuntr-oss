@@ -10882,6 +10882,9 @@ function Agent({ state, reload, setTab }) {
           body: JSON.stringify(payload()),
         }),
       );
+    } catch {
+      // The shared API error surface already explains the failure. Keep the
+      // rejected request from escaping the click handler as a browser error.
     } finally {
       setPreviewing(false);
     }

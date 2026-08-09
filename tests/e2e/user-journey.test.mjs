@@ -176,6 +176,10 @@ test(
           unexpectedNetworkRequests.push(request.url());
       });
       const page = await desktopContext.newPage();
+      const runtimeErrors = [];
+      page.on("pageerror", (error) =>
+        runtimeErrors.push(`${error.message} at ${page.url()}`),
+      );
       await page.goto(baseUrl);
 
       assert.match(
@@ -639,6 +643,7 @@ test(
       const apiError = page.getByRole("alert");
       await apiError.getByText("Something went wrong").waitFor();
       await apiError.getByRole("button", { name: "Dismiss error" }).click();
+      runtimeErrors.length = 0;
       await page.unroute("**/api/agent-runs/preview");
       await page.route("**/api/agent-runs/preview", async (route) => {
         await new Promise((resolve) => setTimeout(resolve, 200));
@@ -4949,6 +4954,11 @@ test(
         unexpectedNetworkRequests,
         [],
         "a complete JobHuntr user journey must not transmit private workspace data to external hosts",
+      );
+      assert.deepEqual(
+        runtimeErrors,
+        [],
+        "a complete real-user journey must not produce uncaught browser errors",
       );
     } finally {
       await browser?.close();
