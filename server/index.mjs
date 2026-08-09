@@ -688,6 +688,50 @@ app.get("/print/cover-letter/:id", async (req, res) => {
     );
   res.type("html").send(renderCoverLetterDocument(letter, db.profile, job));
 });
+app.get("/print/submission/:id/resume", async (req, res) => {
+  const db = await readDb();
+  const submission = db.submissions.find((item) => item.id === req.params.id);
+  if (submission?.status !== "submitted" || !submission.resumeSnapshot)
+    return res
+      .status(404)
+      .type("text")
+      .send("Submitted resume snapshot not found");
+  const resume = {
+    ...submission.resumeSnapshot,
+    templateId: submission.resumeSnapshot.templateId || "clean-ats",
+  };
+  if (req.query.download === "1")
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${downloadName(resume.name)}-submitted.html"`,
+    );
+  res
+    .type("html")
+    .send(renderResumeDocument(resume, submission.profileSnapshot || {}));
+});
+app.get("/print/submission/:id/cover-letter", async (req, res) => {
+  const db = await readDb();
+  const submission = db.submissions.find((item) => item.id === req.params.id);
+  if (submission?.status !== "submitted" || !submission.coverLetterSnapshot)
+    return res
+      .status(404)
+      .type("text")
+      .send("Submitted cover letter snapshot not found");
+  if (req.query.download === "1")
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${downloadName(submission.coverLetterSnapshot.title)}-submitted.html"`,
+    );
+  res
+    .type("html")
+    .send(
+      renderCoverLetterDocument(
+        submission.coverLetterSnapshot,
+        submission.profileSnapshot || {},
+        submission.jobSnapshot || {},
+      ),
+    );
+});
 app.post("/api/jobs/:id/tasks", async (req, res) => {
   const text = safeText(req.body.text, 500);
   if (!text) return res.status(400).json({ error: "Task text is required" });
@@ -1141,6 +1185,7 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
         item.resumeId === "profile-resume"
           ? "Original profile resume"
           : attachedResumeRecord?.name || "Attached resume",
+      templateId: attachedResumeRecord?.templateId || "clean-ats",
       content: attachedResume,
     };
     item.coverLetterSnapshot = attachedCoverLetter
@@ -1157,6 +1202,11 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
       location: job.location,
       url: job.url,
       description: job.description,
+    };
+    item.profileSnapshot = {
+      name: db.profile.name,
+      headline: db.profile.headline,
+      location: db.profile.location,
     };
     item.status = "submitted";
     item.submittedAt = timestamp();

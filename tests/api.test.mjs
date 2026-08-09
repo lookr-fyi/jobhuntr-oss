@@ -825,6 +825,19 @@ test("submission queue enforces review before local submission", async () => {
   assert.equal(submitted.body.coverLetterSnapshot, null);
   assert.equal(submitted.body.jobSnapshot.id, state.jobs[0].id);
   assert.equal(submitted.body.jobSnapshot.title, state.jobs[0].title);
+  assert.equal(submitted.body.profileSnapshot.name, state.profile.name);
+  const submittedResumePreview = await fetch(
+    `${base}/print/submission/${packet.body.id}/resume`,
+  );
+  assert.equal(submittedResumePreview.status, 200);
+  const submittedResumeHtml = await submittedResumePreview.text();
+  assert.match(submittedResumeHtml, /product engineer/i);
+  assert.match(submittedResumeHtml, new RegExp(state.profile.name));
+  assert.equal(
+    (await fetch(`${base}/print/submission/${packet.body.id}/cover-letter`))
+      .status,
+    404,
+  );
   const submittedAt = submitted.body.submittedAt;
   const submittedResumeContent = submitted.body.resumeSnapshot.content;
   const submittedHistoryLength = (await req("/api/state")).body.jobs

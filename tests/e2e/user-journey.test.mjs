@@ -1086,9 +1086,7 @@ test(
       await page
         .getByRole("region", { name: "Submitted application evidence" })
         .waitFor();
-      await page
-        .getByText(recordedSubmission.resumeSnapshot.name, { exact: true })
-        .waitFor();
+      await page.getByRole("link", { name: "View captured resume" }).waitFor();
       await page.getByText(/This snapshot cannot be changed/).waitFor();
       await assertAccessible(page, "Submitted application evidence");
       for (const status of ["Submitting", "Failed", "Skipped", "Removed"]) {

@@ -2628,11 +2628,31 @@ function TrackerApplicationInsights({ job, submission, profile }) {
               <dt>Resume</dt>
               <dd>
                 {submission.resumeSnapshot?.name || "Captured at submission"}
+                {submission.resumeSnapshot && (
+                  <a
+                    href={`/print/submission/${submission.id}/resume`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View captured resume
+                  </a>
+                )}
               </dd>
             </div>
             <div>
               <dt>Cover letter</dt>
-              <dd>{submission.coverLetterSnapshot?.title || "Not attached"}</dd>
+              <dd>
+                {submission.coverLetterSnapshot?.title || "Not attached"}
+                {submission.coverLetterSnapshot && (
+                  <a
+                    href={`/print/submission/${submission.id}/cover-letter`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View captured letter
+                  </a>
+                )}
+              </dd>
             </div>
           </dl>
         </section>
