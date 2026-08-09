@@ -70,6 +70,14 @@ app.use((req, res, next) =>
 );
 
 const timestamp = () => new Date().toISOString();
+const SUBMISSION_ELIGIBLE_JOB_STATUSES = new Set([
+  "interested",
+  "submitting",
+  "failed",
+  "skipped",
+]);
+const isJobEligibleForSubmission = (job) =>
+  Boolean(job && SUBMISSION_ELIGIBLE_JOB_STATUSES.has(job.status));
 const safeText = (value, max = 10000) =>
   String(value ?? "")
     .trim()
@@ -485,6 +493,20 @@ app.patch("/api/jobs/:id", async (req, res) => {
             ? "manual-confirmation"
             : "tracker-update",
       });
+    if (
+      changes.status &&
+      changes.status !== previousStatus &&
+      !isJobEligibleForSubmission(item)
+    )
+      for (const submission of db.submissions) {
+        if (
+          submission.jobId === item.id &&
+          ["draft", "ready"].includes(submission.status)
+        ) {
+          submission.status = "archived";
+          submission.updatedAt = timestamp();
+        }
+      }
     item.fitScore = scoreJob(item, db.profile);
     auditEvent(db, "job", `Updated ${item.title} at ${item.company}.`, {
       jobId: item.id,
@@ -1126,6 +1148,7 @@ app.post("/api/submissions", async (req, res) => {
   const submission = await mutate((db) => {
     const job = db.jobs.find((j) => j.id === req.body.jobId);
     if (!job) return null;
+    if (!isJobEligibleForSubmission(job)) return { blockedJobStatus: true };
     const existing = db.submissions.find(
       (s) => s.jobId === job.id && ["draft", "ready"].includes(s.status),
     );
@@ -1173,6 +1196,10 @@ app.post("/api/submissions", async (req, res) => {
     return item;
   });
   if (!submission) return res.status(404).json({ error: "Job not found" });
+  if (submission.blockedJobStatus)
+    return res.status(409).json({
+      error: "Only active opportunities can be added to the submission queue",
+    });
   res.status(201).json(submission);
 });
 app.patch("/api/submissions/:id", async (req, res) => {
@@ -1310,6 +1337,10 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
     const item = db.submissions.find((s) => s.id === req.params.id);
     if (!item) return null;
     if (item.status === "submitted") return item;
+    const job = db.jobs.find((candidate) => candidate.id === item.jobId);
+    if (!job) return { blockedJob: true, item };
+    if (!isJobEligibleForSubmission(job))
+      return { blockedJobStatus: true, item };
     if (
       !Array.isArray(item.checklist) ||
       item.checklist.length < 3 ||
@@ -1324,8 +1355,6 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
         : db.resumes.find((resume) => resume.id === item.resumeId)?.content;
     if (!isUsableResumeText(attachedResume))
       return { blockedResume: true, item };
-    const job = db.jobs.find((j) => j.id === item.jobId);
-    if (!job) return { blockedJob: true, item };
     const attachedResumeRecord = db.resumes.find(
       (resume) => resume.id === item.resumeId,
     );
@@ -1403,6 +1432,11 @@ app.post("/api/submissions/:id/submit", async (req, res) => {
   if (submission.blockedJob)
     return res.status(409).json({
       error: "The tracked job is missing from this application packet",
+    });
+  if (submission.blockedJobStatus)
+    return res.status(409).json({
+      error:
+        "This opportunity is no longer active, so its application packet cannot be submitted",
     });
   if (submission.blockedQuestions)
     return res.status(409).json({

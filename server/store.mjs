@@ -307,6 +307,12 @@ const JOB_STATUSES = new Set([
   "skipped",
   "removed",
 ]);
+const SUBMISSION_ELIGIBLE_JOB_STATUSES = new Set([
+  "interested",
+  "submitting",
+  "failed",
+  "skipped",
+]);
 const normalizeJobStatus = (value, fallback = "interested") => {
   const status = String(value || "").toLowerCase();
   if (JOB_STATUSES.has(status)) return status;
@@ -512,6 +518,14 @@ function migrate(input) {
       job.statusHistory = [
         { status: job.status || "interested", at: job.createdAt || now() },
       ];
+  }
+  const jobsById = new Map(db.jobs.map((job) => [job.id, job]));
+  for (const submission of db.submissions) {
+    if (!["draft", "ready"].includes(submission.status)) continue;
+    const job = jobsById.get(submission.jobId);
+    if (job && SUBMISSION_ELIGIBLE_JOB_STATUSES.has(job.status)) continue;
+    submission.status = "archived";
+    submission.updatedAt = submission.updatedAt || now();
   }
   db.meta.version = 11;
   return db;

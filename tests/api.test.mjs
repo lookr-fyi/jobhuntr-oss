@@ -1192,6 +1192,52 @@ test("a blank optional application question does not block a reviewed packet", a
   assert.equal(submitted.body.applicationQuestions[0].verified, false);
 });
 
+test("terminal job stages retire stale application packets", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Terminal Stage Co",
+      title: "Platform Engineer",
+      url: "https://terminal-stage.example/jobs/platform-engineer",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+  });
+  assert.equal(packet.res.status, 201);
+
+  const rejected = await req(`/api/jobs/${job.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status: "rejected" }),
+  });
+  assert.equal(rejected.res.status, 200);
+  const archivedPacket = (await req("/api/state")).body.submissions.find(
+    (submission) => submission.id === packet.body.id,
+  );
+  assert.equal(archivedPacket.status, "archived");
+
+  const staleSubmit = await req(`/api/submissions/${packet.body.id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ confirmedByUser: true }),
+  });
+  assert.equal(staleSubmit.res.status, 409);
+  assert.match(staleSubmit.body.error, /no longer active/i);
+
+  const duplicatePacket = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id }),
+  });
+  assert.equal(duplicatePacket.res.status, 409);
+  assert.match(duplicatePacket.body.error, /only active opportunities/i);
+  assert.equal(
+    (await req("/api/state")).body.submissions.filter(
+      (submission) => submission.jobId === job.body.id,
+    ).length,
+    1,
+  );
+});
+
 test("rapid application review edits cannot overwrite each other", async () => {
   const job = await req("/api/jobs", {
     method: "POST",
@@ -1961,6 +2007,12 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
             { status: "interviewing", at: new Date().toISOString() },
           ],
         },
+        {
+          id: "terminal-restored-job",
+          company: "Closed Company",
+          title: "Closed Role",
+          status: "rejected",
+        },
       ],
       submissions: [
         {
@@ -2006,6 +2058,17 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
             },
           ],
         },
+        {
+          id: "stale-terminal-packet",
+          jobId: "terminal-restored-job",
+          status: "ready",
+          checklist: [
+            "Review resume alignment",
+            "Review cover letter",
+            "Confirm application details",
+          ].map((text, index) => ({ id: `stale-${index}`, text, done: true })),
+          applicationQuestions: [],
+        },
       ],
       gigs: [{ id: "legacy-gig", title: "Legacy", statusHistory: "bad" }],
       coachConversations: [{ id: "legacy-chat", messages: "bad" }],
@@ -2049,6 +2112,7 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
     unsafeDraft.applicationQuestions[0].id,
     unsafeDraft.applicationQuestions[1].id,
   );
+  assert.equal(normalized.submissions[2].status, "archived");
   const unsafeSubmit = await req(`/api/submissions/${unsafeDraft.id}/submit`, {
     method: "POST",
     body: JSON.stringify({ confirmedByUser: true }),

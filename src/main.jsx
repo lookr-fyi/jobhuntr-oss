@@ -4469,13 +4469,14 @@ function Board({ state, reload }) {
     </section>
   );
 }
+const isSubmissionEligibleJob = (job) =>
+  ["interested", "submitting", "failed", "skipped"].includes(job?.status);
 function Queue({ state, reload, setTab }) {
   const queueParams = new URLSearchParams(
     window.location.hash.split("?")[1] || "",
   );
   const [jobId, setJobId] = useState(
-    state.jobs.find((j) => !["applied", "rejected"].includes(j.status))?.id ||
-      "",
+    state.jobs.find(isSubmissionEligibleJob)?.id || "",
   );
   const [selectedId, setSelectedId] = useState(
     queueParams.get("packet") ||
@@ -4509,9 +4510,13 @@ function Queue({ state, reload, setTab }) {
   const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
   const [submittingReady, setSubmittingReady] = useState(false);
   const submitCloseRef = useRef(null);
-  const active = state.submissions.filter(
-    (item) => !["archived", "submitted"].includes(item.status),
-  );
+  const active = state.submissions.filter((item) => {
+    const job = state.jobs.find((candidate) => candidate.id === item.jobId);
+    return (
+      !["archived", "submitted"].includes(item.status) &&
+      isSubmissionEligibleJob(job)
+    );
+  });
   const filtered = active
     .filter((item) => {
       const job = state.jobs.find((candidate) => candidate.id === item.jobId);
@@ -4557,19 +4562,13 @@ function Queue({ state, reload, setTab }) {
   const selectedPacketId = selected?.id || "";
   const queuedJobIds = new Set(active.map((item) => item.jobId));
   const queueableJobs = state.jobs.filter(
-    (job) =>
-      !queuedJobIds.has(job.id) &&
-      !["applied", "rejected"].includes(job.status),
+    (job) => !queuedJobIds.has(job.id) && isSubmissionEligibleJob(job),
   );
   const selectedQueueJobId = queueableJobs.some((job) => job.id === jobId)
     ? jobId
     : queueableJobs[0]?.id || "";
   const sourceJobs = state.jobs.filter((job) => {
-    if (
-      queuedJobIds.has(job.id) ||
-      ["applied", "rejected"].includes(job.status)
-    )
-      return false;
+    if (queuedJobIds.has(job.id) || !isSubmissionEligibleJob(job)) return false;
     const isManual = ["manual", "import", "csv import"].includes(
       String(job.source || "").toLowerCase(),
     );
@@ -4803,6 +4802,7 @@ function Queue({ state, reload, setTab }) {
                 state.jobs.filter(
                   (job) =>
                     !queuedJobIds.has(job.id) &&
+                    isSubmissionEligibleJob(job) &&
                     !["manual", "import", "csv import"].includes(
                       String(job.source || "").toLowerCase(),
                     ),
@@ -4826,6 +4826,7 @@ function Queue({ state, reload, setTab }) {
                 state.jobs.filter(
                   (job) =>
                     !queuedJobIds.has(job.id) &&
+                    isSubmissionEligibleJob(job) &&
                     ["manual", "import", "csv import"].includes(
                       String(job.source || "").toLowerCase(),
                     ),

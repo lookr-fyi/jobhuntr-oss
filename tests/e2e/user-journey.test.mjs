@@ -1708,6 +1708,31 @@ test(
           .getAttribute("aria-selected"),
         "true",
       );
+      const terminalQueueJob = await page.request.post(`${baseUrl}/api/jobs`, {
+        data: {
+          company: "Closed Queue Company",
+          title: "Closed Queue Role",
+          source: "Search Run",
+          url: "https://closed-queue.example/jobs/closed-role",
+        },
+      });
+      assert.equal(terminalQueueJob.ok(), true);
+      const terminalQueueJobBody = await terminalQueueJob.json();
+      const terminalStatus = await page.request.patch(
+        `${baseUrl}/api/jobs/${terminalQueueJobBody.id}`,
+        { data: { status: "rejected" } },
+      );
+      assert.equal(terminalStatus.ok(), true);
+      await page.reload();
+      await page.getByRole("tab", { name: /From Search Runs/ }).waitFor();
+      assert.equal(
+        await page
+          .locator(".v2-queue-list")
+          .getByText("Closed Queue Company", { exact: true })
+          .count(),
+        0,
+        "terminal opportunities must not remain actionable in the submission queue",
+      );
       await page.getByRole("button", { name: "Prepare application" }).click();
       const checklist = page.locator(".packet input[type=checkbox]");
       await checklist.first().waitFor();
