@@ -11097,9 +11097,32 @@ function Gigs({ state, reload }) {
     proposal: "",
     status: "lead",
   };
-  const [form, setForm] = useState(empty);
+  const gigDraftKey = "jobhuntr-new-gig-draft";
+  const [initialGigDraft] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(gigDraftKey) || "null");
+      if (!saved) return null;
+      return {
+        ...empty,
+        client: String(saved.client || "").slice(0, 200),
+        title: String(saved.title || "").slice(0, 300),
+        source: String(saved.source || "Manual").slice(0, 100),
+        url: String(saved.url || "").slice(0, 2_000),
+        budget: String(saved.budget || "").slice(0, 20),
+        dueDate: String(saved.dueDate || "").slice(0, 10),
+        description: String(saved.description || "").slice(0, 10_000),
+      };
+    } catch {
+      localStorage.removeItem(gigDraftKey);
+      return null;
+    }
+  });
+  const [form, setForm] = useState(initialGigDraft || empty);
   const [selected, setSelected] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(Boolean(initialGigDraft));
+  const [gigDraftRestored, setGigDraftRestored] = useState(
+    Boolean(initialGigDraft),
+  );
   const [campaignPreview, setCampaignPreview] = useState(null);
   const [campaignProposal, setCampaignProposal] = useState("");
   const [discardCampaignOpen, setDiscardCampaignOpen] = useState(false);
@@ -11126,6 +11149,22 @@ function Gigs({ state, reload }) {
     if (gigDetailsBusyRef.current) return;
     setSelected(null);
   }, []);
+  useEffect(() => {
+    const hasDraft = Boolean(
+      form.client.trim() ||
+      form.title.trim() ||
+      form.url.trim() ||
+      Number(form.budget) ||
+      form.dueDate ||
+      form.description.trim() ||
+      form.source !== "Manual",
+    );
+    if (!hasDraft) {
+      localStorage.removeItem(gigDraftKey);
+      return;
+    }
+    localStorage.setItem(gigDraftKey, JSON.stringify(form));
+  }, [form]);
   const finishClosingCampaign = useCallback(() => {
     setCampaignPreview(null);
     setCampaignProposal("");
@@ -11161,6 +11200,8 @@ function Gigs({ state, reload }) {
       setSelected(created.id);
       setForm(empty);
       setShowForm(false);
+      setGigDraftRestored(false);
+      localStorage.removeItem(gigDraftKey);
       await reload();
     } catch {
       // Keep the opportunity form intact so creation can be retried.
@@ -11547,6 +11588,11 @@ function Gigs({ state, reload }) {
               Close
             </button>
           </div>
+          {gigDraftRestored && (
+            <p className="v2-draft-restored" role="status">
+              Unsaved gig opportunity draft restored.
+            </p>
+          )}
           <div className="form-grid">
             {[
               ["client", "Client"],
@@ -11569,7 +11615,10 @@ function Gigs({ state, reload }) {
                         : "text"
                   }
                   value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, [key]: e.target.value });
+                    setGigDraftRestored(false);
+                  }}
                 />
               </label>
             ))}
@@ -11580,9 +11629,10 @@ function Gigs({ state, reload }) {
               name="new-gig-description"
               disabled={savingGig}
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => {
+                setForm({ ...form, description: e.target.value });
+                setGigDraftRestored(false);
+              }}
             />
           </label>
           <button

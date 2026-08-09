@@ -4024,6 +4024,28 @@ test(
       await page.getByRole("button", { name: "Apply Now" }).first().waitFor();
       await page.getByRole("button", { name: "Add gig" }).click();
       await assertNamedFormControls(page, "Add gig form");
+      await page.getByLabel("Client").fill("Recovered Local Client");
+      await page.getByLabel("Project title").fill("Recovered gig draft");
+      await page
+        .getByLabel("Description")
+        .fill("Unsaved private scope that should survive navigation.");
+      await page.locator('button[title="Job Tracker"]').click();
+      await page.locator('button[title="Gigs"]').click();
+      await page
+        .getByText("Unsaved gig opportunity draft restored.", { exact: true })
+        .waitFor();
+      assert.equal(
+        await page.getByLabel("Project title").inputValue(),
+        "Recovered gig draft",
+        "the new-gig composer should recover after leaving the page",
+      );
+      assert.equal(
+        await page.getByLabel("Description").inputValue(),
+        "Unsaved private scope that should survive navigation.",
+      );
+      await page.getByLabel("Client").fill("");
+      await page.getByLabel("Project title").fill("");
+      await page.getByLabel("Description").fill("");
       await page.getByRole("button", { name: "Close", exact: true }).click();
       await page.getByRole("button", { name: "Apply Now" }).first().click();
       const campaignDialog = page.getByRole("dialog", {

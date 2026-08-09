@@ -919,6 +919,30 @@ test("Gig application pitches cannot be silently dismissed", async () => {
   );
 });
 
+test("new gig drafts recover after navigating away", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const gigs = source.slice(
+    source.indexOf("function Gigs"),
+    source.indexOf("function ProfileAudit"),
+  );
+
+  assert.match(gigs, /jobhuntr-new-gig-draft/);
+  assert.match(gigs, /localStorage\.getItem\(gigDraftKey\)/);
+  assert.match(
+    gigs,
+    /localStorage\.setItem\(gigDraftKey, JSON\.stringify\(form\)\)/,
+  );
+  assert.match(gigs, /localStorage\.removeItem\(gigDraftKey\)/);
+  assert.match(gigs, /Unsaved gig opportunity draft restored\./);
+  assert.match(
+    gigs,
+    /String\(saved\.description \|\| ""\)\.slice\(0, 10_000\)/,
+  );
+});
+
 test("LinkedIn audits cannot duplicate or publish stale results", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
