@@ -150,10 +150,6 @@ test(
         true,
         "activating JobHuntr must reopen a window hidden by Infinite Hunt",
       );
-      await window.getByRole("button", { name: "Stop Infinite Hunt" }).click();
-      await window
-        .getByText("Infinite Hunt is active every 60 minutes.")
-        .waitFor({ state: "hidden" });
       await electronApp.evaluate(({ BrowserWindow }) => {
         BrowserWindow.getAllWindows()[0].setBounds({
           x: 80,
@@ -168,7 +164,16 @@ test(
         cwd: process.cwd(),
         env: environment,
       });
-      await electronApp.firstWindow();
+      const relaunchedWindow = await electronApp.firstWindow();
+      await relaunchedWindow
+        .getByRole("heading", { name: /Welcome back/ })
+        .waitFor();
+      await relaunchedWindow.getByText("Welcome back, Electron").waitFor();
+      assert.equal(
+        await relaunchedWindow.getByRole("dialog").count(),
+        0,
+        "a completed onboarding must stay completed across a full Electron restart",
+      );
       const restoredBounds = await electronApp.evaluate(({ BrowserWindow }) =>
         BrowserWindow.getAllWindows()[0].getBounds(),
       );
@@ -178,6 +183,18 @@ test(
         width: 1110,
         height: 740,
       });
+      await relaunchedWindow
+        .locator('button[title="Infinite Hunting"]')
+        .click();
+      await relaunchedWindow
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor();
+      await relaunchedWindow
+        .getByRole("button", { name: "Stop Infinite Hunt" })
+        .click();
+      await relaunchedWindow
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor({ state: "hidden" });
     } finally {
       await electronApp?.close();
       await fs.rm(userDataDir, { recursive: true, force: true });
