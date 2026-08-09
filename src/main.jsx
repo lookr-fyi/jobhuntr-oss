@@ -9101,6 +9101,11 @@ function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
   const [chatInput, setChatInput] = useState("");
   const [coachResponding, setCoachResponding] = useState(false);
+  const [preparingSession, setPreparingSession] = useState(false);
+  const [generatingOutreach, setGeneratingOutreach] = useState(false);
+  const coachRespondingRef = useRef(false);
+  const preparingSessionRef = useRef(false);
+  const generatingOutreachRef = useRef(false);
   const [copiedMessage, setCopiedMessage] = useState(null);
   const [deleteConversationTarget, setDeleteConversationTarget] =
     useState(null);
@@ -9254,6 +9259,9 @@ function Coach({ state, reload }) {
     window.setTimeout(() => setCopiedMessage(null), 1800);
   };
   const prepare = async () => {
+    if (preparingSessionRef.current) return;
+    preparingSessionRef.current = true;
+    setPreparingSession(true);
     try {
       const created = await api("/api/coach/prepare", {
         method: "POST",
@@ -9262,10 +9270,16 @@ function Coach({ state, reload }) {
       setSession(created);
       await reload();
     } catch {
-      // Preserve the selected role so outreach can be retried.
+      // Preserve the selected role so practice-plan creation can be retried.
+    } finally {
+      preparingSessionRef.current = false;
+      setPreparingSession(false);
     }
   };
   const generateOutreach = async () => {
+    if (generatingOutreachRef.current) return;
+    generatingOutreachRef.current = true;
+    setGeneratingOutreach(true);
     try {
       const created = await api("/api/outreach/draft", {
         method: "POST",
@@ -9273,11 +9287,17 @@ function Coach({ state, reload }) {
       });
       setDraft(created);
       await reload();
-    } catch {}
+    } catch {
+      // Preserve the selected role so outreach can be retried.
+    } finally {
+      generatingOutreachRef.current = false;
+      setGeneratingOutreach(false);
+    }
   };
   const sendCoachMessage = async (message = chatInput) => {
     const prompt = message.trim();
-    if (!prompt || coachResponding) return;
+    if (!prompt || coachRespondingRef.current) return;
+    coachRespondingRef.current = true;
     setCoachResponding(true);
     try {
       const { response: answer } = await api("/api/coach/respond", {
@@ -9317,6 +9337,7 @@ function Coach({ state, reload }) {
     } catch {
       // Keep the unsent prompt in the composer for a safe retry.
     } finally {
+      coachRespondingRef.current = false;
       setCoachResponding(false);
     }
   };
@@ -9538,6 +9559,7 @@ function Coach({ state, reload }) {
               />
               <button
                 disabled={!chatInput.trim() || coachResponding}
+                aria-busy={coachResponding}
                 onClick={() => sendCoachMessage()}
               >
                 {coachResponding ? "Thinking locally…" : "Get Started"}{" "}
@@ -9556,8 +9578,13 @@ function Coach({ state, reload }) {
         <div className="coach-layout">
           <div className="card coach-sidebar">
             <h3>Interview sessions</h3>
-            <button onClick={prepare}>
-              <MessageSquare size={16} /> New role-specific plan
+            <button
+              disabled={preparingSession}
+              aria-busy={preparingSession}
+              onClick={prepare}
+            >
+              <MessageSquare size={16} />{" "}
+              {preparingSession ? "Preparing…" : "New role-specific plan"}
             </button>
             {state.coachingSessions.map((item) => {
               const job = state.jobs.find((x) => x.id === item.jobId);
@@ -9609,8 +9636,13 @@ function Coach({ state, reload }) {
         <div className="coach-layout">
           <div className="card coach-sidebar">
             <h3>Outreach drafts</h3>
-            <button onClick={generateOutreach}>
-              <Sparkles size={16} /> Draft for selected role
+            <button
+              disabled={generatingOutreach}
+              aria-busy={generatingOutreach}
+              onClick={generateOutreach}
+            >
+              <Sparkles size={16} />{" "}
+              {generatingOutreach ? "Drafting…" : "Draft for selected role"}
             </button>
             {state.outreachDrafts.map((item) => {
               const job = state.jobs.find((x) => x.id === item.jobId);

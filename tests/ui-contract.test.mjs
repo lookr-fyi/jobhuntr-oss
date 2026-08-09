@@ -382,6 +382,39 @@ test("Outreach collection and recording cannot duplicate or dismiss in-flight wo
   assert.match(outreach, /connecting \? "Recording…" : "Mark as outreached"/);
 });
 
+test("Career Coach generation actions are single-flight and retryable", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const coach = source.slice(
+    source.indexOf("function Coach"),
+    source.indexOf("function PracticeSession"),
+  );
+
+  for (const action of [
+    "coachResponding",
+    "preparingSession",
+    "generatingOutreach",
+  ]) {
+    assert.match(coach, new RegExp(`const ${action}Ref = useRef\\(false\\)`));
+    assert.match(coach, new RegExp(`${action}Ref\\.current = true`));
+    assert.match(coach, new RegExp(`${action}Ref\\.current = false`));
+    assert.match(coach, new RegExp(`aria-busy=\\{${action}\\}`));
+  }
+  assert.match(coach, /if \(preparingSessionRef\.current\) return/);
+  assert.match(coach, /if \(generatingOutreachRef\.current\) return/);
+  assert.match(coach, /if \(!prompt \|\| coachRespondingRef\.current\) return/);
+  assert.match(
+    coach,
+    /preparingSession \? "Preparing…" : "New role-specific plan"/,
+  );
+  assert.match(
+    coach,
+    /generatingOutreach \? "Drafting…" : "Draft for selected role"/,
+  );
+});
+
 test("the expanded sidebar overlays instead of crushing compact desktop pages", async () => {
   const styles = await readFile(
     new URL("../src/styles.css", import.meta.url),
