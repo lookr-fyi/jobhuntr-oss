@@ -2079,3 +2079,28 @@ test("Submission Queue opens the newest eligible persisted work", async () => {
     /latestPersistedRecord\([\s\S]*?state\.submissions\.filter\([\s\S]*?!\["archived", "submitted"\]\.includes\(item\.status\)/,
   );
 });
+
+test("Submission Queue never recommends stale job-specific documents", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const queue = source.slice(
+    source.indexOf("function Queue("),
+    source.indexOf("function SubmissionCard"),
+  );
+
+  assert.match(
+    queue,
+    /recommendedResume = \(targetJobId\)[\s\S]*?latestPersistedRecord\([\s\S]*?state\.resumes\.filter\(\(resume\) => resume\.jobId === targetJobId\)/,
+  );
+  assert.match(
+    queue,
+    /recommendedCoverLetter = \(targetJobId\)[\s\S]*?latestPersistedRecord\([\s\S]*?state\.coverLetters\.filter\(\(letter\) => letter\.jobId === targetJobId\)/,
+  );
+  assert.equal(
+    (queue.match(/coverLetterId: recommendedCoverLetter\(/g) || []).length,
+    2,
+    "every packet-creation path should use the newest cover letter",
+  );
+});

@@ -5501,10 +5501,15 @@ function Queue({ state, reload, setTab }) {
     visibleSourceJobs[0];
   const recommendedResume = (targetJobId) => {
     return (
-      state.resumes.find((resume) => resume.jobId === targetJobId)?.id ||
-      "profile-resume"
+      latestPersistedRecord(
+        state.resumes.filter((resume) => resume.jobId === targetJobId),
+      )?.id || "profile-resume"
     );
   };
+  const recommendedCoverLetter = (targetJobId) =>
+    latestPersistedRecord(
+      state.coverLetters.filter((letter) => letter.jobId === targetJobId),
+    )?.id || "";
   const create = async () => {
     if (!selectedQueueJobId || creatingPacketRef.current) return;
     creatingPacketRef.current = true;
@@ -5515,9 +5520,7 @@ function Queue({ state, reload, setTab }) {
         body: JSON.stringify({
           jobId: selectedQueueJobId,
           resumeId: recommendedResume(selectedQueueJobId),
-          coverLetterId:
-            state.coverLetters.find((x) => x.jobId === selectedQueueJobId)
-              ?.id || "",
+          coverLetterId: recommendedCoverLetter(selectedQueueJobId),
         }),
       });
       setSelectedId(created.id);
@@ -5539,9 +5542,7 @@ function Queue({ state, reload, setTab }) {
         body: JSON.stringify({
           jobId: targetJobId,
           resumeId: recommendedResume(targetJobId),
-          coverLetterId:
-            state.coverLetters.find((item) => item.jobId === targetJobId)?.id ||
-            "",
+          coverLetterId: recommendedCoverLetter(targetJobId),
         }),
       });
       setSelectedId(created.id);
