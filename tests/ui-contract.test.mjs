@@ -1428,15 +1428,17 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /<option value="no">No<\/option>/);
   assert.match(board, /<option value="likely">Likely<\/option>/);
   assert.match(board, /Visa sponsorship likely/);
-  assert.match(board, />\s*Remote Type\s*<select/);
-  assert.match(board, /aria-label="Board remote type"/);
-  assert.match(board, /<option value="hybrid">Hybrid<\/option>/);
-  assert.match(board, /<option value="onsite">On-site<\/option>/);
-  assert.match(board, />\s*Senior Level\s*<select/);
+  for (const label of ["Location", "Job Type", "Remote Type", "Senior Level"])
+    assert.match(board, new RegExp(`label="${label}"`));
+  assert.match(board, /\{ value: "hybrid", label: "Hybrid" \}/);
+  assert.match(board, /\{ value: "onsite", label: "On-site" \}/);
   assert.match(
     board,
-    /remoteType === "all" \|\| boardRemoteType\(job\) === remoteType/,
+    /!remoteTypes\.length \|\|\s*remoteTypes\.includes\(boardRemoteType\(job\)\)/,
   );
+  assert.match(source, /function BoardMultiSelect\(/);
+  assert.match(source, /role="group" aria-label=\{label\}/);
+  assert.match(source, /type="checkbox"/);
   assert.match(
     source,
     /const boardJobType = \(job\) => \{[\s\S]*?job\.jobType \?\? job\.job_type/,

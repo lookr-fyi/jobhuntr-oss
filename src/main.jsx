@@ -41,6 +41,7 @@ import {
   User,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   RefreshCcw,
   Medal,
   Play,
@@ -4670,6 +4671,48 @@ function Actions({ job, reload }) {
     </div>
   );
 }
+function BoardMultiSelect({
+  label,
+  name,
+  options,
+  value,
+  onChange,
+  placeholder,
+}) {
+  const selectedLabels = options
+    .filter((option) => value.includes(option.value))
+    .map((option) => option.label);
+  return (
+    <div className="v2-board-multi-filter">
+      <span>{label}</span>
+      <details>
+        <summary aria-label={label}>
+          <span>{selectedLabels.join(", ") || placeholder}</span>
+          <ChevronDown size={14} />
+        </summary>
+        <div className="v2-board-multi-options" role="group" aria-label={label}>
+          {options.map((option) => (
+            <label key={option.value}>
+              <input
+                type="checkbox"
+                name={`${name}-${option.value}`}
+                checked={value.includes(option.value)}
+                onChange={(event) =>
+                  onChange(
+                    event.target.checked
+                      ? [...value, option.value]
+                      : value.filter((item) => item !== option.value),
+                  )
+                }
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
 function Board({ state, reload }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState([]);
@@ -4680,12 +4723,12 @@ function Board({ state, reload }) {
       ) || "",
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [location, setLocation] = useState("");
+  const [locations, setLocations] = useState([]);
   const [minimumSalary, setMinimumSalary] = useState(0);
   const [minimumExperience, setMinimumExperience] = useState("");
-  const [remoteType, setRemoteType] = useState("all");
-  const [jobType, setJobType] = useState("all");
-  const [seniority, setSeniority] = useState("all");
+  const [remoteTypes, setRemoteTypes] = useState([]);
+  const [jobTypes, setJobTypes] = useState([]);
+  const [seniorLevels, setSeniorLevels] = useState([]);
   const [sponsorship, setSponsorship] = useState("all");
   const [sort, setSort] = useState("collected_at_desc");
   const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
@@ -4744,22 +4787,23 @@ function Board({ state, reload }) {
       results
         .filter((job) => {
           const normalizedQuery = q.trim().toLowerCase();
-          const normalizedLocation = location.trim().toLowerCase();
           const searchableText =
             `${job.company || ""} ${job.title || ""} ${job.location || ""}`.toLowerCase();
+          const jobLocation = String(job.location || "")
+            .split(",")[0]
+            .trim();
           return (
             (!normalizedQuery || searchableText.includes(normalizedQuery)) &&
-            (!normalizedLocation ||
-              String(job.location || "")
-                .toLowerCase()
-                .includes(normalizedLocation)) &&
+            (!locations.length || locations.includes(jobLocation)) &&
             maximumListedSalary(job) >= minimumSalary &&
             (minimumExperience === "" ||
               (Number.isFinite(Number(job.eoy)) &&
                 Number(job.eoy) >= Number(minimumExperience))) &&
-            (remoteType === "all" || boardRemoteType(job) === remoteType) &&
-            (jobType === "all" || boardJobType(job) === jobType) &&
-            (seniority === "all" || boardSeniority(job) === seniority) &&
+            (!remoteTypes.length ||
+              remoteTypes.includes(boardRemoteType(job))) &&
+            (!jobTypes.length || jobTypes.includes(boardJobType(job))) &&
+            (!seniorLevels.length ||
+              seniorLevels.includes(boardSeniority(job))) &&
             (sponsorship === "all" || boardSponsorship(job) === sponsorship)
           );
         })
@@ -4780,12 +4824,12 @@ function Board({ state, reload }) {
     [
       results,
       q,
-      location,
+      locations,
       minimumSalary,
       minimumExperience,
-      remoteType,
-      jobType,
-      seniority,
+      remoteTypes,
+      jobTypes,
+      seniorLevels,
       sponsorship,
       sort,
     ],
@@ -4813,12 +4857,12 @@ function Board({ state, reload }) {
     return () => window.removeEventListener("hashchange", followBoardLink);
   }, []);
   const activeFilterCount = [
-    location,
+    locations.length > 0,
     minimumSalary > 0,
     minimumExperience !== "",
-    remoteType !== "all",
-    jobType !== "all",
-    seniority !== "all",
+    remoteTypes.length > 0,
+    jobTypes.length > 0,
+    seniorLevels.length > 0,
     sponsorship !== "all",
   ].filter(Boolean).length;
   const queueJob = async (job) => {
@@ -4938,15 +4982,24 @@ function Board({ state, reload }) {
       </div>
       {filtersOpen && (
         <div className="v2-board-filters">
-          <label>
-            Location
-            <input
-              name="board-location"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder="Remote, city, or state"
-            />
-          </label>
+          <BoardMultiSelect
+            label="Location"
+            name="board-location"
+            options={[
+              ...new Set(
+                results
+                  .map((job) =>
+                    String(job.location || "")
+                      .split(",")[0]
+                      .trim(),
+                  )
+                  .filter(Boolean),
+              ),
+            ].map((value) => ({ value, label: value }))}
+            value={locations}
+            onChange={setLocations}
+            placeholder="Select locations..."
+          />
           <label>
             Minimum salary
             <select
@@ -4980,49 +5033,43 @@ function Board({ state, reload }) {
               ))}
             </select>
           </label>
-          <label>
-            Remote Type
-            <select
-              name="board-work-arrangement"
-              aria-label="Board remote type"
-              value={remoteType}
-              onChange={(event) => setRemoteType(event.target.value)}
-            >
-              <option value="all">All</option>
-              <option value="remote">Remote</option>
-              <option value="hybrid">Hybrid</option>
-              <option value="onsite">On-site</option>
-            </select>
-          </label>
-          <label>
-            Job type
-            <select
-              name="board-job-type"
-              aria-label="Board job type"
-              value={jobType}
-              onChange={(event) => setJobType(event.target.value)}
-            >
-              <option value="all">All job types</option>
-              <option value="full-time">Full-time</option>
-              <option value="contract">Contract</option>
-              <option value="internship">Internship</option>
-            </select>
-          </label>
-          <label>
-            Senior Level
-            <select
-              name="board-seniority"
-              aria-label="Board seniority"
-              value={seniority}
-              onChange={(event) => setSeniority(event.target.value)}
-            >
-              <option value="all">All levels</option>
-              <option value="entry">Entry level</option>
-              <option value="mid">Mid level</option>
-              <option value="senior">Senior</option>
-              <option value="lead">Lead / Staff+</option>
-            </select>
-          </label>
+          <BoardMultiSelect
+            label="Job Type"
+            name="board-job-type"
+            options={[
+              { value: "full-time", label: "Full-time" },
+              { value: "contract", label: "Contract" },
+              { value: "internship", label: "Internship" },
+            ]}
+            value={jobTypes}
+            onChange={setJobTypes}
+            placeholder="Select job types..."
+          />
+          <BoardMultiSelect
+            label="Remote Type"
+            name="board-remote-type"
+            options={[
+              { value: "remote", label: "Remote" },
+              { value: "hybrid", label: "Hybrid" },
+              { value: "onsite", label: "On-site" },
+            ]}
+            value={remoteTypes}
+            onChange={setRemoteTypes}
+            placeholder="Select remote types..."
+          />
+          <BoardMultiSelect
+            label="Senior Level"
+            name="board-senior-level"
+            options={[
+              { value: "entry", label: "Entry level" },
+              { value: "mid", label: "Mid level" },
+              { value: "senior", label: "Senior" },
+              { value: "lead", label: "Lead / Staff+" },
+            ]}
+            value={seniorLevels}
+            onChange={setSeniorLevels}
+            placeholder="Select senior levels..."
+          />
           <label>
             Visa sponsorship
             <select

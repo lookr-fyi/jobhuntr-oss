@@ -1648,13 +1648,42 @@ test(
         .waitFor();
       await page.keyboard.press("Escape");
       await leaderboardDialog.waitFor({ state: "hidden" });
-      await page.getByRole("button", { name: "Filters" }).click();
-      await page.getByLabel("Location").fill("Remote");
+      const boardFilterToggle = page.locator(".v2-board-toolbar > button");
+      if ((await boardFilterToggle.getAttribute("aria-expanded")) !== "true")
+        await boardFilterToggle.evaluate((button) => button.click());
+      await page.locator(".v2-board-filters").waitFor();
+      const locationFilter = page.locator(".v2-board-multi-filter", {
+        hasText: "Location",
+      });
+      await locationFilter.locator("summary").click();
+      await locationFilter
+        .getByRole("checkbox", { name: "Remote", exact: true })
+        .check();
+      await locationFilter.locator("summary").click();
       await page.getByLabel("Minimum board salary").selectOption("150000");
       await page.getByLabel("Above Years of Experience").selectOption("5");
-      await page.getByLabel("Board remote type").selectOption("remote");
-      await page.getByLabel("Board job type").selectOption("full-time");
-      await page.getByLabel("Board seniority").selectOption("lead");
+      const jobTypeFilter = page.locator(".v2-board-multi-filter", {
+        hasText: "Job Type",
+      });
+      await jobTypeFilter.locator("summary").click();
+      await jobTypeFilter.getByRole("checkbox", { name: "Full-time" }).check();
+      await jobTypeFilter.locator("summary").click();
+      const remoteTypeFilter = page.locator(".v2-board-multi-filter", {
+        hasText: "Remote Type",
+      });
+      await remoteTypeFilter.locator("summary").click();
+      await remoteTypeFilter
+        .getByRole("checkbox", { name: "Remote", exact: true })
+        .check();
+      await remoteTypeFilter.locator("summary").click();
+      const seniorLevelFilter = page.locator(".v2-board-multi-filter", {
+        hasText: "Senior Level",
+      });
+      await seniorLevelFilter.locator("summary").click();
+      await seniorLevelFilter
+        .getByRole("checkbox", { name: "Lead / Staff+" })
+        .check();
+      await seniorLevelFilter.locator("summary").click();
       await page.getByLabel("Board visa sponsorship").selectOption("likely");
       await page.getByLabel("Sort by").selectOption("post_time_desc");
       await assertNamedFormControls(page, "Job Board filters");
