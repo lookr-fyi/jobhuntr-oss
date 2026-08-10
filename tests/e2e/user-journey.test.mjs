@@ -1656,7 +1656,7 @@ test(
       await page.getByLabel("Board work arrangement").selectOption("remote");
       await page.getByLabel("Board job type").selectOption("full-time");
       await page.getByLabel("Board seniority").selectOption("lead");
-      await page.getByLabel("Board visa sponsorship").selectOption("unknown");
+      await page.getByLabel("Board visa sponsorship").selectOption("likely");
       await page.getByLabel("Board source").selectOption("Seed Board");
       await page.getByLabel("Sort by").selectOption("post_time_desc");
       await assertNamedFormControls(page, "Job Board filters");

@@ -1386,6 +1386,10 @@ test("Job Board refresh and queue actions are single-flight", async () => {
     board,
     /\[50000, 75000, 100000, 125000, 150000, 175000, 200000\]\.map/,
   );
+  assert.match(board, /<option value="yes">Yes<\/option>/);
+  assert.match(board, /<option value="no">No<\/option>/);
+  assert.match(board, /<option value="likely">Likely<\/option>/);
+  assert.match(board, /Visa sponsorship likely/);
 });
 
 test("backup restore and CSV imports reject duplicate or stale work", async () => {

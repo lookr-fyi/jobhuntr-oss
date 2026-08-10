@@ -409,6 +409,12 @@ const boardSeniority = (job) => {
   return "mid";
 };
 const boardSponsorship = (job) => {
+  const explicit = String(
+    job.provideVisaSponsorship ?? job.provide_visa_sponsorship ?? "",
+  ).toLowerCase();
+  if (explicit === "likely") return "likely";
+  if (["yes", "true"].includes(explicit)) return "yes";
+  if (["no", "false"].includes(explicit)) return "no";
   const text = `${job.description || ""} ${(job.tags || []).join(" ")}`;
   if (/no (visa |work )?sponsor|cannot sponsor|without sponsorship/i.test(text))
     return "no";
@@ -5062,10 +5068,10 @@ function Board({ state, reload }) {
               value={sponsorship}
               onChange={(event) => setSponsorship(event.target.value)}
             >
-              <option value="all">Any sponsorship status</option>
-              <option value="yes">Sponsorship mentioned</option>
-              <option value="no">No sponsorship</option>
-              <option value="unknown">Not specified</option>
+              <option value="all">All</option>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+              <option value="likely">Likely</option>
             </select>
           </label>
           <label>
@@ -5224,7 +5230,9 @@ function Board({ state, reload }) {
                   ? "Visa sponsorship mentioned"
                   : boardSponsorship(selected) === "no"
                     ? "No visa sponsorship"
-                    : "Visa status not specified"}
+                    : boardSponsorship(selected) === "likely"
+                      ? "Visa sponsorship likely"
+                      : "Visa status not specified"}
               </span>
             </div>
             <div className="v2-board-detail-actions">

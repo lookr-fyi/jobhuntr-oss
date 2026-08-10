@@ -29,6 +29,7 @@ export const seedJobs = [
     collectedAt: hoursAgo(1),
     numApplicants: 38,
     eoy: 5,
+    provideVisaSponsorship: "Likely",
   },
   {
     company: "Northstar Robotics",
