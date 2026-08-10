@@ -1930,7 +1930,13 @@ function Overview({ state, setTab, reload }) {
   }, [farewellOpen]);
   const s = state.summary;
   const latestRun = state.agentRuns[0] || null;
-  const firstName = (state.profile.name || "there").split(" ")[0];
+  const profileDisplayName =
+    `${state.profile.firstName || ""} ${state.profile.lastName || ""}`.trim() ||
+    state.profile.name ||
+    "there";
+  const firstName =
+    String(state.profile.firstName || "").trim() ||
+    profileDisplayName.split(/\s+/)[0];
   const submitted = s.byStatus.applied || 0;
   const now = new Date();
   const submittedToday = state.jobs.filter((job) => {
@@ -1950,7 +1956,8 @@ function Overview({ state, setTab, reload }) {
   });
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const daysLeft = monthEnd.getDate() - now.getDate();
-  const contributorName = state.profile.name || "Local job hunter";
+  const contributorName =
+    profileDisplayName === "there" ? "Local job hunter" : profileDisplayName;
   const contributorInitials = contributorName
     .split(/\s+/)
     .slice(0, 2)

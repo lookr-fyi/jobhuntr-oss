@@ -396,6 +396,33 @@ test(
       await page
         .getByRole("heading", { level: 1, name: /Welcome back/ })
         .waitFor();
+      await page.request.put(`${baseUrl}/api/profile`, {
+        data: {
+          name: "Legacy Default",
+          firstName: "Ada",
+          lastName: "Lovelace",
+        },
+      });
+      await page.reload();
+      await page
+        .getByRole("heading", { level: 1, name: "Welcome back, Ada" })
+        .waitFor();
+      assert.match(
+        await page.locator(".v2-contributor-copy b").innerText(),
+        /Ada Lovelace/,
+        "v2 first and last name fields should drive the local contributor identity",
+      );
+      await page.request.put(`${baseUrl}/api/profile`, {
+        data: {
+          name: "E2E Hunter",
+          firstName: "E2E",
+          lastName: "Hunter",
+        },
+      });
+      await page.reload();
+      await page
+        .getByRole("heading", { level: 1, name: "Welcome back, E2E" })
+        .waitFor();
       await page
         .getByRole("heading", { level: 2, name: "Pipeline over time" })
         .waitFor();
