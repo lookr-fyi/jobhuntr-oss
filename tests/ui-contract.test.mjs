@@ -426,6 +426,11 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   assert.doesNotMatch(recurring, /api\("\/api\/infinite-hunt\/start"/);
   assert.doesNotMatch(recurring, /schedule\?\.generation/);
   assert.match(agent, /const stoppingInfiniteRef = useRef\(false\)/);
+  assert.match(agent, /\.filter\(\(run\) => run\.origin !== "manual"\)/);
+  assert.match(
+    agent,
+    /new Date\(b\.completedAt \|\| b\.updatedAt \|\| b\.createdAt \|\| 0\)/,
+  );
   const stopping = agent.slice(
     agent.indexOf("const stopInfiniteHunt = async"),
     agent.indexOf("const previewMatches"),

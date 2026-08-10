@@ -1250,6 +1250,17 @@ test(
           ...body.infiniteHunt,
           lastError: "Scheduled hunt could not reach the local worker",
         };
+        body.agentRuns.unshift({
+          id: "newer-manual-run",
+          origin: "manual",
+          status: "completed",
+          inspected: 999,
+          found: 999,
+          added: 999,
+          createdAt: "2999-01-01T00:00:00.000Z",
+          completedAt: "2999-01-01T00:01:00.000Z",
+          steps: [],
+        });
         await route.fulfill({ response, json: body });
       });
       await page.reload();
@@ -1292,6 +1303,15 @@ test(
       await sessionDialog.getByText("Inspected", { exact: true }).waitFor();
       await sessionDialog.getByText("Matched", { exact: true }).waitFor();
       await sessionDialog.getByText("Saved", { exact: true }).waitFor();
+      assert.notEqual(
+        await sessionDialog
+          .locator(".v2-session-stats > div")
+          .filter({ hasText: "Inspected" })
+          .locator("strong")
+          .innerText(),
+        "999",
+        "the latest Infinite Hunt dialog must ignore newer manual runs",
+      );
       await page.keyboard.press("Escape");
       await sessionDialog.waitFor({ state: "hidden" });
       await page.getByRole("button", { name: "Stop Infinite Hunt" }).click();

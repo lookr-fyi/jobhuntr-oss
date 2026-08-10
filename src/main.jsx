@@ -13340,7 +13340,13 @@ function Agent({ state, reload, setTab }) {
   const [runOrderAnnouncement, setRunOrderAnnouncement] = useState("");
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
-  const latestRun = state.agentRuns[0] || null;
+  const latestRun = [...state.agentRuns]
+    .filter((run) => run.origin !== "manual")
+    .sort(
+      (a, b) =>
+        new Date(b.completedAt || b.updatedAt || b.createdAt || 0) -
+        new Date(a.completedAt || a.updatedAt || a.createdAt || 0),
+    )[0];
   const queuedSubmissions = state.submissions.filter((submission) =>
     ["draft", "ready"].includes(submission.status),
   );
