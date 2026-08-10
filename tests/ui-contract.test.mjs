@@ -253,6 +253,15 @@ test("the Overview pipeline preserves the authoritative empty history state", as
   );
 
   assert.match(overview, /const chartData = state\.jobs\.length/);
+  assert.match(
+    overview,
+    /const collected = state\.jobs\.filter\([\s\S]*?OVERVIEW_QUEUED_STATUSES\.has/,
+  );
+  assert.match(overview, /const interviews = s\.byStatus\.offer \|\| 0/);
+  assert.match(
+    overview,
+    /evaluated: available\.filter\(\(job\) => job\.workflowRunId\)\.length/,
+  );
   assert.match(overview, /chartData\.length > 0 &&/);
   assert.match(overview, /No history yet\./);
   assert.match(

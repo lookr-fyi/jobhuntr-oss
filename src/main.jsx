@@ -275,6 +275,7 @@ const TRACKER_STAGE_LABELS = {
   skipped: "Skipped",
   removed: "Removed",
 };
+const OVERVIEW_QUEUED_STATUSES = new Set(["interested", "submitting"]);
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
 const normalizeTrackerStage = (status) =>
   ({ queued: "interested", started: "interested", interviewing: "interview" })[
@@ -1956,7 +1957,6 @@ function Overview({ state, setTab, reload }) {
   const submitted = s.byStatus.applied || 0;
   const now = new Date();
   const submittedToday = state.jobs.filter((job) => {
-    if (job.status !== "applied") return false;
     const date = new Date(job.updatedAt || job.createdAt);
     return (
       date.getFullYear() === now.getFullYear() &&
@@ -1964,8 +1964,10 @@ function Overview({ state, setTab, reload }) {
       date.getDate() === now.getDate()
     );
   }).length;
-  const interviews = (s.byStatus.interview || 0) + (s.byStatus.offer || 0);
-  const collected = s.totalJobs;
+  const interviews = s.byStatus.offer || 0;
+  const collected = state.jobs.filter((job) =>
+    OVERVIEW_QUEUED_STATUSES.has(job.status),
+  ).length;
   const monthLabel = now.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
@@ -1983,12 +1985,10 @@ function Overview({ state, setTab, reload }) {
     .join("")
     .toUpperCase();
   const chartStartCandidate = new Date(
-    state.meta?.createdAt ||
-      state.jobs
-        .map((job) => job.createdAt || job.updatedAt)
-        .filter(Boolean)
-        .sort()[0] ||
-      now,
+    state.jobs
+      .map((job) => job.updatedAt || job.createdAt)
+      .filter(Boolean)
+      .sort()[0] || now,
   );
   const chartStart = Number.isFinite(chartStartCandidate.getTime())
     ? chartStartCandidate
@@ -2015,8 +2015,10 @@ function Overview({ state, setTab, reload }) {
         );
         return {
           date,
-          evaluated: available.length,
-          queued: available.filter((job) => job.status !== "rejected").length,
+          evaluated: available.filter((job) => job.workflowRunId).length,
+          queued: available.filter((job) =>
+            OVERVIEW_QUEUED_STATUSES.has(job.status),
+          ).length,
         };
       })
     : [];

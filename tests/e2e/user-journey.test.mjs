@@ -777,6 +777,15 @@ test(
         "Overview KPIs should use the authoritative v2 stacked desktop column",
       );
       await assertAccessible(page, "Overview");
+      for (const [label, value, meta] of [
+        ["Total collected jobs", "2", "Let's get more!"],
+        ["Total submitted", "0", "2 sent today"],
+        ["Total interviews", "0", "Celebrations so far"],
+      ]) {
+        const card = page.locator(".v2-kpi").filter({ hasText: label });
+        assert.equal(await card.locator("strong").innerText(), value);
+        await card.getByText(meta, { exact: true }).waitFor();
+      }
       await page.route("**/api/state", async (route) => {
         const response = await route.fetch();
         const body = await response.json();
@@ -808,10 +817,22 @@ test(
         .getByRole("status")
         .filter({ hasText: /Jobs queued/ })
         .waitFor();
+      const pipelineTooltip = page
+        .getByRole("status")
+        .filter({ hasText: /Jobs queued/ });
+      assert.match(
+        await pipelineTooltip.innerText(),
+        /Applications evaluated\s*0[\s\S]*Jobs queued\+\s*2/,
+        "the Overview chart should distinguish automated evaluations from queued jobs",
+      );
       await page.route("**/api/state", async (route) => {
         const response = await route.fetch();
         const body = await response.json();
-        body.meta = { ...body.meta, createdAt: "0001-01-01T00:00:00.000Z" };
+        body.jobs = body.jobs.map((job) => ({
+          ...job,
+          createdAt: "0001-01-01T00:00:00.000Z",
+          updatedAt: "0001-01-01T00:00:00.000Z",
+        }));
         await route.fulfill({ response, json: body });
       });
       await page.reload();
