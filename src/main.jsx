@@ -2305,12 +2305,36 @@ function Overview({ state, setTab, reload }) {
                       />
                     );
                   })}
+                  <line
+                    className="axis"
+                    x1={chartPaddingX}
+                    x2={chartWidth - chartPaddingX}
+                    y1={chartHeight - chartPaddingY}
+                    y2={chartHeight - chartPaddingY}
+                  />
+                  <line
+                    className="axis"
+                    x1={chartPaddingX}
+                    x2={chartPaddingX}
+                    y1={chartPaddingY}
+                    y2={chartHeight - chartPaddingY}
+                  />
                   {visibleSeries.map((key) => (
-                    <path
-                      className={`line ${key}`}
-                      d={chartPath(key)}
-                      key={key}
-                    />
+                    <g key={key}>
+                      <path className={`line ${key}`} d={chartPath(key)} />
+                      {chartHover !== null && (
+                        <circle
+                          className={`dot ${key}`}
+                          cx={
+                            chartPoint(chartHover, chartData[chartHover][key]).x
+                          }
+                          cy={
+                            chartPoint(chartHover, chartData[chartHover][key]).y
+                          }
+                          r="4.5"
+                        />
+                      )}
+                    </g>
                   ))}
                   {chartHover !== null && visibleSeries.length > 0 && (
                     <line

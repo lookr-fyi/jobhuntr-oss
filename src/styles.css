@@ -7837,6 +7837,11 @@ select:focus {
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
+.v2-chart .axis {
+  stroke: #cbd5e1;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
 .v2-chart svg {
   position: absolute;
   inset: 0;
@@ -7856,6 +7861,17 @@ select:focus {
 }
 .v2-chart .queued {
   stroke: #0ea5e9;
+}
+.v2-chart .dot {
+  stroke: #ffffff;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.v2-chart circle.evaluated {
+  fill: #7c3aed;
+}
+.v2-chart circle.queued {
+  fill: #0ea5e9;
 }
 .v2-chart .hoverline {
   stroke: #94a3b8;

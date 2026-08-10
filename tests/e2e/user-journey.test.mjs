@@ -829,6 +829,16 @@ test(
       await page.getByLabel("Applications evaluated").check();
       await page.getByLabel("Jobs queued+").check();
       await page.locator(".v2-chart").hover({ position: { x: 320, y: 120 } });
+      assert.equal(
+        await page.locator(".v2-chart .axis").count(),
+        2,
+        "the Overview chart should render the authoritative x and y axes",
+      );
+      assert.equal(
+        await page.locator(".v2-chart .dot").count(),
+        2,
+        "hovering the Overview chart should mark each visible series",
+      );
       await page
         .getByRole("status")
         .filter({ hasText: /Jobs queued/ })
