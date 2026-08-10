@@ -226,6 +226,18 @@ test("v2 getting-started guidance does not obscure the expanded sidebar", async 
   );
 
   assert.match(guidance, /useState\(true\)/);
+  assert.match(guidance, /jobhuntr_guidance_completed/);
+  for (const label of [
+    "Start Infinite Hunt",
+    "Start Your First Run",
+    "Create ATS Resume Template",
+    "Create Cover Letter Template",
+    "Start ATS Agent Run",
+    "Outreach to Hiring Teams",
+  ])
+    assert.match(guidance, new RegExp(label));
+  assert.match(guidance, /Boolean\(state\.infiniteHunt\?\.startedAt\)/);
+  assert.match(guidance, /state\.outreachDrafts\.length > 0/);
   assert.match(guidance, /aria-controls="getting-started-checklist"/);
   assert.match(guidance, /id="getting-started-checklist"/);
 });

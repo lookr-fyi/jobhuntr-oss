@@ -649,6 +649,18 @@ test(
         "incomplete v2 setup guidance should automatically open with the expanded sidebar",
       );
       await firstGuidanceTask.waitFor();
+      assert.deepEqual(
+        await page.locator(".v2-guidance-list button strong").allTextContents(),
+        [
+          "Start Infinite Hunt",
+          "Start Your First Run",
+          "Create ATS Resume Template",
+          "Create Cover Letter Template",
+          "Start ATS Agent Run",
+          "Outreach to Hiring Teams",
+        ],
+        "expanded setup guidance should retain the authoritative v2 workflow",
+      );
       await guidance.click();
       await firstGuidanceTask.waitFor({ state: "hidden" });
       await guidance.click();
@@ -3142,7 +3154,9 @@ test(
         null,
         "an incompatible saved wizard should recover to the document library",
       );
-      await page.getByRole("button", { name: "Create Cover Letter" }).click();
+      await page
+        .getByRole("button", { name: "Create Cover Letter", exact: true })
+        .click();
       await page.getByRole("heading", { name: "Choose a Template" }).waitFor();
       assert.equal(
         await page
@@ -6526,7 +6540,7 @@ test(
         }
         if (navigation === "Cover Letter") {
           await mobile
-            .getByRole("button", { name: "Create Cover Letter" })
+            .getByRole("button", { name: "Create Cover Letter", exact: true })
             .click();
           await mobile
             .getByRole("heading", { name: "Choose a Template" })

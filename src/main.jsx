@@ -898,48 +898,55 @@ function GettingStarted({ state, onNavigate }) {
   // Authoritative v2 automatically opens incomplete guidance when the
   // expanded sidebar is shown, while still letting the user collapse it.
   const [expanded, setExpanded] = useState(true);
+  const [completedForSession] = useState(
+    () => sessionStorage.getItem("jobhuntr_guidance_completed") === "true",
+  );
   const items = [
     {
       label: "Start Infinite Hunt",
-      detail: "Launch your first automated search",
+      detail: "Launch an always-on job hunting session",
+      complete: Boolean(state.infiniteHunt?.startedAt),
+      route: "agent",
+    },
+    {
+      label: "Start Your First Run",
+      detail: "Run your first job hunting workflow",
       complete: state.agentRuns.length > 0,
       route: "agent",
     },
     {
-      label: "Track your first role",
-      detail: "Save an opportunity to your tracker",
-      complete: state.jobs.length > 0,
-      route: "tracker",
-    },
-    {
-      label: "Create an ATS resume",
-      detail: "Save a tailored resume version",
+      label: "Create ATS Resume Template",
+      detail: "Build an ATS-optimized resume template",
       complete: state.resumes.length > 0,
       route: "resume",
     },
     {
-      label: "Create a cover letter",
-      detail: "Build a reusable application letter",
+      label: "Create Cover Letter Template",
+      detail: "Design a personalized cover letter",
       complete: state.coverLetters.length > 0,
       route: "cover-letter",
     },
     {
-      label: "Review an application",
-      detail: "Move a packet through submission",
-      complete: state.submissions.some((item) => item.status === "submitted"),
-      route: "queue",
+      label: "Start ATS Agent Run",
+      detail: "Use your ATS template in applications",
+      complete: state.submissions.some(
+        (item) => item.resumeId && item.resumeId !== "profile-resume",
+      ),
+      route: "runs",
     },
     {
-      label: "Reach out to a hiring team",
-      detail: "Prepare and record recruiter outreach",
-      complete: state.outreachDrafts.some((item) =>
-        ["sent", "replied", "archived"].includes(item.status),
-      ),
+      label: "Outreach to Hiring Teams",
+      detail: "Connect with recruiters and hiring managers",
+      complete: state.outreachDrafts.length > 0,
       route: "outreach",
     },
   ];
   const complete = items.filter((item) => item.complete).length;
-  if (complete === items.length) return null;
+  useEffect(() => {
+    if (complete !== items.length || completedForSession) return;
+    sessionStorage.setItem("jobhuntr_guidance_completed", "true");
+  }, [complete, completedForSession, items.length]);
+  if (completedForSession || complete === items.length) return null;
   return (
     <div className="v2-getting-started">
       <button
