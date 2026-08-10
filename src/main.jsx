@@ -4858,21 +4858,6 @@ function Board({ state, reload }) {
       setQueueing("");
     }
   };
-  const clearFilters = async () => {
-    if (searchingRef.current) return;
-    setLocation("");
-    setMinimumFit(0);
-    setMinimumSalary(0);
-    setMinimumExperience("");
-    setRemoteType("all");
-    setJobType("all");
-    setSeniority("all");
-    setSponsorship("all");
-    setSource("all");
-    setSort("collected_at_desc");
-    setQ("");
-    await search();
-  };
   useEffect(() => {
     if (!leaderboardOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -4922,6 +4907,7 @@ function Board({ state, reload }) {
               <Trophy size={15} /> Leaderboard
             </button>
             <button
+              type="button"
               className="secondary"
               disabled={searching}
               aria-busy={searching}
@@ -4933,13 +4919,7 @@ function Board({ state, reload }) {
           </div>
         </div>
       </div>
-      <form
-        className="v2-board-toolbar"
-        onSubmit={(event) => {
-          event.preventDefault();
-          search();
-        }}
-      >
+      <div className="v2-board-toolbar">
         <div className="v2-board-search">
           <Search size={17} />
           <input
@@ -4963,16 +4943,16 @@ function Board({ state, reload }) {
         <button
           type="button"
           className={filtersOpen ? "secondary active" : "secondary"}
+          aria-label="Filters"
           aria-expanded={filtersOpen}
           onClick={() => setFiltersOpen((value) => !value)}
         >
-          <Filter size={16} /> Filters
+          <Filter size={16} />
           {activeFilterCount > 0 && (
             <span className="v2-filter-count">{activeFilterCount}</span>
           )}
         </button>
-        <button type="submit">Search</button>
-      </form>
+      </div>
       {filtersOpen && (
         <div className="v2-board-filters">
           <label>
@@ -5129,22 +5109,6 @@ function Board({ state, reload }) {
               <option value="title">Job title</option>
             </select>
           </label>
-          <button
-            className="secondary"
-            type="button"
-            disabled={searching}
-            onClick={search}
-          >
-            {searching ? "Applying…" : "Apply filters"}
-          </button>
-          <button
-            className="text-button"
-            type="button"
-            disabled={searching || !activeFilterCount}
-            onClick={clearFilters}
-          >
-            Clear all
-          </button>
         </div>
       )}
       {notice && (

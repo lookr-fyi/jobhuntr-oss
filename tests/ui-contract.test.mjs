@@ -922,7 +922,7 @@ test("Job Board queueing uses one atomic backend operation", async () => {
   assert.doesNotMatch(
     board.slice(
       board.indexOf("const queueJob"),
-      board.indexOf("const clearFilters"),
+      board.indexOf("const localContributions"),
     ),
     /api\("\/api\/(?:jobs|submissions)"/,
   );
@@ -1395,7 +1395,10 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /type="button"[\s\S]*?onClick=\{search\}/);
   assert.match(board, /aria-busy=\{searching\}/);
   assert.match(board, /aria-busy=\{queueing === selected\.url\}/);
-  assert.match(board, /const clearFilters = async \(\) => \{/);
+  assert.doesNotMatch(board, />Search<\/button>/);
+  assert.doesNotMatch(board, /Apply filters/);
+  assert.doesNotMatch(board, /Clear all/);
+  assert.match(board, /aria-label="Filters"/);
   assert.match(
     board,
     /const \[sort, setSort\] = useState\("collected_at_desc"\)/,
@@ -1409,7 +1412,6 @@ test("Job Board refresh and queue actions are single-flight", async () => {
     assert.match(board, new RegExp(`sort === "${sortMode}"`));
     assert.match(board, new RegExp(`<option value="${sortMode}">`));
   }
-  assert.match(board, /setSort\("collected_at_desc"\)/);
   assert.match(board, /const \[minimumExperience, setMinimumExperience\]/);
   assert.match(board, /Number\(job\.eoy\) >= Number\(minimumExperience\)/);
   assert.match(board, /Above Years of Experience/);

@@ -1664,26 +1664,10 @@ test(
         .getByRole("button", { name: /Filters/ })
         .getByText("9")
         .waitFor();
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().endsWith("/api/board/search") &&
-            response.request().method() === "POST" &&
-            response.ok(),
-        ),
-        page.getByRole("button", { name: "Apply filters" }).click(),
-      ]);
       await page.getByText(/opportunit(?:y|ies)$/).waitFor();
       await page.getByRole("link", { name: /View original post/ }).waitFor();
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().endsWith("/api/board/search") &&
-            response.request().method() === "POST" &&
-            response.ok(),
-        ),
-        page.getByRole("button", { name: "Clear all" }).click(),
-      ]);
+      await page.reload();
+      await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
       await page.getByText("4 opportunities").waitFor();
       const boardSearch = page.getByLabel("Search jobs");
       await boardSearch.fill("Northstar");

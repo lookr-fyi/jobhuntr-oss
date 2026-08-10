@@ -4386,7 +4386,7 @@ button.v2-audit-toggle:hover {
 }
 .v2-board-toolbar {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) auto auto;
+  grid-template-columns: minmax(260px, 1fr) auto;
   gap: 10px;
   align-items: stretch;
 }
