@@ -2349,6 +2349,12 @@ test("remaining persisted workflow lists render newest first", async () => {
     "tracker contact history should render newest first",
   );
   assert.match(
+    tracker,
+    /newestFirst\(job\.statusHistory\)\.map\(\(event, index\)/,
+  );
+  assert.match(tracker, /newestFirst\(job\.notes\)\.map\(\(n\)/);
+  assert.match(tracker, /newestFirst\(job\.tasks\)\.map\(\(t\)/);
+  assert.match(
     huntStatus,
     /const latest = latestPersistedRecord\(runs\)/,
     "the floating Infinite Hunt status should summarize the newest run",

@@ -491,8 +491,8 @@ const sortableTimestamp = (...values) => {
 const newestFirst = (records) =>
   [...(records || [])].sort(
     (a, b) =>
-      sortableTimestamp(b.updatedAt, b.createdAt) -
-      sortableTimestamp(a.updatedAt, a.createdAt),
+      sortableTimestamp(b.updatedAt, b.createdAt, b.at) -
+      sortableTimestamp(a.updatedAt, a.createdAt, a.at),
   );
 const latestPersistedRecord = (records) => newestFirst(records)[0] || null;
 const latestUsableResume = (records) =>
@@ -3603,7 +3603,7 @@ function Tracker({ state, reload, setTab }) {
                     <section className="info-section status-history-section">
                       <h3 className="section-title">Status History</h3>
                       <div className="status-history">
-                        {(job.statusHistory || []).map((event, index) => (
+                        {newestFirst(job.statusHistory).map((event, index) => (
                           <p key={`${event.at}-${index}`}>
                             <b>{trackerStageLabel(event.status)}</b>
                             <small>{formatDateTime(event.at)}</small>
@@ -4490,7 +4490,7 @@ function Actions({ job, reload }) {
           {savingNote ? "Saving…" : "Save"}
         </button>
       </div>
-      {(job.notes || []).map((n) => (
+      {newestFirst(job.notes).map((n) => (
         <div className="note v2-record-row" key={n.id}>
           <span>
             {n.text}
@@ -4547,7 +4547,7 @@ function Actions({ job, reload }) {
           </button>
         )}
       </div>
-      {(job.tasks || []).map((t) => (
+      {newestFirst(job.tasks).map((t) => (
         <div className="task-row" key={t.id}>
           <label className="check">
             <input
