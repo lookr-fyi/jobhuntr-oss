@@ -2245,3 +2245,28 @@ test("ATS Resume deletion preserves the newest remaining context", async () => {
     /state\.templates\.find\(\(item\) => item\.id !== deleteTarget\.item\.id\)/,
   );
 });
+
+test("document defaults and histories never depend on storage indexes", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const resumeStudio = source.slice(
+    source.indexOf("function Resume("),
+    source.indexOf("const outreachDraftDigest"),
+  );
+
+  assert.match(
+    resumeStudio,
+    /\[templateId, setTemplateId\][\s\S]*?latestPersistedRecord\(state\.templates\)\?\.id/,
+  );
+  assert.match(
+    resumeStudio,
+    /filteredResumes = newestFirst\(state\.resumes\)\.filter/,
+  );
+  assert.match(
+    resumeStudio,
+    /newestFirst\(state\.coverLetters\)\.map\(\(item\)/,
+  );
+  assert.doesNotMatch(source, /state\.[A-Za-z]+\?\.\[0\]/);
+});

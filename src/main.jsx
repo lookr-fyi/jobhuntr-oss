@@ -7107,7 +7107,7 @@ function SubmissionCard({ submission: s, state, reload }) {
             }
           >
             <option value="">No cover letter attached</option>
-            {state.coverLetters.map((letter) => (
+            {newestFirst(state.coverLetters).map((letter) => (
               <option key={letter.id} value={letter.id}>
                 {letter.title}
               </option>
@@ -7484,7 +7484,7 @@ function Resume({ state, reload, mode = "resume" }) {
   const [resume, setResume] = useState(state.profile.resumeText);
   const [name, setName] = useState("Targeted resume");
   const [templateId, setTemplateId] = useState(
-    state.templates?.[0]?.id || "clean-ats",
+    latestPersistedRecord(state.templates)?.id || "clean-ats",
   );
   const [jobId, setJobId] = useState(
     latestPersistedRecord(state.jobs)?.id || "",
@@ -7637,7 +7637,7 @@ function Resume({ state, reload, mode = "resume" }) {
       setTemplateSortOrder("desc");
     }
   };
-  const filteredResumes = state.resumes.filter((item) => {
+  const filteredResumes = newestFirst(state.resumes).filter((item) => {
     const template = state.templates.find(
       (candidate) => candidate.id === item.templateId,
     );
@@ -8950,7 +8950,7 @@ function Resume({ state, reload, mode = "resume" }) {
         <div className={`v2-cover-layout ${letter ? "editing" : ""}`}>
           {!letter && (
             <div className="v2-template-grid">
-              {state.coverLetters.map((item) => (
+              {newestFirst(state.coverLetters).map((item) => (
                 <article
                   key={item.id}
                   className={letter?.id === item.id ? "selected" : ""}
