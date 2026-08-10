@@ -4681,14 +4681,12 @@ function Board({ state, reload }) {
   );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [location, setLocation] = useState("");
-  const [minimumFit, setMinimumFit] = useState(0);
   const [minimumSalary, setMinimumSalary] = useState(0);
   const [minimumExperience, setMinimumExperience] = useState("");
   const [remoteType, setRemoteType] = useState("all");
   const [jobType, setJobType] = useState("all");
   const [seniority, setSeniority] = useState("all");
   const [sponsorship, setSponsorship] = useState("all");
-  const [source, setSource] = useState("all");
   const [sort, setSort] = useState("collected_at_desc");
   const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
   const [queueing, setQueueing] = useState("");
@@ -4755,7 +4753,6 @@ function Board({ state, reload }) {
               String(job.location || "")
                 .toLowerCase()
                 .includes(normalizedLocation)) &&
-            job.fitScore >= minimumFit &&
             maximumListedSalary(job) >= minimumSalary &&
             (minimumExperience === "" ||
               (Number.isFinite(Number(job.eoy)) &&
@@ -4766,8 +4763,7 @@ function Board({ state, reload }) {
                 : boardRemoteType(job) !== "remote")) &&
             (jobType === "all" || boardJobType(job) === jobType) &&
             (seniority === "all" || boardSeniority(job) === seniority) &&
-            (sponsorship === "all" || boardSponsorship(job) === sponsorship) &&
-            (source === "all" || job.source === source)
+            (sponsorship === "all" || boardSponsorship(job) === sponsorship)
           );
         })
         .sort((a, b) =>
@@ -4782,26 +4778,18 @@ function Board({ state, reload }) {
                 : sort === "post_time_asc"
                   ? sortableTimestamp(a.postedAt) -
                     sortableTimestamp(b.postedAt)
-                  : sort === "fit"
-                    ? b.fitScore - a.fitScore
-                    : sort === "salary"
-                      ? maximumListedSalary(b) - maximumListedSalary(a)
-                      : sort === "company"
-                        ? a.company.localeCompare(b.company)
-                        : a.title.localeCompare(b.title),
+                  : 0,
         ),
     [
       results,
       q,
       location,
-      minimumFit,
       minimumSalary,
       minimumExperience,
       remoteType,
       jobType,
       seniority,
       sponsorship,
-      source,
       sort,
     ],
   );
@@ -4829,14 +4817,12 @@ function Board({ state, reload }) {
   }, []);
   const activeFilterCount = [
     location,
-    minimumFit > 0,
     minimumSalary > 0,
     minimumExperience !== "",
     remoteType !== "all",
     jobType !== "all",
     seniority !== "all",
     sponsorship !== "all",
-    source !== "all",
   ].filter(Boolean).length;
   const queueJob = async (job) => {
     if (!job?.url || queueingRef.current || queuedUrls.has(job.url)) return;
@@ -4965,19 +4951,6 @@ function Board({ state, reload }) {
             />
           </label>
           <label>
-            Minimum match
-            <select
-              name="board-minimum-match"
-              value={minimumFit}
-              onChange={(event) => setMinimumFit(Number(event.target.value))}
-            >
-              <option value="0">Any match</option>
-              <option value="25">25% or better</option>
-              <option value="50">50% or better</option>
-              <option value="75">75% or better</option>
-            </select>
-          </label>
-          <label>
             Minimum salary
             <select
               name="board-minimum-salary"
@@ -5021,24 +4994,6 @@ function Board({ state, reload }) {
               <option value="all">All arrangements</option>
               <option value="remote">Remote</option>
               <option value="onsite">On-site / hybrid</option>
-            </select>
-          </label>
-          <label>
-            Source
-            <select
-              name="board-source"
-              aria-label="Board source"
-              value={source}
-              onChange={(event) => setSource(event.target.value)}
-            >
-              <option value="all">All sources</option>
-              {[
-                ...new Set(results.map((job) => job.source).filter(Boolean)),
-              ].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
             </select>
           </label>
           <label>
@@ -5103,10 +5058,6 @@ function Board({ state, reload }) {
               <option value="post_time_asc">
                 Post Time (Earliest to Latest)
               </option>
-              <option value="fit">Best match</option>
-              <option value="salary">Highest salary</option>
-              <option value="company">Company</option>
-              <option value="title">Job title</option>
             </select>
           </label>
         </div>

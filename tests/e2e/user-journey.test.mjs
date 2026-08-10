@@ -1650,19 +1650,17 @@ test(
       await leaderboardDialog.waitFor({ state: "hidden" });
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Location").fill("Remote");
-      await page.getByLabel("Minimum match").selectOption("25");
       await page.getByLabel("Minimum board salary").selectOption("150000");
       await page.getByLabel("Above Years of Experience").selectOption("5");
       await page.getByLabel("Board work arrangement").selectOption("remote");
       await page.getByLabel("Board job type").selectOption("full-time");
       await page.getByLabel("Board seniority").selectOption("lead");
       await page.getByLabel("Board visa sponsorship").selectOption("likely");
-      await page.getByLabel("Board source").selectOption("Seed Board");
       await page.getByLabel("Sort by").selectOption("post_time_desc");
       await assertNamedFormControls(page, "Job Board filters");
       await page
         .getByRole("button", { name: /Filters/ })
-        .getByText("9")
+        .getByText("7")
         .waitFor();
       await page.getByText(/opportunit(?:y|ies)$/).waitFor();
       await page.getByRole("link", { name: /View original post/ }).waitFor();

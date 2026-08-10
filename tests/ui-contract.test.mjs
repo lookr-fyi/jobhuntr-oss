@@ -1398,6 +1398,10 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.doesNotMatch(board, />Search<\/button>/);
   assert.doesNotMatch(board, /Apply filters/);
   assert.doesNotMatch(board, /Clear all/);
+  assert.doesNotMatch(board, /Minimum match/);
+  assert.doesNotMatch(board, /Board source/);
+  assert.doesNotMatch(board, /<option value="fit">/);
+  assert.doesNotMatch(board, /<option value="salary">/);
   assert.match(board, /aria-label="Filters"/);
   assert.match(
     board,
