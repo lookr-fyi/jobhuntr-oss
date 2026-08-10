@@ -1262,6 +1262,13 @@ test("LinkedIn audits cannot duplicate or publish stale results", async () => {
     "URL edits, form edits, and history selection must invalidate pending audits",
   );
   assert.match(audit, /aria-busy=\{running\}/);
+  assert.match(
+    audit,
+    /const sortedAudits = \[\.\.\.state\.profileAudits\]\.sort\([\s\S]*?sortableTimestamp\(b\.updatedAt, b\.createdAt\)/,
+  );
+  assert.match(audit, /useState\(sortedAudits\[0\] \|\| null\)/);
+  assert.match(audit, /sortedAudits\.map\(\(item\) =>/);
+  assert.doesNotMatch(audit, /state\.profileAudits\[0\]/);
 });
 
 test("LinkedIn Audit recovers bounded private profile drafts", async () => {

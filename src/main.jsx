@@ -12928,7 +12928,12 @@ function ProfileAudit({ state, reload }) {
   const [auditDraftRestored, setAuditDraftRestored] = useState(
     Boolean(initialAuditDraft),
   );
-  const [audit, setAudit] = useState(state.profileAudits[0] || null);
+  const sortedAudits = [...state.profileAudits].sort(
+    (a, b) =>
+      sortableTimestamp(b.updatedAt, b.createdAt) -
+      sortableTimestamp(a.updatedAt, a.createdAt),
+  );
+  const [audit, setAudit] = useState(sortedAudits[0] || null);
   const [deleteAudit, setDeleteAudit] = useState(null);
   const [running, setRunning] = useState(false);
   const runningAuditRef = useRef(false);
@@ -13249,8 +13254,8 @@ function ProfileAudit({ state, reload }) {
             <h3 role="heading" aria-level="2">
               Audit history · {state.profileAudits.length}
             </h3>
-            {state.profileAudits.length ? (
-              state.profileAudits.map((item) => (
+            {sortedAudits.length ? (
+              sortedAudits.map((item) => (
                 <div
                   className={
                     audit?.id === item.id
