@@ -225,7 +225,7 @@ test("v2 getting-started guidance does not obscure the expanded sidebar", async 
     source.indexOf("function App()"),
   );
 
-  assert.match(guidance, /useState\(false\)/);
+  assert.match(guidance, /useState\(true\)/);
   assert.match(guidance, /aria-controls="getting-started-checklist"/);
   assert.match(guidance, /id="getting-started-checklist"/);
 });

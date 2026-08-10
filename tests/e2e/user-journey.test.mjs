@@ -645,10 +645,9 @@ test(
       );
       assert.equal(
         await guidance.getAttribute("aria-expanded"),
-        "false",
-        "v2 setup guidance should stay compact until requested",
+        "true",
+        "incomplete v2 setup guidance should automatically open with the expanded sidebar",
       );
-      await guidance.click();
       await firstGuidanceTask.waitFor();
       await guidance.click();
       await firstGuidanceTask.waitFor({ state: "hidden" });

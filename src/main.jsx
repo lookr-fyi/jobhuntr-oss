@@ -895,9 +895,9 @@ function InfiniteHuntStatus({ runs, onOpen }) {
   );
 }
 function GettingStarted({ state, onNavigate }) {
-  // The authoritative v2 sidebar keeps guidance compact until the user asks
-  // for it, leaving the primary navigation and user controls unobstructed.
-  const [expanded, setExpanded] = useState(false);
+  // Authoritative v2 automatically opens incomplete guidance when the
+  // expanded sidebar is shown, while still letting the user collapse it.
+  const [expanded, setExpanded] = useState(true);
   const items = [
     {
       label: "Start Infinite Hunt",
