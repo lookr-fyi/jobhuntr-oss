@@ -5375,12 +5375,14 @@ function Queue({ state, reload, setTab }) {
     window.location.hash.split("?")[1] || "",
   );
   const [jobId, setJobId] = useState(
-    state.jobs.find(isSubmissionEligibleJob)?.id || "",
+    latestPersistedRecord(state.jobs.filter(isSubmissionEligibleJob))?.id || "",
   );
   const [selectedId, setSelectedId] = useState(
     queueParams.get("packet") ||
-      state.submissions.find(
-        (item) => !["archived", "submitted"].includes(item.status),
+      latestPersistedRecord(
+        state.submissions.filter(
+          (item) => !["archived", "submitted"].includes(item.status),
+        ),
       )?.id ||
       "",
   );

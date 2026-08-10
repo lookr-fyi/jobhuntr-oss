@@ -2059,3 +2059,23 @@ test("Easy Apply progress includes answered optional questions that still need v
   );
   assert.match(packet, /provided verified/);
 });
+
+test("Submission Queue opens the newest eligible persisted work", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const queue = source.slice(
+    source.indexOf("function Queue("),
+    source.indexOf("function SubmissionCard"),
+  );
+
+  assert.match(
+    queue,
+    /latestPersistedRecord\(state\.jobs\.filter\(isSubmissionEligibleJob\)\)/,
+  );
+  assert.match(
+    queue,
+    /latestPersistedRecord\([\s\S]*?state\.submissions\.filter\([\s\S]*?!\["archived", "submitted"\]\.includes\(item\.status\)/,
+  );
+});
