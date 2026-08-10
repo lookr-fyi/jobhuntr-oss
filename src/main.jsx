@@ -7449,6 +7449,11 @@ function Resume({ state, reload, mode = "resume" }) {
     };
   }, [templateDialogOpen]);
   const openTemplateDialog = (template = null) => {
+    // A newly opened wizard is a fresh interaction. Any guard left behind by
+    // the prior modal's final render must not make its first save a silent no-op.
+    savingTemplateRef.current = false;
+    templateOperationRef.current = false;
+    setSavingTemplate(false);
     clearTemplateDialogDraft();
     const dialog = {
       id: template?.id || null,
@@ -7516,7 +7521,7 @@ function Resume({ state, reload, mode = "resume" }) {
     }
   };
   const saveTemplate = async () => {
-    if (templateOperationRef.current) return;
+    if (savingTemplateRef.current) return;
     savingTemplateRef.current = true;
     templateOperationRef.current = true;
     setSavingTemplate(true);
@@ -7544,10 +7549,16 @@ function Resume({ state, reload, mode = "resume" }) {
         },
       );
       setTemplateId(saved.id);
+      await reload();
+      // Release the single-flight guards before exposing the template list
+      // again; otherwise a user can reopen the editor during React's close
+      // render while the previous save still appears locked.
+      savingTemplateRef.current = false;
+      templateOperationRef.current = false;
+      setSavingTemplate(false);
       clearTemplateDialogDraft();
       setTemplateDialog(null);
       setTemplateDialogBaseline("");
-      await reload();
     } catch {
       // Keep the completed template wizard available for retry.
     } finally {
@@ -9718,6 +9729,16 @@ function Resume({ state, reload, mode = "resume" }) {
                   </>
                 )}
               </button>
+              {[3, 4].includes(templateDialog.step) && (
+                <button
+                  className="text-button v2-template-complete-early"
+                  disabled={templateDialogBusy || !templateDialog.name.trim()}
+                  aria-busy={savingTemplate}
+                  onClick={saveTemplate}
+                >
+                  {savingTemplate ? "Completing…" : "Complete Template"}
+                </button>
+              )}
               {templateDialog.step < 5 ? (
                 <button
                   disabled={

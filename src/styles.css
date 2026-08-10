@@ -11293,6 +11293,9 @@ main > header.integrated-page-header {
   gap: 10px;
   margin-top: 22px;
 }
+.v2-template-complete-early {
+  margin-left: auto;
+}
 .resume-studio > .resume-editor {
   grid-column: 1/-1;
   grid-row: auto;

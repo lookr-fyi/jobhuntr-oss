@@ -1997,7 +1997,28 @@ test(
         name: "Edit Template",
       });
       await editTemplateDialog.waitFor();
-      await page.getByLabel("Close template editor").click();
+      await editTemplateDialog
+        .getByRole("button", { name: "Next", exact: true })
+        .click();
+      await editTemplateDialog
+        .getByRole("heading", { name: "Edit Your Resume", exact: true })
+        .waitFor();
+      await editTemplateDialog
+        .getByRole("button", { name: "Next", exact: true })
+        .click();
+      await editTemplateDialog.getByText("Add Additional Experience").waitFor();
+      const [earlyCompletionResponse] = await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/templates") &&
+            ["PATCH", "POST"].includes(response.request().method()),
+        ),
+        editTemplateDialog
+          .getByRole("button", { name: "Complete Template", exact: true })
+          .click(),
+      ]);
+      assert.equal(earlyCompletionResponse.request().method(), "PATCH");
+      assert.equal(earlyCompletionResponse.ok(), true);
       await editTemplateDialog.waitFor({ state: "hidden" });
       await page.getByLabel("Search resume templates").fill("E2E Leadership");
       assert.equal(
