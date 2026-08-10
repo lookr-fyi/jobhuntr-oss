@@ -67,6 +67,11 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
   );
   assert.match(
     electronMain,
+    /catch \(error\) \{[\s\S]*?ensureTray\(\);[\s\S]*?mainWindow\.hide\(\);[\s\S]*?return;/,
+    "an inconclusive close check must preserve a potentially active hunt in the tray",
+  );
+  assert.match(
+    electronMain,
     /if \(!tray \|\| !localUrl \|\| syncingTray\) return/,
   );
   assert.match(

@@ -309,12 +309,13 @@ const createWindow = async () => {
       mainWindow.close();
     } catch (error) {
       console.warn("Could not verify Infinite Hunt status:", error.message);
-      if (tray) {
-        mainWindow.hide();
-        return;
-      }
-      allowWindowCloseOnce = true;
-      mainWindow.close();
+      // Fail safe: if the local service is temporarily busy, destroying the
+      // only window could also strand or terminate an active hunt. Preserve
+      // the process in the tray until its bounded status check can recover;
+      // the tray still exposes an explicit Quit action.
+      ensureTray();
+      mainWindow.hide();
+      return;
     } finally {
       checkingClose = false;
     }
