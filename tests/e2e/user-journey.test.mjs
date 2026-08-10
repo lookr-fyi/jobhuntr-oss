@@ -3242,7 +3242,7 @@ test(
             response.request().method() === "PATCH" &&
             response.ok(),
         ),
-        page.getByRole("button", { name: "Save and Finish" }).click(),
+        page.getByRole("button", { name: "Complete", exact: true }).click(),
       ]);
       await page.getByText("E2E product letter").first().waitFor();
       await page

@@ -7733,9 +7733,11 @@ function Resume({ state, reload, mode = "resume" }) {
           body: letterWizard.result.body,
         }),
       });
+      await reload();
+      finishingLetterRef.current = false;
+      setFinishingLetter(false);
       setLetter(null);
       setLetterWizard(null);
-      await reload();
     } catch {
       // Keep the generated letter open so saving can be retried.
     } finally {
@@ -8524,8 +8526,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   aria-busy={finishingLetter}
                   onClick={finishLetterWizard}
                 >
-                  <Save size={16} />{" "}
-                  {finishingLetter ? "Saving…" : "Save and Finish"}
+                  {finishingLetter ? "Completing…" : "Complete"}
                 </button>
               )}
             </div>
