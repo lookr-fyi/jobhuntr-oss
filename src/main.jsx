@@ -468,6 +468,13 @@ const sortableTimestamp = (...values) => {
   }
   return 0;
 };
+const newestFirst = (records) =>
+  [...(records || [])].sort(
+    (a, b) =>
+      sortableTimestamp(b.updatedAt, b.createdAt) -
+      sortableTimestamp(a.updatedAt, a.createdAt),
+  );
+const latestPersistedRecord = (records) => newestFirst(records)[0] || null;
 const formatDateTime = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
@@ -7486,7 +7493,7 @@ function Resume({ state, reload, mode = "resume" }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const [score, setScore] = useState(null);
   const [letter, setLetter] = useState(
-    mode === "cover-letter" ? null : state.coverLetters[0] || null,
+    mode === "cover-letter" ? null : latestPersistedRecord(state.coverLetters),
   );
   const [savedLetterSnapshot, setSavedLetterSnapshot] = useState(null);
   const [confirmDiscardLetter, setConfirmDiscardLetter] = useState(false);
@@ -7536,7 +7543,7 @@ function Resume({ state, reload, mode = "resume" }) {
     window.addEventListener("keydown", closePreview);
     return () => window.removeEventListener("keydown", closePreview);
   }, [coverSourcePreview]);
-  const [preview, setPreview] = useState(state.resumes[0] || null);
+  const [preview, setPreview] = useState(latestPersistedRecord(state.resumes));
   const [savingResume, setSavingResume] = useState(false);
   const [scoringResume, setScoringResume] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -10068,7 +10075,7 @@ const outreachDraftDigest = (draft) =>
 function OutreachPage({ state, reload }) {
   const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
   const [selectedId, setSelectedId] = useState(
-    state.outreachDrafts[0]?.id || "",
+    latestPersistedRecord(state.outreachDrafts)?.id || "",
   );
   const [query, setQuery] = useState("");
   const [statuses, setStatuses] = useState([
@@ -10775,6 +10782,8 @@ function CoachMarkdown({ content }) {
 }
 
 function Coach({ state, reload }) {
+  const coachingSessions = newestFirst(state.coachingSessions);
+  const coachOutreachDrafts = newestFirst(state.outreachDrafts);
   const [view, setView] = useState("chat");
   const coachComposerDraftKey = "jobhuntr-coach-composer-draft";
   const [initialCoachComposer] = useState(() => {
@@ -10842,14 +10851,14 @@ function Coach({ state, reload }) {
       state.jobs[0]?.id ||
       "",
   );
-  const initialPracticeSession = state.coachingSessions[0] || null;
+  const initialPracticeSession = coachingSessions[0] || null;
   const [session, setSession] = useState(initialPracticeSession);
   const [practiceBaseline, setPracticeBaseline] = useState(() =>
     practiceSessionDigest(initialPracticeSession),
   );
   const [pendingPracticeNavigation, setPendingPracticeNavigation] =
     useState(null);
-  const [draft, setDraft] = useState(state.outreachDrafts[0] || null);
+  const [draft, setDraft] = useState(coachOutreachDrafts[0] || null);
   const activeConversation =
     conversations.find(({ id }) => id === activeConversationId) ||
     (activeConversationId ? conversations[0] || null : null);
@@ -11351,7 +11360,7 @@ function Coach({ state, reload }) {
               <MessageSquare size={16} />{" "}
               {preparingSession ? "Preparing…" : "New role-specific plan"}
             </button>
-            {state.coachingSessions.map((item) => {
+            {coachingSessions.map((item) => {
               const job = state.jobs.find((x) => x.id === item.jobId);
               return (
                 <button
@@ -11414,7 +11423,7 @@ function Coach({ state, reload }) {
               <Sparkles size={16} />{" "}
               {generatingOutreach ? "Drafting…" : "Draft for selected role"}
             </button>
-            {state.outreachDrafts.map((item) => {
+            {coachOutreachDrafts.map((item) => {
               const job = state.jobs.find((x) => x.id === item.jobId);
               return (
                 <button

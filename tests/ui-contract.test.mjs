@@ -64,6 +64,22 @@ test("persisted timestamps cannot destabilize user-visible ordering", async () =
     (source.match(/sortableTimestamp\(/g) || []).length >= 16,
     "all run, packet, template, and outreach ordering surfaces should share safe timestamp semantics",
   );
+  assert.match(source, /const newestFirst = \(records\) =>/);
+  assert.match(
+    source,
+    /const latestPersistedRecord = \(records\) => newestFirst\(records\)\[0\] \|\| null/,
+  );
+  assert.match(source, /latestPersistedRecord\(state\.coverLetters\)/);
+  assert.match(source, /latestPersistedRecord\(state\.resumes\)/);
+  assert.match(source, /latestPersistedRecord\(state\.outreachDrafts\)\?\.id/);
+  assert.match(
+    source,
+    /const coachingSessions = newestFirst\(state\.coachingSessions\)/,
+  );
+  assert.match(
+    source,
+    /const coachOutreachDrafts = newestFirst\(state\.outreachDrafts\)/,
+  );
 });
 
 test("every JobHuntr CSS custom property is defined", async () => {
