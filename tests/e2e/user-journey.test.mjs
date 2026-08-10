@@ -4600,6 +4600,50 @@ test(
         "Career Coach should preserve the v2 desktop content and composer proportions",
       );
       await assertNamedFormControls(page, "Career Coach chat");
+      const markdownConversation = await page.request.post(
+        `${baseUrl}/api/coach/conversations`,
+        {
+          data: {
+            id: "markdown-coach-e2e",
+            title: "Markdown coaching plan",
+            messages: [
+              { role: "user", content: "Give me a plan" },
+              {
+                role: "assistant",
+                content:
+                  "### Weekly focus\n\n**Prioritize quality:**\n- Tailor one resume\n- Send one follow-up\n\nUse `specific evidence`.",
+              },
+            ],
+          },
+        },
+      );
+      assert.equal(markdownConversation.ok(), true);
+      await page.reload();
+      await page
+        .getByRole("button", { name: /^Markdown coaching plan/ })
+        .click();
+      const renderedCoachMarkdown = page.locator(".v2-coach-markdown");
+      await renderedCoachMarkdown
+        .getByRole("heading", { name: "Weekly focus" })
+        .waitFor();
+      assert.equal(
+        await renderedCoachMarkdown.locator("ul > li").count(),
+        2,
+        "v2 assistant markdown lists should render as semantic list items",
+      );
+      assert.equal(
+        await renderedCoachMarkdown.locator("strong").innerText(),
+        "Prioritize quality:",
+      );
+      assert.equal(
+        await renderedCoachMarkdown.locator("code").innerText(),
+        "specific evidence",
+      );
+      const removeMarkdownConversation = await page.request.delete(
+        `${baseUrl}/api/coach/conversations/markdown-coach-e2e`,
+      );
+      assert.equal(removeMarkdownConversation.ok(), true);
+      await page.reload();
       const coachComposer = page.getByLabel("Message Career Coach");
       await coachComposer.fill(
         "Help me frame an unsent question about my next interview.",

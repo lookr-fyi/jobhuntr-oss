@@ -2785,6 +2785,35 @@ section.gigs-page .v2-gigs-intro p {
   padding: 2px 0;
   background: transparent;
 }
+.v2-coach-markdown {
+  min-width: 0;
+  color: #334155;
+  line-height: 1.6;
+}
+.v2-coach-markdown h3 {
+  margin: 0 0 8px;
+  color: #1e293b;
+  font-size: 14px;
+}
+.v2-coach-markdown p + p,
+.v2-coach-markdown p + ul,
+.v2-coach-markdown p + ol,
+.v2-coach-markdown ul + p,
+.v2-coach-markdown ol + p {
+  margin-top: 8px;
+}
+.v2-coach-markdown ul,
+.v2-coach-markdown ol {
+  margin: 4px 0 8px;
+  padding-left: 22px;
+}
+.v2-coach-markdown code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #1e293b;
+  font-size: 0.92em;
+}
 .v2-coach-copy {
   grid-column: 2;
   display: inline-flex;

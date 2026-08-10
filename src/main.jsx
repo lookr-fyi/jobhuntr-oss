@@ -10437,6 +10437,86 @@ const practiceSessionDigest = (session) =>
         status: session.status || "draft",
       })
     : "";
+const coachInlineMarkdown = (text, keyPrefix) =>
+  String(text)
+    .split(/(\*\*[^*\n]+\*\*|`[^`\n]+`)/g)
+    .filter(Boolean)
+    .map((part, index) => {
+      const key = `${keyPrefix}-${index}`;
+      if (part.startsWith("**") && part.endsWith("**"))
+        return <strong key={key}>{part.slice(2, -2)}</strong>;
+      if (part.startsWith("`") && part.endsWith("`"))
+        return <code key={key}>{part.slice(1, -1)}</code>;
+      return part;
+    });
+
+function CoachMarkdown({ content }) {
+  const lines = String(content || "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n");
+  const blocks = [];
+  for (let index = 0; index < lines.length;) {
+    const line = lines[index];
+    if (!line.trim()) {
+      index += 1;
+      continue;
+    }
+    const heading = line.match(/^(#{1,3})\s+(.+)$/);
+    if (heading) {
+      blocks.push(
+        <h3 key={`heading-${index}`}>
+          {coachInlineMarkdown(heading[2], `heading-${index}`)}
+        </h3>,
+      );
+      index += 1;
+      continue;
+    }
+    const unordered = /^[-*]\s+/.test(line);
+    const ordered = /^\d+\.\s+/.test(line);
+    if (unordered || ordered) {
+      const items = [];
+      const pattern = unordered ? /^[-*]\s+(.+)$/ : /^\d+\.\s+(.+)$/;
+      while (index < lines.length) {
+        const item = lines[index].match(pattern);
+        if (!item) break;
+        items.push(
+          <li key={`item-${index}`}>
+            {coachInlineMarkdown(item[1], `item-${index}`)}
+          </li>,
+        );
+        index += 1;
+      }
+      blocks.push(
+        unordered ? (
+          <ul key={`list-${index}`}>{items}</ul>
+        ) : (
+          <ol key={`list-${index}`}>{items}</ol>
+        ),
+      );
+      continue;
+    }
+    const paragraph = [line];
+    index += 1;
+    while (
+      index < lines.length &&
+      lines[index].trim() &&
+      !/^(#{1,3})\s+|^[-*]\s+|^\d+\.\s+/.test(lines[index])
+    ) {
+      paragraph.push(lines[index]);
+      index += 1;
+    }
+    blocks.push(
+      <p key={`paragraph-${index}`}>
+        {paragraph.flatMap((part, partIndex) => [
+          ...(partIndex ? [<br key={`break-${index}-${partIndex}`} />] : []),
+          ...coachInlineMarkdown(part, `paragraph-${index}-${partIndex}`),
+        ])}
+      </p>,
+    );
+  }
+  return <div className="v2-coach-markdown">{blocks}</div>;
+}
+
 function Coach({ state, reload }) {
   const [view, setView] = useState("chat");
   const coachComposerDraftKey = "jobhuntr-coach-composer-draft";
@@ -10940,7 +11020,11 @@ function Coach({ state, reload }) {
                         <Sparkles size={14} />
                       </span>
                     )}
-                    <p>{message.content}</p>
+                    {message.role === "assistant" ? (
+                      <CoachMarkdown content={message.content} />
+                    ) : (
+                      <p>{message.content}</p>
+                    )}
                     {message.role === "assistant" && (
                       <button
                         className="v2-coach-copy"
