@@ -10,6 +10,7 @@ import { createPortal } from "react-dom";
 import { createRoot } from "react-dom/client";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { createLatestRequest } from "./latest-request.mjs";
+import { pickMotivationalLine } from "./motivationalMessages.js";
 import {
   Briefcase,
   Bot,
@@ -220,20 +221,6 @@ const normalizeCoachConversations = (value) =>
         }))
         .slice(0, 100)
     : [];
-const OVERVIEW_MOTIVATION = [
-  "One thoughtful application today is a brick in your next chapter.",
-  "Interviews start with consistent, courageous outreach.",
-  "Jobs are won by storytellers—keep refining yours.",
-  "Your momentum is louder than any algorithm.",
-  "Progress over perfection beats ghosting every time.",
-  "You are one tailored message away from a warm intro.",
-  "Hiring managers notice people who keep showing up.",
-  "Stay curious—every rejection is market research.",
-  "Stack small wins until they look like momentum.",
-  "Opportunities move toward people in motion.",
-  "Clarity follows action, not the other way around.",
-  "Momentum beats motivation—press send.",
-];
 function PlatformMark({ id, fallback }) {
   const logo = PLATFORM_LOGOS[id];
   return (
@@ -1923,15 +1910,37 @@ function subtitle(t) {
 function Overview({ state, setTab, reload }) {
   const [refreshing, setRefreshing] = useState(false);
   const [farewellOpen, setFarewellOpen] = useState(false);
-  const [motivationIndex, setMotivationIndex] = useState(
-    () => new Date().getDate() % OVERVIEW_MOTIVATION.length,
+  const [selectedMessage, setSelectedMessage] = useState(() =>
+    pickMotivationalLine(),
   );
+  const [typedMessage, setTypedMessage] = useState("");
   const [chartVisibility, setChartVisibility] = useState({
     evaluated: true,
     queued: true,
   });
   const [chartHover, setChartHover] = useState(null);
   const farewellCloseRef = useRef(null);
+  useEffect(() => {
+    if (!selectedMessage) return undefined;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const reveal = window.setTimeout(
+        () => setTypedMessage(selectedMessage),
+        0,
+      );
+      return () => window.clearTimeout(reveal);
+    }
+    const reset = window.setTimeout(() => setTypedMessage(""), 0);
+    let index = 0;
+    const interval = window.setInterval(() => {
+      index += 1;
+      setTypedMessage(selectedMessage.slice(0, index));
+      if (index >= selectedMessage.length) window.clearInterval(interval);
+    }, 35);
+    return () => {
+      window.clearTimeout(reset);
+      window.clearInterval(interval);
+    };
+  }, [selectedMessage]);
   useEffect(() => {
     if (!farewellOpen) return undefined;
     const returnFocus = document.activeElement;
@@ -1946,7 +1955,11 @@ function Overview({ state, setTab, reload }) {
     };
   }, [farewellOpen]);
   const s = state.summary;
-  const latestRun = state.agentRuns[0] || null;
+  const latestRun = [...state.agentRuns].sort(
+    (left, right) =>
+      new Date(right.updatedAt || right.createdAt).getTime() -
+      new Date(left.updatedAt || left.createdAt).getTime(),
+  )[0];
   const profileDisplayName =
     `${state.profile.firstName || ""} ${state.profile.lastName || ""}`.trim() ||
     state.profile.name ||
@@ -2062,7 +2075,7 @@ function Overview({ state, setTab, reload }) {
     setRefreshing(true);
     try {
       await reload();
-      setMotivationIndex((index) => (index + 1) % OVERVIEW_MOTIVATION.length);
+      setSelectedMessage(pickMotivationalLine());
     } catch {
       // The shared workspace loader reports the failure without leaving the
       // v2 refresh control stuck or creating an uncaught browser error.
@@ -2123,7 +2136,7 @@ function Overview({ state, setTab, reload }) {
       </div>
       <div className="v2-momentum" aria-live="polite">
         <span>MOMENTUM REMINDER</span>
-        <b>{OVERVIEW_MOTIVATION[motivationIndex]}</b>
+        <b>{typedMessage || "\u00a0"}</b>
       </div>
       <div className="v2-overview-top">
         <div className="v2-kpi-grid">

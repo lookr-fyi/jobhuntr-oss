@@ -262,6 +262,10 @@ test("the Overview pipeline preserves the authoritative empty history state", as
     overview,
     /evaluated: available\.filter\(\(job\) => job\.workflowRunId\)\.length/,
   );
+  assert.match(overview, /const latestRun = \[\.\.\.state\.agentRuns\]\.sort/);
+  assert.match(overview, /setInterval\(\(\) => \{[\s\S]*?slice\(0, index\)/);
+  assert.match(overview, /prefers-reduced-motion: reduce/);
+  assert.match(overview, /setSelectedMessage\(pickMotivationalLine\(\)\)/);
   assert.match(overview, /chartData\.length > 0 &&/);
   assert.match(overview, /No history yet\./);
   assert.match(

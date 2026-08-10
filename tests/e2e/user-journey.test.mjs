@@ -7,6 +7,7 @@ import net from "node:net";
 import { spawn } from "node:child_process";
 import { chromium } from "playwright-core";
 import AxeBuilder from "@axe-core/playwright";
+import { MOTIVATIONAL_LINES } from "../../src/motivationalMessages.js";
 
 const chromeCandidates = [
   process.env.CHROME_PATH,
@@ -533,15 +534,17 @@ test(
       await page.getByText(/sent today/).waitFor();
       await page.getByText("From your first signup to today.").waitFor();
       await page.waitForFunction(
-        () =>
-          (document.querySelector(".v2-momentum b")?.textContent?.trim()
-            .length || 0) > 20,
+        (lines) =>
+          lines.includes(
+            document.querySelector(".v2-momentum b")?.textContent?.trim(),
+          ),
+        MOTIVATIONAL_LINES,
       );
       const initialMotivation = await page
         .locator(".v2-momentum b")
         .innerText();
       assert.ok(
-        initialMotivation.length > 30,
+        MOTIVATIONAL_LINES.includes(initialMotivation),
         "the complete momentum reminder should render on first paint",
       );
       await page.waitForTimeout(100);
@@ -777,6 +780,19 @@ test(
         "Overview KPIs should use the authoritative v2 stacked desktop column",
       );
       await assertAccessible(page, "Overview");
+      await page.waitForFunction(
+        (lines) =>
+          lines.includes(
+            document.querySelector(".v2-momentum b")?.textContent?.trim(),
+          ),
+        MOTIVATIONAL_LINES,
+      );
+      assert.ok(
+        MOTIVATIONAL_LINES.includes(
+          (await page.locator(".v2-momentum b").innerText()).trim(),
+        ),
+        "Overview should type one of the complete authoritative v2 momentum reminders",
+      );
       for (const [label, value, meta] of [
         ["Total collected jobs", "2", "Let's get more!"],
         ["Total submitted", "0", "2 sent today"],
