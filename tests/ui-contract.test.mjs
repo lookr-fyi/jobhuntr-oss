@@ -728,12 +728,9 @@ test("Agent Runs bulk deletion uses one atomic retryable request", async () => {
 
   assert.match(
     runs,
-    /Number\(actionRequiredRunIds\.has\(b\.id\)\)[\s\S]*?sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
+    /Number\(actionRequiredRunIds\.has\(b\.id\)\)[\s\S]*?sortableTimestamp\(b\.updatedAt, b\.createdAt\)/,
   );
-  assert.match(
-    runs,
-    /const latestRun = \[\.\.\.runs\]\.sort\([\s\S]*?sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
-  );
+  assert.match(runs, /const latestRun = latestPersistedRecord\(runs\)/);
   assert.match(runs, /disabled=\{!latestRun\}/);
   assert.match(runs, /onClick=\{\(\) => setSelectedRun\(latestRun\)\}/);
   assert.doesNotMatch(runs, /setSelectedRun\(runs\[0\]\)/);
@@ -2324,6 +2321,10 @@ test("remaining persisted workflow lists render newest first", async () => {
     source.indexOf("function InfiniteHuntStatus"),
     source.indexOf("function GettingStarted"),
   );
+  const runsPage = source.slice(
+    source.indexOf("function RunsPage("),
+    source.indexOf("function SettingsPage("),
+  );
 
   assert.match(outreach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
   assert.match(coach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
@@ -2358,5 +2359,11 @@ test("remaining persisted workflow lists render newest first", async () => {
     huntStatus,
     /const latest = latestPersistedRecord\(runs\)/,
     "the floating Infinite Hunt status should summarize the newest run",
+  );
+  assert.match(runsPage, /const latestRun = latestPersistedRecord\(runs\)/);
+  assert.doesNotMatch(
+    runsPage,
+    /sortableTimestamp\(b\.completedAt/,
+    "Agent Runs should follow v2's updated-or-created chronology",
   );
 });

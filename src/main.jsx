@@ -14289,11 +14289,7 @@ function Agent({ state, reload, setTab }) {
 }
 function RunsPage({ state, setTab, reload }) {
   const runs = state.agentRuns;
-  const latestRun = [...runs].sort(
-    (a, b) =>
-      sortableTimestamp(b.completedAt, b.updatedAt, b.createdAt) -
-      sortableTimestamp(a.completedAt, a.updatedAt, a.createdAt),
-  )[0];
+  const latestRun = latestPersistedRecord(runs);
   const linkedRunId = new URLSearchParams(
     window.location.hash.split("?")[1] || "",
   ).get("run");
@@ -14345,8 +14341,8 @@ function RunsPage({ state, setTab, reload }) {
       (a, b) =>
         Number(actionRequiredRunIds.has(b.id)) -
           Number(actionRequiredRunIds.has(a.id)) ||
-        sortableTimestamp(b.completedAt, b.updatedAt, b.createdAt) -
-          sortableTimestamp(a.completedAt, a.updatedAt, a.createdAt),
+        sortableTimestamp(b.updatedAt, b.createdAt) -
+          sortableTimestamp(a.updatedAt, a.createdAt),
     );
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filteredRuns.length / pageSize));
