@@ -1514,15 +1514,42 @@ test(
       const huntStatus = page.getByRole("button", {
         name: "Open Infinite Hunting status",
       });
-      await huntStatus.hover();
+      assert.deepEqual(
+        await huntStatus.evaluate((button) => {
+          const style = getComputedStyle(button);
+          return [
+            style.width,
+            style.height,
+            style.opacity,
+            style.animationName,
+            style.animationDuration,
+          ];
+        }),
+        ["48px", "48px", "0.5", "v2-hunt-idle-pulse", "2s"],
+        "the idle floating hunt control should retain v2's dimensions and pulse treatment",
+      );
+      await huntStatus.focus();
       const huntPopover = page.getByRole("status").filter({
         hasText: "Infinite Hunt",
       });
+      assert.deepEqual(
+        await huntPopover.evaluate((popover) => {
+          const style = getComputedStyle(popover);
+          return [style.width, style.padding, style.borderRadius];
+        }),
+        ["280px", "12px", "8px"],
+        "the floating hunt status should retain v2's compact popover geometry",
+      );
       await huntPopover.getByText("Inspected", { exact: true }).waitFor();
       await huntPopover.getByText("Matched", { exact: true }).waitFor();
       await huntPopover.getByText("Saved", { exact: true }).waitFor();
-      await huntStatus.click();
+      await huntStatus.press("Enter");
       await page.getByRole("heading", { name: "Infinite Hunting" }).waitFor();
+      assert.equal(
+        await page.locator(".v2-hunt-float").count(),
+        0,
+        "the floating hunt control should leave the DOM on its destination route",
+      );
 
       await page.getByRole("button", { name: "Job Board" }).click();
       await page.getByRole("heading", { name: "Today's Picks" }).waitFor();
@@ -6259,16 +6286,19 @@ test(
           farewellPosition: getComputedStyle(
             document.querySelector(".v2-farewell-button"),
           ).position,
-          hunt: bounds(".v2-hunt-float > button"),
           navigation: bounds(".v2-sidebar"),
         };
       });
       assert.ok(
         floatingActions.farewellPosition === "static" &&
           floatingActions.farewell.left >= 16 &&
-          floatingActions.farewell.right <= 374 &&
-          floatingActions.hunt.bottom < floatingActions.navigation.top,
-        "mobile Overview actions must stay in-flow or above navigation without covering dashboard content",
+          floatingActions.farewell.right <= 374,
+        "mobile Overview actions must stay in-flow without covering dashboard content",
+      );
+      assert.equal(
+        await mobile.locator(".v2-hunt-float").count(),
+        0,
+        "the global hunt control should remain absent from v2's Overview route",
       );
       await assertAccessible(mobile, "Mobile Overview");
       await mobile

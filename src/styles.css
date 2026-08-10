@@ -7382,17 +7382,20 @@ select:focus {
   border-radius: 50%;
   color: #fff;
   background: #111827;
-  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.3);
-  opacity: 0.72;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.5;
+  animation: v2-hunt-idle-pulse 2s ease-in-out infinite;
 }
 .v2-hunt-float > button:hover,
-.v2-hunt-float > button:focus-visible {
+.v2-hunt-float > button:focus-visible,
+.v2-hunt-float:focus-within > button {
   opacity: 1;
   transform: translateY(-1px);
+  animation-play-state: paused;
 }
 .v2-hunt-float > button.running {
   opacity: 1;
-  animation: v2-hunt-pulse 1.8s ease-in-out infinite;
+  animation: v2-hunt-running-bounce 0.5s ease-in-out infinite;
 }
 .v2-hunt-float > button i {
   position: absolute;
@@ -7404,25 +7407,37 @@ select:focus {
   border-radius: 50%;
   background: #22c55e;
 }
-@keyframes v2-hunt-pulse {
+@keyframes v2-hunt-running-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
   50% {
-    box-shadow:
-      0 5px 18px rgba(15, 23, 42, 0.3),
-      0 0 0 7px rgba(34, 197, 94, 0.15);
+    transform: translateY(-12px);
+  }
+}
+@keyframes v2-hunt-idle-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
   }
 }
 .v2-hunt-popover {
   position: absolute;
   right: 0;
   bottom: 60px;
-  width: 270px;
+  width: 280px;
   box-sizing: border-box;
-  padding: 14px;
+  padding: 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 11px;
+  border-radius: 8px;
   color: #334155;
   background: #fff;
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
 }
 .v2-hunt-popover-head {
   display: flex;

@@ -1392,7 +1392,7 @@ function App() {
         )}{" "}
         {tab === "privacy" && <Privacy state={state} />}
       </main>
-      {!onboardingOpen && tab !== "agent" && (
+      {!onboardingOpen && !["overview", "agent", "coach"].includes(tab) && (
         <InfiniteHuntStatus
           runs={state.agentRuns}
           onOpen={() => setTab("agent")}
