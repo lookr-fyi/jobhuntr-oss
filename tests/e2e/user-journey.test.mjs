@@ -5098,6 +5098,13 @@ test(
       await page.locator('[title="Profile and settings"]').click();
       assert.equal(
         await page
+          .locator('[title="Profile and settings"] .v2-user-copy b')
+          .textContent(),
+        "User",
+        "persistent v2 sidebar chrome should not expose the private profile name",
+      );
+      assert.equal(
+        await page
           .locator('[title="Profile and settings"]')
           .getAttribute("aria-haspopup"),
         "menu",
@@ -5107,6 +5114,18 @@ test(
         name: "Local workspace menu",
       });
       await workspaceMenu.waitFor();
+      assert.equal(
+        await workspaceMenu
+          .locator(".v2-user-menu-identity strong")
+          .textContent(),
+        "User",
+        "the v2 workspace menu should retain its generic user identity",
+      );
+      assert.equal(
+        await workspaceMenu.getByText("E2E Hunter", { exact: true }).count(),
+        0,
+        "the persistent workspace menu must not disclose the saved profile name",
+      );
       const profileMenuItem = workspaceMenu.getByRole("menuitem", {
         name: "Profile & usage",
       });

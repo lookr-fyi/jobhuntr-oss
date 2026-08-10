@@ -1249,12 +1249,10 @@ function App() {
             >
               <div className="v2-user-menu-identity">
                 <span className="v2-avatar">
-                  {state.profile.name?.slice(0, 1).toUpperCase() || (
-                    <User size={15} />
-                  )}
+                  <User size={15} />
                 </span>
                 <span>
-                  <strong>{state.profile.name || "Job Hunter"}</strong>
+                  <strong>User</strong>
                   <small>Private local workspace</small>
                 </span>
               </div>
@@ -1301,7 +1299,7 @@ function App() {
               <User size={15} />
             </span>
             <span className="v2-user-copy">
-              <b>{state.profile.name}</b>
+              <b>User</b>
               <small>Local workspace</small>
             </span>
             <ChevronRight size={14} />
