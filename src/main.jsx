@@ -3950,6 +3950,7 @@ function Tracker({ state, reload, setTab }) {
   );
 }
 function TrackerApplicationInsights({ job, submission, profile }) {
+  const isAutomatedJob = Boolean(job.workflowRunId);
   const threshold = Number(
     submission?.atsThreshold ?? profile.preferences?.atsThreshold ?? 80,
   );
@@ -4034,73 +4035,75 @@ function TrackerApplicationInsights({ job, submission, profile }) {
           </dl>
         </section>
       )}
-      <section className="v2-tracker-info-section" aria-label="ATS Analysis">
-        <div className="v2-tracker-info-head">
-          <h3>ATS Analysis</h3>
-          <span
-            className={`v2-ats-detail-score ${score >= threshold ? "high" : score >= 60 ? "medium" : "low"}`}
-          >
-            {score}%
-          </span>
-        </div>
-        <div className="v2-ats-score-track" aria-hidden="true">
-          <i style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
-          <b style={{ left: `${Math.min(100, Math.max(0, threshold))}%` }} />
-        </div>
-        {hasOptimizedScore && (
-          <div className="v2-optimized-score">
-            <span>Optimized Score:</span>
-            <strong
-              className={
-                optimizedScore >= threshold
-                  ? "high"
-                  : optimizedScore >= 60
-                    ? "medium"
-                    : "low"
-              }
+      {isAutomatedJob && (
+        <section className="v2-tracker-info-section" aria-label="ATS Analysis">
+          <div className="v2-tracker-info-head">
+            <h3>ATS Analysis</h3>
+            <span
+              className={`v2-ats-detail-score ${score >= threshold ? "high" : score >= 60 ? "medium" : "low"}`}
             >
-              {optimizedScore}%
-            </strong>
+              {score}%
+            </span>
           </div>
-        )}
-        <p>
-          {score >= threshold
-            ? "This resume meets your ATS application threshold."
-            : `Below your ${threshold}% threshold—review the suggested keywords before applying.`}
-        </p>
-        {submission?.atsDecision && (
-          <div className="v2-ats-document-choice">
-            <CheckCircle2 size={15} />
-            {submission.atsDecision === "optimized"
-              ? "Optimized ATS resume selected"
-              : "Original resume selected"}
+          <div className="v2-ats-score-track" aria-hidden="true">
+            <i style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
+            <b style={{ left: `${Math.min(100, Math.max(0, threshold))}%` }} />
           </div>
-        )}
-        {(matched.length > 0 || missing.length > 0) && (
-          <div className="v2-ats-keyword-groups">
-            {matched.length > 0 && (
-              <div>
-                <span>Matched keywords</span>
-                <div className="chips">
-                  {matched.map((keyword) => (
-                    <span key={keyword}>{keyword}</span>
-                  ))}
+          {hasOptimizedScore && (
+            <div className="v2-optimized-score">
+              <span>Optimized Score:</span>
+              <strong
+                className={
+                  optimizedScore >= threshold
+                    ? "high"
+                    : optimizedScore >= 60
+                      ? "medium"
+                      : "low"
+                }
+              >
+                {optimizedScore}%
+              </strong>
+            </div>
+          )}
+          <p>
+            {score >= threshold
+              ? "This resume meets your ATS application threshold."
+              : `Below your ${threshold}% threshold—review the suggested keywords before applying.`}
+          </p>
+          {submission?.atsDecision && (
+            <div className="v2-ats-document-choice">
+              <CheckCircle2 size={15} />
+              {submission.atsDecision === "optimized"
+                ? "Optimized ATS resume selected"
+                : "Original resume selected"}
+            </div>
+          )}
+          {(matched.length > 0 || missing.length > 0) && (
+            <div className="v2-ats-keyword-groups">
+              {matched.length > 0 && (
+                <div>
+                  <span>Matched keywords</span>
+                  <div className="chips">
+                    {matched.map((keyword) => (
+                      <span key={keyword}>{keyword}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-            {missing.length > 0 && (
-              <div>
-                <span>Keywords to add truthfully</span>
-                <div className="chips missing">
-                  {missing.slice(0, 8).map((keyword) => (
-                    <span key={keyword}>{keyword}</span>
-                  ))}
+              )}
+              {missing.length > 0 && (
+                <div>
+                  <span>Keywords to add truthfully</span>
+                  <div className="chips missing">
+                    {missing.slice(0, 8).map((keyword) => (
+                      <span key={keyword}>{keyword}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </section>
+              )}
+            </div>
+          )}
+        </section>
+      )}
       {questions.length > 0 && (
         <section
           className="v2-tracker-info-section"

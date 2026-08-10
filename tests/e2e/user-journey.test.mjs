@@ -4591,6 +4591,11 @@ test(
       await page
         .getByRole("heading", { name: "Founding Principal Product Engineer" })
         .waitFor();
+      assert.equal(
+        await page.getByRole("region", { name: "ATS Analysis" }).count(),
+        0,
+        "manual tracker jobs should hide the automated ATS section like v2",
+      );
       await page.reload();
       await page
         .getByRole("heading", { name: "Founding Principal Product Engineer" })
