@@ -3120,7 +3120,7 @@ function Tracker({ state, reload, setTab }) {
             <option value="all">All Runs</option>
             <option value="manual">Manual Applications Only</option>
             <option value="automated">Automated Applications Only</option>
-            {(state.agentRuns || []).map((run) => (
+            {newestFirst(state.agentRuns).map((run) => (
               <option value={run.id} key={run.id}>
                 {run.runName || run.search?.q || "Local hunt"} -{" "}
                 {formatCalendarDate(run.createdAt)}
