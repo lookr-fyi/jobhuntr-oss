@@ -1660,7 +1660,7 @@ test(
         .getByRole("checkbox", { name: "Remote", exact: true })
         .check();
       await locationFilter.locator("summary").click();
-      await page.getByLabel("Minimum board salary").selectOption("150000");
+      await page.getByLabel("Above Annual Salary").selectOption("150000");
       await page.getByLabel("Above Years of Experience").selectOption("5");
       const jobTypeFilter = page.locator(".v2-board-multi-filter", {
         hasText: "Job Type",

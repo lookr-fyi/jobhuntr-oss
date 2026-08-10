@@ -386,6 +386,11 @@ const isApplicationQuestionReady = (question) => {
   return isValidApplicationAnswer(question) && question?.verified === true;
 };
 const maximumListedSalary = (job) => {
+  const explicitRange = job.salaryRange ?? job.salary_range;
+  if (Array.isArray(explicitRange)) {
+    const explicitValues = explicitRange.map(Number).filter(Number.isFinite);
+    if (explicitValues.length) return Math.max(...explicitValues);
+  }
   const values = String(job.salary || "")
     .match(/\d+(?:\.\d+)?\s*k?/gi)
     ?.map((value) => {
@@ -393,6 +398,20 @@ const maximumListedSalary = (job) => {
       return /k/i.test(value) ? amount * 1000 : amount;
     });
   return values?.length ? Math.max(...values) : 0;
+};
+const boardSalaryLabel = (job) => {
+  const range = job.salaryRange ?? job.salary_range;
+  if (Array.isArray(range)) {
+    const [minimum, maximum] = range.map(Number);
+    const format = (value) =>
+      Number.isFinite(value) && value > 0
+        ? `$${value.toLocaleString("en-US")}`
+        : "";
+    if (minimum > 0 && maximum > 0)
+      return `${format(minimum)} – ${format(maximum)}`;
+    if (minimum > 0 || maximum > 0) return format(minimum || maximum);
+  }
+  return job.salary || "Salary not listed";
 };
 const boardJobType = (job) => {
   const explicit = String(job.jobType ?? job.job_type ?? "").toLowerCase();
@@ -4798,6 +4817,7 @@ function Board({ state, reload }) {
             maximumListedSalary(job) >= minimumSalary &&
             (minimumExperience === "" ||
               (Number.isFinite(Number(job.eoy)) &&
+                Number(job.eoy) > 0 &&
                 Number(job.eoy) >= Number(minimumExperience))) &&
             (!remoteTypes.length ||
               remoteTypes.includes(boardRemoteType(job))) &&
@@ -5001,10 +5021,10 @@ function Board({ state, reload }) {
             placeholder="Select locations..."
           />
           <label>
-            Minimum salary
+            Above Annual Salary
             <select
               name="board-minimum-salary"
-              aria-label="Minimum board salary"
+              aria-label="Above Annual Salary"
               value={minimumSalary}
               onChange={(event) => setMinimumSalary(Number(event.target.value))}
             >
@@ -5193,7 +5213,7 @@ function Board({ state, reload }) {
               <span className="v2-match-pill">{selected.fitScore}% match</span>
             </div>
             <div className="v2-job-facts">
-              <span>{selected.salary || "Salary not listed"}</span>
+              <span>{boardSalaryLabel(selected)}</span>
               <span>
                 {boardJobType(selected) === "full-time"
                   ? "Full-time"

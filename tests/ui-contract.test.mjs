@@ -1419,6 +1419,11 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /const \[minimumExperience, setMinimumExperience\]/);
   assert.match(board, /Number\(job\.eoy\) >= Number\(minimumExperience\)/);
   assert.match(board, /Above Years of Experience/);
+  assert.match(board, /Above Annual Salary/);
+  assert.match(
+    board,
+    /Number\(job\.eoy\) > 0 &&\s*Number\(job\.eoy\) >= Number\(minimumExperience\)/,
+  );
   assert.match(board, /\[0, 1, 2, 3, 5, 8, 10\]\.map/);
   assert.match(
     board,
@@ -1451,6 +1456,15 @@ test("Job Board refresh and queue actions are single-flight", async () => {
     source,
     /const boardRemoteType = \(job\) => \{[\s\S]*?job\.remoteType \?\? job\.remote_type/,
   );
+  assert.match(
+    source,
+    /const maximumListedSalary = \(job\) => \{[\s\S]*?job\.salaryRange \?\? job\.salary_range/,
+  );
+  assert.match(
+    source,
+    /const boardSalaryLabel = \(job\) => \{[\s\S]*?toLocaleString\("en-US"\)/,
+  );
+  assert.match(board, /boardSalaryLabel\(selected\)/);
   assert.match(board, /boardRemoteType\(selected\) === "hybrid"/);
 });
 

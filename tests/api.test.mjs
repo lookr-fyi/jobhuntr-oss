@@ -293,12 +293,14 @@ test("Job Board feed excludes private tracked jobs and stale community records",
       remoteType: acme.remoteType,
       seniorLevel: acme.seniorLevel,
       sponsorship: acme.provideVisaSponsorship,
+      salaryRange: acme.salaryRange,
     },
     {
       jobType: "Full-time",
       remoteType: "Remote",
       seniorLevel: "Lead",
       sponsorship: "Likely",
+      salaryRange: [150000, 210000],
     },
   );
 });
