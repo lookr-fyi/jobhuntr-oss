@@ -10809,14 +10809,15 @@ function Coach({ state, reload }) {
     useState(null);
   const coachMigrationStarted = useRef(false);
   const [conversations, setConversations] = useState(() => {
-    if (state.coachConversations?.length) return state.coachConversations;
+    if (state.coachConversations?.length)
+      return newestFirst(state.coachConversations);
     try {
       const saved = normalizeCoachConversations(
         JSON.parse(
           localStorage.getItem("jobhuntr-coach-conversations") || "[]",
         ),
       );
-      if (saved.length) return saved;
+      if (saved.length) return newestFirst(saved);
       const legacy = normalizeCoachMessages(
         JSON.parse(localStorage.getItem("jobhuntr-coach-chat") || "[]"),
       );
@@ -10843,7 +10844,9 @@ function Coach({ state, reload }) {
     return linked || localStorage.getItem("jobhuntr-active-coach-conversation");
   });
   const [jobId, setJobId] = useState(
-    state.jobs.find((j) => j.status === "interview")?.id ||
+    latestPersistedRecord(
+      state.jobs.filter((job) => job.status === "interview"),
+    )?.id ||
       latestPersistedRecord(state.jobs)?.id ||
       "",
   );

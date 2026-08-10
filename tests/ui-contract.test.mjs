@@ -2132,3 +2132,28 @@ test("document workflows choose the newest usable resume", async () => {
     /state\.resumes\.find\(\(item\) => isUsableResumeText\(item\.content\)\)/,
   );
 });
+
+test("Career Coach restores the newest persisted context", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const coach = source.slice(
+    source.indexOf("function Coach("),
+    source.indexOf("function PracticePanel"),
+  );
+
+  assert.match(
+    coach,
+    /state\.coachConversations\?\.length\)[\s\S]*?return newestFirst\(state\.coachConversations\)/,
+  );
+  assert.match(coach, /saved\.length\) return newestFirst\(saved\)/);
+  assert.match(
+    coach,
+    /latestPersistedRecord\([\s\S]*?state\.jobs\.filter\(\(job\) => job\.status === "interview"\)/,
+  );
+  assert.doesNotMatch(
+    coach,
+    /state\.jobs\.find\(\([^)]*\) => [^\n]*status === "interview"\)/,
+  );
+});
