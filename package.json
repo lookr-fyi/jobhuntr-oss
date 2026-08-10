@@ -20,6 +20,7 @@
     "preview": "NODE_ENV=production node server/index.mjs",
     "test": "node --test tests/*.test.mjs",
     "test:e2e": "npm run build && npm run package:dir && node --test tests/e2e/*.test.mjs",
+    "audit:prod": "npm audit --omit=dev --audit-level=low",
     "secret:scan": "node scripts/secret-scan.mjs",
     "verify": "npm run secret:scan && npm run format:check && npm run lint && npm test && npm run test:e2e",
     "format": "prettier --write \"**/*.{js,mjs,jsx,json,css,md,yml}\"",

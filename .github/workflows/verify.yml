@@ -15,6 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Audit production dependencies
+        run: npm run audit:prod
       - name: Verify browser and Electron workflows
         run: xvfb-run -a npm run verify
 

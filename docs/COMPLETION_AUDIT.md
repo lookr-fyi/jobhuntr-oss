@@ -57,4 +57,4 @@ Their user-facing value is replaced with local profiles, deterministic scoring/g
 6. A no-mock Chrome journey covering onboarding, hunting, run history, ATS resume, submission, cover letter, tracker, profile audit, outreach, AI Coach, Gigs, settings, persistence, and mobile layout. Axe scans enforce no serious or critical WCAG 2 A/AA violations across every visited product surface.
 7. Real Electron source-runtime and packaged-distributable launch tests that verify user flows, persistence, window restoration, and renderer security boundaries.
 
-GitHub Actions runs the browser and Electron gate under Xvfb, smoke-tests the actual Linux, macOS, and Windows packaged artifacts, and independently launches `./run.sh` from a dependency-free checkout. `npm audit --omit=dev` is also expected to report zero production vulnerabilities at release time.
+GitHub Actions runs the browser and Electron gate under Xvfb, blocks every published production dependency advisory with `npm run audit:prod`, smoke-tests the actual Linux, macOS, and Windows packaged artifacts, and independently launches `./run.sh` from a dependency-free checkout.

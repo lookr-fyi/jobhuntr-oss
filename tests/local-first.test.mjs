@@ -98,6 +98,19 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
   );
 });
 
+test("CI blocks every published production dependency advisory", () => {
+  const pkg = JSON.parse(read("package.json"));
+  const workflow = read(".github/workflows/verify.yml");
+  assert.equal(
+    pkg.scripts["audit:prod"],
+    "npm audit --omit=dev --audit-level=low",
+  );
+  assert.match(
+    workflow,
+    /name: Audit production dependencies\s+run: npm run audit:prod/,
+  );
+});
+
 test("public Git index excludes personal data and private environment files", () => {
   const files = execFileSync("git", ["ls-files"], {
     cwd: root,
