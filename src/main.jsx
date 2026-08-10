@@ -2526,8 +2526,8 @@ function Tracker({ state, reload, setTab }) {
       if (a.status === "submitted" && b.status !== "submitted") return -1;
       if (b.status === "submitted" && a.status !== "submitted") return 1;
       return (
-        new Date(b.updatedAt || b.createdAt || 0) -
-        new Date(a.updatedAt || a.createdAt || 0)
+        sortableTimestamp(b.updatedAt, b.createdAt) -
+        sortableTimestamp(a.updatedAt, a.createdAt)
       );
     })[0];
   const runFiltered = state.jobs.filter((item) => {
@@ -3108,8 +3108,8 @@ function Tracker({ state, reload, setTab }) {
                           .filter((submission) => submission.jobId === item.id)
                           .sort(
                             (a, b) =>
-                              new Date(b.updatedAt || b.createdAt || 0) -
-                              new Date(a.updatedAt || a.createdAt || 0),
+                              sortableTimestamp(b.updatedAt, b.createdAt) -
+                              sortableTimestamp(a.updatedAt, a.createdAt),
                           )[0];
                         const shortDate = (value) => {
                           if (!value) return "";
@@ -5429,7 +5429,7 @@ function Queue({ state, reload, setTab }) {
       if (queueSort === "fit")
         return (bJob?.fitScore || 0) - (aJob?.fitScore || 0);
       if (queueSort === "ats") return (b.atsScore || 0) - (a.atsScore || 0);
-      return new Date(b.createdAt) - new Date(a.createdAt);
+      return sortableTimestamp(b.createdAt) - sortableTimestamp(a.createdAt);
     });
   const readySubmissions = active.filter((item) => item.status === "ready");
   const currentSubmitPacket = submitBatch[submitIndex] || null;
@@ -7571,8 +7571,8 @@ function Resume({ state, reload, mode = "resume" }) {
     .sort((a, b) => {
       const comparison =
         templateSort === "modified"
-          ? new Date(a.updatedAt || a.createdAt || 0) -
-            new Date(b.updatedAt || b.createdAt || 0)
+          ? sortableTimestamp(a.updatedAt, a.createdAt) -
+            sortableTimestamp(b.updatedAt, b.createdAt)
           : a.name.localeCompare(b.name);
       return templateSortOrder === "asc" ? comparison : -comparison;
     });
@@ -10127,14 +10127,14 @@ function OutreachPage({ state, reload }) {
     })
     .sort((a, b) =>
       sort === "oldest"
-        ? new Date(a.createdAt) - new Date(b.createdAt)
+        ? sortableTimestamp(a.createdAt) - sortableTimestamp(b.createdAt)
         : sort === "company"
           ? (
               state.jobs.find((job) => job.id === a.jobId)?.company || ""
             ).localeCompare(
               state.jobs.find((job) => job.id === b.jobId)?.company || "",
             )
-          : new Date(b.createdAt) - new Date(a.createdAt),
+          : sortableTimestamp(b.createdAt) - sortableTimestamp(a.createdAt),
     );
   const selected =
     draft || visible.find((item) => item.id === selectedId) || visible[0];

@@ -45,6 +45,27 @@ test("persisted timestamps cannot bypass safe date formatters", async () => {
   );
 });
 
+test("persisted timestamps cannot destabilize user-visible ordering", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /const sortableTimestamp = \(\.\.\.values\) => \{[\s\S]*?Number\.isFinite\(timestamp\)[\s\S]*?return 0/,
+  );
+  assert.doesNotMatch(
+    source,
+    /new Date\([ab]\.(?:updatedAt|completedAt|createdAt)[^\n]*\)\s*-/,
+    "persisted record comparators must fail closed through sortableTimestamp",
+  );
+  assert.ok(
+    (source.match(/sortableTimestamp\(/g) || []).length >= 16,
+    "all run, packet, template, and outreach ordering surfaces should share safe timestamp semantics",
+  );
+});
+
 test("every JobHuntr CSS custom property is defined", async () => {
   const source = await readFile(
     new URL("../src/styles.css", import.meta.url),
