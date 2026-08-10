@@ -1437,19 +1437,21 @@ app.patch("/api/submissions/:id", async (req, res) => {
         const incoming = questionUpdates.find(
           (candidate) => safeText(candidate?.id, 80) === existing.id,
         );
+        const existingAnswer = safeText(existing.answer, 10000);
         const updated = {
           ...existing,
           required: existing.required !== false,
           answer:
             incoming && Object.hasOwn(incoming, "answer")
               ? safeText(incoming.answer, 10000)
-              : safeText(existing.answer, 10000),
+              : existingAnswer,
         };
+        const answerChanged = updated.answer !== existingAnswer;
         updated.confident = isValidApplicationAnswer(updated);
         updated.verified =
           incoming && Object.hasOwn(incoming, "verified")
             ? Boolean(incoming.verified) && updated.confident
-            : Boolean(existing.verified) && updated.confident;
+            : !answerChanged && Boolean(existing.verified) && updated.confident;
         return updated;
       });
       const verifiedAnswers = item.applicationQuestions.filter(

@@ -1723,6 +1723,47 @@ test("editing one Easy Apply answer does not re-remember unrelated verified answ
   );
 });
 
+test("editing a verified Easy Apply answer requires explicit re-verification", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Explicit Review Co",
+      title: "Application Safety Engineer",
+      url: "https://explicit-review.example/apply",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+  });
+  const [question] = packet.body.applicationQuestions;
+  const verified = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      applicationQuestion: {
+        id: question.id,
+        answer: "My reviewed answer.",
+        verified: true,
+      },
+    }),
+  });
+  assert.equal(verified.body.applicationQuestions[0].verified, true);
+
+  const edited = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      applicationQuestion: {
+        id: question.id,
+        answer: "My edited answer.",
+      },
+    }),
+  });
+  assert.equal(edited.res.status, 200);
+  assert.equal(edited.body.applicationQuestions[0].answer, "My edited answer.");
+  assert.equal(edited.body.applicationQuestions[0].verified, false);
+  assert.equal(edited.body.status, "draft");
+});
+
 test("malformed Easy Apply updates are rejected without mutating the packet", async () => {
   const job = await req("/api/jobs", {
     method: "POST",
