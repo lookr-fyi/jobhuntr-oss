@@ -3303,10 +3303,10 @@ function Tracker({ state, reload, setTab }) {
                             required={["title", "company"].includes(field)}
                             value={editForm[field]}
                             onChange={(event) =>
-                              setEditForm({
-                                ...editForm,
+                              setEditForm((current) => ({
+                                ...current,
                                 [field]: event.target.value,
-                              })
+                              }))
                             }
                           />
                         </label>
@@ -3319,10 +3319,10 @@ function Tracker({ state, reload, setTab }) {
                         aria-label="Edit job status"
                         value={editForm.status}
                         onChange={(event) =>
-                          setEditForm({
-                            ...editForm,
+                          setEditForm((current) => ({
+                            ...current,
                             status: event.target.value,
-                          })
+                          }))
                         }
                       >
                         {stages.map((stage) => (
@@ -3337,11 +3337,11 @@ function Tracker({ state, reload, setTab }) {
                       <textarea
                         name="edit-job-description"
                         value={editForm.description}
-                        onChange={(event) =>
-                          setEditForm({
-                            ...editForm,
+                        onInput={(event) =>
+                          setEditForm((current) => ({
+                            ...current,
                             description: event.target.value,
-                          })
+                          }))
                         }
                       />
                     </label>
@@ -3556,7 +3556,10 @@ function Tracker({ state, reload, setTab }) {
                         required={["title", "company"].includes(field)}
                         value={form[field]}
                         onChange={(event) =>
-                          setForm({ ...form, [field]: event.target.value })
+                          setForm((current) => ({
+                            ...current,
+                            [field]: event.target.value,
+                          }))
                         }
                       />
                     </label>
@@ -3569,7 +3572,10 @@ function Tracker({ state, reload, setTab }) {
                     aria-label="New job status"
                     value={form.status}
                     onChange={(event) =>
-                      setForm({ ...form, status: event.target.value })
+                      setForm((current) => ({
+                        ...current,
+                        status: event.target.value,
+                      }))
                     }
                   >
                     {stages.map((stage) => (
@@ -3584,8 +3590,11 @@ function Tracker({ state, reload, setTab }) {
                   <textarea
                     name="new-job-description"
                     value={form.description}
-                    onChange={(event) =>
-                      setForm({ ...form, description: event.target.value })
+                    onInput={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        description: event.target.value,
+                      }))
                     }
                   />
                 </label>

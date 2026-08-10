@@ -3679,12 +3679,30 @@ test(
         "applied",
         "clearing a draft should preserve the column it was opened from",
       );
-      await addJobDialog
-        .getByLabel("title", { exact: true })
-        .fill("E2E Added Role");
-      await addJobDialog
-        .getByLabel("company", { exact: true })
-        .fill("E2E Added Company");
+      await addJobDialog.evaluate((dialog) => {
+        const values = {
+          "new-job-title": "E2E Added Role",
+          "new-job-company": "E2E Added Company",
+          "new-job-location": "Remote US",
+          "new-job-salary": "$150k-$190k",
+          "new-job-url": "https://example.com/e2e-added-role",
+          "new-job-tags": "linkedin, product engineering",
+          "new-job-description":
+            "A complete role description entered at browser automation speed.",
+        };
+        for (const [name, value] of Object.entries(values)) {
+          const control = dialog.querySelector(`[name="${name}"]`);
+          const prototype =
+            control instanceof HTMLTextAreaElement
+              ? HTMLTextAreaElement.prototype
+              : HTMLInputElement.prototype;
+          Object.getOwnPropertyDescriptor(prototype, "value").set.call(
+            control,
+            value,
+          );
+          control.dispatchEvent(new InputEvent("input", { bubbles: true }));
+        }
+      });
       let addJobRequests = 0;
       await page.route("**/api/jobs", async (route) => {
         if (route.request().method() === "POST") addJobRequests += 1;
@@ -3707,6 +3725,17 @@ test(
       );
       await page
         .getByRole("heading", { name: "E2E Added Role", exact: true })
+        .waitFor();
+      await page
+        .getByText(
+          "A complete role description entered at browser automation speed.",
+          { exact: true },
+        )
+        .waitFor();
+      await page.getByRole("link", { name: "Open job listing ↗" }).waitFor();
+      await page
+        .getByText("product engineering", { exact: true })
+        .first()
         .waitFor();
       assert.equal(
         addJobRequests,
