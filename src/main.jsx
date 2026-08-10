@@ -1398,23 +1398,25 @@ const readOnboardingDraft = () => {
       return null;
     const boundedString = (input, maximum) =>
       typeof input === "string" ? input.slice(0, maximum) : "";
-    return {
-      step: Math.min(4, Math.max(0, Number(value.step) || 0)),
-      form: {
-        name: boundedString(value.form.name, 200),
-        role: boundedString(value.form.role, 200),
-        skills: boundedString(value.form.skills, 4_000),
-        location: boundedString(value.form.location, 300),
-        preferredLocations: boundedString(value.form.preferredLocations, 2_000),
-        minSalary: Math.max(0, Number(value.form.minSalary) || 0),
-        weeklyGoal: Math.min(
-          100,
-          Math.max(1, Number(value.form.weeklyGoal) || 5),
-        ),
-        remote: value.form.remote !== false,
-        resumeText: boundedString(value.form.resumeText, 100_000),
-      },
+    const form = {
+      name: boundedString(value.form.name, 200),
+      role: boundedString(value.form.role, 200),
+      skills: boundedString(value.form.skills, 4_000),
+      location: boundedString(value.form.location, 300),
+      preferredLocations: boundedString(value.form.preferredLocations, 2_000),
+      minSalary: Math.max(0, Number(value.form.minSalary) || 0),
+      weeklyGoal: Math.min(
+        100,
+        Math.max(1, Number(value.form.weeklyGoal) || 5),
+      ),
+      remote: value.form.remote !== false,
+      resumeText: boundedString(value.form.resumeText, 100_000),
     };
+    let step = Math.min(4, Math.max(0, Number(value.step) || 0));
+    if (step >= 4 && !isUsableResumeText(form.resumeText)) step = 3;
+    if (step >= 3 && !form.skills.trim()) step = 2;
+    if (step >= 2 && !form.role.trim()) step = 1;
+    return { step, form };
   } catch {
     localStorage.removeItem(ONBOARDING_DRAFT_KEY);
     return null;
@@ -1476,8 +1478,12 @@ function Onboarding({ profile, reload }) {
   }, [form, step]);
   const finish = async (overrides = {}) => {
     if (savingRef.current || extractingResumeRef.current) return;
-    savingRef.current = true;
     const values = { ...form, ...overrides };
+    if (!isUsableResumeText(values.resumeText)) {
+      setStep(3);
+      return;
+    }
+    savingRef.current = true;
     setSaving(true);
     try {
       await api("/api/profile", {

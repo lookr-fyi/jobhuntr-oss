@@ -119,6 +119,16 @@ test("first-run onboarding recovers bounded private edits until setup succeeds",
 
   assert.match(onboarding, /readOnboardingDraft/);
   assert.match(onboarding, /resumeText, 100_000/);
+  assert.match(
+    onboarding,
+    /if \(step >= 4 && !isUsableResumeText\(form\.resumeText\)\) step = 3/,
+    "a corrupt or incomplete draft must not bypass the private resume step",
+  );
+  assert.match(
+    onboarding,
+    /if \(!isUsableResumeText\(values\.resumeText\)\) \{\s*setStep\(3\);\s*return/,
+    "workspace creation must fail closed if resume evidence is missing",
+  );
   assert.match(onboarding, /localStorage\.setItem\(\s*ONBOARDING_DRAFT_KEY/);
   assert.match(
     onboarding,
