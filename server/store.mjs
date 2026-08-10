@@ -391,17 +391,28 @@ function migrate(input) {
       ),
     ].slice(0, maxItems);
   const faqIds = new Set();
+  const faqQuestionTypes = new Set([
+    "text_input",
+    "dropdown",
+    "multiple_choice",
+  ]);
   const faqAnswers = records(restoredProfile.faqAnswers)
     .map((faq) => ({
       ...faq,
       question: boundedText(faq.question, 1000),
       answer: boundedText(faq.answer, 30000),
+      questionType: faqQuestionTypes.has(faq.questionType)
+        ? faq.questionType
+        : "text_input",
+      options: normalizeProfileList(faq.options, 50, 1000),
     }))
     .filter((faq) => faq.question)
     .map((faq, index) => ({
       id: uniqueLegacyId(faq.id, "faq", index, faqIds),
       question: faq.question,
       answer: faq.answer,
+      questionType: faq.questionType,
+      options: faq.options,
     }))
     .slice(0, 100);
   const numericPreference = (value, fallback, min, max, integer = false) => {
@@ -536,7 +547,8 @@ function migrate(input) {
           (db.profile.faqAnswers || []).find(
             (item) =>
               String(item.question).trim().toLowerCase() ===
-              question.toLowerCase(),
+                question.toLowerCase() &&
+              (item.questionType || "text_input") === "text_input",
           )?.answer || "",
         questionType: "text_input",
         confident: false,

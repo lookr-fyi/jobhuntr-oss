@@ -14588,6 +14588,18 @@ function readUserCenterDraft(profile) {
             id: String(answer.id || "").slice(0, 200),
             question,
             answer: String(answer.answer || "").slice(0, 10000),
+            questionType: [
+              "text_input",
+              "dropdown",
+              "multiple_choice",
+            ].includes(answer.questionType)
+              ? answer.questionType
+              : "text_input",
+            options: Array.isArray(answer.options)
+              ? answer.options
+                  .slice(0, 50)
+                  .map((option) => String(option).slice(0, 1000))
+              : [],
           },
         ];
       });
@@ -14596,6 +14608,106 @@ function readUserCenterDraft(profile) {
     localStorage.removeItem(USER_CENTER_DRAFT_KEY);
     return null;
   }
+}
+
+const CUSTOM_FAQ_ANSWER = "__custom_faq_answer__";
+function FaqAnswerControl({ faq, name, labelId, onChange }) {
+  const options = Array.isArray(faq.options) ? faq.options : [];
+  const supportsOptions = ["dropdown", "multiple_choice"].includes(
+    faq.questionType,
+  );
+  const answerIsCustom =
+    supportsOptions && Boolean(faq.answer) && !options.includes(faq.answer);
+  const [customMode, setCustomMode] = useState(answerIsCustom);
+  useEffect(() => {
+    const sync = window.requestAnimationFrame(() =>
+      setCustomMode(answerIsCustom),
+    );
+    return () => window.cancelAnimationFrame(sync);
+  }, [answerIsCustom, faq.id]);
+  if (faq.questionType === "dropdown")
+    return (
+      <div className="v2-faq-answer-options">
+        <select
+          name={name}
+          aria-labelledby={labelId}
+          value={customMode ? CUSTOM_FAQ_ANSWER : faq.answer || ""}
+          onChange={(event) => {
+            if (event.target.value === CUSTOM_FAQ_ANSWER) setCustomMode(true);
+            else {
+              setCustomMode(false);
+              onChange(event.target.value);
+            }
+          }}
+        >
+          <option value="">Select an option…</option>
+          {options.map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+          <option value={CUSTOM_FAQ_ANSWER}>Enter custom answer</option>
+        </select>
+        {customMode && (
+          <textarea
+            name={`${name}-custom`}
+            aria-label={`${faq.question} custom answer`}
+            rows={2}
+            value={answerIsCustom ? faq.answer : ""}
+            placeholder="Enter your custom answer…"
+            onChange={(event) => onChange(event.target.value)}
+          />
+        )}
+      </div>
+    );
+  if (faq.questionType === "multiple_choice")
+    return (
+      <fieldset className="v2-faq-answer-options" aria-labelledby={labelId}>
+        {options.map((option) => (
+          <label key={option}>
+            <input
+              type="radio"
+              name={name}
+              value={option}
+              checked={!customMode && faq.answer === option}
+              onChange={() => {
+                setCustomMode(false);
+                onChange(option);
+              }}
+            />
+            {option}
+          </label>
+        ))}
+        <label>
+          <input
+            type="radio"
+            name={name}
+            value={CUSTOM_FAQ_ANSWER}
+            checked={customMode}
+            onChange={() => setCustomMode(true)}
+          />
+          Enter custom answer
+        </label>
+        {customMode && (
+          <textarea
+            name={`${name}-custom`}
+            aria-label={`${faq.question} custom answer`}
+            rows={2}
+            value={answerIsCustom ? faq.answer : ""}
+            placeholder="Enter your custom answer…"
+            onChange={(event) => onChange(event.target.value)}
+          />
+        )}
+      </fieldset>
+    );
+  return (
+    <textarea
+      name={name}
+      aria-labelledby={labelId}
+      rows={2}
+      value={faq.answer}
+      placeholder="Enter your answer…"
+      onChange={(event) => onChange(event.target.value)}
+    />
+  );
 }
 
 function SettingsPage({ state, reload, setTab }) {
@@ -14793,24 +14905,40 @@ function SettingsPage({ state, reload, setTab }) {
   const generateFaq = () => {
     const resume = `${form.resumeText} ${form.additionalInfo}`.toLowerCase();
     const questions = [
-      "Why are you interested in this role?",
-      "What experience makes you a strong fit?",
-      "What are your salary expectations?",
-      "When are you available to start?",
-      "Will you require work authorization sponsorship?",
+      ["Why are you interested in this role?", "text_input", []],
+      ["What experience makes you a strong fit?", "text_input", []],
+      ["What are your salary expectations?", "text_input", []],
+      [
+        "When are you available to start?",
+        "dropdown",
+        ["Immediately", "Within 2 weeks", "Within 1 month", "Other"],
+      ],
+      [
+        "Will you require work authorization sponsorship?",
+        "multiple_choice",
+        ["Yes", "No"],
+      ],
       ...(resume.includes("lead") || resume.includes("manager")
-        ? ["Describe your leadership style and experience."]
+        ? [["Describe your leadership style and experience.", "text_input", []]]
         : []),
       ...(resume.includes("remote")
-        ? ["What is your preferred working arrangement?"]
+        ? [
+            [
+              "What is your preferred working arrangement?",
+              "dropdown",
+              ["Remote", "Hybrid", "On-site", "Flexible"],
+            ],
+          ]
         : []),
     ];
     editForm({
       ...form,
-      faqAnswers: questions.map((question, index) => ({
+      faqAnswers: questions.map(([question, questionType, options], index) => ({
         id: `faq-${Date.now()}-${index}`,
         question,
         answer: "",
+        questionType,
+        options,
       })),
     });
     setFaqDeleteMode(false);
@@ -15289,24 +15417,22 @@ function SettingsPage({ state, reload, setTab }) {
                     className="v2-faq-question"
                     key={faq.id || `${faq.question}-${index}`}
                   >
-                    <label>
-                      <span>{faq.question}</span>
-                      <textarea
+                    <div>
+                      <span id={`profile-faq-label-${faq.id || index}`}>
+                        {faq.question}
+                      </span>
+                      <FaqAnswerControl
+                        key={`${faq.id || index}-${(faq.options || []).includes(faq.answer) ? "preset" : "custom"}`}
+                        faq={faq}
                         name={`profile-faq-${faq.id || index}`}
-                        aria-label={faq.question}
-                        rows={2}
-                        value={faq.answer}
-                        placeholder="Enter your answer…"
-                        onChange={(event) => {
+                        labelId={`profile-faq-label-${faq.id || index}`}
+                        onChange={(answer) => {
                           const faqAnswers = [...form.faqAnswers];
-                          faqAnswers[index] = {
-                            ...faq,
-                            answer: event.target.value,
-                          };
+                          faqAnswers[index] = { ...faq, answer };
                           editForm({ ...form, faqAnswers });
                         }}
                       />
-                    </label>
+                    </div>
                     {faqDeleteMode && (
                       <button
                         className="danger v2-faq-delete-question"

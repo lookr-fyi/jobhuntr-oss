@@ -173,6 +173,11 @@ const ProfileSchema = z.object({
         id: z.string().max(200).optional(),
         question: z.string().max(1000),
         answer: z.string().max(30000).optional().default(""),
+        questionType: z
+          .enum(["text_input", "dropdown", "multiple_choice"])
+          .optional()
+          .default("text_input"),
+        options: z.array(z.string().max(1000)).max(50).optional().default([]),
       }),
     )
     .max(100)
@@ -1152,7 +1157,9 @@ const applicationQuestionsFor = (db) => {
     answer:
       (db.profile.faqAnswers || []).find(
         (item) =>
-          String(item.question).trim().toLowerCase() === question.toLowerCase(),
+          String(item.question).trim().toLowerCase() ===
+            question.toLowerCase() &&
+          (item.questionType || "text_input") === questionType,
       )?.answer || "",
     questionType,
     options,
@@ -1450,12 +1457,15 @@ app.patch("/api/submissions/:id", async (req, res) => {
         const existingIndex = db.profile.faqAnswers.findIndex(
           (answer) =>
             safeText(answer?.question, 1000).toLowerCase() ===
-            normalizedQuestion,
+              normalizedQuestion &&
+            (answer.questionType || "text_input") === question.questionType,
         );
         const remembered = {
           ...(existingIndex >= 0 ? db.profile.faqAnswers[existingIndex] : {}),
           question: question.question,
           answer: question.answer,
+          questionType: question.questionType,
+          options: question.options || [],
         };
         if (existingIndex >= 0)
           db.profile.faqAnswers[existingIndex] = remembered;

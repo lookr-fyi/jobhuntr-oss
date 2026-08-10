@@ -5158,6 +5158,25 @@ test(
           .inputValue(),
         "The product mission, customer impact, and role scope match my experience.",
       );
+      const rememberedAvailability = page.getByLabel(
+        "When are you available to start?",
+      );
+      assert.equal(
+        await rememberedAvailability.evaluate((control) => control.tagName),
+        "SELECT",
+        "User Center must preserve the v2 dropdown control type from Easy Apply",
+      );
+      assert.equal(await rememberedAvailability.inputValue(), "Within 2 weeks");
+      const rememberedSponsorship = page.getByRole("group", {
+        name: "Will you require work authorization sponsorship?",
+      });
+      assert.equal(
+        await rememberedSponsorship
+          .getByLabel("No", { exact: true })
+          .isChecked(),
+        true,
+        "User Center must preserve the verified v2 multiple-choice answer",
+      );
       const faqPanel = page.locator(".v2-faq-panel");
       assert.equal(
         await faqPanel.count(),

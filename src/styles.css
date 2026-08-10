@@ -11899,7 +11899,7 @@ main > header.integrated-page-header {
 .v2-faq-question {
   position: relative;
 }
-.v2-faq-list label {
+.v2-faq-question > div {
   display: grid;
   gap: 7px;
   padding: 16px;
@@ -11908,6 +11908,25 @@ main > header.integrated-page-header {
   color: #334155;
   font-size: 13px;
   font-weight: 700;
+}
+.v2-faq-answer-options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.v2-faq-answer-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+}
+.v2-faq-answer-options input[type="radio"] {
+  width: auto;
+  margin: 0;
 }
 .v2-faq-header-actions {
   display: flex;
@@ -11923,7 +11942,7 @@ main > header.integrated-page-header {
   padding: 0;
   place-items: center;
 }
-.v2-faq-question:has(.v2-faq-delete-question) label span {
+.v2-faq-question:has(.v2-faq-delete-question) > div > span {
   padding-right: 38px;
 }
 .v2-faq-list textarea {

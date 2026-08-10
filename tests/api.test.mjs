@@ -996,11 +996,27 @@ test("submission queue enforces review before local submission", async () => {
     question: "Describe a project that demonstrates systems thinking.",
     answer: "I redesigned a release process and cut recovery time by 40%.",
   };
+  const typedFaqs = [
+    {
+      id: "availability-as-text",
+      question: "When are you available to start?",
+      answer: "Tomorrow morning",
+      questionType: "text_input",
+      options: [],
+    },
+    {
+      id: "availability-as-dropdown",
+      question: "When are you available to start?",
+      answer: "Within 1 month",
+      questionType: "dropdown",
+      options: ["Immediately", "Within 2 weeks", "Within 1 month", "Other"],
+    },
+  ];
   await req("/api/profile", {
     method: "PUT",
     body: JSON.stringify({
       ...state.profile,
-      faqAnswers: [...state.profile.faqAnswers, customFaq],
+      faqAnswers: [...state.profile.faqAnswers, customFaq, ...typedFaqs],
     }),
   });
   const packet = await req("/api/submissions", {
@@ -1022,6 +1038,11 @@ test("submission queue enforces review before local submission", async () => {
     "Within 1 month",
     "Other",
   ]);
+  assert.equal(
+    packet.body.applicationQuestions[2].answer,
+    "Within 1 month",
+    "Easy Apply must match remembered evidence by wording and control type",
+  );
   assert.equal(
     packet.body.applicationQuestions[3].questionType,
     "multiple_choice",
@@ -1086,7 +1107,7 @@ test("submission queue enforces review before local submission", async () => {
   );
   assert.deepEqual(
     rememberedAfterAnswer.find((answer) => answer.id === customFaq.id),
-    customFaq,
+    { ...customFaq, questionType: "text_input", options: [] },
     "reviewing a packet must not erase unrelated About Me evidence",
   );
   const blocked = await req(`/api/submissions/${packet.body.id}/submit`, {
@@ -1187,7 +1208,7 @@ test("submission queue enforces review before local submission", async () => {
   );
   assert.deepEqual(
     rememberedAfterUnverifiedEdit.find((answer) => answer.id === customFaq.id),
-    customFaq,
+    { ...customFaq, questionType: "text_input", options: [] },
   );
   const unverifiedSubmit = await req(
     `/api/submissions/${packet.body.id}/submit`,
