@@ -2362,6 +2362,13 @@ test("remaining persisted workflow lists render newest first", async () => {
     /latestPersistedRecord\(item\.contacts\)\?\.name/,
     "tracker exports should choose the newest local contact",
   );
+  assert.match(tracker, /const appliedAt = trackerApplicationDate\(item\)/);
+  assert.match(tracker, /name="edit-job-application-date"/);
+  assert.match(tracker, /type="datetime-local"/);
+  assert.match(
+    tracker,
+    /applicationDatetime: editForm\.applicationDatetime[\s\S]*?toISOString\(\)/,
+  );
   assert.match(
     tracker,
     /newestFirst\(job\.contacts\)\.map\(\(c\)/,

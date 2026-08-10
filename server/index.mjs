@@ -236,6 +236,9 @@ const JobPatchSchema = z.object({
   description: z.string().max(100000).optional(),
   tags: z.array(z.string().max(200)).max(100).optional(),
   status: JobStatusSchema.optional(),
+  applicationDatetime: z
+    .union([z.string().datetime({ offset: true }), z.literal("")])
+    .optional(),
   interviewRounds: z
     .array(
       z.object({

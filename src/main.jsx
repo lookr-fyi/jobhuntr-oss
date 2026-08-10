@@ -265,6 +265,18 @@ const TRACKER_STAGE_LABELS = {
 };
 const OVERVIEW_QUEUED_STATUSES = new Set(["interested", "submitting"]);
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
+const trackerApplicationDate = (job) => {
+  if (sortableTimestamp(job?.applicationDatetime) > 0)
+    return job.applicationDatetime;
+  return (
+    [...(job?.statusHistory || [])]
+      .filter((event) => event.status === "applied")
+      .map((event) => ({ event, timestamp: sortableTimestamp(event.at) }))
+      .filter(({ timestamp }) => timestamp > 0)
+      .sort((left, right) => left.timestamp - right.timestamp)[0]?.event.at ||
+    ""
+  );
+};
 const normalizeTrackerStage = (status) =>
   ({ queued: "interested", started: "interested", interviewing: "interview" })[
     status
@@ -503,6 +515,10 @@ const latestUsableResume = (records) =>
 const formatDateTime = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
+};
+const formatDatetimeLocalInput = (value) => {
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toISOString().slice(0, 16) : "";
 };
 const COVER_LETTER_PREVIEW_THEMES = {
   blank: {
@@ -2843,6 +2859,7 @@ function Tracker({ state, reload, setTab }) {
       url: target.url || "",
       description: target.description || "",
       status: target.status,
+      applicationDatetime: formatDatetimeLocalInput(target.applicationDatetime),
       tags: (target.tags || []).join(", "),
     };
     setEditForm(next);
@@ -2938,6 +2955,9 @@ function Tracker({ state, reload, setTab }) {
       const requestedStatus = editForm.status;
       const saved = await patch(job.id, {
         ...editForm,
+        applicationDatetime: editForm.applicationDatetime
+          ? new Date(editForm.applicationDatetime).toISOString()
+          : "",
         status: job.status,
         tags: String(editForm.tags || "")
           .split(",")
@@ -3187,9 +3207,7 @@ function Tracker({ state, reload, setTab }) {
                         </div>
                       )}
                       {visibleJobs.map((item) => {
-                        const appliedAt = (item.statusHistory || []).findLast(
-                          (event) => event.status === "applied",
-                        )?.at;
+                        const appliedAt = trackerApplicationDate(item);
                         const packet = state.submissions
                           .filter((submission) => submission.jobId === item.id)
                           .sort(
@@ -3461,6 +3479,20 @@ function Tracker({ state, reload, setTab }) {
                       </select>
                     </label>
                     <label>
+                      Application Date
+                      <input
+                        name="edit-job-application-date"
+                        type="datetime-local"
+                        value={editForm.applicationDatetime}
+                        onChange={(event) =>
+                          setEditForm((current) => ({
+                            ...current,
+                            applicationDatetime: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label>
                       Description
                       <textarea
                         name="edit-job-description"
@@ -3541,17 +3573,12 @@ function Tracker({ state, reload, setTab }) {
                               : "Not available"}
                           </span>
                         </div>
-                        {job.statusHistory?.some(
-                          (event) => event.status === "applied",
-                        ) && (
+                        {trackerApplicationDate(job) && (
                           <div className="date-item">
                             <span className="date-label">Applied:</span>
                             <span className="date-value">
                               {formatDateTime(
-                                [...job.statusHistory]
-                                  .reverse()
-                                  .find((event) => event.status === "applied")
-                                  .at,
+                                trackerApplicationDate(job),
                                 "Not available",
                               )}
                             </span>

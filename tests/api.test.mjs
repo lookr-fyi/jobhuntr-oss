@@ -172,6 +172,21 @@ test("can add and update a tracked job", async () => {
     }),
   });
   assert.equal(interview.body.interviewRounds[0].notes, "Technical screen");
+  const correctedApplicationDate = "2025-02-03T16:30:00.000Z";
+  const correctedDate = await req(`/api/jobs/${create.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ applicationDatetime: correctedApplicationDate }),
+  });
+  assert.equal(correctedDate.res.status, 200);
+  assert.equal(
+    correctedDate.body.applicationDatetime,
+    correctedApplicationDate,
+  );
+  const invalidApplicationDate = await req(`/api/jobs/${create.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ applicationDatetime: "not-a-date" }),
+  });
+  assert.equal(invalidApplicationDate.res.status, 400);
   const contact = await req(`/api/jobs/${create.body.id}/contacts`, {
     method: "POST",
     body: JSON.stringify({
