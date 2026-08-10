@@ -3979,7 +3979,9 @@ function TrackerApplicationInsights({ job, submission, profile }) {
       : keywords.filter(
           (keyword) => !profileSkills.has(String(keyword).toLowerCase()),
         );
-  const questions = submission?.applicationQuestions || [];
+  const questions = submission?.applicationQuestions?.length
+    ? submission.applicationQuestions
+    : job.applicationQuestions || [];
   return (
     <div className="v2-tracker-insights">
       {submission?.status === "submitted" && (

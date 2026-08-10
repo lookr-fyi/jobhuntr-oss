@@ -1016,6 +1016,35 @@ function migrate(input) {
         createdAt: boundedText(contact.createdAt, 100),
         updatedAt: boundedText(contact.updatedAt, 100),
       }));
+    const applicationQuestionIds = new Set();
+    const applicationQuestions = records(
+      job.applicationQuestions ?? job.questions_and_answers,
+    )
+      .slice(0, 500)
+      .map((question, index) => ({
+        id: uniqueLegacyId(
+          question.id,
+          `legacy-application-question-${id}`,
+          index,
+          applicationQuestionIds,
+        ),
+        question:
+          boundedText(question.question ?? question.question_text, 1000) ||
+          `Question ${index + 1}`,
+        answer: boundedText(question.answer, 30000),
+        questionType: boundedText(
+          question.questionType ?? question.question_type ?? question.type,
+          100,
+        ),
+        options: strings(question.options)
+          .map((option) => boundedText(option, 1000))
+          .filter(Boolean)
+          .slice(0, 100),
+        confident: question.confident === true,
+        aiGenerated:
+          question.aiGenerated === true || question.ai_generated === true,
+        reference: boundedText(question.reference, 2000),
+      }));
     const roundIds = new Set();
     const interviewRounds = records(job.interviewRounds ?? job.interview_rounds)
       .slice(0, 50)
@@ -1125,6 +1154,7 @@ function migrate(input) {
         .map((reason) => boundedText(reason, 500))
         .filter(Boolean)
         .slice(0, 100),
+      applicationQuestions,
       notes,
       tasks,
       contacts,
