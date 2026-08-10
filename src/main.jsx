@@ -495,6 +495,10 @@ const newestFirst = (records) =>
       sortableTimestamp(a.updatedAt, a.createdAt),
   );
 const latestPersistedRecord = (records) => newestFirst(records)[0] || null;
+const latestUsableResume = (records) =>
+  latestPersistedRecord(
+    (records || []).filter((record) => isUsableResumeText(record?.content)),
+  );
 const formatDateTime = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
@@ -5501,7 +5505,7 @@ function Queue({ state, reload, setTab }) {
     visibleSourceJobs[0];
   const recommendedResume = (targetJobId) => {
     return (
-      latestPersistedRecord(
+      latestUsableResume(
         state.resumes.filter((resume) => resume.jobId === targetJobId),
       )?.id || "profile-resume"
     );
@@ -7953,7 +7957,7 @@ function Resume({ state, reload, mode = "resume" }) {
       documentName: `Cover Letter Template - ${new Date().toLocaleDateString()}`,
       templateContent: COVER_LETTER_TEMPLATES[0].content,
       resumeId:
-        state.resumes.find((item) => isUsableResumeText(item.content))?.id ||
+        latestUsableResume(state.resumes)?.id ||
         (isUsableResumeText(state.profile.resumeText) ? "profile-resume" : ""),
       jobId: jobId || latestPersistedRecord(state.jobs)?.id || "",
       jobDescription:

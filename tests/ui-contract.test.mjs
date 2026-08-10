@@ -2092,7 +2092,7 @@ test("Submission Queue never recommends stale job-specific documents", async () 
 
   assert.match(
     queue,
-    /recommendedResume = \(targetJobId\)[\s\S]*?latestPersistedRecord\([\s\S]*?state\.resumes\.filter\(\(resume\) => resume\.jobId === targetJobId\)/,
+    /recommendedResume = \(targetJobId\)[\s\S]*?latestUsableResume\([\s\S]*?state\.resumes\.filter\(\(resume\) => resume\.jobId === targetJobId\)/,
   );
   assert.match(
     queue,
@@ -2102,5 +2102,33 @@ test("Submission Queue never recommends stale job-specific documents", async () 
     (queue.match(/coverLetterId: recommendedCoverLetter\(/g) || []).length,
     2,
     "every packet-creation path should use the newest cover letter",
+  );
+});
+
+test("document workflows choose the newest usable resume", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const helper = source.slice(
+    source.indexOf("const latestUsableResume"),
+    source.indexOf("const formatDateTime"),
+  );
+  const resumeStudio = source.slice(
+    source.indexOf("function Resume("),
+    source.indexOf("const outreachDraftDigest"),
+  );
+
+  assert.match(
+    helper,
+    /latestPersistedRecord\([\s\S]*?filter\(\(record\) => isUsableResumeText\(record\?\.content\)\)/,
+  );
+  assert.match(
+    resumeStudio,
+    /openLetterWizard[\s\S]*?resumeId:[\s\S]*?latestUsableResume\(state\.resumes\)\?\.id/,
+  );
+  assert.doesNotMatch(
+    resumeStudio,
+    /state\.resumes\.find\(\(item\) => isUsableResumeText\(item\.content\)\)/,
   );
 });
