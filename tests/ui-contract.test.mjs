@@ -712,6 +712,28 @@ test("Job Tracker protects unsaved new roles from every dismissal path", async (
   assert.match(tracker, /onClick=\{\(\) => openNewJob\(stage\)\}/);
 });
 
+test("Job Tracker summary, funnel, and CSV honor the active search", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const tracker = source.slice(
+    source.indexOf("function Tracker"),
+    source.indexOf("function TrackerApplicationInsights"),
+  );
+
+  assert.match(tracker, /jobs: filtered,/);
+  assert.ok(
+    (tracker.match(/jobs: filtered\.filter/g) || []).length >= 5,
+    "every funnel and interview stage should use search-filtered jobs",
+  );
+  assert.match(tracker, /if \(!filtered\.length\) return/);
+  assert.match(tracker, /const rows = filtered\.map/);
+  assert.match(tracker, /<span>\{filtered\.length\} applications<\/span>/);
+  assert.match(tracker, /disabled=\{!filtered\.length\}/);
+  assert.doesNotMatch(tracker, /runFiltered\.length/);
+});
+
 test("Agent Runs bulk deletion uses one atomic retryable request", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
