@@ -10625,7 +10625,7 @@ function OutreachPage({ state, reload }) {
                 value={jobId}
                 onChange={(e) => setJobId(e.target.value)}
               >
-                {state.jobs.map((job) => (
+                {newestFirst(state.jobs).map((job) => (
                   <option key={job.id} value={job.id}>
                     {job.company} — {job.title}
                   </option>
@@ -11172,7 +11172,7 @@ function Coach({ state, reload }) {
             requestPracticeNavigation({ type: "role", id: e.target.value })
           }
         >
-          {state.jobs.map((job) => (
+          {newestFirst(state.jobs).map((job) => (
             <option value={job.id} key={job.id}>
               {job.company} — {job.title}
             </option>
@@ -12171,7 +12171,7 @@ function Gigs({ state, reload }) {
       setApplyingGig(false);
     }
   };
-  const visibleTrackedGigs = state.gigs.filter((item) =>
+  const visibleTrackedGigs = newestFirst(state.gigs).filter((item) =>
     `${item.title} ${item.client} ${item.status}`
       .toLowerCase()
       .includes(myGigQuery.toLowerCase()),
@@ -14092,7 +14092,7 @@ function Agent({ state, reload, setTab }) {
           <>
             <h3>Saved presets</h3>
             <div className="preset-list">
-              {state.huntPresets.map((preset) => (
+              {newestFirst(state.huntPresets).map((preset) => (
                 <div key={preset.id}>
                   <button onClick={() => loadPreset(preset)}>
                     {preset.name}
@@ -14167,7 +14167,7 @@ function Agent({ state, reload, setTab }) {
         <div className="card v2-hunt-history">
           <h3>Run history</h3>
           {state.agentRuns.length ? (
-            state.agentRuns.map((run) => (
+            newestFirst(state.agentRuns).map((run) => (
               <details className="run" key={run.id}>
                 <summary>
                   <b>

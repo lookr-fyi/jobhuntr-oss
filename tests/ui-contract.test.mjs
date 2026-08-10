@@ -2294,3 +2294,35 @@ test("document editor selectors expose newest persisted options first", async ()
   assert.match(resumeStudio, /documentResumes = newestFirst\(state\.resumes\)/);
   assert.doesNotMatch(resumeStudio, /state\.(templates|jobs|resumes)\.map\(/);
 });
+
+test("remaining persisted workflow lists render newest first", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const outreach = source.slice(
+    source.indexOf("function OutreachPage"),
+    source.indexOf("function CoachMarkdown"),
+  );
+  const coach = source.slice(
+    source.indexOf("function Coach("),
+    source.indexOf("function PracticeSession"),
+  );
+  const gigs = source.slice(
+    source.indexOf("function Gigs("),
+    source.indexOf("function ProfileAudit"),
+  );
+  const infiniteHunt = source.slice(
+    source.indexOf("function Agent("),
+    source.indexOf("function RunsPage("),
+  );
+
+  assert.match(outreach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
+  assert.match(coach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
+  assert.match(gigs, /visibleTrackedGigs = newestFirst\(state\.gigs\)\.filter/);
+  assert.match(
+    infiniteHunt,
+    /newestFirst\(state\.huntPresets\)\.map\(\(preset\)/,
+  );
+  assert.match(infiniteHunt, /newestFirst\(state\.agentRuns\)\.map\(\(run\)/);
+});
