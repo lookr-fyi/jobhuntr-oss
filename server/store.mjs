@@ -28,6 +28,7 @@ export const seedJobs = [
     postedAt: hoursAgo(2),
     collectedAt: hoursAgo(1),
     numApplicants: 38,
+    eoy: 5,
   },
   {
     company: "Northstar Robotics",
@@ -41,6 +42,7 @@ export const seedJobs = [
     postedAt: hoursAgo(5),
     collectedAt: hoursAgo(3),
     numApplicants: 74,
+    eoy: 4,
   },
   {
     company: "Civic Health Labs",
@@ -54,6 +56,7 @@ export const seedJobs = [
     postedAt: hoursAgo(8),
     collectedAt: hoursAgo(6),
     numApplicants: 29,
+    eoy: 3,
   },
   {
     company: "Orbit Data",
@@ -67,6 +70,7 @@ export const seedJobs = [
     postedAt: hoursAgo(12),
     collectedAt: hoursAgo(10),
     numApplicants: 51,
+    eoy: 5,
   },
 ];
 

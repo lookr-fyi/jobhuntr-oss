@@ -1631,7 +1631,8 @@ test(
       await page.getByRole("button", { name: "Filters" }).click();
       await page.getByLabel("Location").fill("Remote");
       await page.getByLabel("Minimum match").selectOption("25");
-      await page.getByLabel("Minimum board salary").selectOption("120000");
+      await page.getByLabel("Minimum board salary").selectOption("150000");
+      await page.getByLabel("Above Years of Experience").selectOption("5");
       await page.getByLabel("Board work arrangement").selectOption("remote");
       await page.getByLabel("Board job type").selectOption("full-time");
       await page.getByLabel("Board seniority").selectOption("lead");
@@ -1641,7 +1642,7 @@ test(
       await assertNamedFormControls(page, "Job Board filters");
       await page
         .getByRole("button", { name: /Filters/ })
-        .getByText("8")
+        .getByText("9")
         .waitFor();
       await Promise.all([
         page.waitForResponse(

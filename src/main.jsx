@@ -4640,6 +4640,7 @@ function Board({ state, reload }) {
   const [location, setLocation] = useState("");
   const [minimumFit, setMinimumFit] = useState(0);
   const [minimumSalary, setMinimumSalary] = useState(0);
+  const [minimumExperience, setMinimumExperience] = useState("");
   const [remoteType, setRemoteType] = useState("all");
   const [jobType, setJobType] = useState("all");
   const [seniority, setSeniority] = useState("all");
@@ -4713,6 +4714,9 @@ function Board({ state, reload }) {
                 .includes(normalizedLocation)) &&
             job.fitScore >= minimumFit &&
             maximumListedSalary(job) >= minimumSalary &&
+            (minimumExperience === "" ||
+              (Number.isFinite(Number(job.eoy)) &&
+                Number(job.eoy) >= Number(minimumExperience))) &&
             (remoteType === "all" ||
               (remoteType === "remote"
                 ? /remote|anywhere/i.test(job.location)
@@ -4744,6 +4748,7 @@ function Board({ state, reload }) {
       location,
       minimumFit,
       minimumSalary,
+      minimumExperience,
       remoteType,
       jobType,
       seniority,
@@ -4778,6 +4783,7 @@ function Board({ state, reload }) {
     location,
     minimumFit > 0,
     minimumSalary > 0,
+    minimumExperience !== "",
     remoteType !== "all",
     jobType !== "all",
     seniority !== "all",
@@ -4809,6 +4815,7 @@ function Board({ state, reload }) {
     setLocation("");
     setMinimumFit(0);
     setMinimumSalary(0);
+    setMinimumExperience("");
     setRemoteType("all");
     setJobType("all");
     setSeniority("all");
@@ -4950,10 +4957,27 @@ function Board({ state, reload }) {
               value={minimumSalary}
               onChange={(event) => setMinimumSalary(Number(event.target.value))}
             >
-              <option value="0">Any salary</option>
-              {[120000, 150000, 175000, 200000].map((salary) => (
-                <option key={salary} value={salary}>
-                  ${(salary / 1000).toFixed(0)}k+
+              <option value="0">All</option>
+              {[50000, 75000, 100000, 125000, 150000, 175000, 200000].map(
+                (salary) => (
+                  <option key={salary} value={salary}>
+                    Above ${(salary / 1000).toFixed(0)}K
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+          <label>
+            Above Years of Experience
+            <select
+              name="board-minimum-experience"
+              value={minimumExperience}
+              onChange={(event) => setMinimumExperience(event.target.value)}
+            >
+              <option value="">All</option>
+              {[0, 1, 2, 3, 5, 8, 10].map((years) => (
+                <option key={years} value={years}>
+                  Above {years} {years === 1 ? "year" : "years"}
                 </option>
               ))}
             </select>

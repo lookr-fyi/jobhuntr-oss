@@ -1316,6 +1316,14 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /aria-busy=\{searching\}/);
   assert.match(board, /aria-busy=\{queueing === selected\.url\}/);
   assert.match(board, /const clearFilters = async \(\) => \{/);
+  assert.match(board, /const \[minimumExperience, setMinimumExperience\]/);
+  assert.match(board, /Number\(job\.eoy\) >= Number\(minimumExperience\)/);
+  assert.match(board, /Above Years of Experience/);
+  assert.match(board, /\[0, 1, 2, 3, 5, 8, 10\]\.map/);
+  assert.match(
+    board,
+    /\[50000, 75000, 100000, 125000, 150000, 175000, 200000\]\.map/,
+  );
 });
 
 test("backup restore and CSV imports reject duplicate or stale work", async () => {
