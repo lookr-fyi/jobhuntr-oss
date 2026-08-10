@@ -47,6 +47,8 @@ Their user-facing value is replaced with local profiles, deterministic scoring/g
 
 ## Verification gate
 
+A sanitized record of the non-submitting live LinkedIn smoke test is maintained in [LINKEDIN_VALIDATION.md](LINKEDIN_VALIDATION.md). That test validates current form assumptions only; it is not presented as proof of browser automation or external submission support.
+
 `npm run verify` must pass all of the following:
 
 1. Working-tree and complete-Git-history secret scan.
