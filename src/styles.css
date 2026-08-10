@@ -1430,6 +1430,15 @@ button:disabled {
   color: #1e293b;
   font-size: 14px;
 }
+.job-drawer .status-insight {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.4;
+}
 .job-drawer .date-info {
   display: grid;
   gap: 8px;

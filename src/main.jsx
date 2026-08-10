@@ -519,6 +519,7 @@ const latestUsableResume = (records) =>
     (records || []).filter((record) => isUsableResumeText(record?.content)),
   );
 const formatDateTime = (value, fallback = "Recently") => {
+  if (value === undefined || value === null || value === "") return fallback;
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
 };
@@ -3558,6 +3559,11 @@ function Tracker({ state, reload, setTab }) {
                           </option>
                         ))}
                       </select>
+                      {job.statusInsight && (
+                        <div className="status-insight">
+                          <strong>Insight:</strong> {job.statusInsight}
+                        </div>
+                      )}
                     </section>
                     <section className="info-section timeline-section">
                       <h3 className="section-title">Timeline</h3>
@@ -3581,18 +3587,17 @@ function Tracker({ state, reload, setTab }) {
                               : "Not available"}
                           </span>
                         </div>
-                        {TRACKER_POST_APPLICATION_STATUSES.has(job.status) &&
-                          trackerApplicationDate(job) && (
-                            <div className="date-item">
-                              <span className="date-label">Applied:</span>
-                              <span className="date-value">
-                                {formatDateTime(
-                                  trackerApplicationDate(job),
-                                  "Not available",
-                                )}
-                              </span>
-                            </div>
-                          )}
+                        {TRACKER_POST_APPLICATION_STATUSES.has(job.status) && (
+                          <div className="date-item">
+                            <span className="date-label">Applied:</span>
+                            <span className="date-value">
+                              {formatDateTime(
+                                trackerApplicationDate(job),
+                                "Not available",
+                              )}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </section>
                     <section className="info-section description-section">

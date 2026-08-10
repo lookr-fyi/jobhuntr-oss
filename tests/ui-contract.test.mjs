@@ -43,6 +43,11 @@ test("persisted timestamps cannot bypass safe date formatters", async () => {
     [],
     "persisted dates must use formatCalendarDate or formatDateTime so corrupt records cannot render Invalid Date",
   );
+  assert.match(
+    source,
+    /const formatDateTime = \(value, fallback = "Recently"\) => \{\s*if \(value === undefined \|\| value === null \|\| value === ""\) return fallback;/,
+    "missing timestamps must render their requested fallback instead of the Unix epoch",
+  );
 });
 
 test("persisted timestamps cannot destabilize user-visible ordering", async () => {
