@@ -1428,6 +1428,15 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /<option value="no">No<\/option>/);
   assert.match(board, /<option value="likely">Likely<\/option>/);
   assert.match(board, /Visa sponsorship likely/);
+  assert.match(board, />\s*Remote Type\s*<select/);
+  assert.match(board, /aria-label="Board remote type"/);
+  assert.match(board, /<option value="hybrid">Hybrid<\/option>/);
+  assert.match(board, /<option value="onsite">On-site<\/option>/);
+  assert.match(board, />\s*Senior Level\s*<select/);
+  assert.match(
+    board,
+    /remoteType === "all" \|\| boardRemoteType\(job\) === remoteType/,
+  );
   assert.match(
     source,
     /const boardJobType = \(job\) => \{[\s\S]*?job\.jobType \?\? job\.job_type/,
@@ -1440,7 +1449,6 @@ test("Job Board refresh and queue actions are single-flight", async () => {
     source,
     /const boardRemoteType = \(job\) => \{[\s\S]*?job\.remoteType \?\? job\.remote_type/,
   );
-  assert.match(board, /boardRemoteType\(job\) === "remote"/);
   assert.match(board, /boardRemoteType\(selected\) === "hybrid"/);
 });
 

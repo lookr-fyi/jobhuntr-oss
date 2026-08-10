@@ -4757,10 +4757,7 @@ function Board({ state, reload }) {
             (minimumExperience === "" ||
               (Number.isFinite(Number(job.eoy)) &&
                 Number(job.eoy) >= Number(minimumExperience))) &&
-            (remoteType === "all" ||
-              (remoteType === "remote"
-                ? boardRemoteType(job) === "remote"
-                : boardRemoteType(job) !== "remote")) &&
+            (remoteType === "all" || boardRemoteType(job) === remoteType) &&
             (jobType === "all" || boardJobType(job) === jobType) &&
             (seniority === "all" || boardSeniority(job) === seniority) &&
             (sponsorship === "all" || boardSponsorship(job) === sponsorship)
@@ -4984,16 +4981,17 @@ function Board({ state, reload }) {
             </select>
           </label>
           <label>
-            Work arrangement
+            Remote Type
             <select
               name="board-work-arrangement"
-              aria-label="Board work arrangement"
+              aria-label="Board remote type"
               value={remoteType}
               onChange={(event) => setRemoteType(event.target.value)}
             >
-              <option value="all">All arrangements</option>
+              <option value="all">All</option>
               <option value="remote">Remote</option>
-              <option value="onsite">On-site / hybrid</option>
+              <option value="hybrid">Hybrid</option>
+              <option value="onsite">On-site</option>
             </select>
           </label>
           <label>
@@ -5011,7 +5009,7 @@ function Board({ state, reload }) {
             </select>
           </label>
           <label>
-            Seniority
+            Senior Level
             <select
               name="board-seniority"
               aria-label="Board seniority"

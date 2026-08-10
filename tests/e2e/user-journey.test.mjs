@@ -1652,7 +1652,7 @@ test(
       await page.getByLabel("Location").fill("Remote");
       await page.getByLabel("Minimum board salary").selectOption("150000");
       await page.getByLabel("Above Years of Experience").selectOption("5");
-      await page.getByLabel("Board work arrangement").selectOption("remote");
+      await page.getByLabel("Board remote type").selectOption("remote");
       await page.getByLabel("Board job type").selectOption("full-time");
       await page.getByLabel("Board seniority").selectOption("lead");
       await page.getByLabel("Board visa sponsorship").selectOption("likely");
