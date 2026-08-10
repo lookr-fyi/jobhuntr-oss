@@ -7082,7 +7082,7 @@ function SubmissionCard({ submission: s, state, reload }) {
               Original profile resume
               {profileResumeReady ? "" : " — add resume first"}
             </option>
-            {state.resumes.map((resume) => (
+            {newestFirst(state.resumes).map((resume) => (
               <option key={resume.id} value={resume.id}>
                 {resume.name}
               </option>
@@ -7480,6 +7480,9 @@ const readTemplateDialogDraft = () => {
 const clearTemplateDialogDraft = () =>
   sessionStorage.removeItem(ATS_TEMPLATE_DRAFT_KEY);
 function Resume({ state, reload, mode = "resume" }) {
+  const documentTemplates = newestFirst(state.templates);
+  const documentJobs = newestFirst(state.jobs);
+  const documentResumes = newestFirst(state.resumes);
   const resumeRef = useRef(null);
   const [resume, setResume] = useState(state.profile.resumeText);
   const [name, setName] = useState("Targeted resume");
@@ -7655,7 +7658,7 @@ function Resume({ state, reload, mode = "resume" }) {
         created.getFullYear() === new Date().getFullYear());
     return matchesQuery && matchesTemplate && matchesMonth;
   });
-  const resumeGroups = state.templates
+  const resumeGroups = documentTemplates
     .map((template) => ({
       template,
       resumes: filteredResumes.filter(
@@ -8443,7 +8446,7 @@ function Resume({ state, reload, mode = "resume" }) {
                       </button>
                     )}
                   </div>
-                  {state.resumes.map((item) => (
+                  {documentResumes.map((item) => (
                     <div
                       className={`v2-cover-source-card ${letterWizard.resumeId === item.id ? "selected" : ""}`}
                       key={item.id}
@@ -8488,7 +8491,7 @@ function Resume({ state, reload, mode = "resume" }) {
                   Option 2: Select ATS Template
                 </h4>
                 <div className="v2-cover-resume-list v2-cover-ats-list">
-                  {state.templates.map((template) => (
+                  {documentTemplates.map((template) => (
                     <div
                       className={`v2-cover-source-card ${letterWizard.atsTemplateId === template.id ? "selected" : ""}`}
                       key={template.id}
@@ -8586,7 +8589,7 @@ function Resume({ state, reload, mode = "resume" }) {
                       }}
                     >
                       <option value="">Enter job information manually</option>
-                      {state.jobs.map((item) => (
+                      {documentJobs.map((item) => (
                         <option value={item.id} key={item.id}>
                           {item.company} — {item.title}
                         </option>
@@ -9339,7 +9342,7 @@ function Resume({ state, reload, mode = "resume" }) {
               value={templateId}
               onChange={(e) => setTemplateId(e.target.value)}
             >
-              {state.templates.map((t) => (
+              {documentTemplates.map((t) => (
                 <option value={t.id} key={t.id}>
                   {t.name}
                 </option>
@@ -9354,7 +9357,7 @@ function Resume({ state, reload, mode = "resume" }) {
                 setScore(null);
               }}
             >
-              {state.jobs.map((j) => (
+              {documentJobs.map((j) => (
                 <option value={j.id} key={j.id}>
                   {j.company} — {j.title}
                 </option>
@@ -9447,7 +9450,7 @@ function Resume({ state, reload, mode = "resume" }) {
             onChange={(event) => setHistoryTemplate(event.target.value)}
           >
             <option value="all">All templates</option>
-            {state.templates.map((template) => (
+            {documentTemplates.map((template) => (
               <option value={template.id} key={template.id}>
                 {template.name}
               </option>
@@ -9883,7 +9886,7 @@ function Resume({ state, reload, mode = "resume" }) {
                     }}
                   >
                     <option value="">Choose a tracked job (optional)</option>
-                    {state.jobs.map((job) => (
+                    {documentJobs.map((job) => (
                       <option key={job.id} value={job.id}>
                         {job.title} · {job.company}
                       </option>

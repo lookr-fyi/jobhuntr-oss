@@ -2270,3 +2270,27 @@ test("document defaults and histories never depend on storage indexes", async ()
   );
   assert.doesNotMatch(source, /state\.[A-Za-z]+\?\.\[0\]/);
 });
+
+test("document editor selectors expose newest persisted options first", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const packet = source.slice(
+    source.indexOf("function SubmissionCard"),
+    source.indexOf("function Resume("),
+  );
+  const resumeStudio = source.slice(
+    source.indexOf("function Resume("),
+    source.indexOf("const outreachDraftDigest"),
+  );
+
+  assert.match(packet, /newestFirst\(state\.resumes\)\.map\(\(resume\)/);
+  assert.match(
+    resumeStudio,
+    /documentTemplates = newestFirst\(state\.templates\)/,
+  );
+  assert.match(resumeStudio, /documentJobs = newestFirst\(state\.jobs\)/);
+  assert.match(resumeStudio, /documentResumes = newestFirst\(state\.resumes\)/);
+  assert.doesNotMatch(resumeStudio, /state\.(templates|jobs|resumes)\.map\(/);
+});
