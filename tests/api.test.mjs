@@ -3462,6 +3462,97 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
   assert.equal(replaced.profile.onboarded, false);
   assert.equal(replaced.infiniteHunt.enabled, false);
 
+  const authenticV2JobRestore = await req("/api/import", {
+    method: "POST",
+    body: JSON.stringify({
+      jobs: [
+        {
+          id: "v2-application-history-id",
+          workflow_run_id: "v2-workflow-run-id",
+          company_name: "Analytical Engines",
+          job_title: "Staff Computing Engineer",
+          location: "London, UK",
+          application_url: "https://www.linkedin.com/jobs/view/123456789",
+          post_time: "2025-01-02T03:04:05.000Z",
+          num_applicants: 42,
+          pos_context: "Design reliable computation systems.",
+          application_datetime: "2025-01-03T04:05:06.000Z",
+          ats_score: 81,
+          optimized_ats_score: 94,
+          hiring_contact_name: "Charles Babbage",
+          status: "submitted",
+          status_insight: "Application submitted successfully.",
+          rejected_because: "",
+          match_reasons: ["Strong systems background", "Relevant leadership"],
+          interview_rounds: [
+            {
+              id: "v2-round-id",
+              round_type: "Technical Interview",
+              scheduled_date: "2025-01-08T12:00:00.000Z",
+              status: "scheduled",
+              notes: "Prepare architecture examples.",
+              outcome: "pending",
+              created_at: "2025-01-04T00:00:00.000Z",
+              updated_at: "2025-01-05T00:00:00.000Z",
+            },
+          ],
+          created_at: "2025-01-01T00:00:00.000Z",
+          updated_at: "2025-01-06T00:00:00.000Z",
+        },
+      ],
+    }),
+  });
+  assert.equal(authenticV2JobRestore.res.status, 200);
+  const authenticV2Job = (await req("/api/state")).body.jobs[0];
+  assert.deepEqual(authenticV2Job, {
+    id: "v2-application-history-id",
+    company: "Analytical Engines",
+    title: "Staff Computing Engineer",
+    location: "London, UK",
+    url: "https://www.linkedin.com/jobs/view/123456789",
+    source: "Manual",
+    salary: "",
+    description: "Design reliable computation systems.",
+    tags: [],
+    status: "applied",
+    statusHistory: [
+      {
+        status: "applied",
+        at: "2025-01-01T00:00:00.000Z",
+        source: "",
+      },
+    ],
+    fitScore: 81,
+    optimizedAtsScore: 94,
+    numApplicants: 42,
+    postedAt: "2025-01-02T03:04:05.000Z",
+    collectedAt: "",
+    applicationDatetime: "2025-01-03T04:05:06.000Z",
+    workflowRunId: "v2-workflow-run-id",
+    hiringContactName: "Charles Babbage",
+    statusInsight: "Application submitted successfully.",
+    rejectedBecause: "",
+    matchReasons: ["Strong systems background", "Relevant leadership"],
+    notes: [],
+    tasks: [],
+    contacts: [],
+    interviewRounds: [
+      {
+        id: "v2-round-id",
+        roundType: "Technical Interview",
+        number: "",
+        date: "2025-01-08T12:00:00.000Z",
+        notes: "Prepare architecture examples.",
+        status: "scheduled",
+        outcome: "pending",
+        createdAt: "2025-01-04T00:00:00.000Z",
+        updatedAt: "2025-01-05T00:00:00.000Z",
+      },
+    ],
+    createdAt: "2025-01-01T00:00:00.000Z",
+    updatedAt: "2025-01-06T00:00:00.000Z",
+  });
+
   const authenticV2ProfileRestore = await req("/api/import", {
     method: "POST",
     body: JSON.stringify({

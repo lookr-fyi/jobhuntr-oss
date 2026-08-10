@@ -967,7 +967,7 @@ function migrate(input) {
   db.jobs = db.jobs.slice(0, 10000).map((job, jobIndex) => {
     const id = uniqueLegacyId(job.id, "legacy-job", jobIndex, jobIds);
     const status = normalizeJobStatus(job.status);
-    const createdAt = boundedText(job.createdAt, 100);
+    const createdAt = boundedText(job.createdAt ?? job.created_at, 100);
     const noteIds = new Set();
     const notes = records(job.notes)
       .map((note, index) => ({
@@ -1009,19 +1009,23 @@ function migrate(input) {
         updatedAt: boundedText(contact.updatedAt, 100),
       }));
     const roundIds = new Set();
-    const interviewRounds = records(job.interviewRounds)
+    const interviewRounds = records(job.interviewRounds ?? job.interview_rounds)
       .slice(0, 50)
       .map((round, index) => ({
         id: uniqueLegacyId(round.id, `legacy-round-${id}`, index, roundIds),
         roundType:
-          boundedText(round.roundType, 200) || `Interview Round ${index + 1}`,
+          boundedText(round.roundType ?? round.round_type, 200) ||
+          `Interview Round ${index + 1}`,
         number: boundedText(round.number, 50),
-        date: boundedText(round.date, 50),
+        date: boundedText(
+          round.date ?? round.scheduled_date ?? round.completed_date,
+          50,
+        ),
         notes: boundedText(round.notes, 10000),
         status: boundedText(round.status, 50) || "scheduled",
         outcome: boundedText(round.outcome, 50) || "pending",
-        createdAt: boundedText(round.createdAt, 100),
-        updatedAt: boundedText(round.updatedAt, 100),
+        createdAt: boundedText(round.createdAt ?? round.created_at, 100),
+        updatedAt: boundedText(round.updatedAt ?? round.updated_at, 100),
       }));
     const statusHistory = records(job.statusHistory)
       .map((event) => ({
@@ -1034,13 +1038,20 @@ function migrate(input) {
       statusHistory.unshift({ status, at: createdAt || now(), source: "" });
     return {
       id,
-      company: boundedText(job.company, 300) || `Company ${jobIndex + 1}`,
-      title: boundedText(job.title, 500) || `Job opportunity ${jobIndex + 1}`,
+      company:
+        boundedText(job.company ?? job.company_name, 300) ||
+        `Company ${jobIndex + 1}`,
+      title:
+        boundedText(job.title ?? job.job_title, 500) ||
+        `Job opportunity ${jobIndex + 1}`,
       location: boundedText(job.location, 500),
-      url: safeStoredHttpUrl(job.url),
+      url: safeStoredHttpUrl(job.url ?? job.application_url ?? job.job_url),
       source: boundedText(job.source, 200) || "Manual",
       salary: boundedText(job.salary, 300),
-      description: boundedText(job.description, 100000),
+      description: boundedText(
+        job.description ?? job.pos_context ?? job.job_description,
+        100000,
+      ),
       tags: [
         ...new Set(
           strings(job.tags)
@@ -1050,20 +1061,38 @@ function migrate(input) {
       ].slice(0, 100),
       status,
       statusHistory,
-      fitScore: Math.min(100, Math.max(0, Number(job.fitScore) || 0)),
+      fitScore: Math.min(
+        100,
+        Math.max(0, Number(job.fitScore ?? job.ats_score) || 0),
+      ),
       optimizedAtsScore: Math.min(
         100,
-        Math.max(0, Number(job.optimizedAtsScore) || 0),
+        Math.max(
+          0,
+          Number(job.optimizedAtsScore ?? job.optimized_ats_score) || 0,
+        ),
       ),
-      numApplicants: Math.max(0, Number(job.numApplicants) || 0),
-      postedAt: boundedText(job.postedAt, 100),
-      collectedAt: boundedText(job.collectedAt, 100),
-      applicationDatetime: boundedText(job.applicationDatetime, 100),
-      workflowRunId: boundedText(job.workflowRunId, 200),
-      hiringContactName: boundedText(job.hiringContactName, 200),
-      statusInsight: boundedText(job.statusInsight, 1000),
-      rejectedBecause: boundedText(job.rejectedBecause, 2000),
-      matchReasons: strings(job.matchReasons)
+      numApplicants: Math.max(
+        0,
+        Number(job.numApplicants ?? job.num_applicants) || 0,
+      ),
+      postedAt: boundedText(job.postedAt ?? job.post_time, 100),
+      collectedAt: boundedText(job.collectedAt ?? job.collected_at, 100),
+      applicationDatetime: boundedText(
+        job.applicationDatetime ?? job.application_datetime,
+        100,
+      ),
+      workflowRunId: boundedText(job.workflowRunId ?? job.workflow_run_id, 200),
+      hiringContactName: boundedText(
+        job.hiringContactName ?? job.hiring_contact_name,
+        200,
+      ),
+      statusInsight: boundedText(job.statusInsight ?? job.status_insight, 1000),
+      rejectedBecause: boundedText(
+        job.rejectedBecause ?? job.rejected_because,
+        2000,
+      ),
+      matchReasons: strings(job.matchReasons ?? job.match_reasons)
         .map((reason) => boundedText(reason, 500))
         .filter(Boolean)
         .slice(0, 100),
@@ -1072,7 +1101,7 @@ function migrate(input) {
       contacts,
       interviewRounds,
       createdAt,
-      updatedAt: boundedText(job.updatedAt, 100),
+      updatedAt: boundedText(job.updatedAt ?? job.updated_at, 100),
     };
   });
   const jobsById = new Map(db.jobs.map((job) => [job.id, job]));
