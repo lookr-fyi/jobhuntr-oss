@@ -333,6 +333,9 @@ const normalizeHuntOptions = (value, fallbackName = "Software Engineer") => {
       .slice(0, 20),
     workflows: workflows.length ? workflows : ["linkedin", "indeed"],
     optimizeResume: Boolean(source.optimizeResume),
+    ...(source.autoApply === true || source.auto_apply === true
+      ? { autoApply: true }
+      : {}),
   };
 };
 const JOB_STATUSES = new Set([
@@ -852,7 +855,7 @@ function migrate(input) {
   for (const [runIndex, run] of db.agentRuns.entries()) {
     run.id = uniqueLegacyId(run.id, "legacy-agent-run", runIndex, runIds);
     run.runName =
-      boundedText(run.runName, 200) ||
+      boundedText(run.runName ?? run.run_name, 200) ||
       boundedText(run.search?.q, 200) ||
       boundedText(run.q, 200) ||
       "Local hunt";
@@ -893,8 +896,36 @@ function migrate(input) {
       .map((action) => action.slice(0, 2000))
       .slice(0, 500);
     delete run.activities;
+    const v2SearchKeywords = strings(run.search_keywords);
+    const restoredRunOptions = isRecord(run.options)
+      ? run.options
+      : {
+          ...run,
+          ...run.search,
+          runName: run.runName,
+          origin:
+            run.origin ||
+            (boundedText(run.infinite_hunt_session_id, 200)
+              ? "infinite"
+              : "manual"),
+          q:
+            boundedText(run.q, 200) ||
+            boundedText(v2SearchKeywords[0], 200) ||
+            run.runName,
+          location: run.location ?? run.location_preferences,
+          workflows:
+            strings(run.workflows).length > 0
+              ? run.workflows
+              : boundedText(run.platform, 100)
+                ? [run.platform]
+                : [],
+          excludeKeywords: run.excludeKeywords ?? run.exclude_keywords,
+          optimizeResume:
+            run.optimizeResume === true || run.use_ats_optimized === true,
+          autoApply: run.autoApply === true || run.auto_apply === true,
+        };
     run.options = normalizeHuntOptions(
-      isRecord(run.options) ? run.options : { ...run, ...run.search },
+      restoredRunOptions,
       run.runName || run.search?.q,
     );
     run.workflows = run.options.workflows;
@@ -904,18 +935,43 @@ function migrate(input) {
       q: run.options.q,
       location: run.options.location,
     };
-    for (const counter of [
-      "inspected",
-      "found",
-      "added",
-      "duplicates",
-      "queued",
-      "optimizedResumes",
-      "originalResumes",
-    ])
-      run[counter] = Math.max(0, Number(run[counter]) || 0);
-    run.createdAt = boundedText(run.createdAt, 100);
-    run.completedAt = boundedText(run.completedAt, 100);
+    run.inspected = Math.max(0, Number(run.inspected) || 0);
+    run.found = Math.max(0, Number(run.found ?? run.jobs_found) || 0);
+    run.added = Math.max(0, Number(run.added ?? run.applications_sent) || 0);
+    run.duplicates = Math.max(0, Number(run.duplicates) || 0);
+    run.queued = Math.max(0, Number(run.queued ?? run.applications_sent) || 0);
+    run.optimizedResumes = Math.max(0, Number(run.optimizedResumes) || 0);
+    run.originalResumes = Math.max(0, Number(run.originalResumes) || 0);
+    run.createdAt = boundedText(
+      run.createdAt ?? run.created_at ?? run.started_at,
+      100,
+    );
+    run.updatedAt = boundedText(run.updatedAt ?? run.updated_at, 100);
+    run.completedAt = boundedText(run.completedAt ?? run.completed_at, 100);
+    db.agentRuns[runIndex] = {
+      id: run.id,
+      runName: run.runName,
+      origin: run.options.origin,
+      status: run.status,
+      createdAt: run.createdAt,
+      updatedAt: run.updatedAt,
+      completedAt: run.completedAt,
+      search: run.search,
+      options: run.options,
+      workflows: run.workflows,
+      optimizeResume: run.optimizeResume,
+      inspected: run.inspected,
+      found: run.found,
+      added: run.added,
+      duplicates: run.duplicates,
+      queued: run.queued,
+      optimizedResumes: run.optimizedResumes,
+      originalResumes: run.originalResumes,
+      minFit: run.minFit,
+      matches: run.matches,
+      steps: run.steps,
+      actions: run.actions,
+    };
   }
   const restoredInfiniteHunt = isRecord(db.infiniteHunt) ? db.infiniteHunt : {};
   const infiniteOptions = isRecord(restoredInfiniteHunt.options)

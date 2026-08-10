@@ -3604,6 +3604,58 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
     updatedAt: "2025-01-06T00:00:00.000Z",
   });
 
+  const authenticV2RunRestore = await req("/api/import", {
+    method: "POST",
+    body: JSON.stringify({
+      jobs: [],
+      agentRuns: [
+        {
+          id: "v2-workflow-run-id",
+          user_id: "private-cloud-user-id",
+          workflow_id: "linkedin-job-search-and-apply",
+          run_name: "Senior platform roles",
+          status: "completed",
+          platform: "linkedin",
+          infinite_hunt_session_id: "v2-infinite-session",
+          location_preferences: "United Kingdom",
+          search_keywords: ["Platform Engineer", "Distributed Systems"],
+          exclude_keywords: ["unpaid", "internship"],
+          auto_apply: true,
+          use_ats_optimized: true,
+          jobs_found: 9,
+          applications_sent: 3,
+          started_at: "2025-01-01T01:00:00.000Z",
+          completed_at: "2025-01-01T02:00:00.000Z",
+          created_at: "2025-01-01T00:00:00.000Z",
+          updated_at: "2025-01-01T03:00:00.000Z",
+          settings_snapshot: { private_cloud_setting: "must-not-survive" },
+        },
+      ],
+    }),
+  });
+  assert.equal(authenticV2RunRestore.res.status, 200);
+  const authenticV2Run = (await req("/api/state")).body.agentRuns[0];
+  assert.equal(authenticV2Run.runName, "Senior platform roles");
+  assert.equal(authenticV2Run.origin, "infinite");
+  assert.equal(authenticV2Run.search.q, "Platform Engineer");
+  assert.equal(authenticV2Run.search.location, "United Kingdom");
+  assert.deepEqual(authenticV2Run.workflows, ["linkedin"]);
+  assert.equal(authenticV2Run.options.autoApply, true);
+  assert.equal(authenticV2Run.optimizeResume, true);
+  assert.deepEqual(authenticV2Run.options.excludeKeywords, [
+    "unpaid",
+    "internship",
+  ]);
+  assert.equal(authenticV2Run.found, 9);
+  assert.equal(authenticV2Run.added, 3);
+  assert.equal(authenticV2Run.queued, 3);
+  assert.equal(authenticV2Run.createdAt, "2025-01-01T00:00:00.000Z");
+  assert.equal(authenticV2Run.updatedAt, "2025-01-01T03:00:00.000Z");
+  assert.equal(authenticV2Run.completedAt, "2025-01-01T02:00:00.000Z");
+  assert.equal(authenticV2Run.user_id, undefined);
+  assert.equal(authenticV2Run.workflow_id, undefined);
+  assert.equal(authenticV2Run.settings_snapshot, undefined);
+
   const authenticV2ProfileRestore = await req("/api/import", {
     method: "POST",
     body: JSON.stringify({
