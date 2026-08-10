@@ -1097,6 +1097,10 @@ function migrate(input) {
           Number(job.optimizedAtsScore ?? job.optimized_ats_score) || 0,
         ),
       ),
+      atsKeywords: strings(job.atsKeywords ?? job.ats_keyword_to_add_to_resume)
+        .map((keyword) => boundedText(keyword, 200))
+        .filter(Boolean)
+        .slice(0, 200),
       numApplicants: Math.max(
         0,
         Number(job.numApplicants ?? job.num_applicants) || 0,

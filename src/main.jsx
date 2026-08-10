@@ -3954,6 +3954,11 @@ function TrackerApplicationInsights({ job, submission, profile }) {
     submission?.atsThreshold ?? profile.preferences?.atsThreshold ?? 80,
   );
   const score = Number(submission?.atsScore ?? job.fitScore ?? 0);
+  const optimizedScore = Number(job.optimizedAtsScore);
+  const hasOptimizedScore =
+    Number.isFinite(optimizedScore) &&
+    optimizedScore > 0 &&
+    optimizedScore !== score;
   const profileSkills = new Set(
     (profile.skills || []).map((skill) => String(skill).toLowerCase()),
   );
@@ -3963,9 +3968,11 @@ function TrackerApplicationInsights({ job, submission, profile }) {
   );
   const missing = submission?.missingKeywords?.length
     ? submission.missingKeywords
-    : keywords.filter(
-        (keyword) => !profileSkills.has(String(keyword).toLowerCase()),
-      );
+    : job.atsKeywords?.length
+      ? job.atsKeywords
+      : keywords.filter(
+          (keyword) => !profileSkills.has(String(keyword).toLowerCase()),
+        );
   const questions = submission?.applicationQuestions || [];
   return (
     <div className="v2-tracker-insights">
@@ -4040,6 +4047,22 @@ function TrackerApplicationInsights({ job, submission, profile }) {
           <i style={{ width: `${Math.min(100, Math.max(0, score))}%` }} />
           <b style={{ left: `${Math.min(100, Math.max(0, threshold))}%` }} />
         </div>
+        {hasOptimizedScore && (
+          <div className="v2-optimized-score">
+            <span>Optimized Score:</span>
+            <strong
+              className={
+                optimizedScore >= threshold
+                  ? "high"
+                  : optimizedScore >= 60
+                    ? "medium"
+                    : "low"
+              }
+            >
+              {optimizedScore}%
+            </strong>
+          </div>
+        )}
         <p>
           {score >= threshold
             ? "This resume meets your ATS application threshold."

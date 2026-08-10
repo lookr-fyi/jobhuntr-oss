@@ -1656,6 +1656,27 @@ button:disabled {
   height: 13px;
   background: #0f172a;
 }
+.v2-optimized-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 9px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-optimized-score strong {
+  font-size: 14px;
+}
+.v2-optimized-score .high {
+  color: #15803d;
+}
+.v2-optimized-score .medium {
+  color: #b45309;
+}
+.v2-optimized-score .low {
+  color: #b91c1c;
+}
 .v2-tracker-info-section > p {
   margin: 0;
   color: #64748b;
