@@ -777,6 +777,22 @@ test(
         "Overview KPIs should use the authoritative v2 stacked desktop column",
       );
       await assertAccessible(page, "Overview");
+      await page.route("**/api/state", async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        body.jobs = [];
+        await route.fulfill({ response, json: body });
+      });
+      await page.reload();
+      await page.getByText("No history yet.", { exact: true }).waitFor();
+      assert.equal(
+        await page.getByRole("group", { name: "Toggle chart lines" }).count(),
+        0,
+        "an empty v2 pipeline should not expose chart-series controls",
+      );
+      await page.unroute("**/api/state");
+      await page.reload();
+      await page.getByLabel("Applications evaluated").waitFor();
       await page.getByLabel("Applications evaluated").uncheck();
       assert.equal(
         await page.locator(".v2-chart .line.evaluated").count(),

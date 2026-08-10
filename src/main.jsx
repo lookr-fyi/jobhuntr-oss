@@ -1999,24 +1999,27 @@ function Overview({ state, setTab, reload }) {
     Math.floor((now.getTime() - chartStart.getTime()) / 86400000) + 1,
   );
   const chartPointCount = Math.min(chartDays, 366);
-  const chartData = Array.from({ length: chartPointCount }, (_, index) => {
-    const dayOffset =
-      chartPointCount === 1
-        ? 0
-        : Math.round((index / (chartPointCount - 1)) * (chartDays - 1));
-    const date = new Date(chartStart);
-    date.setHours(23, 59, 59, 999);
-    date.setDate(date.getDate() + dayOffset);
-    const through = date.getTime();
-    const available = state.jobs.filter(
-      (job) => new Date(job.createdAt || job.updatedAt).getTime() <= through,
-    );
-    return {
-      date,
-      evaluated: available.length,
-      queued: available.filter((job) => job.status !== "rejected").length,
-    };
-  });
+  const chartData = state.jobs.length
+    ? Array.from({ length: chartPointCount }, (_, index) => {
+        const dayOffset =
+          chartPointCount === 1
+            ? 0
+            : Math.round((index / (chartPointCount - 1)) * (chartDays - 1));
+        const date = new Date(chartStart);
+        date.setHours(23, 59, 59, 999);
+        date.setDate(date.getDate() + dayOffset);
+        const through = date.getTime();
+        const available = state.jobs.filter(
+          (job) =>
+            new Date(job.createdAt || job.updatedAt).getTime() <= through,
+        );
+        return {
+          date,
+          evaluated: available.length,
+          queued: available.filter((job) => job.status !== "rejected").length,
+        };
+      })
+    : [];
   const chartWidth = 720;
   const chartHeight = 260;
   const chartPaddingX = 48;
@@ -2045,7 +2048,7 @@ function Overview({ state, setTab, reload }) {
       })
       .join(" ");
   const updateChartHover = (event) => {
-    if (!visibleSeries.length) return;
+    if (!visibleSeries.length || !chartData.length) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const ratio = Math.min(
       1,
@@ -2144,38 +2147,48 @@ function Overview({ state, setTab, reload }) {
               <h2>Pipeline over time</h2>
               <p>From your first signup to today.</p>
             </div>
-            <div
-              className="v2-chart-toggles"
-              role="group"
-              aria-label="Toggle chart lines"
-            >
-              {[
-                ["evaluated", "Applications evaluated", "purple"],
-                ["queued", "Jobs queued+", "cyan"],
-              ].map(([key, label, color]) => (
-                <label key={key}>
-                  <input
-                    name={`overview-chart-${key}`}
-                    type="checkbox"
-                    checked={chartVisibility[key]}
-                    onChange={() =>
-                      setChartVisibility((current) => ({
-                        ...current,
-                        [key]: !current[key],
-                      }))
-                    }
-                  />
-                  <i className={color} /> {label}
-                </label>
-              ))}
-            </div>
+            {chartData.length > 0 && (
+              <div
+                className="v2-chart-toggles"
+                role="group"
+                aria-label="Toggle chart lines"
+              >
+                {[
+                  ["evaluated", "Applications evaluated", "purple"],
+                  ["queued", "Jobs queued+", "cyan"],
+                ].map(([key, label, color]) => (
+                  <label key={key}>
+                    <input
+                      name={`overview-chart-${key}`}
+                      type="checkbox"
+                      checked={chartVisibility[key]}
+                      onChange={() =>
+                        setChartVisibility((current) => ({
+                          ...current,
+                          [key]: !current[key],
+                        }))
+                      }
+                    />
+                    <i className={color} /> {label}
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
           <div
             className="v2-chart"
             onPointerMove={updateChartHover}
             onPointerLeave={() => setChartHover(null)}
           >
-            {!visibleSeries.length ? (
+            {!chartData.length ? (
+              <div className="v2-chart-empty" role="status">
+                <b>No history yet.</b>
+                <span>
+                  Once you start evaluating applications, we&apos;ll visualize
+                  your momentum.
+                </span>
+              </div>
+            ) : !visibleSeries.length ? (
               <div className="v2-chart-empty" role="status">
                 <b>No lines selected.</b>
                 <span>Turn on at least one series to see the trend.</span>

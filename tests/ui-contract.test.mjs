@@ -242,6 +242,25 @@ test("v2 getting-started guidance does not obscure the expanded sidebar", async 
   assert.match(guidance, /id="getting-started-checklist"/);
 });
 
+test("the Overview pipeline preserves the authoritative empty history state", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const overview = source.slice(
+    source.indexOf("function Overview("),
+    source.indexOf("function Tracker("),
+  );
+
+  assert.match(overview, /const chartData = state\.jobs\.length/);
+  assert.match(overview, /chartData\.length > 0 &&/);
+  assert.match(overview, /No history yet\./);
+  assert.match(
+    overview,
+    /Once you start evaluating applications,[\s\S]*?visualize[\s\S]*?momentum/,
+  );
+});
+
 test("refresh, bulk outreach, and legacy migration failures stay contained", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
