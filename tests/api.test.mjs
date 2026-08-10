@@ -1005,6 +1005,13 @@ test("submission queue enforces review before local submission", async () => {
       options: [],
     },
     {
+      id: "availability-incompatible-dropdown",
+      question: "When are you available to start?",
+      answer: "Tomorrow morning",
+      questionType: "dropdown",
+      options: ["Tomorrow morning"],
+    },
+    {
       id: "availability-as-dropdown",
       question: "When are you available to start?",
       answer: "Within 1 month",

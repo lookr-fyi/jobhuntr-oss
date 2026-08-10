@@ -5170,6 +5170,7 @@ test(
       const rememberedSponsorship = page.getByRole("group", {
         name: "Will you require work authorization sponsorship?",
       });
+      const faqPanel = page.locator(".v2-faq-panel");
       assert.equal(
         await rememberedSponsorship
           .getByLabel("No", { exact: true })
@@ -5177,7 +5178,42 @@ test(
         true,
         "User Center must preserve the verified v2 multiple-choice answer",
       );
-      const faqPanel = page.locator(".v2-faq-panel");
+      await rememberedSponsorship
+        .getByLabel("Enter custom answer", { exact: true })
+        .click();
+      await page
+        .getByLabel(
+          "Will you require work authorization sponsorship? custom answer",
+        )
+        .fill("Status requires employer-specific review");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        faqPanel.getByRole("button", { name: "Save FAQ answers" }).click(),
+      ]);
+      await page.reload();
+      const restoredCustomSponsorship = page.getByRole("group", {
+        name: "Will you require work authorization sponsorship?",
+      });
+      assert.equal(
+        await restoredCustomSponsorship
+          .getByLabel("Enter custom answer", { exact: true })
+          .isChecked(),
+        true,
+        "custom v2 multiple-choice evidence should survive profile reloads",
+      );
+      assert.equal(
+        await page
+          .getByLabel(
+            "Will you require work authorization sponsorship? custom answer",
+          )
+          .inputValue(),
+        "Status requires employer-specific review",
+      );
       assert.equal(
         await faqPanel.count(),
         1,

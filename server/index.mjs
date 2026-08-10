@@ -1151,22 +1151,27 @@ const applicationQuestionsFor = (db) => {
       options: ["Yes", "No"],
     },
   ];
-  return defaults.map(({ question, questionType, options }) => ({
-    id: nanoid(),
-    question,
-    answer:
-      (db.profile.faqAnswers || []).find(
-        (item) =>
-          String(item.question).trim().toLowerCase() ===
-            question.toLowerCase() &&
-          (item.questionType || "text_input") === questionType,
-      )?.answer || "",
-    questionType,
-    options,
-    required: true,
-    confident: false,
-    verified: false,
-  }));
+  return defaults.map(({ question, questionType, options }) => {
+    const remembered = (db.profile.faqAnswers || []).find((item) => {
+      const answer = safeText(item?.answer, 10000);
+      return (
+        String(item.question).trim().toLowerCase() === question.toLowerCase() &&
+        (item.questionType || "text_input") === questionType &&
+        Boolean(answer) &&
+        (questionType === "text_input" || options.includes(answer))
+      );
+    });
+    return {
+      id: nanoid(),
+      question,
+      answer: safeText(remembered?.answer, 10000),
+      questionType,
+      options,
+      required: true,
+      confident: false,
+      verified: false,
+    };
+  });
 };
 const isValidApplicationAnswer = (question) => {
   const answer = safeText(question?.answer, 10000);
