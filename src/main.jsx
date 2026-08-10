@@ -2058,9 +2058,7 @@ function Overview({ state, setTab, reload }) {
       setRefreshing(false);
     }
   };
-  const exitJobHuntr = async () => {
-    if (state.infiniteHunt?.enabled)
-      await api("/api/infinite-hunt/stop", { method: "POST" }).catch(() => {});
+  const exitJobHuntr = () => {
     window.close();
     window.setTimeout(() => {
       window.location.href = "about:blank";
@@ -2331,8 +2329,8 @@ function Overview({ state, setTab, reload }) {
           <div className="v2-farewell-content">
             <h3 id="farewell-title">Congrats!</h3>
             <p>
-              This app was born to be deleted. We&apos;re so happy to hear you
-              found your next opportunity—and goodbye!
+              this app is borned to be deleted, we are so happy to hear this.
+              and bye!
             </p>
             <div className="v2-farewell-actions">
               <button
@@ -2340,7 +2338,7 @@ function Overview({ state, setTab, reload }) {
                 className="secondary"
                 onClick={() => setFarewellOpen(false)}
               >
-                Oops—bring me back
+                Ops - bring me back
               </button>
               <button onClick={exitJobHuntr}>Bye</button>
             </div>

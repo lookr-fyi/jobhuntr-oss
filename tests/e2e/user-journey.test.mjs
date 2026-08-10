@@ -835,7 +835,7 @@ test(
       await farewellDialog.waitFor();
       assert.equal(
         await farewellDialog
-          .getByRole("button", { name: "Oops—bring me back" })
+          .getByRole("button", { name: "Ops - bring me back" })
           .evaluate((button) => button === document.activeElement),
         true,
         "the farewell dialog should focus its safe return action",
@@ -867,21 +867,16 @@ test(
           delay === 120 ? 0 : originalSetTimeout(callback, delay, ...args);
       });
       await page.getByRole("button", { name: /I got an offer/ }).click();
-      await Promise.all([
-        page.waitForResponse(
-          (response) =>
-            response.url().endsWith("/api/infinite-hunt/stop") && response.ok(),
-        ),
-        farewellDialog.getByRole("button", { name: "Bye" }).click(),
-      ]);
+      await farewellDialog.getByRole("button", { name: "Bye" }).click();
       assert.equal(
         await page.evaluate(async () => {
           const response = await fetch("/api/state");
           return (await response.json()).infiniteHunt.enabled;
         }),
-        false,
-        "farewell must stop background hunting before closing JobHuntr",
+        true,
+        "v2 farewell must leave Infinite Hunt active for Electron's background tray handoff",
       );
+      await page.request.post(`${baseUrl}/api/infinite-hunt/stop`);
       await page.reload();
       await page.getByRole("heading", { name: /Welcome back/ }).waitFor();
 
