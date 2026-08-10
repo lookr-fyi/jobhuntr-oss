@@ -2667,6 +2667,11 @@ test(
       const customAvailability = availabilityQuestion.getByLabel(
         "When are you available to start? custom answer",
       );
+      assert.equal(
+        await customAvailability.inputValue(),
+        "",
+        "choosing a custom Easy Apply answer must not reuse the previous preset as custom text",
+      );
       await customAvailability.fill(
         "Available after a four-week notice period",
       );

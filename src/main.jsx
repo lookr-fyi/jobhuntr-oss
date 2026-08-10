@@ -6263,6 +6263,24 @@ function SubmissionCard({ submission: s, state, reload }) {
   );
   const answerRevisionRef = useRef({});
   const [answerRevisions, setAnswerRevisions] = useState({});
+  const editAnswerDraft = (id, answer) => {
+    const canonicalAnswer = canonicalApplicationAnswer(answer);
+    const nextRevision = (answerRevisionRef.current[id] || 0) + 1;
+    answerRevisionRef.current[id] = nextRevision;
+    setAnswerRevisions((current) => ({ ...current, [id]: nextRevision }));
+    setDraftAnswers((answers) => ({
+      ...answers,
+      [id]: canonicalAnswer,
+    }));
+    setDirtyAnswerIds((current) => new Set(current).add(id));
+    setAnswerDraftRestored(false);
+    setExternalSubmissionVerified(false);
+    return canonicalAnswer;
+  };
+  const beginCustomAnswer = (id) => {
+    setCustomAnswerIds((current) => new Set(current).add(id));
+    editAnswerDraft(id, "");
+  };
   const [verificationDraft, setVerificationDraft] = useState({});
   const [pendingVerificationIds, setPendingVerificationIds] = useState(
     () => new Set(),
@@ -6426,12 +6444,7 @@ function SubmissionCard({ submission: s, state, reload }) {
     if (recordingSubmissionRef.current || archivingPacketRef.current) return;
     const canonicalAnswer = canonicalApplicationAnswer(answer);
     if (trackDraft) {
-      const nextRevision = (answerRevisionRef.current[id] || 0) + 1;
-      answerRevisionRef.current[id] = nextRevision;
-      setAnswerRevisions((current) => ({ ...current, [id]: nextRevision }));
-      setDraftAnswers((answers) => ({ ...answers, [id]: canonicalAnswer }));
-      setDirtyAnswerIds((current) => new Set(current).add(id));
-      setAnswerDraftRestored(false);
+      editAnswerDraft(id, canonicalAnswer);
     } else
       setDraftAnswers((answers) => ({
         ...answers,
@@ -6695,15 +6708,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                           name={`question-${question.id}`}
                           disabled={packetLocked}
                           checked={usingCustomAnswer}
-                          onChange={() => {
-                            setCustomAnswerIds((current) =>
-                              new Set(current).add(question.id),
-                            );
-                            setDraftAnswers((answers) => ({
-                              ...answers,
-                              [question.id]: "",
-                            }));
-                          }}
+                          onChange={() => beginCustomAnswer(question.id)}
                         />
                         Enter custom answer
                       </label>
@@ -6718,10 +6723,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                         value={draftAnswers[question.id] || ""}
                         placeholder="Enter your custom answer…"
                         onChange={(event) =>
-                          setDraftAnswers((answers) => ({
-                            ...answers,
-                            [question.id]: event.target.value,
-                          }))
+                          editAnswerDraft(question.id, event.target.value)
                         }
                         onBlur={(event) =>
                           event.target.value.trim() &&
@@ -6765,9 +6767,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                       disabled={packetLocked}
                       onChange={(event) =>
                         event.target.value === "__custom_answer__"
-                          ? setCustomAnswerIds((current) =>
-                              new Set(current).add(question.id),
-                            )
+                          ? beginCustomAnswer(question.id)
                           : (setCustomAnswerIds((current) => {
                               const next = new Set(current);
                               next.delete(question.id);
@@ -6798,10 +6798,7 @@ function SubmissionCard({ submission: s, state, reload }) {
                         value={draftAnswers[question.id] || ""}
                         placeholder="Enter your custom answer…"
                         onChange={(event) =>
-                          setDraftAnswers((answers) => ({
-                            ...answers,
-                            [question.id]: event.target.value,
-                          }))
+                          editAnswerDraft(question.id, event.target.value)
                         }
                         onBlur={(event) =>
                           event.target.value.trim() &&
