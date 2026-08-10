@@ -2325,6 +2325,10 @@ test("remaining persisted workflow lists render newest first", async () => {
     source.indexOf("function RunsPage("),
     source.indexOf("function SettingsPage("),
   );
+  const settings = source.slice(
+    source.indexOf("function SettingsPage("),
+    source.indexOf("function Privacy("),
+  );
 
   assert.match(outreach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
   assert.match(coach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
@@ -2381,5 +2385,13 @@ test("remaining persisted workflow lists render newest first", async () => {
     runsPage,
     /sortableTimestamp\(b\.completedAt/,
     "Agent Runs should follow v2's updated-or-created chronology",
+  );
+  assert.match(
+    gigs,
+    /newestFirst\(gig\.statusHistory\)\.map\(\(event, index\)/,
+  );
+  assert.match(
+    settings,
+    /newestFirst\(state\.coachingSessions\)[\s\S]*?\.slice\(0, 4\)[\s\S]*?\.map\(\(session\)/,
   );
 });

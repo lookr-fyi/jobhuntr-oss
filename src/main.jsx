@@ -12726,7 +12726,7 @@ function Gigs({ state, reload }) {
               </label>
               <h3>Status timeline</h3>
               <div className="status-history">
-                {gig.statusHistory.map((event, index) => (
+                {newestFirst(gig.statusHistory).map((event, index) => (
                   <p key={`${event.at}-${index}`}>
                     <b>{event.status}</b>
                     <small>{formatDateTime(event.at)}</small>
@@ -15745,26 +15745,28 @@ function SettingsPage({ state, reload, setTab }) {
             </div>
             {state.coachingSessions.length ? (
               <div className="v2-coaching-activity-list">
-                {state.coachingSessions.slice(0, 4).map((session) => (
-                  <button key={session.id} onClick={() => setTab("coach")}>
-                    <span className="v2-coach-avatar-small">
-                      <MessageSquare size={15} />
-                    </span>
-                    <span>
-                      <b>
-                        {state.jobs.find((job) => job.id === session.jobId)
-                          ?.title || "Career coaching session"}
-                      </b>
-                      <small>
-                        {session.questions?.length || 0} questions · Updated{" "}
-                        {formatCalendarDate(
-                          session.updatedAt || session.createdAt,
-                        )}
-                      </small>
-                    </span>
-                    <ChevronRight size={16} />
-                  </button>
-                ))}
+                {newestFirst(state.coachingSessions)
+                  .slice(0, 4)
+                  .map((session) => (
+                    <button key={session.id} onClick={() => setTab("coach")}>
+                      <span className="v2-coach-avatar-small">
+                        <MessageSquare size={15} />
+                      </span>
+                      <span>
+                        <b>
+                          {state.jobs.find((job) => job.id === session.jobId)
+                            ?.title || "Career coaching session"}
+                        </b>
+                        <small>
+                          {session.questions?.length || 0} questions · Updated{" "}
+                          {formatCalendarDate(
+                            session.updatedAt || session.createdAt,
+                          )}
+                        </small>
+                      </span>
+                      <ChevronRight size={16} />
+                    </button>
+                  ))}
               </div>
             ) : (
               <div className="v2-coaching-empty">
