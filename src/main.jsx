@@ -5366,10 +5366,23 @@ function Queue({ state, reload, setTab }) {
   const [submitIndex, setSubmitIndex] = useState(0);
   const [submissionConfirmed, setSubmissionConfirmed] = useState(false);
   const [submittingReady, setSubmittingReady] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [creatingPacketFor, setCreatingPacketFor] = useState("");
   const creatingPacketRef = useRef(false);
   const submittingReadyRef = useRef(false);
+  const refreshingRef = useRef(false);
   const submitCloseRef = useRef(null);
+  const refreshQueue = async () => {
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
+    setRefreshing(true);
+    try {
+      await reload();
+    } finally {
+      refreshingRef.current = false;
+      setRefreshing(false);
+    }
+  };
   const active = state.submissions.filter((item) => {
     const job = state.jobs.find((candidate) => candidate.id === item.jobId);
     return (
@@ -5633,8 +5646,14 @@ function Queue({ state, reload, setTab }) {
           >
             <InfinityIcon size={16} /> Start Submitting
           </button>
-          <button className="secondary" onClick={reload}>
-            <RefreshCcw size={15} /> Refresh
+          <button
+            className="secondary"
+            disabled={refreshing}
+            aria-busy={refreshing}
+            onClick={refreshQueue}
+          >
+            <RefreshCcw className={refreshing ? "spin" : ""} size={15} />{" "}
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
       </div>

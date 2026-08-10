@@ -2265,6 +2265,35 @@ test(
 
       await page.locator('button[title="Submission Queue"]').click();
       await page.getByText(/never submits to an external website/i).waitFor();
+      let queueRefreshRequests = 0;
+      await page.route(
+        "**/api/state",
+        async (route) => {
+          queueRefreshRequests += 1;
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          await route.continue();
+        },
+        { times: 1 },
+      );
+      const queueRefresh = page
+        .locator(".v2-queue-title-row")
+        .getByRole("button", { name: "Refresh", exact: true });
+      await queueRefresh.evaluate((button) => {
+        button.click();
+        button.click();
+      });
+      await page.getByRole("button", { name: "Refreshing…" }).waitFor();
+      assert.equal(
+        await page.getByRole("button", { name: "Refreshing…" }).isDisabled(),
+        true,
+        "Submission Queue refresh should expose and lock in-flight work",
+      );
+      await queueRefresh.waitFor();
+      assert.equal(
+        queueRefreshRequests,
+        1,
+        "same-frame Submission Queue refresh clicks must issue one state request",
+      );
       assert.deepEqual(
         await page.locator(".v2-queue-page").evaluate((queue) => {
           const style = (selector) =>

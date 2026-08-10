@@ -523,6 +523,12 @@ test("application packet actions are single-flight with truthful progress", asyn
 
   assert.match(queue, /const creatingPacketRef = useRef\(false\)/);
   assert.match(queue, /const submittingReadyRef = useRef\(false\)/);
+  assert.match(queue, /const refreshingRef = useRef\(false\)/);
+  assert.match(queue, /if \(refreshingRef\.current\) return/);
+  assert.match(queue, /refreshingRef\.current = true/);
+  assert.match(queue, /refreshingRef\.current = false/);
+  assert.match(queue, /aria-busy=\{refreshing\}/);
+  assert.match(queue, /refreshing \? "Refreshing…" : "Refresh"/);
   assert.match(
     queue,
     /if \(!selectedQueueJobId \|\| creatingPacketRef\.current\) return/,

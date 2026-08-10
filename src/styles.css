@@ -8039,6 +8039,14 @@ main > header.integrated-page-header {
   flex-direction: column;
   background: #fff;
 }
+.v2-queue-page .spin {
+  animation: v2-queue-spin 1s linear infinite;
+}
+@keyframes v2-queue-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .v2-queue-title-row {
   display: flex;
   justify-content: space-between;
