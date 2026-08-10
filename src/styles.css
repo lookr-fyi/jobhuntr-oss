@@ -2916,20 +2916,13 @@ section.gigs-page .v2-gigs-intro p {
   font-size: 13px;
   font-weight: 700;
 }
-.v2-threshold-setting > span {
+.v2-threshold-input {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
-.v2-threshold-setting > span strong {
-  color: #111827;
-  font-size: 14px;
-}
-.v2-threshold-setting input[type="range"] {
-  width: 100%;
-  padding: 0;
-  accent-color: #111827;
+.v2-threshold-input input[type="number"] {
+  width: 100px;
 }
 .v2-threshold-setting small {
   color: #64748b;

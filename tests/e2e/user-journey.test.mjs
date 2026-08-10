@@ -5316,7 +5316,11 @@ test(
       await assertNamedFormControls(page, "User Center settings");
       assert.equal(new URL(page.url()).hash, "#/settings?tab=settings");
       await page.getByLabel("Weekly application goal").waitFor();
-      await page.getByLabel("ATS template application threshold").fill("85");
+      const atsThreshold = page.getByLabel("ATS Threshold to Apply Template");
+      assert.equal(await atsThreshold.getAttribute("type"), "number");
+      assert.equal(await atsThreshold.getAttribute("min"), "0");
+      assert.equal(await atsThreshold.getAttribute("max"), "100");
+      await atsThreshold.fill("85");
       let delayedProfileSaveCount = 0;
       await page.route("**/api/profile", async (route) => {
         delayedProfileSaveCount += 1;
@@ -5339,7 +5343,7 @@ test(
       const savingSettings = page.getByRole("button", { name: "Saving…" });
       await savingSettings.waitFor();
       assert.equal(await savingSettings.isDisabled(), true);
-      await page.getByLabel("ATS template application threshold").fill("90");
+      await atsThreshold.fill("90");
       await delayedSettingsSave;
       await page.waitForTimeout(100);
       assert.equal(
@@ -5354,7 +5358,7 @@ test(
         "an older save must not mark newer User Center edits as persisted",
       );
       await page.unroute("**/api/profile");
-      await page.getByLabel("ATS template application threshold").fill("85");
+      await atsThreshold.fill("85");
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -5366,10 +5370,27 @@ test(
       ]);
       const settingsSavedNotice = page.getByText("Changes saved locally.");
       await settingsSavedNotice.waitFor();
-      await page.getByLabel("ATS template application threshold").fill("90");
+      await atsThreshold.fill("90");
       await settingsSavedNotice.waitFor({ state: "hidden" });
-      await page.getByLabel("ATS template application threshold").fill("85");
+      await atsThreshold.fill("85");
       await assertAccessible(page, "User Center");
+      await atsThreshold.fill("0");
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().endsWith("/api/profile") &&
+            response.request().method() === "PUT" &&
+            response.ok(),
+        ),
+        page.getByRole("button", { name: "Save settings" }).click(),
+      ]);
+      await page.reload();
+      await page.getByRole("tab", { name: "Settings" }).click();
+      assert.equal(
+        await page.getByLabel("ATS Threshold to Apply Template").inputValue(),
+        "0",
+        "the full v2 ATS threshold range must survive a real save and reload",
+      );
       await page.locator('[title="Data and privacy"]').click();
       await page.getByRole("heading", { name: "Settings & data" }).waitFor();
       await assertNamedFormControls(page, "Settings and data");
@@ -5497,7 +5518,11 @@ test(
         persisted.agentRuns[0].queued,
       );
       assert.equal(persisted.coverLetters[0].title, "E2E product letter");
-      assert.equal(persisted.profile.preferences.atsThreshold, 85);
+      assert.equal(
+        persisted.profile.preferences.atsThreshold,
+        0,
+        "the v2 minimum ATS threshold must remain persisted at rest",
+      );
       assert.equal(persisted.profile.firstName, "E2E");
       assert.equal(persisted.profile.lastName, "Hunter");
       assert.equal(persisted.profile.nickname, "E2E Builder");

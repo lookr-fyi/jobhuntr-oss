@@ -14572,7 +14572,7 @@ function readUserCenterDraft(profile) {
     if (typeof draft.remote === "boolean") restored.remote = draft.remote;
     for (const [key, min, max] of [
       ["minSalary", 0, 10000000],
-      ["atsThreshold", 1, 100],
+      ["atsThreshold", 0, 100],
       ["weeklyApplicationGoal", 1, 1000],
     ]) {
       const value = number(key, min, max);
@@ -14827,7 +14827,9 @@ function SettingsPage({ state, reload, setTab }) {
               .split(",")
               .map((x) => x.trim())
               .filter(Boolean),
-            atsThreshold: Number(form.atsThreshold) || 80,
+            atsThreshold: Number.isFinite(Number(form.atsThreshold))
+              ? Math.min(100, Math.max(0, Number(form.atsThreshold)))
+              : 80,
           },
           resumeText: form.resumeText,
           additionalInfo: form.additionalInfo,
@@ -15549,24 +15551,23 @@ function SettingsPage({ state, reload, setTab }) {
               />
             </label>
             <label className="v2-threshold-setting">
-              <span>
-                ATS template application threshold
-                <strong>{form.atsThreshold}%</strong>
+              ATS Threshold to Apply Template
+              <span className="v2-threshold-input">
+                <input
+                  name="settings-ats-threshold"
+                  aria-label="ATS Threshold to Apply Template"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.atsThreshold}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    if (Number.isFinite(value) && value >= 0 && value <= 100)
+                      editForm({ ...form, atsThreshold: value });
+                  }}
+                />
+                <span aria-hidden="true">%</span>
               </span>
-              <input
-                name="settings-ats-threshold"
-                type="range"
-                min="50"
-                max="100"
-                step="5"
-                value={form.atsThreshold}
-                onChange={(event) =>
-                  editForm({
-                    ...form,
-                    atsThreshold: Number(event.target.value),
-                  })
-                }
-              />
               <small>
                 If your original resume already meets this score, JobHuntr skips
                 ATS resume generation. Otherwise, it prepares a tailored
