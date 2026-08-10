@@ -3837,7 +3837,7 @@ function Tracker({ state, reload, setTab }) {
               ))}
             </div>
             <div className="v2-funnel-chart">
-              {funnelStages.slice(0, 4).map((stage, index) => {
+              {funnelStages.map((stage, index) => {
                 const width = Math.max(
                   18,
                   (stage.jobs.length / Math.max(runFiltered.length, 1)) * 100,

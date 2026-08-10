@@ -4254,6 +4254,16 @@ test(
         .waitFor();
       await funnelDialog.getByText("Interview rate", { exact: true }).waitFor();
       await funnelDialog.getByText("Offer rate", { exact: true }).waitFor();
+      assert.equal(
+        await funnelDialog.locator(".v2-funnel-stage").count(),
+        5,
+        "the funnel must visualize rejected applications instead of listing them only in its legend",
+      );
+      await funnelDialog
+        .locator(".v2-funnel-stage")
+        .last()
+        .getByText("Rejected", { exact: true })
+        .waitFor();
       await page.keyboard.press("Shift+Tab");
       assert.equal(
         await funnelDialog.evaluate((dialog) =>
