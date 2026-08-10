@@ -14180,6 +14180,11 @@ function Agent({ state, reload, setTab }) {
 }
 function RunsPage({ state, setTab, reload }) {
   const runs = state.agentRuns;
+  const latestRun = [...runs].sort(
+    (a, b) =>
+      sortableTimestamp(b.completedAt, b.updatedAt, b.createdAt) -
+      sortableTimestamp(a.completedAt, a.updatedAt, a.createdAt),
+  )[0];
   const linkedRunId = new URLSearchParams(
     window.location.hash.split("?")[1] || "",
   ).get("run");
@@ -14371,8 +14376,8 @@ function RunsPage({ state, setTab, reload }) {
         <div className="inline">
           <button
             className="secondary v2-open-latest-run"
-            disabled={!runs.length}
-            onClick={() => setSelectedRun(runs[0])}
+            disabled={!latestRun}
+            onClick={() => setSelectedRun(latestRun)}
           >
             Open Latest Run
           </button>

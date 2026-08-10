@@ -706,6 +706,13 @@ test("Agent Runs bulk deletion uses one atomic retryable request", async () => {
     /Number\(actionRequiredRunIds\.has\(b\.id\)\)[\s\S]*?sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
   );
   assert.match(
+    runs,
+    /const latestRun = \[\.\.\.runs\]\.sort\([\s\S]*?sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
+  );
+  assert.match(runs, /disabled=\{!latestRun\}/);
+  assert.match(runs, /onClick=\{\(\) => setSelectedRun\(latestRun\)\}/);
+  assert.doesNotMatch(runs, /setSelectedRun\(runs\[0\]\)/);
+  assert.match(
     source,
     /const sortableTimestamp = \(\.\.\.values\) => \{[\s\S]*?Number\.isFinite\(timestamp\)[\s\S]*?return 0/,
   );
