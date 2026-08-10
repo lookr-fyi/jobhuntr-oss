@@ -264,6 +264,12 @@ const TRACKER_STAGE_LABELS = {
   removed: "Removed",
 };
 const OVERVIEW_QUEUED_STATUSES = new Set(["interested", "submitting"]);
+const TRACKER_POST_APPLICATION_STATUSES = new Set([
+  "applied",
+  "interview",
+  "offer",
+  "rejected",
+]);
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
 const trackerApplicationDate = (job) => {
   if (sortableTimestamp(job?.applicationDatetime) > 0)
@@ -3478,20 +3484,22 @@ function Tracker({ state, reload, setTab }) {
                         ))}
                       </select>
                     </label>
-                    <label>
-                      Application Date
-                      <input
-                        name="edit-job-application-date"
-                        type="datetime-local"
-                        value={editForm.applicationDatetime}
-                        onChange={(event) =>
-                          setEditForm((current) => ({
-                            ...current,
-                            applicationDatetime: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
+                    {TRACKER_POST_APPLICATION_STATUSES.has(editForm.status) && (
+                      <label>
+                        Application Date
+                        <input
+                          name="edit-job-application-date"
+                          type="datetime-local"
+                          value={editForm.applicationDatetime}
+                          onChange={(event) =>
+                            setEditForm((current) => ({
+                              ...current,
+                              applicationDatetime: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    )}
                     <label>
                       Description
                       <textarea
@@ -3573,17 +3581,18 @@ function Tracker({ state, reload, setTab }) {
                               : "Not available"}
                           </span>
                         </div>
-                        {trackerApplicationDate(job) && (
-                          <div className="date-item">
-                            <span className="date-label">Applied:</span>
-                            <span className="date-value">
-                              {formatDateTime(
-                                trackerApplicationDate(job),
-                                "Not available",
-                              )}
-                            </span>
-                          </div>
-                        )}
+                        {TRACKER_POST_APPLICATION_STATUSES.has(job.status) &&
+                          trackerApplicationDate(job) && (
+                            <div className="date-item">
+                              <span className="date-label">Applied:</span>
+                              <span className="date-value">
+                                {formatDateTime(
+                                  trackerApplicationDate(job),
+                                  "Not available",
+                                )}
+                              </span>
+                            </div>
+                          )}
                       </div>
                     </section>
                     <section className="info-section description-section">

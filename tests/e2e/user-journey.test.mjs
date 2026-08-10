@@ -4536,9 +4536,6 @@ test(
       await jobEditForm
         .getByLabel("salary", { exact: true })
         .fill("$175k-$225k");
-      await jobEditForm
-        .getByLabel("Application Date", { exact: true })
-        .fill("2025-02-03T08:30");
       await page.getByRole("button", { name: "Save", exact: true }).click();
       await page
         .getByRole("heading", { name: "Founding Principal Product Engineer" })
@@ -4550,12 +4547,6 @@ test(
       const editedJobId = trackerState.jobs.find(
         (job) => job.title === "Founding Principal Product Engineer",
       ).id;
-      assert.match(
-        trackerState.jobs.find((job) => job.id === editedJobId)
-          .applicationDatetime,
-        /^2025-02-03T/,
-        "manual Job Tracker edits should persist v2's application date field",
-      );
       await Promise.all([
         page.waitForResponse(
           (response) =>
@@ -4605,6 +4596,23 @@ test(
         .getByRole("heading", { name: "Founding Principal Product Engineer" })
         .waitFor();
       assert.match(page.url(), new RegExp(`job=${editedJobId}`));
+      await page.getByRole("button", { name: "Edit job" }).click();
+      await page
+        .getByLabel("Application Date", { exact: true })
+        .fill("2025-02-03T08:30");
+      await page.getByRole("button", { name: "Save", exact: true }).click();
+      await page
+        .getByRole("heading", { name: "Founding Principal Product Engineer" })
+        .waitFor();
+      const applicationDateState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      assert.match(
+        applicationDateState.jobs.find((job) => job.id === editedJobId)
+          .applicationDatetime,
+        /^2025-02-03T/,
+        "manual Job Tracker edits should persist v2's application date field",
+      );
       await assertAccessible(page, "Job Tracker");
 
       await page.getByRole("button", { name: "Close job details" }).click();
