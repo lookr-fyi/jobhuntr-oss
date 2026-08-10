@@ -2320,6 +2320,10 @@ test("remaining persisted workflow lists render newest first", async () => {
     source.indexOf("function Tracker("),
     source.indexOf("function JobDrawer("),
   );
+  const huntStatus = source.slice(
+    source.indexOf("function InfiniteHuntStatus"),
+    source.indexOf("function GettingStarted"),
+  );
 
   assert.match(outreach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
   assert.match(coach, /newestFirst\(state\.jobs\)\.map\(\(job\)/);
@@ -2333,5 +2337,10 @@ test("remaining persisted workflow lists render newest first", async () => {
     tracker,
     /newestFirst\(state\.agentRuns\)\.map\(\(run\)/,
     "the Job Tracker run filter should offer recent hunts first",
+  );
+  assert.match(
+    huntStatus,
+    /const latest = latestPersistedRecord\(runs\)/,
+    "the floating Infinite Hunt status should summarize the newest run",
   );
 });

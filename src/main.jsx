@@ -883,7 +883,7 @@ function ConfirmDialog({
 }
 function InfiniteHuntStatus({ runs, onOpen }) {
   const [expanded, setExpanded] = useState(false);
-  const latest = runs[0] || null;
+  const latest = latestPersistedRecord(runs);
   const running = latest?.status === "running";
   return (
     <div
