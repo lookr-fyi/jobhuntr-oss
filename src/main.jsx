@@ -2059,6 +2059,11 @@ function Overview({ state, setTab, reload }) {
     }
   };
   const exitJobHuntr = () => {
+    setFarewellOpen(false);
+    if (window.jobHuntrDesktop?.close) {
+      window.jobHuntrDesktop.close();
+      return;
+    }
     window.close();
     window.setTimeout(() => {
       window.location.href = "about:blank";

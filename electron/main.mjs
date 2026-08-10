@@ -1,6 +1,7 @@
 import {
   app,
   BrowserWindow,
+  ipcMain,
   Menu,
   screen,
   session,
@@ -29,6 +30,7 @@ const LOCAL_REQUEST_TIMEOUT_MS = Math.max(
 
 const projectRoot = path.resolve(import.meta.dirname, "..");
 const iconPath = path.join(projectRoot, "src", "jobhuntr-logo.png");
+const preloadPath = path.join(projectRoot, "electron", "preload.cjs");
 app.setName("JobHuntr");
 app.setPath(
   "userData",
@@ -262,10 +264,21 @@ const createWindow = async () => {
       nodeIntegration: false,
       sandbox: true,
       safeDialogs: true,
+      preload: preloadPath,
     },
   });
 
   mainWindow.removeMenu();
+  ipcMain.removeAllListeners("jobhuntr:close-window");
+  ipcMain.on("jobhuntr:close-window", (event) => {
+    if (
+      !mainWindow ||
+      mainWindow.isDestroyed() ||
+      event.sender !== mainWindow.webContents
+    )
+      return;
+    mainWindow.close();
+  });
   hardenWebContents(mainWindow.webContents, localOrigin);
   mainWindow.webContents.on("did-create-window", (childWindow) => {
     hardenWebContents(childWindow.webContents, localOrigin);

@@ -149,10 +149,30 @@ test(
       await window
         .getByText("Infinite Hunt is active every 60 minutes.")
         .waitFor();
+      await window.locator('button[title="Overview"]').click();
+      await window.getByRole("heading", { name: /Welcome back/ }).waitFor();
+      assert.equal(
+        await window.evaluate(() => typeof window.jobHuntrDesktop?.close),
+        "function",
+        "the sandboxed renderer should receive only the narrow desktop close bridge",
+      );
+      await window.getByRole("button", { name: /I got an offer/ }).click();
+      const farewell = window.getByRole("dialog", { name: "Congrats!" });
+      await farewell.waitFor();
+      await farewell
+        .getByText(
+          "this app is borned to be deleted, we are so happy to hear this. and bye!",
+          { exact: true },
+        )
+        .waitFor();
+      await farewell
+        .getByRole("button", { name: "Bye" })
+        .evaluate((button) => button.click());
+      // Exercise the same repeated-close race after the renderer's real v2
+      // farewell action initiates the native close lifecycle.
       await electronApp.evaluate(({ BrowserWindow }) => {
         const activeWindow = BrowserWindow.getAllWindows()[0];
-        activeWindow.close();
-        activeWindow.close();
+        activeWindow?.close();
       });
       await new Promise((resolve) => setTimeout(resolve, 500));
       assert.equal(
@@ -160,7 +180,7 @@ test(
           BrowserWindow.getAllWindows()[0].isVisible(),
         ),
         false,
-        "even rapid repeated closes must keep an active Infinite Hunt alive in the tray",
+        "the real farewell action and a repeated close must keep an active Infinite Hunt alive in the tray",
       );
       await electronApp.evaluate(({ app }) => {
         app.emit("activate");
@@ -173,6 +193,16 @@ test(
         true,
         "activating JobHuntr must reopen a window hidden by Infinite Hunt",
       );
+      await window.getByText("Welcome back, Electron").waitFor();
+      assert.equal(
+        await window.getByRole("dialog", { name: "Congrats!" }).count(),
+        0,
+        "reopening a background hunt must not leave the farewell dialog blocking the workspace",
+      );
+      await window.locator('button[title="Infinite Hunting"]').click();
+      await window
+        .getByText("Infinite Hunt is active every 60 minutes.")
+        .waitFor();
       await electronApp.evaluate(() => {
         globalThis.__jobhuntrOriginalFetch = globalThis.fetch;
         globalThis.fetch = (target, options = {}) => {
