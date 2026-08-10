@@ -37,7 +37,10 @@ const packagedExecutable = async () => {
 
 test(
   "the actual platform distributable launches and completes a user flow",
-  { timeout: 30_000 },
+  // This suite runs beside two other real Electron/Chromium journeys. A cold
+  // packaged launch can exceed 30 seconds on constrained CI even though each
+  // interaction remains bounded by Playwright's own action timeouts.
+  { timeout: 60_000 },
   async () => {
     const executablePath = await packagedExecutable();
     const dataDir = await fs.mkdtemp(
@@ -50,6 +53,9 @@ test(
         env: {
           ...process.env,
           JOBHUNTR_DATA_DIR: dataDir,
+          // Keep Electron's single-instance lock isolated from the source-entry
+          // smoke test that runs concurrently in this suite.
+          JOBHUNTR_USER_DATA_DIR: dataDir,
           JOBHUNTR_WINDOW_STATE_PATH: path.join(dataDir, "window-state.json"),
         },
       });

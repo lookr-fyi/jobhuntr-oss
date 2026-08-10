@@ -14634,8 +14634,10 @@ function FaqAnswerControl({ faq, name, labelId, onChange }) {
           aria-labelledby={labelId}
           value={customMode ? CUSTOM_FAQ_ANSWER : faq.answer || ""}
           onChange={(event) => {
-            if (event.target.value === CUSTOM_FAQ_ANSWER) setCustomMode(true);
-            else {
+            if (event.target.value === CUSTOM_FAQ_ANSWER) {
+              setCustomMode(true);
+              onChange("");
+            } else {
               setCustomMode(false);
               onChange(event.target.value);
             }
@@ -14683,7 +14685,10 @@ function FaqAnswerControl({ faq, name, labelId, onChange }) {
             name={name}
             value={CUSTOM_FAQ_ANSWER}
             checked={customMode}
-            onChange={() => setCustomMode(true)}
+            onChange={() => {
+              setCustomMode(true);
+              onChange("");
+            }}
           />
           Enter custom answer
         </label>
@@ -15427,7 +15432,6 @@ function SettingsPage({ state, reload, setTab }) {
                         {faq.confident !== true && <em>Not Confident</em>}
                       </span>
                       <FaqAnswerControl
-                        key={`${faq.id || index}-${(faq.options || []).includes(faq.answer) ? "preset" : "custom"}`}
                         faq={faq}
                         name={`profile-faq-${faq.id || index}`}
                         labelId={`profile-faq-label-${faq.id || index}`}

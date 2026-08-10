@@ -5190,6 +5190,20 @@ test(
       await rememberedSponsorship
         .getByLabel("Enter custom answer", { exact: true })
         .click();
+      assert.equal(
+        await rememberedSponsorship
+          .getByLabel("No", { exact: true })
+          .isChecked(),
+        false,
+        "choosing a custom answer must immediately invalidate the old confident preset",
+      );
+      await page
+        .locator(".v2-faq-question")
+        .filter({
+          hasText: "Will you require work authorization sponsorship?",
+        })
+        .getByText("Not Confident", { exact: true })
+        .waitFor();
       await page
         .getByLabel(
           "Will you require work authorization sponsorship? custom answer",

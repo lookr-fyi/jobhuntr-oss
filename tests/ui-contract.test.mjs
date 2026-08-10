@@ -137,6 +137,22 @@ test("first-run onboarding recovers bounded private edits until setup succeeds",
   );
 });
 
+test("custom v2 FAQ controls invalidate their previous confident preset", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const control = source.slice(
+    source.indexOf("function FaqAnswerControl"),
+    source.indexOf("function SettingsPage"),
+  );
+  assert.equal(
+    (control.match(/setCustomMode\(true\);\s*onChange\(""\)/g) || []).length,
+    2,
+    "dropdown and radio custom modes must both clear the old answer immediately",
+  );
+});
+
 test("user-triggered API actions contain rejected requests", async () => {
   const source = await readFile(
     new URL("../src/main.jsx", import.meta.url),
