@@ -13456,13 +13456,9 @@ function Agent({ state, reload, setTab }) {
   const [runOrderAnnouncement, setRunOrderAnnouncement] = useState("");
   const [statusOpen, setStatusOpen] = useState(false);
   const statusCloseRef = useRef(null);
-  const latestRun = [...state.agentRuns]
-    .filter((run) => run.origin !== "manual")
-    .sort(
-      (a, b) =>
-        sortableTimestamp(b.completedAt, b.updatedAt, b.createdAt) -
-        sortableTimestamp(a.completedAt, a.updatedAt, a.createdAt),
-    )[0];
+  const latestRun = latestPersistedRecord(
+    state.agentRuns.filter((run) => run.origin !== "manual"),
+  );
   const queuedSubmissions = state.submissions.filter((submission) =>
     ["draft", "ready"].includes(submission.status),
   );

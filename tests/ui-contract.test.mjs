@@ -475,7 +475,7 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   assert.match(agent, /\.filter\(\(run\) => run\.origin !== "manual"\)/);
   assert.match(
     agent,
-    /sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
+    /latestPersistedRecord\([\s\S]*?\.filter\(\(run\) => run\.origin !== "manual"\)/,
   );
   const stopping = agent.slice(
     agent.indexOf("const stopInfiniteHunt = async"),
@@ -2338,6 +2338,10 @@ test("remaining persisted workflow lists render newest first", async () => {
     /newestFirst\(state\.huntPresets\)\.map\(\(preset\)/,
   );
   assert.match(infiniteHunt, /newestFirst\(state\.agentRuns\)\.map\(\(run\)/);
+  assert.match(
+    infiniteHunt,
+    /latestPersistedRecord\(\s*state\.agentRuns\.filter\(\(run\) => run\.origin !== "manual"\)/,
+  );
   assert.match(
     tracker,
     /newestFirst\(state\.agentRuns\)\.map\(\(run\)/,
