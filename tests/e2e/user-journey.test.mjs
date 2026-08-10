@@ -5554,8 +5554,11 @@ test(
                 },
                 {
                   id: "duplicate-browser-faq",
-                  question: "Restored FAQ question",
-                  answer: "Restored FAQ answer",
+                  question_text: "Restored FAQ question",
+                  answer: "Option B",
+                  question_type: "dropdown",
+                  options: { 0: "Option A", 1: "Option B" },
+                  confident: true,
                 },
               ],
             },
@@ -5977,7 +5980,21 @@ test(
         exact: true,
       });
       await restoredFaq.waitFor();
-      assert.equal(await restoredFaq.inputValue(), "Restored FAQ answer");
+      assert.equal(
+        await restoredFaq.evaluate((control) => control.tagName),
+        "SELECT",
+        "authentic v2 FAQ exports should restore their original control type",
+      );
+      assert.equal(await restoredFaq.inputValue(), "Option B");
+      assert.equal(
+        await page
+          .locator(".v2-faq-question")
+          .filter({ hasText: "Restored FAQ question" })
+          .getByText("Not Confident", { exact: true })
+          .count(),
+        0,
+        "authentic v2 FAQ confidence should survive workspace restore",
+      );
       assert.equal(
         await page.getByText("[object Object]", { exact: true }).count(),
         0,

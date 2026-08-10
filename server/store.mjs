@@ -397,16 +397,24 @@ function migrate(input) {
     "multiple_choice",
   ]);
   const faqAnswers = records(restoredProfile.faqAnswers)
-    .map((faq) => ({
-      ...faq,
-      question: boundedText(faq.question, 1000),
-      answer: boundedText(faq.answer, 30000),
-      questionType: faqQuestionTypes.has(faq.questionType)
-        ? faq.questionType
-        : "text_input",
-      options: normalizeProfileList(faq.options, 50, 1000),
-      confident: faq.confident === true,
-    }))
+    .map((faq) => {
+      const questionType = faq.questionType ?? faq.question_type;
+      const rawOptions = Array.isArray(faq.options)
+        ? faq.options
+        : isRecord(faq.options)
+          ? Object.values(faq.options)
+          : [];
+      return {
+        ...faq,
+        question: boundedText(faq.question ?? faq.question_text, 1000),
+        answer: boundedText(faq.answer, 30000),
+        questionType: faqQuestionTypes.has(questionType)
+          ? questionType
+          : "text_input",
+        options: normalizeProfileList(rawOptions, 50, 1000),
+        confident: faq.confident === true,
+      };
+    })
     .filter((faq) => faq.question)
     .map((faq, index) => ({
       id: uniqueLegacyId(faq.id, "faq", index, faqIds),

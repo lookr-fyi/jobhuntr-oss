@@ -2521,8 +2521,11 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
           },
           {
             id: "duplicate-faq-id",
-            question: "  Valid restored question?  ",
+            question_text: "  Valid restored question?  ",
             answer: "  Valid restored answer  ",
+            question_type: "dropdown",
+            options: { 0: "Valid restored answer", 1: "Another answer" },
+            confident: true,
           },
           {
             id: "duplicate-faq-id",
@@ -2942,6 +2945,20 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
         answer: "Second restored answer",
       },
     ],
+  );
+  assert.deepEqual(
+    normalized.profile.faqAnswers.find(
+      (faq) => faq.question === "Valid restored question?",
+    ),
+    {
+      id: "duplicate-faq-id",
+      question: "Valid restored question?",
+      answer: "Valid restored answer",
+      questionType: "dropdown",
+      options: ["Valid restored answer", "Another answer"],
+      confident: true,
+    },
+    "authentic v2 FAQ export fields must survive local workspace restore",
   );
   assert.deepEqual(
     normalized.huntPresets.map(({ id, name }) => ({ id, name })),
