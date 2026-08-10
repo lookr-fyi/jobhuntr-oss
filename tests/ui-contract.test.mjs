@@ -429,7 +429,7 @@ test("Infinite Hunt actions reject same-frame duplicate starts", async () => {
   assert.match(agent, /\.filter\(\(run\) => run\.origin !== "manual"\)/);
   assert.match(
     agent,
-    /new Date\(b\.completedAt \|\| b\.updatedAt \|\| b\.createdAt \|\| 0\)/,
+    /sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
   );
   const stopping = agent.slice(
     agent.indexOf("const stopInfiniteHunt = async"),
@@ -678,6 +678,15 @@ test("Agent Runs bulk deletion uses one atomic retryable request", async () => {
   const deletion = runs.slice(
     runs.indexOf("const deleteRuns = async"),
     runs.indexOf("useEffect", runs.indexOf("const deleteRuns = async")),
+  );
+
+  assert.match(
+    runs,
+    /Number\(actionRequiredRunIds\.has\(b\.id\)\)[\s\S]*?sortableTimestamp\(b\.completedAt, b\.updatedAt, b\.createdAt\)/,
+  );
+  assert.match(
+    source,
+    /const sortableTimestamp = \(\.\.\.values\) => \{[\s\S]*?Number\.isFinite\(timestamp\)[\s\S]*?return 0/,
   );
 
   assert.match(deletion, /await api\("\/api\/agent-runs\/delete"/);

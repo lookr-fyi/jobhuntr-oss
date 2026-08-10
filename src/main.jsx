@@ -432,6 +432,13 @@ const formatCalendarDate = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleDateString() : fallback;
 };
+const sortableTimestamp = (...values) => {
+  for (const value of values) {
+    const timestamp = new Date(value || 0).getTime();
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+  return 0;
+};
 const formatDateTime = (value, fallback = "Recently") => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleString() : fallback;
@@ -1957,8 +1964,8 @@ function Overview({ state, setTab, reload }) {
   const s = state.summary;
   const latestRun = [...state.agentRuns].sort(
     (left, right) =>
-      new Date(right.updatedAt || right.createdAt).getTime() -
-      new Date(left.updatedAt || left.createdAt).getTime(),
+      sortableTimestamp(right.updatedAt, right.createdAt) -
+      sortableTimestamp(left.updatedAt, left.createdAt),
   )[0];
   const profileDisplayName =
     `${state.profile.firstName || ""} ${state.profile.lastName || ""}`.trim() ||
@@ -13344,8 +13351,8 @@ function Agent({ state, reload, setTab }) {
     .filter((run) => run.origin !== "manual")
     .sort(
       (a, b) =>
-        new Date(b.completedAt || b.updatedAt || b.createdAt || 0) -
-        new Date(a.completedAt || a.updatedAt || a.createdAt || 0),
+        sortableTimestamp(b.completedAt, b.updatedAt, b.createdAt) -
+        sortableTimestamp(a.completedAt, a.updatedAt, a.createdAt),
     )[0];
   const queuedSubmissions = state.submissions.filter((submission) =>
     ["draft", "ready"].includes(submission.status),
@@ -14223,7 +14230,9 @@ function RunsPage({ state, setTab, reload }) {
     .sort(
       (a, b) =>
         Number(actionRequiredRunIds.has(b.id)) -
-        Number(actionRequiredRunIds.has(a.id)),
+          Number(actionRequiredRunIds.has(a.id)) ||
+        sortableTimestamp(b.completedAt, b.updatedAt, b.createdAt) -
+          sortableTimestamp(a.completedAt, a.updatedAt, a.createdAt),
     );
   const pageSize = 10;
   const totalPages = Math.max(1, Math.ceil(filteredRuns.length / pageSize));
