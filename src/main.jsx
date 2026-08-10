@@ -2658,19 +2658,19 @@ function Tracker({ state, reload, setTab }) {
       id: "total",
       label: "All tracked",
       color: "#475569",
-      jobs: filtered,
+      jobs: runFiltered,
     },
     {
       id: "applied",
       label: "Applied",
       color: "#1d4ed8",
-      jobs: filtered.filter((item) => appliedStatuses.has(item.status)),
+      jobs: runFiltered.filter((item) => appliedStatuses.has(item.status)),
     },
     {
       id: "interview",
       label: "Interviewing",
       color: "#b45309",
-      jobs: filtered.filter((item) =>
+      jobs: runFiltered.filter((item) =>
         ["interview", "offer"].includes(item.status),
       ),
     },
@@ -2678,18 +2678,18 @@ function Tracker({ state, reload, setTab }) {
       id: "offer",
       label: "Offers",
       color: "#047857",
-      jobs: filtered.filter((item) => item.status === "offer"),
+      jobs: runFiltered.filter((item) => item.status === "offer"),
     },
     {
       id: "rejected",
       label: "Rejected",
       color: "#b91c1c",
-      jobs: filtered.filter((item) => item.status === "rejected"),
+      jobs: runFiltered.filter((item) => item.status === "rejected"),
     },
   ];
   const interviewRoundStages = [
     ...new Set(
-      filtered.flatMap((item) =>
+      runFiltered.flatMap((item) =>
         (item.interviewRounds || []).map((round) =>
           Number(round.roundType?.match(/\d+/)?.[0] || 0),
         ),
@@ -2701,7 +2701,7 @@ function Tracker({ state, reload, setTab }) {
     .map((roundNumber) => ({
       roundNumber,
       label: `Interview Round ${roundNumber}`,
-      jobs: filtered.filter((item) => {
+      jobs: runFiltered.filter((item) => {
         const highest = Math.max(
           0,
           ...(item.interviewRounds || []).map((round) =>
@@ -2839,7 +2839,7 @@ function Tracker({ state, reload, setTab }) {
     );
   };
   const exportTrackerCsv = () => {
-    if (!filtered.length) return;
+    if (!runFiltered.length) return;
     const escapeCsv = (value) => {
       const text = String(value ?? "");
       return /[",\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
@@ -2861,7 +2861,7 @@ function Tracker({ state, reload, setTab }) {
       "Created At",
       "Updated At",
     ];
-    const rows = filtered.map((item) => [
+    const rows = runFiltered.map((item) => [
       item.company,
       item.title,
       item.location,
@@ -3021,7 +3021,7 @@ function Tracker({ state, reload, setTab }) {
       <div className="v2-tracker-header">
         <h1>Job Tracker</h1>
         <div>
-          <span>{filtered.length} applications</span>
+          <span>{runFiltered.length} applications</span>
           {runFilter !== "all" && <span>• Filtered by agent run</span>}
           <button className="funnel-button" onClick={() => setFunnelOpen(true)}>
             Funnel Analysis
@@ -3029,7 +3029,7 @@ function Tracker({ state, reload, setTab }) {
           <button
             className="export-button"
             title="Export applications to CSV"
-            disabled={!filtered.length}
+            disabled={!runFiltered.length}
             onClick={exportTrackerCsv}
           >
             <Download size={16} /> Export CSV
@@ -3769,7 +3769,7 @@ function Tracker({ state, reload, setTab }) {
               {funnelStages.slice(0, 4).map((stage, index) => {
                 const width = Math.max(
                   18,
-                  (stage.jobs.length / Math.max(filtered.length, 1)) * 100,
+                  (stage.jobs.length / Math.max(runFiltered.length, 1)) * 100,
                 );
                 return (
                   <div className="v2-funnel-stage" key={stage.id}>
@@ -3791,8 +3791,8 @@ function Tracker({ state, reload, setTab }) {
                           : `No jobs reached ${stage.label.toLowerCase()}`
                       }
                     >
-                      {index > 0 && filtered.length
-                        ? `${Math.round((stage.jobs.length / filtered.length) * 100)}%`
+                      {index > 0 && runFiltered.length
+                        ? `${Math.round((stage.jobs.length / runFiltered.length) * 100)}%`
                         : "100%"}
                     </button>
                   </div>
@@ -3822,7 +3822,7 @@ function Tracker({ state, reload, setTab }) {
                       <div>
                         <i
                           style={{
-                            width: `${Math.max(8, (stage.jobs.length / Math.max(filtered.length, 1)) * 100)}%`,
+                            width: `${Math.max(8, (stage.jobs.length / Math.max(runFiltered.length, 1)) * 100)}%`,
                           }}
                         />
                       </div>
@@ -3841,9 +3841,10 @@ function Tracker({ state, reload, setTab }) {
               <div>
                 <span>Application rate</span>
                 <strong>
-                  {filtered.length
+                  {runFiltered.length
                     ? Math.round(
-                        (funnelStages[1].jobs.length / filtered.length) * 100,
+                        (funnelStages[1].jobs.length / runFiltered.length) *
+                          100,
                       )
                     : 0}
                   %

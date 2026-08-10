@@ -3786,13 +3786,8 @@ test(
           .locator(".v2-tracker-header > div > span")
           .first()
           .innerText(),
-        "0 applications",
-        "v2 search should keep the tracker summary synchronized with visible results",
-      );
-      assert.equal(
-        await page.getByRole("button", { name: "Export CSV" }).isDisabled(),
-        true,
-        "CSV export should disable when the active search has no results",
+        trackerApplicationCount,
+        "v2 search should filter cards inside columns without changing the run-level application total",
       );
       assert.equal(
         await page.locator(".tracker-page > .empty-state").count(),
@@ -3800,11 +3795,6 @@ test(
         "v2 search should not append a duplicate page-level empty state below the board",
       );
       await trackerSearch.fill("");
-      await page
-        .locator(".v2-tracker-header > div > span")
-        .first()
-        .filter({ hasText: trackerApplicationCount })
-        .waitFor();
       await removedColumn.locator(".job-card").first().waitFor();
       assert.equal(
         await removedColumn.locator(".job-card").count(),
