@@ -2898,7 +2898,9 @@ function Tracker({ state, reload, setTab }) {
       item.applicationDatetime
         ? formatDateTime(item.applicationDatetime, "")
         : "",
-      item.hiringContactName || item.contacts?.[0]?.name || "",
+      item.hiringContactName ||
+        latestPersistedRecord(item.contacts)?.name ||
+        "",
       item.fitScore ?? "",
       item.optimizedAtsScore ?? "",
       item.postedAt || "",
@@ -4667,7 +4669,7 @@ function Actions({ job, reload }) {
           Cancel contact edit
         </button>
       )}
-      {(job.contacts || []).map((c) => (
+      {newestFirst(job.contacts).map((c) => (
         <article className="contact v2-record-row" key={c.id}>
           <span>
             <b>{c.name}</b> · {c.role}

@@ -2318,7 +2318,7 @@ test("remaining persisted workflow lists render newest first", async () => {
   );
   const tracker = source.slice(
     source.indexOf("function Tracker("),
-    source.indexOf("function JobDrawer("),
+    source.indexOf("function BoardMultiSelect("),
   );
   const huntStatus = source.slice(
     source.indexOf("function InfiniteHuntStatus"),
@@ -2337,6 +2337,16 @@ test("remaining persisted workflow lists render newest first", async () => {
     tracker,
     /newestFirst\(state\.agentRuns\)\.map\(\(run\)/,
     "the Job Tracker run filter should offer recent hunts first",
+  );
+  assert.match(
+    tracker,
+    /latestPersistedRecord\(item\.contacts\)\?\.name/,
+    "tracker exports should choose the newest local contact",
+  );
+  assert.match(
+    tracker,
+    /newestFirst\(job\.contacts\)\.map\(\(c\)/,
+    "tracker contact history should render newest first",
   );
   assert.match(
     huntStatus,
