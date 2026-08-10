@@ -254,6 +254,40 @@ test("Job Board queueing atomically deduplicates jobs and application packets", 
   assert.equal(repaired.body.submission.jobId, orphan.body.id);
 });
 
+test("Job Board feed excludes private tracked jobs and stale community records", async () => {
+  const privateJob = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Private Search Co",
+      title: "Confidential Opportunity",
+      location: "Remote",
+      url: "https://jobs.example.com/private-tracked-role",
+      source: "Manual",
+      description: "A privately tracked application.",
+      status: "interested",
+    }),
+  });
+  assert.equal(privateJob.res.status, 201);
+
+  const board = await req("/api/board/search", {
+    method: "POST",
+    body: JSON.stringify({ q: "", location: "" }),
+  });
+  assert.equal(board.res.status, 200);
+  assert.equal(board.body.length, 4);
+  assert.equal(
+    board.body.some((job) => job.url === privateJob.body.url),
+    false,
+  );
+  assert.ok(
+    board.body.every(
+      (job) =>
+        Date.now() - new Date(job.collectedAt || job.postedAt).getTime() <=
+        24 * 60 * 60 * 1000,
+    ),
+  );
+});
+
 test("v2 personal profile details persist with bounded local input", async () => {
   const updated = await req("/api/profile", {
     method: "PUT",

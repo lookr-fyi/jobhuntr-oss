@@ -4869,8 +4869,8 @@ function Board({ state, reload }) {
           <div>
             <h2>Today's Picks</h2>
             <p>
-              {results.length} jobs crowd-sourced by the local community. Add to
-              queue before they're gone!
+              {results.length} jobs crowd-sourced by the community in the last
+              24 hours. Add to queue before they're gone!
             </p>
           </div>
           <div className="v2-board-header-actions">

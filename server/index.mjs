@@ -955,18 +955,26 @@ app.post("/api/board/search", async (req, res) => {
   const q = String(req.body.q || "").toLowerCase();
   const location = String(req.body.location || "").toLowerCase();
   const db = await readDb();
+  const windowStart = Date.now() - 24 * 60 * 60 * 1000;
   const all = [...seedJobs, ...db.jobs].filter(
     (j, idx, arr) => arr.findIndex((x) => x.url === j.url) === idx,
   );
   const results = all
-    .filter(
-      (j) =>
+    .filter((j) => {
+      const collectedAt = new Date(j.collectedAt || j.postedAt || 0).getTime();
+      const isCommunityJob =
+        String(j.source || "").toLowerCase() === "seed board";
+      return (
+        isCommunityJob &&
+        Number.isFinite(collectedAt) &&
+        collectedAt >= windowStart &&
         (!q ||
           `${j.title} ${j.company} ${j.description} ${(j.tags || []).join(" ")}`
             .toLowerCase()
             .includes(q)) &&
-        (!location || String(j.location).toLowerCase().includes(location)),
-    )
+        (!location || String(j.location).toLowerCase().includes(location))
+      );
+    })
     .map((j) => ({ ...j, fitScore: scoreJob(j, db.profile) }));
   res.json(results);
 });
