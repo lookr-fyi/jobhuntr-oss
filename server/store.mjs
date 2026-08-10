@@ -457,7 +457,11 @@ function migrate(input) {
       200000,
     ),
     additionalInfo: boundedText(
-      restoredProfile.additionalInfo ?? restoredProfile.additional_info,
+      isRecord(restoredProfile.additionalInfo)
+        ? restoredProfile.additionalInfo.body
+        : isRecord(restoredProfile.additional_info)
+          ? restoredProfile.additional_info.body
+          : (restoredProfile.additionalInfo ?? restoredProfile.additional_info),
       100000,
     ),
     faqAnswers,
@@ -482,7 +486,9 @@ function migrate(input) {
         true,
       ),
       atsThreshold: numericPreference(
-        restoredPreferences.atsThreshold ?? restoredPreferences.ats_threshold,
+        restoredPreferences.atsThreshold ??
+          restoredPreferences.ats_threshold ??
+          restoredPreferences.ats_threshold_to_apply_template,
         80,
         0,
         100,

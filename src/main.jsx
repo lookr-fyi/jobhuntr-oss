@@ -15095,8 +15095,8 @@ function SettingsPage({ state, reload, setTab }) {
         >
           <h3>Profile Information</h3>
           <div className="v2-user-identity">
-            <span className="v2-user-avatar-large">
-              {profileDisplayName.slice(0, 1).toUpperCase()}
+            <span className="v2-user-avatar-large" aria-hidden="true">
+              <User size={32} />
             </span>
             <div>
               <h3>{profileDisplayName}</h3>

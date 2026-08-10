@@ -3314,7 +3314,10 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
         first_name: "Ada",
         last_name: "Lovelace",
         resume_text: "Built the first published algorithm.",
-        additional_info: "Prefers analytical engineering roles.",
+        additional_info: {
+          id: "v2-additional-info",
+          body: "Prefers analytical engineering roles.",
+        },
         faq_answers: [
           {
             question_text: "Are you authorized to work?",
@@ -3324,7 +3327,7 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
             confident: true,
           },
         ],
-        preferences: { ats_threshold: 87 },
+        preferences: { ats_threshold_to_apply_template: 87 },
       },
     }),
   });

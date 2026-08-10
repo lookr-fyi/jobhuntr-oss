@@ -5036,6 +5036,13 @@ test(
         },
         "User Center should retain the authoritative v2 profile proportions",
       );
+      const profileAvatar = page.locator(".v2-user-avatar-large");
+      assert.equal(
+        await profileAvatar.locator("svg").count(),
+        1,
+        "the local profile should use the same generic User glyph as v2",
+      );
+      assert.equal(await profileAvatar.getAttribute("aria-hidden"), "true");
       const profileTab = page.getByRole("tab", { name: "Profile & Usage" });
       await profileTab.focus();
       await page.keyboard.press("ArrowRight");
