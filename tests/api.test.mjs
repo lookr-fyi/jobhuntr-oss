@@ -3544,6 +3544,80 @@ test("resume templates can be created, edited, and safely removed", async () => 
   );
 });
 
+test("template recovery consistently chooses the newest persisted template", async () => {
+  const original = (await req("/api/state")).body;
+  const oldTemplate = {
+    id: "old-template",
+    name: "Old template",
+    sections: ["Summary", "Experience"],
+    createdAt: "2024-01-01T00:00:00.000Z",
+    updatedAt: "2024-01-01T00:00:00.000Z",
+  };
+  const newestTemplate = {
+    id: "newest-template",
+    name: "Newest template",
+    sections: ["Summary", "Experience"],
+    createdAt: "2025-01-01T00:00:00.000Z",
+    updatedAt: "2025-01-01T00:00:00.000Z",
+  };
+  const imported = await req("/api/import", {
+    method: "POST",
+    body: JSON.stringify({
+      ...original,
+      templates: [oldTemplate, newestTemplate],
+      resumes: [
+        {
+          id: "recovered-resume",
+          name: "Recovered resume",
+          templateId: "missing-template",
+          content:
+            "A complete resume with enough truthful professional experience, skills, education, and measurable outcomes for safe recovery.",
+          createdAt: "2025-02-01T00:00:00.000Z",
+          updatedAt: "2025-02-01T00:00:00.000Z",
+        },
+      ],
+    }),
+  });
+  assert.equal(imported.res.status, 200);
+  let state = (await req("/api/state")).body;
+  assert.equal(state.resumes[0].templateId, newestTemplate.id);
+
+  const temporary = await req("/api/templates", {
+    method: "POST",
+    body: JSON.stringify({ name: "Temporary newest template" }),
+  });
+  const attached = await req("/api/resumes", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Temporary attachment",
+      templateId: temporary.body.id,
+      content:
+        "A second complete resume with enough truthful professional experience, skills, education, and measurable outcomes for safe recovery.",
+    }),
+  });
+  assert.equal(attached.res.status, 201);
+  assert.equal(
+    (await req(`/api/templates/${temporary.body.id}`, { method: "DELETE" })).res
+      .status,
+    204,
+  );
+  state = (await req("/api/state")).body;
+  assert.equal(
+    state.resumes.find((resume) => resume.id === attached.body.id).templateId,
+    newestTemplate.id,
+  );
+
+  assert.equal(
+    (
+      await req("/api/import", {
+        method: "POST",
+        body: JSON.stringify(original),
+      })
+    ).res.status,
+    200,
+  );
+});
+
 test("malformed primary storage recovers from the local backup", async () => {
   await req("/api/profile", {
     method: "PUT",

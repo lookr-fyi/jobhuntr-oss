@@ -70,6 +70,16 @@ app.use((req, res, next) =>
 );
 
 const timestamp = () => new Date().toISOString();
+const latestRecord = (records) =>
+  [...(records || [])].sort((left, right) => {
+    const date = (record) => {
+      const value = new Date(
+        record?.updatedAt || record?.createdAt || 0,
+      ).getTime();
+      return Number.isFinite(value) ? value : 0;
+    };
+    return date(right) - date(left);
+  })[0] || null;
 const SUBMISSION_ELIGIBLE_JOB_STATUSES = new Set([
   "interested",
   "submitting",
@@ -715,7 +725,7 @@ app.delete("/api/templates/:id", async (req, res) => {
     );
     if (index < 0) return "missing";
     const [removed] = db.templates.splice(index, 1);
-    const fallbackId = db.templates[0].id;
+    const fallbackId = latestRecord(db.templates).id;
     for (const resume of db.resumes) {
       if (resume.templateId === removed.id) resume.templateId = fallbackId;
     }
@@ -2318,7 +2328,7 @@ const createAgentRunRecord = (db, input) => {
         const tailored = {
           id: nanoid(),
           name: `${savedJob.company} — ${savedJob.title}`,
-          templateId: db.templates[0]?.id || "clean-ats",
+          templateId: latestRecord(db.templates)?.id || "clean-ats",
           jobId: savedJob.id,
           content: [
             db.profile.resumeText,

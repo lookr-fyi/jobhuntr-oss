@@ -12,6 +12,16 @@ const secureMode = async (target, mode) => {
 };
 
 const now = () => new Date().toISOString();
+const latestRecord = (records) =>
+  [...(records || [])].sort((left, right) => {
+    const date = (record) => {
+      const value = new Date(
+        record?.updatedAt || record?.createdAt || 0,
+      ).getTime();
+      return Number.isFinite(value) ? value : 0;
+    };
+    return date(right) - date(left);
+  })[0] || null;
 const hoursAgo = (hours) =>
   new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
@@ -541,7 +551,7 @@ function migrate(input) {
   for (const template of db.templates)
     if (!template.sections.length)
       template.sections = ["Summary", "Skills", "Experience", "Education"];
-  const fallbackTemplateId = db.templates[0].id;
+  const fallbackTemplateId = latestRecord(db.templates).id;
   const resumeIds = new Set();
   db.resumes = records(db.resumes).map((resume, index) => ({
     id: uniqueLegacyId(resume.id, "legacy-resume", index, resumeIds),
