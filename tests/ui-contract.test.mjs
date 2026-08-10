@@ -2186,3 +2186,38 @@ test("Submission Queue retains the authoritative v2 scalar filters", async () =>
     /queueSponsorship === "no"[\s\S]*?\["no", "unknown"\]\.includes/,
   );
 });
+
+test("Submission Queue uses v2 checkbox metadata filters", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const queue = source.slice(
+    source.indexOf("function Queue("),
+    source.indexOf("function SubmissionCard"),
+  );
+
+  for (const label of ["Location", "Job Type", "Remote Type", "Senior Level"])
+    assert.match(
+      queue,
+      new RegExp(`<BoardMultiSelect\\s+label="${label}"`),
+      `${label} should be a checkbox multi-select`,
+    );
+  assert.match(queue, /queueLocations\.includes\([\s\S]*?split\(","\)\[0\]/);
+  assert.match(
+    queue,
+    /queueRemoteTypes\.includes\(boardRemoteType\(job \|\| \{\}\)\)/,
+  );
+  assert.match(
+    queue,
+    /queueJobTypes\.includes\(boardJobType\(job \|\| \{\}\)\)/,
+  );
+  assert.match(
+    queue,
+    /queueSeniorLevels\.includes\(boardSeniority\(job \|\| \{\}\)\)/,
+  );
+  assert.doesNotMatch(
+    queue,
+    /aria-label="Queue (location|work arrangement|job type|seniority)"/,
+  );
+});

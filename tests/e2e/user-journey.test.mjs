@@ -2525,7 +2525,14 @@ test(
       ]);
       await page.getByText(/3\/4 required answered/).waitFor();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
-      await page.getByLabel("Queue job type").selectOption("full-time");
+      const queueJobTypeFilter = page
+        .locator(".v2-queue-filter-panel .v2-board-multi-filter")
+        .filter({ hasText: "Job Type" });
+      await queueJobTypeFilter.locator("summary").click();
+      await queueJobTypeFilter
+        .getByRole("checkbox", { name: "Full-time", exact: true })
+        .check();
+      await queueJobTypeFilter.locator("summary").click();
       await page.getByLabel("Queue visa sponsorship").selectOption("no");
       await page
         .locator(".v2-ats-recommendation", { hasText: "ATS resume generated" })

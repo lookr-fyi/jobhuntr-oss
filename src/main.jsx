@@ -5400,12 +5400,12 @@ function Queue({ state, reload, setTab }) {
   const [minimumAts, setMinimumAts] = useState(0);
   const [showAtsOnly, setShowAtsOnly] = useState(false);
   const [queueSort, setQueueSort] = useState("time");
-  const [queueLocation, setQueueLocation] = useState("");
+  const [queueLocations, setQueueLocations] = useState([]);
   const [queueSalary, setQueueSalary] = useState(0);
   const [queueExperience, setQueueExperience] = useState("");
-  const [queueRemote, setQueueRemote] = useState("all");
-  const [queueJobType, setQueueJobType] = useState("all");
-  const [queueSeniority, setQueueSeniority] = useState("all");
+  const [queueRemoteTypes, setQueueRemoteTypes] = useState([]);
+  const [queueJobTypes, setQueueJobTypes] = useState([]);
+  const [queueSeniorLevels, setQueueSeniorLevels] = useState([]);
   const [queueSponsorship, setQueueSponsorship] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -5444,22 +5444,23 @@ function Queue({ state, reload, setTab }) {
       return (
         (minimumAts === 0 || (item.atsScore ?? 0) >= minimumAts) &&
         (!showAtsOnly || item.atsDecision === "optimized") &&
-        (!queueLocation ||
-          String(job?.location || "")
-            .toLowerCase()
-            .includes(queueLocation.toLowerCase())) &&
+        (!queueLocations.length ||
+          queueLocations.includes(
+            String(job?.location || "")
+              .split(",")[0]
+              .trim(),
+          )) &&
         maximumListedSalary(job || {}) >= queueSalary &&
         (queueExperience === "" ||
           (Number.isFinite(Number(job?.eoy)) &&
             Number(job?.eoy) > 0 &&
             Number(job?.eoy) >= Number(queueExperience))) &&
-        (queueRemote === "all" ||
-          (queueRemote === "remote"
-            ? /remote|anywhere/i.test(job?.location || "")
-            : !/remote|anywhere/i.test(job?.location || ""))) &&
-        (queueJobType === "all" || boardJobType(job || {}) === queueJobType) &&
-        (queueSeniority === "all" ||
-          boardSeniority(job || {}) === queueSeniority) &&
+        (!queueRemoteTypes.length ||
+          queueRemoteTypes.includes(boardRemoteType(job || {}))) &&
+        (!queueJobTypes.length ||
+          queueJobTypes.includes(boardJobType(job || {}))) &&
+        (!queueSeniorLevels.length ||
+          queueSeniorLevels.includes(boardSeniority(job || {}))) &&
         (queueSponsorship === "all" ||
           (queueSponsorship === "no"
             ? ["no", "unknown"].includes(boardSponsorship(job || {}))
@@ -5474,6 +5475,21 @@ function Queue({ state, reload, setTab }) {
       return sortableTimestamp(b.createdAt) - sortableTimestamp(a.createdAt);
     });
   const readySubmissions = active.filter((item) => item.status === "ready");
+  const queueLocationOptions = [
+    ...new Set(
+      active
+        .map((item) =>
+          String(
+            state.jobs.find((job) => job.id === item.jobId)?.location || "",
+          )
+            .split(",")[0]
+            .trim(),
+        )
+        .filter(Boolean),
+    ),
+  ]
+    .sort((a, b) => a.localeCompare(b))
+    .map((value) => ({ value, label: value }));
   const currentSubmitPacket = submitBatch[submitIndex] || null;
   const currentSubmitJob = state.jobs.find(
     (item) => item.id === currentSubmitPacket?.jobId,
@@ -5985,16 +6001,14 @@ function Queue({ state, reload, setTab }) {
                   <option value="ats">ATS Score (Highest to Lowest)</option>
                 </select>
               </label>
-              <label>
-                Location
-                <input
-                  name="queue-location"
-                  aria-label="Queue location"
-                  value={queueLocation}
-                  onChange={(event) => setQueueLocation(event.target.value)}
-                  placeholder="Remote, city, or state"
-                />
-              </label>
+              <BoardMultiSelect
+                label="Location"
+                name="queue-location"
+                options={queueLocationOptions}
+                value={queueLocations}
+                onChange={setQueueLocations}
+                placeholder="Select locations..."
+              />
               <label>
                 Above Annual Salary
                 <select
@@ -6031,48 +6045,43 @@ function Queue({ state, reload, setTab }) {
                   ))}
                 </select>
               </label>
-              <label>
-                Work arrangement
-                <select
-                  name="queue-work-arrangement"
-                  aria-label="Queue work arrangement"
-                  value={queueRemote}
-                  onChange={(event) => setQueueRemote(event.target.value)}
-                >
-                  <option value="all">All arrangements</option>
-                  <option value="remote">Remote</option>
-                  <option value="onsite">On-site / hybrid</option>
-                </select>
-              </label>
-              <label>
-                Job type
-                <select
-                  name="queue-job-type"
-                  aria-label="Queue job type"
-                  value={queueJobType}
-                  onChange={(event) => setQueueJobType(event.target.value)}
-                >
-                  <option value="all">All job types</option>
-                  <option value="full-time">Full-time</option>
-                  <option value="contract">Contract</option>
-                  <option value="internship">Internship</option>
-                </select>
-              </label>
-              <label>
-                Seniority
-                <select
-                  name="queue-seniority"
-                  aria-label="Queue seniority"
-                  value={queueSeniority}
-                  onChange={(event) => setQueueSeniority(event.target.value)}
-                >
-                  <option value="all">All levels</option>
-                  <option value="entry">Entry level</option>
-                  <option value="mid">Mid level</option>
-                  <option value="senior">Senior</option>
-                  <option value="lead">Lead / Staff+</option>
-                </select>
-              </label>
+              <BoardMultiSelect
+                label="Job Type"
+                name="queue-job-type"
+                options={[
+                  { value: "full-time", label: "Full-time" },
+                  { value: "contract", label: "Contract" },
+                  { value: "internship", label: "Internship" },
+                ]}
+                value={queueJobTypes}
+                onChange={setQueueJobTypes}
+                placeholder="Select job types..."
+              />
+              <BoardMultiSelect
+                label="Remote Type"
+                name="queue-remote-type"
+                options={[
+                  { value: "remote", label: "Remote" },
+                  { value: "hybrid", label: "Hybrid" },
+                  { value: "onsite", label: "On-site" },
+                ]}
+                value={queueRemoteTypes}
+                onChange={setQueueRemoteTypes}
+                placeholder="Select remote types..."
+              />
+              <BoardMultiSelect
+                label="Senior Level"
+                name="queue-senior-level"
+                options={[
+                  { value: "entry", label: "Entry level" },
+                  { value: "mid", label: "Mid level" },
+                  { value: "senior", label: "Senior" },
+                  { value: "lead", label: "Lead / Staff+" },
+                ]}
+                value={queueSeniorLevels}
+                onChange={setQueueSeniorLevels}
+                placeholder="Select senior levels..."
+              />
               <label>
                 Visa sponsorship
                 <select
@@ -6093,12 +6102,12 @@ function Queue({ state, reload, setTab }) {
                   setMinimumAts(0);
                   setShowAtsOnly(false);
                   setQueueSort("time");
-                  setQueueLocation("");
+                  setQueueLocations([]);
                   setQueueSalary(0);
                   setQueueExperience("");
-                  setQueueRemote("all");
-                  setQueueJobType("all");
-                  setQueueSeniority("all");
+                  setQueueRemoteTypes([]);
+                  setQueueJobTypes([]);
+                  setQueueSeniorLevels([]);
                   setQueueSponsorship("all");
                 }}
               >
