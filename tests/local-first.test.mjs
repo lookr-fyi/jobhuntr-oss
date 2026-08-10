@@ -78,6 +78,11 @@ test("runtime dependency allowlist contains no cloud, auth, payment, database, o
     electronMain,
     /syncingTray = true[\s\S]*?finally \{\s*syncingTray = false/,
   );
+  assert.match(
+    electronMain,
+    /if \(!state\?\.infiniteHunt\?\.enabled\) \{[\s\S]*?tray\.destroy\(\);[\s\S]*?mainWindow &&[\s\S]*?!mainWindow\.isVisible\(\)[\s\S]*?allowWindowCloseOnce = true;[\s\S]*?mainWindow\.close\(\)/,
+    "a recovered inactive-hunt check must not strand a hidden process after removing its tray",
+  );
   assert.ok(
     electronMain.match(/AbortSignal\.timeout\(LOCAL_REQUEST_TIMEOUT_MS\)/g)
       .length >= 3,

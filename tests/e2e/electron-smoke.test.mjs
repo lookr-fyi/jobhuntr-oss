@@ -287,3 +287,70 @@ test(
     }
   },
 );
+
+test(
+  "an inconclusive inactive-hunt close cannot leave a headless tray process",
+  { timeout: 20_000 },
+  async () => {
+    const userDataDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), "jobhuntr-electron-close-recovery-"),
+    );
+    let electronApp;
+    try {
+      electronApp = await electron.launch({
+        args: ["electron/main.mjs"],
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          JOBHUNTR_DATA_DIR: "",
+          JOBHUNTR_USER_DATA_DIR: userDataDir,
+          JOBHUNTR_WINDOW_STATE_PATH: "",
+          JOBHUNTR_LOCAL_REQUEST_TIMEOUT_MS: "100",
+        },
+      });
+      const window = await electronApp.firstWindow();
+      await window
+        .getByRole("button", { name: "Set up my workspace" })
+        .waitFor();
+      await electronApp.evaluate(() => {
+        const realFetch = globalThis.fetch;
+        let rejectNextStateCheck = true;
+        globalThis.fetch = (target, options) => {
+          if (rejectNextStateCheck && String(target).endsWith("/api/state")) {
+            rejectNextStateCheck = false;
+            return Promise.reject(new Error("forced close-status timeout"));
+          }
+          return realFetch(target, options);
+        };
+      });
+      await electronApp.evaluate(({ BrowserWindow }) => {
+        BrowserWindow.getAllWindows()[0].close();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      assert.equal(
+        await electronApp.evaluate(({ BrowserWindow }) =>
+          BrowserWindow.getAllWindows()[0]?.isVisible(),
+        ),
+        false,
+        "an inconclusive check should first preserve the window behind a tray",
+      );
+      for (let attempt = 0; attempt < 30; attempt++) {
+        const count = await electronApp.evaluate(
+          ({ BrowserWindow }) => BrowserWindow.getAllWindows().length,
+        );
+        if (count === 0) break;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      assert.equal(
+        await electronApp.evaluate(
+          ({ BrowserWindow }) => BrowserWindow.getAllWindows().length,
+        ),
+        0,
+        "the recovered inactive status should complete the requested close instead of removing the tray from a hidden process",
+      );
+    } finally {
+      if (electronApp) await electronApp.close().catch(() => {});
+      await fs.rm(userDataDir, { recursive: true, force: true });
+    }
+  },
+);

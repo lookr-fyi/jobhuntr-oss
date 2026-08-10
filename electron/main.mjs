@@ -191,6 +191,14 @@ const syncTrayState = async () => {
     if (!state?.infiniteHunt?.enabled) {
       tray.destroy();
       tray = undefined;
+      // If the window was hidden because a close-time status check was
+      // inconclusive (or because a hunt later stopped in the background),
+      // honor the original close intent once the service confirms there is
+      // no active hunt. Never leave a headless process with no tray affordance.
+      if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+        allowWindowCloseOnce = true;
+        mainWindow.close();
+      }
     }
   } catch {
   } finally {
