@@ -2361,6 +2361,22 @@ test("remaining persisted workflow lists render newest first", async () => {
     "the floating Infinite Hunt status should summarize the newest run",
   );
   assert.match(runsPage, /const latestRun = latestPersistedRecord\(runs\)/);
+  assert.match(
+    runsPage,
+    /runApplicationCounts = state\.jobs\.reduce\([\s\S]*?job\.workflowRunId/,
+  );
+  assert.match(
+    runsPage,
+    /!hideZero \|\| getRunApplicationCount\(run\.id\) > 0/,
+  );
+  assert.match(
+    runsPage,
+    /formatRelativeTime\(run\.updatedAt \|\| run\.createdAt\)/,
+  );
+  assert.match(
+    runsPage,
+    /<strong>\{getRunApplicationCount\(run\.id\)\}<\/strong>/,
+  );
   assert.doesNotMatch(
     runsPage,
     /sortableTimestamp\(b\.completedAt/,

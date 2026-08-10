@@ -14322,10 +14322,17 @@ function RunsPage({ state, setTab, reload }) {
       )
       .filter(Boolean),
   );
+  const runApplicationCounts = state.jobs.reduce((counts, job) => {
+    if (!job.workflowRunId) return counts;
+    counts.set(job.workflowRunId, (counts.get(job.workflowRunId) || 0) + 1);
+    return counts;
+  }, new Map());
+  const getRunApplicationCount = (runId) =>
+    runApplicationCounts.get(runId) || 0;
   const filteredRuns = runs
     .filter((run) => {
       const matchesSearch =
-        `${run.runName || ""} ${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
+        `${run.runName || ""} ${run.id || ""} ${run.status || ""} ${run.search?.q || ""} ${run.search?.location || ""} ${(run.workflows || []).join(" ")}`
           .toLowerCase()
           .includes(query.toLowerCase());
       return (
@@ -14333,7 +14340,7 @@ function RunsPage({ state, setTab, reload }) {
         (!showManualOnly ||
           run.origin === "manual" ||
           run.options?.origin === "manual") &&
-        (!hideZero || (run.found || 0) > 0) &&
+        (!hideZero || getRunApplicationCount(run.id) > 0) &&
         (!showActionRequiredOnly || actionRequiredRunIds.has(run.id))
       );
     })
@@ -14620,8 +14627,8 @@ function RunsPage({ state, setTab, reload }) {
               )}
             </span>
             <span>{run.options?.autoApply ? "Apply" : "Search"}</span>
-            <time>{formatRelativeTime(run.completedAt || run.createdAt)}</time>
-            <strong>{run.added ?? run.found ?? 0}</strong>
+            <time>{formatRelativeTime(run.updatedAt || run.createdAt)}</time>
+            <strong>{getRunApplicationCount(run.id)}</strong>
             <div id={`run-actions-${run.id}`} className="v2-run-action-menu">
               <button
                 id={`run-actions-trigger-${run.id}`}
