@@ -2641,9 +2641,9 @@ test(
       const availabilityQuestion = queueQuestions
         .locator(".v2-question-card")
         .filter({ hasText: "When are you available to start?" });
-      const availabilitySelect = availabilityQuestion.getByLabel(
-        /When are you available to start/,
-      );
+      const availabilitySelect = availabilityQuestion.getByRole("combobox", {
+        name: /When are you available to start/,
+      });
       const availabilityResponse = page.waitForResponse(
         (response) =>
           response.url().includes("/api/submissions/") &&
@@ -2663,6 +2663,55 @@ test(
       );
       await availabilityResponse;
       await page.unroute("**/api/submissions/*");
+      await availabilitySelect.selectOption({ label: "Enter custom answer" });
+      const customAvailability = availabilityQuestion.getByLabel(
+        "When are you available to start? custom answer",
+      );
+      await customAvailability.fill(
+        "Available after a four-week notice period",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        customAvailability.press("Tab"),
+      ]);
+      const customChoiceState = await (
+        await page.request.get(`${baseUrl}/api/state`)
+      ).json();
+      const customChoiceQuestion = customChoiceState.submissions
+        .find((submission) =>
+          submission.applicationQuestions?.some(
+            (question) =>
+              question.answer === "Available after a four-week notice period",
+          ),
+        )
+        .applicationQuestions.find(
+          (question) =>
+            question.question === "When are you available to start?",
+        );
+      assert.equal(
+        customChoiceQuestion.answer,
+        "Available after a four-week notice period",
+        "custom Easy Apply choices must persist exactly",
+      );
+      assert.equal(
+        customChoiceQuestion.verified,
+        false,
+        "a new custom Easy Apply choice must require explicit review",
+      );
+      await Promise.all([
+        page.waitForResponse(
+          (response) =>
+            response.url().includes("/api/submissions/") &&
+            response.request().method() === "PATCH" &&
+            response.ok(),
+        ),
+        availabilitySelect.selectOption("Within 2 weeks"),
+      ]);
       await Promise.all([
         page.waitForResponse(
           (response) =>

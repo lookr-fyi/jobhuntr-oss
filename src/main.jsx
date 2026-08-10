@@ -6226,15 +6226,7 @@ function SubmissionCard({ submission: s, state, reload }) {
       );
       return Object.fromEntries(
         Object.entries(saved.answers)
-          .filter(([id, answer]) => {
-            const question = questionsById.get(id);
-            if (!question) return false;
-            if (
-              !["dropdown", "multiple_choice"].includes(question.questionType)
-            )
-              return true;
-            return !answer || (question.options || []).includes(String(answer));
-          })
+          .filter(([id]) => questionsById.has(id))
           .slice(0, 100)
           .map(([id, answer]) => [id, String(answer || "").slice(0, 10_000)]),
       );
@@ -6250,6 +6242,21 @@ function SubmissionCard({ submission: s, state, reload }) {
         initialAnswerDraft[question.id] ?? question.answer ?? "",
       ]),
     ),
+  );
+  const [customAnswerIds, setCustomAnswerIds] = useState(
+    () =>
+      new Set(
+        (s.applicationQuestions || [])
+          .filter(
+            (question) =>
+              ["dropdown", "multiple_choice"].includes(question.questionType) &&
+              Boolean(initialAnswerDraft[question.id]) &&
+              !(question.options || []).includes(
+                initialAnswerDraft[question.id],
+              ),
+          )
+          .map((question) => question.id),
+      ),
   );
   const [dirtyAnswerIds, setDirtyAnswerIds] = useState(
     () => new Set(Object.keys(initialAnswerDraft)),
@@ -6410,7 +6417,12 @@ function SubmissionCard({ submission: s, state, reload }) {
       return next;
     });
   };
-  const updateQuestion = async (id, answer, trackDraft = false) => {
+  const updateQuestion = async (
+    id,
+    answer,
+    trackDraft = false,
+    customAnswer = false,
+  ) => {
     if (recordingSubmissionRef.current || archivingPacketRef.current) return;
     const canonicalAnswer = canonicalApplicationAnswer(answer);
     if (trackDraft) {
@@ -6427,7 +6439,12 @@ function SubmissionCard({ submission: s, state, reload }) {
       }));
     const savingRevision = answerRevisionRef.current[id] || 0;
     const saved = await updatePacket({
-      applicationQuestion: { id, answer: canonicalAnswer, verified: false },
+      applicationQuestion: {
+        id,
+        answer: canonicalAnswer,
+        verified: false,
+        ...(customAnswer && { customAnswer: true }),
+      },
     });
     if (saved && (answerRevisionRef.current[id] || 0) === savingRevision)
       setDirtyAnswerIds((current) => {
@@ -6642,6 +6659,7 @@ function SubmissionCard({ submission: s, state, reload }) {
               </span>
             );
             if (question.questionType === "multiple_choice") {
+              const usingCustomAnswer = customAnswerIds.has(question.id);
               return (
                 <div className="v2-question-card" key={question.id}>
                   <fieldset>
@@ -6655,17 +6673,67 @@ function SubmissionCard({ submission: s, state, reload }) {
                             value={option}
                             disabled={packetLocked}
                             checked={
+                              !usingCustomAnswer &&
                               (draftAnswers[question.id] ?? question.answer) ===
-                              option
+                                option
                             }
-                            onChange={() =>
-                              updateQuestion(question.id, option, true)
-                            }
+                            onChange={() => {
+                              setCustomAnswerIds((current) => {
+                                const next = new Set(current);
+                                next.delete(question.id);
+                                return next;
+                              });
+                              updateQuestion(question.id, option, true);
+                            }}
                           />
                           {option}
                         </label>
                       ))}
+                      <label>
+                        <input
+                          type="radio"
+                          name={`question-${question.id}`}
+                          disabled={packetLocked}
+                          checked={usingCustomAnswer}
+                          onChange={() => {
+                            setCustomAnswerIds((current) =>
+                              new Set(current).add(question.id),
+                            );
+                            setDraftAnswers((answers) => ({
+                              ...answers,
+                              [question.id]: "",
+                            }));
+                          }}
+                        />
+                        Enter custom answer
+                      </label>
                     </div>
+                    {usingCustomAnswer && (
+                      <textarea
+                        name={`question-${question.id}-custom`}
+                        aria-label={`${question.question} custom answer`}
+                        rows={2}
+                        maxLength={10000}
+                        disabled={packetLocked}
+                        value={draftAnswers[question.id] || ""}
+                        placeholder="Enter your custom answer…"
+                        onChange={(event) =>
+                          setDraftAnswers((answers) => ({
+                            ...answers,
+                            [question.id]: event.target.value,
+                          }))
+                        }
+                        onBlur={(event) =>
+                          event.target.value.trim() &&
+                          updateQuestion(
+                            question.id,
+                            event.target.value,
+                            true,
+                            true,
+                          )
+                        }
+                      />
+                    )}
                   </fieldset>
                   <QuestionVerification
                     question={
@@ -6682,23 +6750,70 @@ function SubmissionCard({ submission: s, state, reload }) {
               );
             }
             if (question.questionType === "dropdown") {
+              const usingCustomAnswer = customAnswerIds.has(question.id);
               return (
                 <div className="v2-question-card" key={question.id}>
                   <label>
                     {prompt}
                     <select
                       name={`question-${question.id}`}
-                      value={draftAnswers[question.id] ?? question.answer ?? ""}
+                      value={
+                        usingCustomAnswer
+                          ? "__custom_answer__"
+                          : (draftAnswers[question.id] ?? question.answer ?? "")
+                      }
                       disabled={packetLocked}
                       onChange={(event) =>
-                        updateQuestion(question.id, event.target.value, true)
+                        event.target.value === "__custom_answer__"
+                          ? setCustomAnswerIds((current) =>
+                              new Set(current).add(question.id),
+                            )
+                          : (setCustomAnswerIds((current) => {
+                              const next = new Set(current);
+                              next.delete(question.id);
+                              return next;
+                            }),
+                            updateQuestion(
+                              question.id,
+                              event.target.value,
+                              true,
+                            ))
                       }
                     >
                       <option value="">Select an answer…</option>
                       {(question.options || []).map((option) => (
                         <option key={option}>{option}</option>
                       ))}
+                      <option value="__custom_answer__">
+                        Enter custom answer
+                      </option>
                     </select>
+                    {usingCustomAnswer && (
+                      <textarea
+                        name={`question-${question.id}-custom`}
+                        aria-label={`${question.question} custom answer`}
+                        rows={2}
+                        maxLength={10000}
+                        disabled={packetLocked}
+                        value={draftAnswers[question.id] || ""}
+                        placeholder="Enter your custom answer…"
+                        onChange={(event) =>
+                          setDraftAnswers((answers) => ({
+                            ...answers,
+                            [question.id]: event.target.value,
+                          }))
+                        }
+                        onBlur={(event) =>
+                          event.target.value.trim() &&
+                          updateQuestion(
+                            question.id,
+                            event.target.value,
+                            true,
+                            true,
+                          )
+                        }
+                      />
+                    )}
                   </label>
                   <QuestionVerification
                     question={

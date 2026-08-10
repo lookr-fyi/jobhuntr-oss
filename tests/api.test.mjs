@@ -1764,6 +1764,55 @@ test("editing a verified Easy Apply answer requires explicit re-verification", a
   assert.equal(edited.body.status, "draft");
 });
 
+test("reviewers can safely preserve a custom Easy Apply choice", async () => {
+  const job = await req("/api/jobs", {
+    method: "POST",
+    body: JSON.stringify({
+      company: "Custom Choice Co",
+      title: "Product Engineer",
+      url: "https://custom-choice.example/apply",
+    }),
+  });
+  const packet = await req("/api/submissions", {
+    method: "POST",
+    body: JSON.stringify({ jobId: job.body.id, resumeId: "profile-resume" }),
+  });
+  const question = packet.body.applicationQuestions.find(
+    (candidate) => candidate.questionType === "dropdown",
+  );
+  const customAnswer = "Available after a four-week notice period";
+  const updated = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      applicationQuestion: {
+        id: question.id,
+        answer: customAnswer,
+        customAnswer: true,
+        verified: true,
+      },
+    }),
+  });
+  assert.equal(updated.res.status, 200);
+  const savedQuestion = updated.body.applicationQuestions.find(
+    (candidate) => candidate.id === question.id,
+  );
+  assert.equal(savedQuestion.answer, customAnswer);
+  assert.equal(savedQuestion.verified, true);
+  assert.ok(savedQuestion.options.includes(customAnswer));
+
+  const rejected = await req(`/api/submissions/${packet.body.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
+      applicationQuestion: {
+        id: question.id,
+        answer: "",
+        customAnswer: true,
+      },
+    }),
+  });
+  assert.equal(rejected.res.status, 400);
+});
+
 test("malformed Easy Apply updates are rejected without mutating the packet", async () => {
   const job = await req("/api/jobs", {
     method: "POST",

@@ -1600,10 +1600,7 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /jobhuntr-application-answer-draft:/);
   assert.match(card, /localStorage\.getItem\(answerDraftKey\)/);
   assert.match(card, /String\(answer \|\| ""\)\.slice\(0, 10_000\)/);
-  assert.match(
-    card,
-    /\(question\.options \|\| \[\]\)\.includes\(String\(answer\)\)/,
-  );
+  assert.match(card, /\.filter\(\(\[id\]\) => questionsById\.has\(id\)\)/);
   assert.match(card, /const \[dirtyAnswerIds, setDirtyAnswerIds\]/);
   assert.match(card, /const answerRevisionRef = useRef\(\{\}\)/);
   assert.match(card, /const \[answerRevisions, setAnswerRevisions\]/);
@@ -1617,17 +1614,16 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   );
   assert.match(
     card,
-    /const updateQuestion = async \(id, answer, trackDraft = false\)/,
+    /const updateQuestion = async \([\s\S]*?trackDraft = false,[\s\S]*?customAnswer = false/,
   );
   assert.match(card, /updateQuestion\(question\.id, option, true\)/);
   assert.match(
     card,
-    /updateQuestion\(question\.id, event\.target\.value, true\)/,
+    /updateQuestion\(\s*question\.id,\s*event\.target\.value,\s*true/,
   );
-  assert.match(
-    card,
-    /value=\{draftAnswers\[question\.id\] \?\? question\.answer \?\? ""\}/,
-  );
+  assert.match(card, /usingCustomAnswer\s*\? "__custom_answer__"/);
+  assert.match(card, /Enter custom answer/);
+  assert.match(card, /customAnswer: true/);
   assert.match(card, /if \(!dirtyAnswerIds\.size\)/);
   assert.match(
     card,
@@ -1683,7 +1679,7 @@ test("Easy Apply text answers recover until a packet write succeeds", async () =
   assert.match(card, /pendingVerification\?\.answerRevision/);
   assert.match(
     card,
-    /const canonicalAnswer = canonicalApplicationAnswer\(answer\)[\s\S]*?applicationQuestion: \{ id, answer: canonicalAnswer, verified: false \}/,
+    /const canonicalAnswer = canonicalApplicationAnswer\(answer\)[\s\S]*?applicationQuestion: \{[\s\S]*?answer: canonicalAnswer,[\s\S]*?verified: false/,
   );
   assert.match(
     card,

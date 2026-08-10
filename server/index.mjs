@@ -1364,7 +1364,11 @@ app.patch("/api/submissions/:id", async (req, res) => {
           (Object.hasOwn(candidate, "answer") &&
             typeof candidate.answer !== "string") ||
           (Object.hasOwn(candidate, "verified") &&
-            typeof candidate.verified !== "boolean"),
+            typeof candidate.verified !== "boolean") ||
+          (Object.hasOwn(candidate, "customAnswer") &&
+            typeof candidate.customAnswer !== "boolean") ||
+          (candidate.customAnswer === true &&
+            (!Object.hasOwn(candidate, "answer") || !candidate.answer.trim())),
       )
     )
       return { validationError: "Invalid application question update" };
@@ -1446,6 +1450,13 @@ app.patch("/api/submissions/:id", async (req, res) => {
               ? safeText(incoming.answer, 10000)
               : existingAnswer,
         };
+        if (
+          incoming?.customAnswer === true &&
+          ["dropdown", "multiple_choice"].includes(updated.questionType) &&
+          updated.answer &&
+          !updated.options.includes(updated.answer)
+        )
+          updated.options = [...updated.options, updated.answer].slice(-100);
         const answerChanged = updated.answer !== existingAnswer;
         updated.confident = isValidApplicationAnswer(updated);
         updated.verified =
