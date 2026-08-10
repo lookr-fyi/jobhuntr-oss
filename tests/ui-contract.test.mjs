@@ -2157,3 +2157,32 @@ test("Career Coach restores the newest persisted context", async () => {
     /state\.jobs\.find\(\([^)]*\) => [^\n]*status === "interview"\)/,
   );
 });
+
+test("Submission Queue retains the authoritative v2 scalar filters", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const queue = source.slice(
+    source.indexOf("function Queue("),
+    source.indexOf("function SubmissionCard"),
+  );
+
+  assert.doesNotMatch(queue, /Minimum profile match|queue-minimum-match/);
+  assert.doesNotMatch(queue, /<option value="fit">Match score<\/option>/);
+  assert.match(queue, /Queue Time \(Latest to Earliest\)/);
+  assert.match(queue, /ATS Score \(Highest to Lowest\)/);
+  assert.match(
+    queue,
+    /\[50000, 75000, 100000, 125000, 150000, 175000, 200000\]/,
+  );
+  assert.match(queue, /\[0, 1, 2, 3, 5, 8, 10\]\.map\(\(years\)/);
+  assert.match(
+    queue,
+    /<option value="yes">Yes<\/option>[\s\S]*?<option value="no">No<\/option>[\s\S]*?<option value="likely">Likely<\/option>/,
+  );
+  assert.match(
+    queue,
+    /queueSponsorship === "no"[\s\S]*?\["no", "unknown"\]\.includes/,
+  );
+});

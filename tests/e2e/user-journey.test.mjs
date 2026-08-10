@@ -2526,7 +2526,7 @@ test(
       await page.getByText(/3\/4 required answered/).waitFor();
       await page.getByLabel("Show jobs with ATS resume").selectOption("true");
       await page.getByLabel("Queue job type").selectOption("full-time");
-      await page.getByLabel("Queue visa sponsorship").selectOption("unknown");
+      await page.getByLabel("Queue visa sponsorship").selectOption("no");
       await page
         .locator(".v2-ats-recommendation", { hasText: "ATS resume generated" })
         .first()
@@ -2622,8 +2622,6 @@ test(
       await page.getByText("Application documents", { exact: true }).waitFor();
       await page.getByLabel("Cover letter attachment").waitFor();
       await page.getByRole("button", { name: "Filters" }).click();
-      await page.getByLabel("Minimum queue match score").selectOption("40");
-      await page.getByLabel("Sort submission queue").selectOption("fit");
       const queueQuestions = page.locator(".v2-application-questions");
       const whyAnswer = queueQuestions.getByLabel(
         /Why are you interested in this role/,

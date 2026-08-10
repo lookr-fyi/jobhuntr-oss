@@ -5397,12 +5397,12 @@ function Queue({ state, reload, setTab }) {
       : "apply",
   );
   const [sourceSelectedId, setSourceSelectedId] = useState("");
-  const [minimumFit, setMinimumFit] = useState(0);
   const [minimumAts, setMinimumAts] = useState(0);
   const [showAtsOnly, setShowAtsOnly] = useState(false);
   const [queueSort, setQueueSort] = useState("time");
   const [queueLocation, setQueueLocation] = useState("");
   const [queueSalary, setQueueSalary] = useState(0);
+  const [queueExperience, setQueueExperience] = useState("");
   const [queueRemote, setQueueRemote] = useState("all");
   const [queueJobType, setQueueJobType] = useState("all");
   const [queueSeniority, setQueueSeniority] = useState("all");
@@ -5442,14 +5442,17 @@ function Queue({ state, reload, setTab }) {
     .filter((item) => {
       const job = state.jobs.find((candidate) => candidate.id === item.jobId);
       return (
-        (job?.fitScore || 0) >= minimumFit &&
-        (item.atsScore ?? 0) >= minimumAts &&
+        (minimumAts === 0 || (item.atsScore ?? 0) >= minimumAts) &&
         (!showAtsOnly || item.atsDecision === "optimized") &&
         (!queueLocation ||
           String(job?.location || "")
             .toLowerCase()
             .includes(queueLocation.toLowerCase())) &&
         maximumListedSalary(job || {}) >= queueSalary &&
+        (queueExperience === "" ||
+          (Number.isFinite(Number(job?.eoy)) &&
+            Number(job?.eoy) > 0 &&
+            Number(job?.eoy) >= Number(queueExperience))) &&
         (queueRemote === "all" ||
           (queueRemote === "remote"
             ? /remote|anywhere/i.test(job?.location || "")
@@ -5458,17 +5461,15 @@ function Queue({ state, reload, setTab }) {
         (queueSeniority === "all" ||
           boardSeniority(job || {}) === queueSeniority) &&
         (queueSponsorship === "all" ||
-          boardSponsorship(job || {}) === queueSponsorship) &&
+          (queueSponsorship === "no"
+            ? ["no", "unknown"].includes(boardSponsorship(job || {}))
+            : boardSponsorship(job || {}) === queueSponsorship)) &&
         `${job?.title || ""} ${job?.company || ""}`
           .toLowerCase()
           .includes(query.toLowerCase())
       );
     })
     .sort((a, b) => {
-      const aJob = state.jobs.find((job) => job.id === a.jobId);
-      const bJob = state.jobs.find((job) => job.id === b.jobId);
-      if (queueSort === "fit")
-        return (bJob?.fitScore || 0) - (aJob?.fitScore || 0);
       if (queueSort === "ats") return (b.atsScore || 0) - (a.atsScore || 0);
       return sortableTimestamp(b.createdAt) - sortableTimestamp(a.createdAt);
     });
@@ -5941,24 +5942,6 @@ function Queue({ state, reload, setTab }) {
           {filtersOpen && (
             <div className="v2-queue-filter-panel">
               <label>
-                Minimum profile match
-                <select
-                  name="queue-minimum-match"
-                  aria-label="Minimum queue match score"
-                  value={minimumFit}
-                  onChange={(event) =>
-                    setMinimumFit(Number(event.target.value))
-                  }
-                >
-                  <option value="0">All</option>
-                  {[40, 50, 60, 70, 80, 90].map((score) => (
-                    <option key={score} value={score}>
-                      Above {score}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
                 Minimum ATS score
                 <select
                   name="queue-minimum-ats"
@@ -5986,8 +5969,8 @@ function Queue({ state, reload, setTab }) {
                     setShowAtsOnly(event.target.value === "true")
                   }
                 >
-                  <option value="false">All jobs</option>
-                  <option value="true">ATS resume only</option>
+                  <option value="false">False</option>
+                  <option value="true">True</option>
                 </select>
               </label>
               <label>
@@ -5998,9 +5981,8 @@ function Queue({ state, reload, setTab }) {
                   value={queueSort}
                   onChange={(event) => setQueueSort(event.target.value)}
                 >
-                  <option value="time">Queue time</option>
-                  <option value="fit">Match score</option>
-                  <option value="ats">ATS score</option>
+                  <option value="time">Queue Time (Latest to Earliest)</option>
+                  <option value="ats">ATS Score (Highest to Lowest)</option>
                 </select>
               </label>
               <label>
@@ -6014,7 +5996,7 @@ function Queue({ state, reload, setTab }) {
                 />
               </label>
               <label>
-                Minimum salary
+                Above Annual Salary
                 <select
                   name="queue-minimum-salary"
                   aria-label="Minimum queue salary"
@@ -6023,10 +6005,28 @@ function Queue({ state, reload, setTab }) {
                     setQueueSalary(Number(event.target.value))
                   }
                 >
-                  <option value="0">Any salary</option>
-                  {[120000, 150000, 175000, 200000].map((salary) => (
-                    <option value={salary} key={salary}>
-                      ${(salary / 1000).toFixed(0)}k+
+                  <option value="0">All</option>
+                  {[50000, 75000, 100000, 125000, 150000, 175000, 200000].map(
+                    (salary) => (
+                      <option value={salary} key={salary}>
+                        Above ${(salary / 1000).toFixed(0)}K
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <label>
+                Above Years of Experience
+                <select
+                  name="queue-minimum-experience"
+                  aria-label="Above Years of Experience"
+                  value={queueExperience}
+                  onChange={(event) => setQueueExperience(event.target.value)}
+                >
+                  <option value="">All</option>
+                  {[0, 1, 2, 3, 5, 8, 10].map((years) => (
+                    <option key={years} value={years}>
+                      Above {years} {years === 1 ? "year" : "years"}
                     </option>
                   ))}
                 </select>
@@ -6081,21 +6081,21 @@ function Queue({ state, reload, setTab }) {
                   value={queueSponsorship}
                   onChange={(event) => setQueueSponsorship(event.target.value)}
                 >
-                  <option value="all">Any sponsorship status</option>
-                  <option value="yes">Sponsorship mentioned</option>
-                  <option value="no">No sponsorship</option>
-                  <option value="unknown">Not specified</option>
+                  <option value="all">All</option>
+                  <option value="yes">Yes</option>
+                  <option value="no">No</option>
+                  <option value="likely">Likely</option>
                 </select>
               </label>
               <button
                 className="secondary v2-queue-reset-filters"
                 onClick={() => {
-                  setMinimumFit(0);
                   setMinimumAts(0);
                   setShowAtsOnly(false);
                   setQueueSort("time");
                   setQueueLocation("");
                   setQueueSalary(0);
+                  setQueueExperience("");
                   setQueueRemote("all");
                   setQueueJobType("all");
                   setQueueSeniority("all");
