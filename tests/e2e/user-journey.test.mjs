@@ -401,6 +401,7 @@ test(
           name: "Legacy Default",
           firstName: "Ada",
           lastName: "Lovelace",
+          nickname: "Analytical Engine",
         },
       });
       await page.reload();
@@ -409,8 +410,13 @@ test(
         .waitFor();
       assert.match(
         await page.locator(".v2-contributor-copy b").innerText(),
+        /Analytical Engine/,
+        "v2's public nickname should drive the local contributor identity",
+      );
+      assert.doesNotMatch(
+        await page.locator(".v2-contributor-copy b").innerText(),
         /Ada Lovelace/,
-        "v2 first and last name fields should drive the local contributor identity",
+        "the leaderboard must not expose the private first and last name",
       );
       await page.request.put(`${baseUrl}/api/profile`, {
         data: {

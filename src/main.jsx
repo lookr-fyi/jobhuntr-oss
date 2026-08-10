@@ -1965,8 +1965,10 @@ function Overview({ state, setTab, reload }) {
   });
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const daysLeft = monthEnd.getDate() - now.getDate();
+  // v2's leaderboard contract uses the public nickname rather than exposing
+  // private profile names in community-facing contributor chrome.
   const contributorName =
-    profileDisplayName === "there" ? "Local job hunter" : profileDisplayName;
+    String(state.profile.nickname || "").trim() || "Local job hunter";
   const contributorInitials = contributorName
     .split(/\s+/)
     .slice(0, 2)
