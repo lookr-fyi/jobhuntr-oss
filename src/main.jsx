@@ -9142,8 +9142,11 @@ function Resume({ state, reload, mode = "resume" }) {
           });
           if (templateId === deleteTarget.item.id)
             setTemplateId(
-              state.templates.find((item) => item.id !== deleteTarget.item.id)
-                ?.id || "",
+              latestPersistedRecord(
+                state.templates.filter(
+                  (item) => item.id !== deleteTarget.item.id,
+                ),
+              )?.id || "",
             );
           await reload();
         }}
@@ -9171,7 +9174,14 @@ function Resume({ state, reload, mode = "resume" }) {
           await api(`/api/resumes/${deleteTarget.item.id}`, {
             method: "DELETE",
           });
-          if (preview?.id === deleteTarget.item.id) setPreview(null);
+          if (preview?.id === deleteTarget.item.id)
+            setPreview(
+              latestPersistedRecord(
+                state.resumes.filter(
+                  (item) => item.id !== deleteTarget.item.id,
+                ),
+              ),
+            );
           setDeleteTarget(null);
           await reload();
         }}

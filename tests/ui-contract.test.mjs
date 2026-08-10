@@ -2221,3 +2221,27 @@ test("Submission Queue uses v2 checkbox metadata filters", async () => {
     /aria-label="Queue (location|work arrangement|job type|seniority)"/,
   );
 });
+
+test("ATS Resume deletion preserves the newest remaining context", async () => {
+  const source = await readFile(
+    new URL("../src/main.jsx", import.meta.url),
+    "utf8",
+  );
+  const resumeStudio = source.slice(
+    source.indexOf("function Resume("),
+    source.indexOf("const outreachDraftDigest"),
+  );
+
+  assert.match(
+    resumeStudio,
+    /setTemplateId\([\s\S]*?latestPersistedRecord\([\s\S]*?state\.templates\.filter\([\s\S]*?item\.id !== deleteTarget\.item\.id/,
+  );
+  assert.match(
+    resumeStudio,
+    /preview\?\.id === deleteTarget\.item\.id\)[\s\S]*?setPreview\([\s\S]*?latestPersistedRecord\([\s\S]*?state\.resumes\.filter\([\s\S]*?item\.id !== deleteTarget\.item\.id/,
+  );
+  assert.doesNotMatch(
+    resumeStudio,
+    /state\.templates\.find\(\(item\) => item\.id !== deleteTarget\.item\.id\)/,
+  );
+});
