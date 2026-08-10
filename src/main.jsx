@@ -2064,15 +2064,12 @@ function Overview({ state, setTab, reload }) {
     .map((part) => part[0])
     .join("")
     .toUpperCase();
-  const chartStartCandidate = new Date(
-    state.jobs
-      .map((job) => job.updatedAt || job.createdAt)
-      .filter(Boolean)
-      .sort()[0] || now,
+  const chartStartTimestamps = state.jobs
+    .map((job) => new Date(job.updatedAt || job.createdAt).getTime())
+    .filter(Number.isFinite);
+  const chartStart = new Date(
+    chartStartTimestamps.length ? Math.min(...chartStartTimestamps) : now,
   );
-  const chartStart = Number.isFinite(chartStartCandidate.getTime())
-    ? chartStartCandidate
-    : new Date(now);
   chartStart.setHours(0, 0, 0, 0);
   const chartDays = Math.max(
     1,

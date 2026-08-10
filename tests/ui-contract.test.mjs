@@ -69,6 +69,11 @@ test("persisted timestamps cannot destabilize user-visible ordering", async () =
     source,
     /const latestPersistedRecord = \(records\) => newestFirst\(records\)\[0\] \|\| null/,
   );
+  assert.match(
+    source,
+    /chartStartTimestamps = state\.jobs[\s\S]*?\.filter\(Number\.isFinite\)[\s\S]*?Math\.min\(\.\.\.chartStartTimestamps\)/,
+    "invalid legacy dates must not hide otherwise valid Overview history",
+  );
   assert.match(source, /latestPersistedRecord\(state\.coverLetters\)/);
   assert.match(source, /latestPersistedRecord\(state\.resumes\)/);
   assert.match(source, /latestPersistedRecord\(state\.outreachDrafts\)\?\.id/);
