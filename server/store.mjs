@@ -968,6 +968,14 @@ function migrate(input) {
     const id = uniqueLegacyId(job.id, "legacy-job", jobIndex, jobIds);
     const status = normalizeJobStatus(job.status);
     const createdAt = boundedText(job.createdAt ?? job.created_at, 100);
+    const restoredSalaryRange = job.salaryRange ?? job.salary_range;
+    const salaryRange = Array.isArray(restoredSalaryRange)
+      ? restoredSalaryRange
+          .slice(0, 2)
+          .map(Number)
+          .filter((value) => Number.isFinite(value) && value >= 0)
+          .map((value) => Math.min(value, 100_000_000))
+      : [];
     const noteIds = new Set();
     const notes = records(job.notes)
       .map((note, index) => ({
@@ -1047,7 +1055,24 @@ function migrate(input) {
       location: boundedText(job.location, 500),
       url: safeStoredHttpUrl(job.url ?? job.application_url ?? job.job_url),
       source: boundedText(job.source, 200) || "Manual",
-      salary: boundedText(job.salary, 300),
+      salary: boundedText(
+        job.salary ??
+          (typeof restoredSalaryRange === "string" ? restoredSalaryRange : ""),
+        300,
+      ),
+      salaryRange,
+      jobType: boundedText(job.jobType ?? job.job_type, 100),
+      remoteType: boundedText(job.remoteType ?? job.remote_type, 100),
+      seniorLevel: boundedText(job.seniorLevel ?? job.senior_level, 100),
+      eoy: Math.min(100, Math.max(0, Number(job.eoy) || 0)),
+      provideVisaSponsorship:
+        typeof (job.provideVisaSponsorship ?? job.provide_visa_sponsorship) ===
+        "boolean"
+          ? (job.provideVisaSponsorship ?? job.provide_visa_sponsorship)
+          : boundedText(
+              job.provideVisaSponsorship ?? job.provide_visa_sponsorship,
+              100,
+            ),
       description: boundedText(
         job.description ?? job.pos_context ?? job.job_description,
         100000,
