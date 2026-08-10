@@ -8041,13 +8041,13 @@ main > header.integrated-page-header {
   margin-top: 8px;
   padding: 7px 12px;
   border-radius: 6px;
-  background: #2563eb;
+  background: var(--v2-primary);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
 }
 .v2-queue-info .text-button:hover {
-  background: #1d4ed8;
+  background: #27272a;
   color: #fff;
 }
 .v2-queue-tabs {

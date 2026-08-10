@@ -2161,6 +2161,8 @@ test(
             titleFontWeight: style(".v2-queue-title-row h2").fontWeight,
             infoPadding: style(".v2-queue-info").padding,
             infoRadius: style(".v2-queue-info").borderRadius,
+            aboutBackground: style(".v2-queue-info .text-button")
+              .backgroundColor,
             tabPadding: style(".v2-queue-tabs button.active").padding,
             tabRadius: style(".v2-queue-tabs button.active").borderRadius,
             tabBackground: style(".v2-queue-tabs button.active")
@@ -2184,6 +2186,7 @@ test(
           titleFontWeight: "600",
           infoPadding: "16px",
           infoRadius: "12px",
+          aboutBackground: "rgb(24, 24, 26)",
           tabPadding: "8px 16px",
           tabRadius: "8px",
           tabBackground: "rgb(24, 24, 26)",
