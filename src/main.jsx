@@ -393,20 +393,43 @@ const maximumListedSalary = (job) => {
     });
   return values?.length ? Math.max(...values) : 0;
 };
-const boardJobType = (job) =>
-  /contract|freelance|temporary/i.test(
+const boardJobType = (job) => {
+  const explicit = String(job.jobType ?? job.job_type ?? "").toLowerCase();
+  if (/intern/.test(explicit)) return "internship";
+  if (/contract|freelance|temporary/.test(explicit)) return "contract";
+  if (/full/.test(explicit)) return "full-time";
+  return /contract|freelance|temporary/i.test(
     `${job.title || ""} ${job.description || ""} ${(job.tags || []).join(" ")}`,
   )
     ? "contract"
     : /intern/i.test(`${job.title || ""} ${(job.tags || []).join(" ")}`)
       ? "internship"
       : "full-time";
+};
 const boardSeniority = (job) => {
+  const explicit = (
+    Array.isArray(job.seniorLevel ?? job.senior_level)
+      ? (job.seniorLevel ?? job.senior_level).join(" ")
+      : String(job.seniorLevel ?? job.senior_level ?? "")
+  ).toLowerCase();
+  if (/principal|staff|lead|head|director/.test(explicit)) return "lead";
+  if (/senior|sr\.?\b/.test(explicit)) return "senior";
+  if (/junior|jr\.?\b|entry|associate|intern/.test(explicit)) return "entry";
+  if (/mid|intermediate/.test(explicit)) return "mid";
   const text = `${job.title || ""} ${(job.tags || []).join(" ")}`;
   if (/principal|staff|lead|head|director|founding/i.test(text)) return "lead";
   if (/senior|sr\.?\b/i.test(text)) return "senior";
   if (/junior|jr\.?\b|entry|associate|intern/i.test(text)) return "entry";
   return "mid";
+};
+const boardRemoteType = (job) => {
+  const explicit = String(
+    job.remoteType ?? job.remote_type ?? "",
+  ).toLowerCase();
+  if (/remote/.test(explicit)) return "remote";
+  if (/hybrid/.test(explicit)) return "hybrid";
+  if (/on.?site|office/.test(explicit)) return "onsite";
+  return /remote|anywhere/i.test(job.location || "") ? "remote" : "onsite";
 };
 const boardSponsorship = (job) => {
   const explicit = String(
@@ -4732,8 +4755,8 @@ function Board({ state, reload }) {
                 Number(job.eoy) >= Number(minimumExperience))) &&
             (remoteType === "all" ||
               (remoteType === "remote"
-                ? /remote|anywhere/i.test(job.location)
-                : !/remote|anywhere/i.test(job.location))) &&
+                ? boardRemoteType(job) === "remote"
+                : boardRemoteType(job) !== "remote")) &&
             (jobType === "all" || boardJobType(job) === jobType) &&
             (seniority === "all" || boardSeniority(job) === seniority) &&
             (sponsorship === "all" || boardSponsorship(job) === sponsorship) &&
@@ -5221,9 +5244,11 @@ function Board({ state, reload }) {
                       : "Mid level"}
               </span>
               <span>
-                {/remote|anywhere/i.test(selected.location)
+                {boardRemoteType(selected) === "remote"
                   ? "Remote"
-                  : "On-site / hybrid"}
+                  : boardRemoteType(selected) === "hybrid"
+                    ? "Hybrid"
+                    : "On-site"}
               </span>
               <span>
                 {boardSponsorship(selected) === "yes"

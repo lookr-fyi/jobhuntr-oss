@@ -1390,6 +1390,20 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /<option value="no">No<\/option>/);
   assert.match(board, /<option value="likely">Likely<\/option>/);
   assert.match(board, /Visa sponsorship likely/);
+  assert.match(
+    source,
+    /const boardJobType = \(job\) => \{[\s\S]*?job\.jobType \?\? job\.job_type/,
+  );
+  assert.match(
+    source,
+    /const boardSeniority = \(job\) => \{[\s\S]*?job\.seniorLevel \?\? job\.senior_level/,
+  );
+  assert.match(
+    source,
+    /const boardRemoteType = \(job\) => \{[\s\S]*?job\.remoteType \?\? job\.remote_type/,
+  );
+  assert.match(board, /boardRemoteType\(job\) === "remote"/);
+  assert.match(board, /boardRemoteType\(selected\) === "hybrid"/);
 });
 
 test("backup restore and CSV imports reject duplicate or stale work", async () => {

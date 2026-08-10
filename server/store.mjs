@@ -30,6 +30,9 @@ export const seedJobs = [
     numApplicants: 38,
     eoy: 5,
     provideVisaSponsorship: "Likely",
+    jobType: "Full-time",
+    remoteType: "Remote",
+    seniorLevel: "Lead",
   },
   {
     company: "Northstar Robotics",
@@ -44,6 +47,9 @@ export const seedJobs = [
     collectedAt: hoursAgo(3),
     numApplicants: 74,
     eoy: 4,
+    jobType: "Full-time",
+    remoteType: "On-site",
+    seniorLevel: "Mid",
   },
   {
     company: "Civic Health Labs",
@@ -58,6 +64,9 @@ export const seedJobs = [
     collectedAt: hoursAgo(6),
     numApplicants: 29,
     eoy: 3,
+    jobType: "Full-time",
+    remoteType: "Hybrid",
+    seniorLevel: "Mid",
   },
   {
     company: "Orbit Data",
@@ -72,6 +81,9 @@ export const seedJobs = [
     collectedAt: hoursAgo(10),
     numApplicants: 51,
     eoy: 5,
+    jobType: "Full-time",
+    remoteType: "Remote",
+    seniorLevel: "Mid",
   },
 ];
 

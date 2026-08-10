@@ -286,6 +286,21 @@ test("Job Board feed excludes private tracked jobs and stale community records",
         24 * 60 * 60 * 1000,
     ),
   );
+  const acme = board.body.find((job) => job.company === "Acme AI");
+  assert.deepEqual(
+    {
+      jobType: acme.jobType,
+      remoteType: acme.remoteType,
+      seniorLevel: acme.seniorLevel,
+      sponsorship: acme.provideVisaSponsorship,
+    },
+    {
+      jobType: "Full-time",
+      remoteType: "Remote",
+      seniorLevel: "Lead",
+      sponsorship: "Likely",
+    },
+  );
 });
 
 test("v2 personal profile details persist with bounded local input", async () => {
