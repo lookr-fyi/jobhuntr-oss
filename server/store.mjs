@@ -1040,7 +1040,10 @@ function migrate(input) {
           .map((option) => boundedText(option, 1000))
           .filter(Boolean)
           .slice(0, 100),
-        confident: question.confident === true,
+        confident:
+          typeof question.confident === "boolean"
+            ? question.confident
+            : undefined,
         aiGenerated:
           question.aiGenerated === true || question.ai_generated === true,
         reference: boundedText(question.reference, 2000),

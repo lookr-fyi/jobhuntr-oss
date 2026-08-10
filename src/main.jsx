@@ -4125,13 +4125,19 @@ function TrackerApplicationInsights({ job, submission, profile }) {
               <article key={item.id || item.question}>
                 <strong>{item.question}</strong>
                 <p>{item.answer || "No answer saved"}</p>
-                <small className={item.confident ? "confident" : "uncertain"}>
-                  {item.answer
-                    ? item.confident
-                      ? "✓ Confident"
-                      : "Review answer"
-                    : "Unanswered"}
-                </small>
+                {(item.confident !== undefined || !item.answer) && (
+                  <small
+                    className={
+                      item.confident === true ? "confident" : "uncertain"
+                    }
+                  >
+                    {!item.answer
+                      ? "Unanswered"
+                      : item.confident
+                        ? "✓ Confident"
+                        : "⚠ Uncertain"}
+                  </small>
+                )}
               </article>
             ))}
           </div>
