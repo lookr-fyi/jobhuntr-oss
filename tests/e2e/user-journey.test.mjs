@@ -2478,7 +2478,36 @@ test(
       const queueDeepLink = page.url();
       await page.route("**/api/submissions/*", (route) => route.abort());
       await whyAnswer.fill("The product mission matches my experience.");
+      await page.evaluate(() =>
+        localStorage.setItem(
+          "jobTracker_visibleStatuses",
+          JSON.stringify(["queued", "interviewing"]),
+        ),
+      );
       await page.goto(`${baseUrl}/#/tracker`);
+      await page.getByRole("heading", { name: "Job Tracker" }).waitFor();
+      assert.deepEqual(
+        JSON.parse(
+          await page.evaluate(() =>
+            localStorage.getItem("jobTracker_visibleStatuses"),
+          ),
+        ),
+        ["interested", "interview"],
+        "authentic v2 tracker preferences must migrate to the clone's equivalent columns",
+      );
+      await page.evaluate(() =>
+        localStorage.setItem(
+          "jobTracker_visibleStatuses",
+          JSON.stringify([
+            "interested",
+            "submitting",
+            "applied",
+            "interview",
+            "offer",
+            "rejected",
+          ]),
+        ),
+      );
       await page.goto(queueDeepLink);
       await page
         .getByText("Unsaved application answers restored for review.", {

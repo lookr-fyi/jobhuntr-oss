@@ -276,6 +276,17 @@ const TRACKER_STAGE_LABELS = {
   removed: "Removed",
 };
 const trackerStageLabel = (status) => TRACKER_STAGE_LABELS[status] || status;
+const normalizeTrackerStage = (status) =>
+  ({ queued: "interested", started: "interested", interviewing: "interview" })[
+    status
+  ] || status;
+const normalizeTrackerStages = (statuses) => [
+  ...new Set(
+    (statuses || [])
+      .map(normalizeTrackerStage)
+      .filter((stage) => TRACKER_STAGES.includes(stage)),
+  ),
+];
 const emptyTrackedRole = (status = "interested") => ({
   company: "",
   title: "",
@@ -2355,6 +2366,7 @@ function Tracker({ state, reload, setTab }) {
     const linkedStages = trackerParams
       .get("statuses")
       ?.split(",")
+      .map(normalizeTrackerStage)
       .filter((stage) => TRACKER_STAGES.includes(stage));
     if (linkedStages?.length) return new Set(linkedStages);
     try {
@@ -2362,7 +2374,7 @@ function Tracker({ state, reload, setTab }) {
       if (stored === null) return new Set(DEFAULT_VISIBLE_TRACKER_STAGES);
       const saved = JSON.parse(stored);
       const validSaved = Array.isArray(saved)
-        ? saved.filter((stage) => TRACKER_STAGES.includes(stage))
+        ? normalizeTrackerStages(saved)
         : [];
       if (validSaved.length) return new Set(validSaved);
     } catch {
@@ -2513,6 +2525,7 @@ function Tracker({ state, reload, setTab }) {
       const linkedStages = params
         .get("statuses")
         ?.split(",")
+        .map(normalizeTrackerStage)
         .filter((stage) => TRACKER_STAGES.includes(stage));
       if (linkedStages?.length) setVisibleStages(new Set(linkedStages));
       const linkedRun = params.get("run");
