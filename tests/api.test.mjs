@@ -3305,6 +3305,50 @@ test("full restore accepts only bounded JobHuntr backup keys", async () => {
     );
   assert.equal(replaced.profile.onboarded, false);
   assert.equal(replaced.infiniteHunt.enabled, false);
+
+  const authenticV2ProfileRestore = await req("/api/import", {
+    method: "POST",
+    body: JSON.stringify({
+      jobs: [],
+      profile: {
+        first_name: "Ada",
+        last_name: "Lovelace",
+        resume_text: "Built the first published algorithm.",
+        additional_info: "Prefers analytical engineering roles.",
+        faq_answers: [
+          {
+            question_text: "Are you authorized to work?",
+            answer: "Yes",
+            question_type: "multiple_choice",
+            options: ["Yes", "No"],
+            confident: true,
+          },
+        ],
+        preferences: { ats_threshold: 87 },
+      },
+    }),
+  });
+  assert.equal(authenticV2ProfileRestore.res.status, 200);
+  const authenticV2Profile = (await req("/api/state")).body.profile;
+  assert.equal(authenticV2Profile.firstName, "Ada");
+  assert.equal(authenticV2Profile.lastName, "Lovelace");
+  assert.equal(
+    authenticV2Profile.resumeText,
+    "Built the first published algorithm.",
+  );
+  assert.equal(
+    authenticV2Profile.additionalInfo,
+    "Prefers analytical engineering roles.",
+  );
+  assert.equal(authenticV2Profile.preferences.atsThreshold, 87);
+  assert.deepEqual(authenticV2Profile.faqAnswers[0], {
+    id: "faq-1",
+    question: "Are you authorized to work?",
+    answer: "Yes",
+    questionType: "multiple_choice",
+    options: ["Yes", "No"],
+    confident: true,
+  });
 });
 
 test("resume templates can be created, edited, and safely removed", async () => {

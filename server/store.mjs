@@ -396,7 +396,9 @@ function migrate(input) {
     "dropdown",
     "multiple_choice",
   ]);
-  const faqAnswers = records(restoredProfile.faqAnswers)
+  const faqAnswers = records(
+    restoredProfile.faqAnswers ?? restoredProfile.faq_answers,
+  )
     .map((faq) => {
       const questionType = faq.questionType ?? faq.question_type;
       const rawOptions = Array.isArray(faq.options)
@@ -435,8 +437,14 @@ function migrate(input) {
     ...restoredProfile,
     onboarded: restoredProfile.onboarded === true,
     name: boundedText(restoredProfile.name, 200) || defaultProfile.name,
-    firstName: boundedText(restoredProfile.firstName, 100),
-    lastName: boundedText(restoredProfile.lastName, 100),
+    firstName: boundedText(
+      restoredProfile.firstName ?? restoredProfile.first_name,
+      100,
+    ),
+    lastName: boundedText(
+      restoredProfile.lastName ?? restoredProfile.last_name,
+      100,
+    ),
     nickname: boundedText(restoredProfile.nickname, 100),
     headline:
       boundedText(restoredProfile.headline, 1000) || defaultProfile.headline,
@@ -444,8 +452,14 @@ function migrate(input) {
       boundedText(restoredProfile.location, 300) || defaultProfile.location,
     targetRoles: normalizeProfileList(restoredProfile.targetRoles, 100, 200),
     skills: normalizeProfileList(restoredProfile.skills, 200, 200),
-    resumeText: boundedText(restoredProfile.resumeText, 200000),
-    additionalInfo: boundedText(restoredProfile.additionalInfo, 100000),
+    resumeText: boundedText(
+      restoredProfile.resumeText ?? restoredProfile.resume_text,
+      200000,
+    ),
+    additionalInfo: boundedText(
+      restoredProfile.additionalInfo ?? restoredProfile.additional_info,
+      100000,
+    ),
     faqAnswers,
     preferences: {
       ...restoredPreferences,
@@ -468,7 +482,7 @@ function migrate(input) {
         true,
       ),
       atsThreshold: numericPreference(
-        restoredPreferences.atsThreshold,
+        restoredPreferences.atsThreshold ?? restoredPreferences.ats_threshold,
         80,
         0,
         100,
