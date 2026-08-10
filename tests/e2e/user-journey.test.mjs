@@ -1658,7 +1658,7 @@ test(
       await page.getByLabel("Board seniority").selectOption("lead");
       await page.getByLabel("Board visa sponsorship").selectOption("unknown");
       await page.getByLabel("Board source").selectOption("Seed Board");
-      await page.getByLabel("Sort by").selectOption("salary");
+      await page.getByLabel("Sort by").selectOption("post_time_desc");
       await assertNamedFormControls(page, "Job Board filters");
       await page
         .getByRole("button", { name: /Filters/ })

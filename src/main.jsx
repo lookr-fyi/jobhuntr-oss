@@ -4653,7 +4653,7 @@ function Board({ state, reload }) {
   const [seniority, setSeniority] = useState("all");
   const [sponsorship, setSponsorship] = useState("all");
   const [source, setSource] = useState("all");
-  const [sort, setSort] = useState("fit");
+  const [sort, setSort] = useState("collected_at_desc");
   const [newlyQueuedUrls, setNewlyQueuedUrls] = useState(new Set());
   const [queueing, setQueueing] = useState("");
   const [searching, setSearching] = useState(false);
@@ -4735,19 +4735,24 @@ function Board({ state, reload }) {
           );
         })
         .sort((a, b) =>
-          sort === "fit"
-            ? b.fitScore - a.fitScore
-            : sort === "salary"
-              ? maximumListedSalary(b) - maximumListedSalary(a)
-              : sort === "latest"
-                ? new Date(b.collectedAt || b.postedAt || 0) -
-                  new Date(a.collectedAt || a.postedAt || 0)
-                : sort === "oldest"
-                  ? new Date(a.collectedAt || a.postedAt || 0) -
-                    new Date(b.collectedAt || b.postedAt || 0)
-                  : sort === "company"
-                    ? a.company.localeCompare(b.company)
-                    : a.title.localeCompare(b.title),
+          sort === "collected_at_desc"
+            ? sortableTimestamp(b.collectedAt) -
+              sortableTimestamp(a.collectedAt)
+            : sort === "collected_at_asc"
+              ? sortableTimestamp(a.collectedAt) -
+                sortableTimestamp(b.collectedAt)
+              : sort === "post_time_desc"
+                ? sortableTimestamp(b.postedAt) - sortableTimestamp(a.postedAt)
+                : sort === "post_time_asc"
+                  ? sortableTimestamp(a.postedAt) -
+                    sortableTimestamp(b.postedAt)
+                  : sort === "fit"
+                    ? b.fitScore - a.fitScore
+                    : sort === "salary"
+                      ? maximumListedSalary(b) - maximumListedSalary(a)
+                      : sort === "company"
+                        ? a.company.localeCompare(b.company)
+                        : a.title.localeCompare(b.title),
         ),
     [
       results,
@@ -4828,7 +4833,7 @@ function Board({ state, reload }) {
     setSeniority("all");
     setSponsorship("all");
     setSource("all");
-    setSort("fit");
+    setSort("collected_at_desc");
     setQ("");
     await search();
   };
@@ -5070,9 +5075,19 @@ function Board({ state, reload }) {
               value={sort}
               onChange={(event) => setSort(event.target.value)}
             >
+              <option value="collected_at_desc">
+                Collected (Latest to Earliest)
+              </option>
+              <option value="collected_at_asc">
+                Collected (Earliest to Latest)
+              </option>
+              <option value="post_time_desc">
+                Post Time (Latest to Earliest)
+              </option>
+              <option value="post_time_asc">
+                Post Time (Earliest to Latest)
+              </option>
               <option value="fit">Best match</option>
-              <option value="latest">Collected (Latest to Earliest)</option>
-              <option value="oldest">Collected (Earliest to Latest)</option>
               <option value="salary">Highest salary</option>
               <option value="company">Company</option>
               <option value="title">Job title</option>

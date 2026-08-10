@@ -1364,6 +1364,20 @@ test("Job Board refresh and queue actions are single-flight", async () => {
   assert.match(board, /aria-busy=\{searching\}/);
   assert.match(board, /aria-busy=\{queueing === selected\.url\}/);
   assert.match(board, /const clearFilters = async \(\) => \{/);
+  assert.match(
+    board,
+    /const \[sort, setSort\] = useState\("collected_at_desc"\)/,
+  );
+  for (const sortMode of [
+    "collected_at_desc",
+    "collected_at_asc",
+    "post_time_desc",
+    "post_time_asc",
+  ]) {
+    assert.match(board, new RegExp(`sort === "${sortMode}"`));
+    assert.match(board, new RegExp(`<option value="${sortMode}">`));
+  }
+  assert.match(board, /setSort\("collected_at_desc"\)/);
   assert.match(board, /const \[minimumExperience, setMinimumExperience\]/);
   assert.match(board, /Number\(job\.eoy\) >= Number\(minimumExperience\)/);
   assert.match(board, /Above Years of Experience/);
