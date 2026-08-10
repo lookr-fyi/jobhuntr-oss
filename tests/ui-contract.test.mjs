@@ -80,6 +80,15 @@ test("persisted timestamps cannot destabilize user-visible ordering", async () =
     source,
     /const coachOutreachDrafts = newestFirst\(state\.outreachDrafts\)/,
   );
+  assert.ok(
+    (source.match(/latestPersistedRecord\(state\.jobs\)/g) || []).length >= 7,
+    "resume, template, outreach, and coaching defaults should select the latest tracked job",
+  );
+  assert.doesNotMatch(
+    source,
+    /state\.[A-Za-z]+\[0\]/,
+    "persisted workflow defaults must not trust storage index zero",
+  );
 });
 
 test("every JobHuntr CSS custom property is defined", async () => {

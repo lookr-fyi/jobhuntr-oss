@@ -7490,7 +7490,9 @@ function Resume({ state, reload, mode = "resume" }) {
   const [templateId, setTemplateId] = useState(
     state.templates?.[0]?.id || "clean-ats",
   );
-  const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
+  const [jobId, setJobId] = useState(
+    latestPersistedRecord(state.jobs)?.id || "",
+  );
   const [score, setScore] = useState(null);
   const [letter, setLetter] = useState(
     mode === "cover-letter" ? null : latestPersistedRecord(state.coverLetters),
@@ -7755,9 +7757,12 @@ function Resume({ state, reload, mode = "resume" }) {
         state.profile.resumeText ||
         "",
       additionalExperience: template?.additionalExperience || "",
-      testJobId: template?.testJobId || state.jobs[0]?.id || "",
+      testJobId:
+        template?.testJobId || latestPersistedRecord(state.jobs)?.id || "",
       jobDescription:
-        template?.jobDescription || state.jobs[0]?.description || "",
+        template?.jobDescription ||
+        latestPersistedRecord(state.jobs)?.description ||
+        "",
       uploadedFileName: template?.originalResume ? "Saved resume" : "",
       extractingFile: false,
       uploadError: "",
@@ -7967,10 +7972,12 @@ function Resume({ state, reload, mode = "resume" }) {
       resumeId:
         state.resumes.find((item) => isUsableResumeText(item.content))?.id ||
         (isUsableResumeText(state.profile.resumeText) ? "profile-resume" : ""),
-      jobId: jobId || state.jobs[0]?.id || "",
+      jobId: jobId || latestPersistedRecord(state.jobs)?.id || "",
       jobDescription:
-        state.jobs.find((item) => item.id === (jobId || state.jobs[0]?.id))
-          ?.description || "",
+        state.jobs.find(
+          (item) =>
+            item.id === (jobId || latestPersistedRecord(state.jobs)?.id),
+        )?.description || "",
     });
   const generateLetter = async (wizard = null, keepWizard = false) => {
     if (generatingLetterRef.current) return;
@@ -10073,7 +10080,9 @@ const outreachDraftDigest = (draft) =>
       })
     : "";
 function OutreachPage({ state, reload }) {
-  const [jobId, setJobId] = useState(state.jobs[0]?.id || "");
+  const [jobId, setJobId] = useState(
+    latestPersistedRecord(state.jobs)?.id || "",
+  );
   const [selectedId, setSelectedId] = useState(
     latestPersistedRecord(state.outreachDrafts)?.id || "",
   );
@@ -10848,7 +10857,7 @@ function Coach({ state, reload }) {
   });
   const [jobId, setJobId] = useState(
     state.jobs.find((j) => j.status === "interview")?.id ||
-      state.jobs[0]?.id ||
+      latestPersistedRecord(state.jobs)?.id ||
       "",
   );
   const initialPracticeSession = coachingSessions[0] || null;
