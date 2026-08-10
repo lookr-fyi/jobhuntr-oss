@@ -1051,6 +1051,11 @@ test("submission queue enforces review before local submission", async () => {
     "Easy Apply must match remembered evidence by wording and control type",
   );
   assert.equal(
+    packet.body.applicationQuestions[2].confident,
+    false,
+    "unverified imported FAQ evidence must not become confident implicitly",
+  );
+  assert.equal(
     packet.body.applicationQuestions[3].questionType,
     "multiple_choice",
   );
@@ -1112,9 +1117,21 @@ test("submission queue enforces review before local submission", async () => {
     ).answer,
     "I build products that match this mission.",
   );
+  assert.equal(
+    rememberedAfterAnswer.find(
+      (answer) => answer.question === questions[0].question,
+    ).confident,
+    true,
+    "explicitly verified Easy Apply evidence should be remembered as confident",
+  );
   assert.deepEqual(
     rememberedAfterAnswer.find((answer) => answer.id === customFaq.id),
-    { ...customFaq, questionType: "text_input", options: [] },
+    {
+      ...customFaq,
+      questionType: "text_input",
+      options: [],
+      confident: false,
+    },
     "reviewing a packet must not erase unrelated About Me evidence",
   );
   const blocked = await req(`/api/submissions/${packet.body.id}/submit`, {
@@ -1215,7 +1232,12 @@ test("submission queue enforces review before local submission", async () => {
   );
   assert.deepEqual(
     rememberedAfterUnverifiedEdit.find((answer) => answer.id === customFaq.id),
-    { ...customFaq, questionType: "text_input", options: [] },
+    {
+      ...customFaq,
+      questionType: "text_input",
+      options: [],
+      confident: false,
+    },
   );
   const unverifiedSubmit = await req(
     `/api/submissions/${packet.body.id}/submit`,

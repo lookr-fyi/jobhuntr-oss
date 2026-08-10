@@ -14600,6 +14600,7 @@ function readUserCenterDraft(profile) {
                   .slice(0, 50)
                   .map((option) => String(option).slice(0, 1000))
               : [],
+            confident: answer.confident === true,
           },
         ];
       });
@@ -14939,6 +14940,7 @@ function SettingsPage({ state, reload, setTab }) {
         answer: "",
         questionType,
         options,
+        confident: false,
       })),
     });
     setFaqDeleteMode(false);
@@ -15418,8 +15420,11 @@ function SettingsPage({ state, reload, setTab }) {
                     key={faq.id || `${faq.question}-${index}`}
                   >
                     <div>
-                      <span id={`profile-faq-label-${faq.id || index}`}>
-                        {faq.question}
+                      <span>
+                        <b id={`profile-faq-label-${faq.id || index}`}>
+                          {faq.question}
+                        </b>
+                        {faq.confident !== true && <em>Not Confident</em>}
                       </span>
                       <FaqAnswerControl
                         key={`${faq.id || index}-${(faq.options || []).includes(faq.answer) ? "preset" : "custom"}`}
@@ -15428,7 +15433,11 @@ function SettingsPage({ state, reload, setTab }) {
                         labelId={`profile-faq-label-${faq.id || index}`}
                         onChange={(answer) => {
                           const faqAnswers = [...form.faqAnswers];
-                          faqAnswers[index] = { ...faq, answer };
+                          faqAnswers[index] = {
+                            ...faq,
+                            answer,
+                            confident: false,
+                          };
                           editForm({ ...form, faqAnswers });
                         }}
                       />

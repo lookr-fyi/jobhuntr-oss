@@ -405,6 +405,7 @@ function migrate(input) {
         ? faq.questionType
         : "text_input",
       options: normalizeProfileList(faq.options, 50, 1000),
+      confident: faq.confident === true,
     }))
     .filter((faq) => faq.question)
     .map((faq, index) => ({
@@ -413,6 +414,7 @@ function migrate(input) {
       answer: faq.answer,
       questionType: faq.questionType,
       options: faq.options,
+      confident: faq.confident,
     }))
     .slice(0, 100);
   const numericPreference = (value, fallback, min, max, integer = false) => {

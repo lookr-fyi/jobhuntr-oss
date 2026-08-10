@@ -5158,6 +5158,15 @@ test(
           .inputValue(),
         "The product mission, customer impact, and role scope match my experience.",
       );
+      assert.equal(
+        await page
+          .locator(".v2-faq-question")
+          .filter({ hasText: "Why are you interested in this role?" })
+          .getByText("Not Confident", { exact: true })
+          .count(),
+        0,
+        "explicitly verified Easy Apply evidence should remain visibly confident",
+      );
       const rememberedAvailability = page.getByLabel(
         "When are you available to start?",
       );
@@ -5214,6 +5223,13 @@ test(
           .inputValue(),
         "Status requires employer-specific review",
       );
+      await page
+        .locator(".v2-faq-question")
+        .filter({
+          hasText: "Will you require work authorization sponsorship?",
+        })
+        .getByText("Not Confident", { exact: true })
+        .waitFor();
       assert.equal(
         await faqPanel.count(),
         1,

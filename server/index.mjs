@@ -178,6 +178,7 @@ const ProfileSchema = z.object({
           .optional()
           .default("text_input"),
         options: z.array(z.string().max(1000)).max(50).optional().default([]),
+        confident: z.boolean().optional().default(false),
       }),
     )
     .max(100)
@@ -1168,7 +1169,7 @@ const applicationQuestionsFor = (db) => {
       questionType,
       options,
       required: true,
-      confident: false,
+      confident: Boolean(remembered?.confident),
       verified: false,
     };
   });
@@ -1471,6 +1472,7 @@ app.patch("/api/submissions/:id", async (req, res) => {
           answer: question.answer,
           questionType: question.questionType,
           options: question.options || [],
+          confident: true,
         };
         if (existingIndex >= 0)
           db.profile.faqAnswers[existingIndex] = remembered;
