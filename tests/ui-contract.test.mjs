@@ -53,7 +53,7 @@ test("persisted timestamps cannot destabilize user-visible ordering", async () =
 
   assert.match(
     source,
-    /const sortableTimestamp = \(\.\.\.values\) => \{[\s\S]*?Number\.isFinite\(timestamp\)[\s\S]*?return 0/,
+    /const sortableTimestamp = \(\.\.\.values\) => \{[\s\S]*?value === undefined \|\| value === null \|\| value === ""[\s\S]*?Number\.isFinite\(timestamp\)[\s\S]*?return 0/,
   );
   assert.doesNotMatch(
     source,
@@ -71,7 +71,12 @@ test("persisted timestamps cannot destabilize user-visible ordering", async () =
   );
   assert.match(
     source,
-    /chartStartTimestamps = state\.jobs[\s\S]*?\.filter\(Number\.isFinite\)[\s\S]*?Math\.min\(\.\.\.chartStartTimestamps\)/,
+    /const applicationTimestamp = \(job\) =>[\s\S]*?job\.applicationDatetime,[\s\S]*?job\.updatedAt,[\s\S]*?job\.createdAt/,
+    "Overview should follow v2's application-date precedence",
+  );
+  assert.match(
+    source,
+    /chartStartTimestamps = state\.jobs[\s\S]*?\.map\(applicationTimestamp\)[\s\S]*?\.filter\(\(value\) => value > 0\)[\s\S]*?Math\.min\(\.\.\.chartStartTimestamps\)/,
     "invalid legacy dates must not hide otherwise valid Overview history",
   );
   assert.match(source, /latestPersistedRecord\(state\.coverLetters\)/);

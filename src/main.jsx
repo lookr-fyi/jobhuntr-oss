@@ -483,7 +483,8 @@ const formatCalendarDate = (value, fallback = "Recently") => {
 };
 const sortableTimestamp = (...values) => {
   for (const value of values) {
-    const timestamp = new Date(value || 0).getTime();
+    if (value === undefined || value === null || value === "") continue;
+    const timestamp = new Date(value).getTime();
     if (Number.isFinite(timestamp)) return timestamp;
   }
   return 0;
@@ -2036,8 +2037,10 @@ function Overview({ state, setTab, reload }) {
     profileDisplayName.split(/\s+/)[0];
   const submitted = s.byStatus.applied || 0;
   const now = new Date();
+  const applicationTimestamp = (job) =>
+    sortableTimestamp(job.applicationDatetime, job.updatedAt, job.createdAt);
   const submittedToday = state.jobs.filter((job) => {
-    const date = new Date(job.updatedAt || job.createdAt);
+    const date = new Date(applicationTimestamp(job));
     return (
       date.getFullYear() === now.getFullYear() &&
       date.getMonth() === now.getMonth() &&
@@ -2065,8 +2068,8 @@ function Overview({ state, setTab, reload }) {
     .join("")
     .toUpperCase();
   const chartStartTimestamps = state.jobs
-    .map((job) => new Date(job.updatedAt || job.createdAt).getTime())
-    .filter(Number.isFinite);
+    .map(applicationTimestamp)
+    .filter((value) => value > 0);
   const chartStart = new Date(
     chartStartTimestamps.length ? Math.min(...chartStartTimestamps) : now,
   );
@@ -2086,10 +2089,10 @@ function Overview({ state, setTab, reload }) {
         date.setHours(23, 59, 59, 999);
         date.setDate(date.getDate() + dayOffset);
         const through = date.getTime();
-        const available = state.jobs.filter(
-          (job) =>
-            new Date(job.createdAt || job.updatedAt).getTime() <= through,
-        );
+        const available = state.jobs.filter((job) => {
+          const timestamp = applicationTimestamp(job);
+          return timestamp > 0 && timestamp <= through;
+        });
         return {
           date,
           evaluated: available.filter((job) => job.workflowRunId).length,

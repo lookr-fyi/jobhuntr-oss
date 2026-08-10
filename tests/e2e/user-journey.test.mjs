@@ -805,6 +805,29 @@ test(
       await page.route("**/api/state", async (route) => {
         const response = await route.fetch();
         const body = await response.json();
+        body.jobs[0] = {
+          ...body.jobs[0],
+          applicationDatetime: "2024-06-15T12:00:00.000Z",
+          updatedAt: new Date().toISOString(),
+        };
+        await route.fulfill({ response, json: body });
+      });
+      await page.reload();
+      await page
+        .locator(".v2-chart-x-labels span")
+        .first()
+        .getByText(/Jun 15/)
+        .waitFor();
+      await page
+        .locator(".v2-kpi")
+        .filter({ hasText: "Total submitted" })
+        .getByText("1 sent today", { exact: true })
+        .waitFor();
+      await page.unroute("**/api/state");
+      await page.reload();
+      await page.route("**/api/state", async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
         body.jobs = [];
         await route.fulfill({ response, json: body });
       });
